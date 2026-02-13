@@ -421,8 +421,8 @@ export default function RegisterPage() {
                   ))}
                 </div>
                 <p className="text-sm font-bold text-gray-800 italic leading-snug mb-5">
-                  "{REVIEWS[reviewIdx].text}"
-                </p>
+  &quot;{REVIEWS[reviewIdx].text}&quot;
+</p>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md ring-2 ring-white">
                     {REVIEWS[reviewIdx].name.charAt(0)}

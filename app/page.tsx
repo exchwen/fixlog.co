@@ -1058,8 +1058,8 @@ export default function LandingPage() {
                           ))}
                         </div>
                         <p className="text-gray-300 text-sm mb-4 font-medium leading-relaxed">
-                          "{r.text}"
-                        </p>
+  &quot;{r.text}&quot;
+</p>
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 bg-blue-900/50 border border-blue-800 text-blue-400 rounded-lg flex items-center justify-center font-bold text-sm shrink-0">
                             {r.name.charAt(0)}
