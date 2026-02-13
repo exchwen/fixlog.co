@@ -27,63 +27,13 @@ import {
 } from '../../lib/firebase';
 import { signInWithPopup } from 'firebase/auth';
 import { generateUniqueSlug } from '../../lib/utils';
+// JSON Verisini Buradan Çekiyoruz
+import sectorDataFile from '../../lib/data/sectors.json';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
-const SECTORS = [
-  'Asansör Bakım & Montaj',
-  'İklimlendirme (Klima & Kombi)',
-  'Güvenlik Kamera & Alarm Sistemleri',
-  'Profesyonel Temizlik Hizmetleri',
-  'İlaçlama ve Pest Kontrol',
-  'Yangın Söndürme Sistemleri',
-  'Su Arıtma Sistemleri',
-  'Endüstriyel Kapı ve Kepenk',
-  'Diğer (Özel Sektör)',
-];
-
-const SECTOR_MOCKUP_DATA = {
-  'Asansör Bakım & Montaj': {
-    title: 'Bakım Takibi',
-    jobs: ['A Blok Revizyon', 'Mavi Etiket Kontrol'],
-    stats: '14 Aktif Arıza',
-    color: 'text-blue-600',
-    bg: 'bg-blue-50',
-    accent: 'bg-blue-600',
-  },
-  'İklimlendirme (Klima & Kombi)': {
-    title: 'Servis Yönetimi',
-    jobs: ['Klima Montajı', 'Kombi Yıllık Bakım'],
-    stats: '8 Saha Ekibi',
-    color: 'text-orange-600',
-    bg: 'bg-orange-50',
-    accent: 'bg-orange-600',
-  },
-  'Güvenlik Kamera & Alarm Sistemleri': {
-    title: 'Proje Takibi',
-    jobs: ['Kamera Kurulum', 'Sensör Değişimi'],
-    stats: '210 Kayıtlı Cihaz',
-    color: 'text-indigo-600',
-    bg: 'bg-indigo-50',
-    accent: 'bg-indigo-600',
-  },
-  'Profesyonel Temizlik Hizmetleri': {
-    title: 'Ekip Planlama',
-    jobs: ['Ofis Temizliği', 'Cam Silimi'],
-    stats: '22 Personel',
-    color: 'text-emerald-600',
-    bg: 'bg-emerald-50',
-    accent: 'bg-emerald-600',
-  },
-  'Diğer (Özel Sektör)': {
-    title: 'Operasyon',
-    jobs: ['Günlük İş Emri', 'Müşteri Kaydı'],
-    stats: 'Hızlı Takip',
-    color: 'text-gray-700',
-    bg: 'bg-gray-50',
-    accent: 'bg-gray-800',
-  },
-};
+const SECTOR_DATA = sectorDataFile.sectors;
+const SECTORS = Object.keys(SECTOR_DATA);
 
 const REVIEWS = [
   {
@@ -194,9 +144,7 @@ export default function RegisterPage() {
     }
   };
 
-  const mockup =
-    SECTOR_MOCKUP_DATA[formData.sector] ||
-    SECTOR_MOCKUP_DATA['Diğer (Özel Sektör)'];
+  const mockup = SECTOR_DATA[formData.sector] || SECTOR_DATA['Diğer (Özel Sektör)'] || { title: 'Yükleniyor', jobs: [], stats: '', color: 'text-gray-400', bg: 'bg-gray-50' };
 
   return (
     <div className="min-h-screen bg-white flex flex-col lg:flex-row overflow-hidden font-sans">
@@ -431,7 +379,7 @@ export default function RegisterPage() {
                 Günlük Akış
               </div>
               <AnimatePresence mode="popLayout">
-                {mockup.jobs.map((job, i) => (
+                {mockup?.jobs?.map((job, i) => (
                   <motion.div
                     key={job}
                     initial={{ opacity: 0, x: -10 }}

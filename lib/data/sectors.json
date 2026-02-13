@@ -1,0 +1,89 @@
+{
+    "sectors": {
+      "Asansör Bakım & Montaj": {
+        "title": "Asansör Sistemleri",
+        "jobs": ["A Blok Revizyon", "Mavi Etiket Kontrol"],
+        "stats": "14 Aktif Arıza",
+        "color": "text-blue-600",
+        "bg": "bg-blue-50",
+        "subTypes": {
+          "Periyodik Bakım": {
+            "fields": [
+              { "name": "label_color", "label": "Mevcut Etiket", "type": "select", "options": ["Kırmızı", "Sarı", "Mavi", "Yeşil"] },
+              { "name": "oil_check", "label": "Ray Yağlama Yapıldı mı?", "type": "select", "options": ["Evet", "Hayır"] },
+              { "name": "brake_check", "label": "Fren Balata Durumu", "type": "text" }
+            ]
+          },
+          "Arıza Giderme": {
+            "fields": [
+              { "name": "fault_code", "label": "Arıza Kodu (Hata)", "type": "text" },
+              { "name": "replaced_part", "label": "Değişen Parça", "type": "text" },
+              { "name": "root_cause", "label": "Arıza Nedeni", "type": "textarea" }
+            ]
+          },
+          "Revizyon & Modernizasyon": {
+            "fields": [
+              { "name": "revision_type", "label": "Revizyon Kapsamı", "type": "select", "options": ["Makine Dairesi", "Kabin İçi", "Kumanda Panosu"] },
+              { "name": "planned_days", "label": "Tahmini Süre (Gün)", "type": "number" }
+            ]
+          },
+          "Montaj (Yeni Tesis)": {
+            "fields": [
+              { "name": "stop_count", "label": "Durak Sayısı", "type": "number" },
+              { "name": "capacity", "label": "Kapasite (KG)", "type": "number" },
+              { "name": "motor_brand", "label": "Motor Markası", "type": "text" }
+            ]
+          }
+        }
+      },
+      "İklimlendirme (Klima & Kombi)": {
+        "title": "İklimlendirme Servisi",
+        "jobs": ["Klima Montajı", "Kombi Yıllık Bakım"],
+        "stats": "8 Saha Ekibi",
+        "color": "text-orange-600",
+        "bg": "bg-orange-50",
+        "subTypes": {
+          "Yıllık Bakım": {
+            "fields": [
+              { "name": "filter_cleaned", "label": "Filtre Temizliği", "type": "select", "options": ["Yapıldı", "Gerek Yok"] },
+              { "name": "gas_pressure", "label": "Gaz Basıncı Ölçümü", "type": "text" }
+            ]
+          },
+          "Tamir & Arıza": {
+            "fields": [
+              { "name": "error_log", "label": "Hata Kodları", "type": "text" },
+              { "name": "leak_test", "label": "Kaçak Testi", "type": "select", "options": ["Sızdırmaz", "Kaçak Var"] }
+            ]
+          },
+          "Montaj": {
+            "fields": [
+              { "name": "btu_power", "label": "Cihaz Kapasitesi (BTU)", "type": "number" },
+              { "name": "installation_height", "label": "Montaj Yüksekliği (Metre)", "type": "number" }
+            ]
+          }
+        }
+      },
+      "Yangın Söndürme Sistemleri": {
+        "title": "Yangın Güvenlik",
+        "jobs": ["Tüp Dolumu", "Dedektör Testi"],
+        "stats": "450 Kayıtlı Tüp",
+        "color": "text-red-600",
+        "bg": "bg-red-50",
+        "subTypes": {
+          "Periyodik Muayene": {
+            "fields": [
+              { "name": "device_type", "label": "Cihaz Tipi", "type": "select", "options": ["6KG Kuru Toz", "9KG Kuru Toz", "CO2 Gazlı"] },
+              { "name": "pressure_check", "label": "Basınç Saati Durumu", "type": "select", "options": ["Normal", "Düşük", "Yüksek"] },
+              { "name": "expiry_date", "label": "Son Kullanma Tarihi", "type": "date" }
+            ]
+          },
+          "Dolum & Bakım": {
+            "fields": [
+              { "name": "chemical_type", "label": "Kullanılan Kimyasal", "type": "text" },
+              { "name": "seal_number", "label": "Mühür Numarası", "type": "text" }
+            ]
+          }
+        }
+      }
+    }
+  }
