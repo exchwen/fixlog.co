@@ -111,7 +111,14 @@ export default function RegisterPage() {
 
       router.push(`/${slug}/dashboard`);
     } catch (err) {
-      setError('Kayıt başarısız.');
+      // Firebase'den gelen asıl hata mesajını ekrana basarız
+      if (err.code === 'auth/email-already-in-use') {
+        setError('Bu e-posta adresi zaten kullanımda.');
+      } else if (err.code === 'auth/weak-password') {
+        setError('Şifre çok zayıf (en az 6 karakter olmalı).');
+      } else {
+        setError('Kayıt sırasında bir hata oluştu: ' + err.message);
+      }
     } finally {
       setIsLoading(false);
     }
