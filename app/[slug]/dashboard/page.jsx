@@ -5,10 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, ClipboardList, Settings, Bell, Search, Plus,
-  Clock, CheckCircle2, Menu, X, LogOut, ShieldCheck, Loader2, ArrowRight,
-  Box, Package, CreditCard, Send, MessageSquare, Phone, MapPin, TrendingUp, 
-  ChevronDown, Wallet, Calendar, UserPlus, Home, UserCheck, HardHat, Info,
-  Trash2, ArrowUpRight, Zap
+  CheckCircle2, Menu, X, LogOut, ShieldCheck, Loader2, ArrowRight,
+  Box, Package, CreditCard, Send, MessageSquare, MapPin, TrendingUp, 
+  ChevronDown, Wallet, UserPlus, Info, Trash2, ArrowUpRight, Zap
 } from 'lucide-react';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
@@ -23,7 +22,6 @@ export default function Dashboard() {
   const [data, setData] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [jobFilter, setJobFilter] = useState('current');
 
   // -- Modal States --
   const [showJobModal, setShowJobModal] = useState(false);
@@ -33,7 +31,6 @@ export default function Dashboard() {
   const [showStockModal, setShowStockModal] = useState(false);
   const [showStaffDetail, setShowStaffDetail] = useState(null);
   const [isEditingStaff, setIsEditingStaff] = useState(false);
-  const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '' });
   const [isSaving, setIsSaving] = useState(false);
 
   // -- Chat States --
@@ -50,8 +47,8 @@ export default function Dashboard() {
   const [customerForm, setCustomerForm] = useState({ name: '', contact: '', address: '', taxInfo: '' });
   const [stockForm, setStockForm] = useState({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', supplierName: '', supplierPhone: '' });
   const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '' });
+  const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '' });
 
-  // -- Keyboard Listeners --
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === 'Escape') {
@@ -66,6 +63,7 @@ export default function Dashboard() {
   const fetchData = async () => {
     try {
       const res = await fetch(`${API_URL}/dashboard-data?slug=${slug}`);
+      if (!res.ok) throw new Error("Ağ hatası");
       const result = await res.json();
       setData(result);
       if (result) {
@@ -77,7 +75,7 @@ export default function Dashboard() {
           taxInfo: result.taxInfo || ''
         });
       }
-    } catch (err) { console.error(err); } finally { setLoading(false); }
+    } catch (err) { console.error("Veri çekilemedi:", err); } finally { setLoading(false); }
   };
 
   const fetchMessages = async () => {
@@ -85,7 +83,7 @@ export default function Dashboard() {
     try {
       const res = await fetch(`${API_URL}/get-messages?slug=${slug}&staffId=${activeChatId}`);
       const msgs = await res.json();
-      setMessages(msgs);
+      setMessages(msgs || []);
     } catch (err) { console.error(err); }
   };
 
@@ -102,11 +100,13 @@ export default function Dashboard() {
         body: JSON.stringify({ ...body, slug }) 
       });
       if (res.ok) { 
-        if (closeFn) closeFn(false); 
-        if (resetFn) resetFn(); 
-        fetchData(); 
+        if(closeFn) closeFn(false); 
+        if(resetFn) resetFn(); 
+        await fetchData(); 
+      } else {
+         alert("Veritabanı kayıt hatası. Lütfen konsolu kontrol edin.");
       }
-    } catch (err) { alert("İşlem sırasında hata oluştu."); } finally { setIsSaving(false); }
+    } catch (err) { alert("Sunucu ile bağlantı kurulamadı."); } finally { setIsSaving(false); }
   };
 
   const sendMessage = async () => {
@@ -117,10 +117,10 @@ export default function Dashboard() {
 
   if (loading) return (
     <div className="h-screen flex flex-col items-center justify-center bg-slate-950">
-      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }} className="mb-4">
-        <ShieldCheck className="text-blue-500 w-10 h-10" />
+      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }} className="mb-4">
+        <ShieldCheck className="text-blue-500 w-12 h-12" />
       </motion.div>
-      <div className="text-white font-black tracking-widest text-[10px] uppercase opacity-40">Sistem Yükleniyor</div>
+      <div className="text-white font-black tracking-widest text-[11px] uppercase opacity-40">D1 Senkronize Ediliyor...</div>
     </div>
   );
 
@@ -129,7 +129,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex font-sans text-slate-900 text-sm overflow-hidden relative selection:bg-blue-100">
-      {/* Subtle Background Effects */}
       <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400/5 blur-[120px] rounded-full z-0 pointer-events-none"></div>
       <div className="fixed inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.015] pointer-events-none z-0"></div>
 
@@ -205,7 +204,6 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Compact Stats */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {data?.stats?.map((s, i) => (
                   <div key={i} className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-center gap-4">
@@ -221,7 +219,6 @@ export default function Dashboard() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Active Jobs Board */}
                 <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[400px]">
                   <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                     <h3 className="font-semibold text-sm text-slate-800">Son İş Emirleri</h3>
@@ -258,7 +255,6 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Compact Finance Widget */}
                 <div className="bg-slate-900 rounded-xl shadow-lg border border-slate-800 p-6 flex flex-col text-white relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full"></div>
                   <div className="relative z-10 flex-1 flex flex-col">
@@ -291,7 +287,7 @@ export default function Dashboard() {
             </motion.div>
           )}
 
-          {/* TAB: İŞ EMİRLERİ (YENİ EKLENDİ) */}
+          {/* TAB: İŞ EMİRLERİ */}
           {activeTab === 'jobs' && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
@@ -319,7 +315,7 @@ export default function Dashboard() {
                          <td className="px-5 py-3 text-slate-500">{j.scheduled_date || 'Anlık'}</td>
                          <td className="px-5 py-3 text-slate-600">{data?.staff?.find(s => s.id === j.staff_id)?.name || '-'}</td>
                          <td className="px-5 py-3 text-right">
-                            <span className={`px-2 py-1 rounded text-[10px] font-medium border ${statusColors[j.status] || 'bg-slate-100 text-slate-500'}`}>{j.status}</span>
+                            <span className={`px-2 py-1 rounded text-[10px] font-medium border ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span>
                          </td>
                        </tr>
                      )) : <tr><td colSpan="5" className="p-10 text-center text-slate-400">İş kaydı bulunamadı.</td></tr>}
@@ -482,7 +478,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* TAB: FİRMA AYARLARI (YENİ EKLENDİ / DÜZELTİLDİ) */}
+          {/* TAB: FİRMA AYARLARI */}
           {activeTab === 'settings' && (
             <div className="max-w-2xl bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-6">
               <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
@@ -526,7 +522,7 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* CHAT PANEL (Kompakt) */}
+      {/* CHAT PANEL */}
       <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-3">
         <AnimatePresence>
           {isChatOpen && (
@@ -567,8 +563,6 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* MODALS (Kompaktlaştırıldı) */}
-
       {/* PERSONEL DETAY MODALI */}
       <AnimatePresence>
         {showStaffDetail && (
@@ -605,7 +599,7 @@ export default function Dashboard() {
                         <div className="font-semibold text-slate-800">{j.customer_name}</div>
                         <div className="text-[10px] text-slate-500 mt-0.5">{j.scheduled_date || 'Anlık'}</div>
                       </div>
-                      <span className={`px-2 py-1 rounded text-[10px] font-medium border ${statusColors[j.status] || 'bg-slate-100 text-slate-500'}`}>{j.status}</span>
+                      <span className={`px-2 py-1 rounded text-[10px] font-medium border ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span>
                    </div>
                  )) : <div className="text-center p-6 text-slate-400 text-xs bg-slate-50 rounded-lg">Geçmiş görev bulunmuyor.</div>}
               </div>
