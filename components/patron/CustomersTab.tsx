@@ -25,7 +25,7 @@ export default function CustomersTab({ data, setShowCustomerModal }: any) {
                  <td className="px-5 py-3 text-slate-500 truncate max-w-xs">{c.address}</td>
                  <td className="px-5 py-3 text-right text-slate-400">{c.tax_info || '-'}</td>
                </tr>
-             )) : <tr><td colSpan="4" className="p-10 text-center text-slate-400">Müşteri kaydı yok.</td></tr>}
+             )) : <tr><td colSpan={4} className="p-10 text-center text-slate-400">Müşteri kaydı yok.</td></tr>}
            </tbody>
          </table>
       </div>

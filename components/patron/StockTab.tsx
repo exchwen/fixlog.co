@@ -25,7 +25,7 @@ export default function StockTab({ data, setShowStockModal }: any) {
                   <td className="px-5 py-3 text-slate-500"><div>{item.supplier_name || 'Genel'}</div><div className="text-[10px]">{item.supplier_phone || '-'}</div></td>
                   <td className="px-5 py-3 text-right"><span className="px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded text-[10px] font-medium">Stokta</span></td>
                 </tr>
-              )) : <tr><td colSpan="4" className="p-10 text-center text-slate-400">Stok kaydı yok.</td></tr>}
+              )) : <tr><td colSpan={4} className="p-10 text-center text-slate-400">Stok kaydı yok.</td></tr>}
            </tbody>
          </table>
        </div>

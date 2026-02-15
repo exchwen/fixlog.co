@@ -54,7 +54,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors }: any) {
                     <td className="px-5 py-3 text-slate-600">{data?.staff?.find((s: any) => s.id === j.staff_id)?.name || 'Atanmadı'}</td>
                     <td className="px-5 py-3 text-right"><span className={`px-2 py-1 rounded text-[10px] font-medium border ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span></td>
                   </tr>
-                )) : (<tr><td colSpan="3" className="p-10 text-center text-slate-400 text-xs">Aktif iş bulunmuyor.</td></tr>)}
+                )) : (<tr><td colSpan={3} className="p-10 text-center text-slate-400 text-xs">Aktif iş bulunmuyor.</td></tr>)}
               </tbody>
             </table>
           </div>

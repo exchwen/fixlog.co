@@ -34,7 +34,7 @@ export default function JobsTab({ data, setShowJobModal, statusColors }: any) {
                     <span className={`px-2 py-1 rounded text-[10px] font-medium border ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span>
                  </td>
                </tr>
-             )) : <tr><td colSpan="5" className="p-10 text-center text-slate-400">İş kaydı bulunamadı.</td></tr>}
+             )) : <tr><td colSpan={5} className="p-10 text-center text-slate-400">İş kaydı bulunamadı.</td></tr>}
            </tbody>
          </table>
       </div>

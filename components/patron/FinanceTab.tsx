@@ -18,7 +18,7 @@ export default function FinanceTab({ data }: any) {
                  <td className={`px-5 py-3 font-semibold ${f.type === 'Gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>₺{f.amount.toLocaleString('tr-TR')}</td>
                  <td className="px-5 py-3 text-right"><span className={`px-2 py-1 rounded text-[10px] font-medium border ${f.type === 'Gelir' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>{f.type}</span></td>
                </tr>
-             )) : <tr><td colSpan="3" className="p-10 text-center text-slate-400">Finansal kayıt yok.</td></tr>}
+             )) : <tr><td colSpan={3} className="p-10 text-center text-slate-400">Finansal kayıt yok.</td></tr>}
            </tbody>
          </table>
        </div>
