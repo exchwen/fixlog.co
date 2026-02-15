@@ -16,27 +16,18 @@ export default function DashboardModals({
   handleAction, isSaving, data
 }: any) {
   
-  // Arama / Filtreleme Stateleri
   const [searchCust, setSearchCust] = useState('');
   const [searchAsset, setSearchAsset] = useState('');
 
-  // YENİ: Müşteri ve Varlık Düzenleme (İç) Stateleri
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
   const [editCustomerForm, setEditCustomerForm] = useState({ id: '', name: '', contact: '', address: '', taxInfo: '' });
 
   const [isEditingAsset, setIsEditingAsset] = useState(false);
   const [editAssetForm, setEditAssetForm] = useState({ id: '', name: '', location: '', apartmentName: '', deviceDetails: '' });
 
-  // Escape tuşuna basınca veya X ile kapatınca her şeyi sıfırlama
   const handleCloseDetail = (type: string) => {
-    if (type === 'customer' && setShowCustomerDetail) {
-      setShowCustomerDetail(null);
-      setIsEditingCustomer(false);
-    }
-    if (type === 'asset' && setShowAssetDetail) {
-      setShowAssetDetail(null);
-      setIsEditingAsset(false);
-    }
+    if (type === 'customer' && setShowCustomerDetail) { setShowCustomerDetail(null); setIsEditingCustomer(false); }
+    if (type === 'asset' && setShowAssetDetail) { setShowAssetDetail(null); setIsEditingAsset(false); }
   };
 
   useEffect(() => {
@@ -44,8 +35,7 @@ export default function DashboardModals({
       if (e.key === 'Escape') {
         setShowJobModal(false); setShowAssetModal(false); setShowStaffModal(false); 
         setShowCustomerModal(false); setShowStockModal(false); setShowStaffDetail(null);
-        handleCloseDetail('customer');
-        handleCloseDetail('asset');
+        handleCloseDetail('customer'); handleCloseDetail('asset');
       }
     };
     window.addEventListener('keydown', handleEsc);
@@ -128,9 +118,14 @@ export default function DashboardModals({
                  <div>
                    <h4 className="text-[11px] font-semibold text-blue-600 mb-2 uppercase tracking-wider">Kayıtlı Cihazları / Varlıkları</h4>
                    {(data?.assets || []).filter((a: any) => a.customer_id === showCustomerDetail.id).length > 0 ? (data?.assets || []).filter((a: any) => a.customer_id === showCustomerDetail.id).map((a: any) => (
-                     <div key={a.id} className="p-3 border border-blue-100 rounded-lg bg-blue-50/30 text-xs mb-2">
+                     // DEĞİŞİM BURADA: Cihaza Tıklanınca Müşteriyi Kapatıp Cihazı Açıyor
+                     <div 
+                        key={a.id} 
+                        onClick={() => { setShowCustomerDetail(null); setShowAssetDetail(a); }}
+                        className="p-3 border border-blue-100 rounded-lg bg-blue-50/30 text-xs mb-2 cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all"
+                     >
                         <div className="font-semibold text-blue-800">{a.name}</div>
-                        <div className="text-[10px] text-blue-600/80 mt-0.5">{a.apartment_name || ''} {a.location ? `- ${a.location}` : ''}</div>
+                        <div className="text-[10px] text-blue-600/80 mt-0.5">{a.location || ''}</div>
                      </div>
                    )) : <div className="text-center p-4 text-slate-400 text-xs bg-slate-50 rounded-lg">Kayıtlı cihaz bulunmuyor.</div>}
                  </div>
@@ -182,10 +177,25 @@ export default function DashboardModals({
                 <button onClick={() => handleCloseDetail('asset')} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md"><X size={18} /></button>
               </div>
               <div className="grid grid-cols-2 gap-3 mb-6">
-                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Sahibi (Müşteri)</div><div className="text-xs font-medium text-blue-600 mt-0.5">{showAssetDetail.customer_id ? (data?.customers || []).find((c: any) => c.id === showAssetDetail.customer_id)?.name || 'Bilinmiyor' : 'Bağımsız Cihaz'}</div></div>
-                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Bina / Site</div><div className="text-xs font-medium text-slate-800 mt-0.5">{showAssetDetail.apartment_name || '-'}</div></div>
-                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Konum / Kat</div><div className="text-xs font-medium text-slate-800 mt-0.5">{showAssetDetail.location || '-'}</div></div>
-                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Teknik Detaylar</div><div className="text-xs font-medium text-slate-800 mt-0.5 line-clamp-2">{showAssetDetail.device_details || '-'}</div></div>
+                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <div className="text-[10px] font-semibold text-slate-500 uppercase">Sahibi (Müşteri)</div>
+                    {/* DEĞİŞİM BURADA: Müşteri İsmine Tıklanınca Cihazı Kapatıp Müşteriyi Açıyor */}
+                    <div className="text-xs font-medium text-blue-600 mt-0.5">
+                       {showAssetDetail.customer_id ? (() => {
+                          const cust = (data?.customers || []).find((c: any) => c.id === showAssetDetail.customer_id);
+                          return cust ? (
+                             <span 
+                               onClick={() => { setShowAssetDetail(null); setShowCustomerDetail(cust); }} 
+                               className="cursor-pointer hover:underline"
+                             >
+                               {cust.name}
+                             </span>
+                          ) : 'Bilinmiyor';
+                       })() : 'Bağımsız Cihaz'}
+                    </div>
+                 </div>
+                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Tam Konum</div><div className="text-xs font-medium text-slate-800 mt-0.5">{showAssetDetail.location || '-'}</div></div>
+                 <div className="col-span-2 bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Teknik Detaylar</div><div className="text-xs font-medium text-slate-800 mt-0.5 line-clamp-2">{showAssetDetail.asset_details || '-'}</div></div>
               </div>
               
               <div className="flex-1 overflow-y-auto space-y-2 mb-6 custom-scrollbar">
@@ -201,15 +211,14 @@ export default function DashboardModals({
               <div className="pt-4 border-t border-slate-100">
                  {!isEditingAsset ? (
                    <div className="flex gap-2 w-full">
-                     <button onClick={() => { setIsEditingAsset(true); setEditAssetForm({ id: showAssetDetail.id, name: showAssetDetail.name, location: showAssetDetail.location || '', apartmentName: showAssetDetail.apartment_name || '', deviceDetails: showAssetDetail.device_details || '' }); }} className="flex-[2] bg-slate-100 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5"><Settings size={14} /> Düzenle</button>
+                     <button onClick={() => { setIsEditingAsset(true); setEditAssetForm({ id: showAssetDetail.id, name: showAssetDetail.name, location: showAssetDetail.location || '', apartmentName: '', deviceDetails: showAssetDetail.asset_details || '' }); }} className="flex-[2] bg-slate-100 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5"><Settings size={14} /> Düzenle</button>
                      <button onClick={async () => { if(confirm(`${showAssetDetail.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-asset', { id: showAssetDetail.id }, () => handleCloseDetail('asset'), () => {}); } }} className="flex-1 bg-rose-50 text-rose-600 py-2 rounded-md text-xs font-semibold hover:bg-rose-100 transition-colors flex items-center justify-center gap-1.5"><Trash2 size={14} /> Sil</button>
                    </div>
                  ) : (
                    <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200 mt-2">
                      <div className="space-y-2">
                        <input className="w-full px-3 py-2 rounded-md border border-slate-200 text-xs outline-none focus:border-blue-400 bg-white" value={editAssetForm.name} onChange={(e) => setEditAssetForm({...editAssetForm, name: e.target.value})} placeholder="Cihaz Adı" />
-                       <input className="w-full px-3 py-2 rounded-md border border-slate-200 text-xs outline-none focus:border-blue-400 bg-white" value={editAssetForm.location} onChange={(e) => setEditAssetForm({...editAssetForm, location: e.target.value})} placeholder="Konum / Kat" />
-                       <input className="w-full px-3 py-2 rounded-md border border-slate-200 text-xs outline-none focus:border-blue-400 bg-white" value={editAssetForm.apartmentName} onChange={(e) => setEditAssetForm({...editAssetForm, apartmentName: e.target.value})} placeholder="Bina / Site Adı" />
+                       <input className="w-full px-3 py-2 rounded-md border border-slate-200 text-xs outline-none focus:border-blue-400 bg-white" value={editAssetForm.location} onChange={(e) => setEditAssetForm({...editAssetForm, location: e.target.value})} placeholder="Konum (Eklemek İstersen Bina Adı)" />
                        <textarea rows={2} className="w-full px-3 py-2 rounded-md border border-slate-200 text-xs outline-none focus:border-blue-400 bg-white resize-none" value={editAssetForm.deviceDetails} onChange={(e) => setEditAssetForm({...editAssetForm, deviceDetails: e.target.value})} placeholder="Teknik Detaylar" />
                      </div>
                      <div className="flex gap-2 pt-2">
@@ -414,7 +423,9 @@ export default function DashboardModals({
                       {custAssetMode === 'NEW' && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="px-3 pb-3 pt-1 space-y-2">
                            <input className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Cihaz Adı" value={customerForm.newAsset?.name || ''} onChange={e => setCustomerForm({...customerForm, newAsset: {...customerForm.newAsset, name: e.target.value}})} />
+                           <input className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Bina Adı" value={customerForm.newAsset?.apartmentName || ''} onChange={e => setCustomerForm({...customerForm, newAsset: {...customerForm.newAsset, apartmentName: e.target.value}})} />
                            <input className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Konum / Kat" value={customerForm.newAsset?.location || ''} onChange={e => setCustomerForm({...customerForm, newAsset: {...customerForm.newAsset, location: e.target.value}})} />
+                           <textarea className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Teknik Detay" value={customerForm.newAsset?.deviceDetails || ''} onChange={e => setCustomerForm({...customerForm, newAsset: {...customerForm.newAsset, deviceDetails: e.target.value}})} />
                         </motion.div>
                       )}
                     </div>
