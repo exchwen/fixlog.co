@@ -28,6 +28,10 @@ export default function DashboardModals({
   const allStaff = data?.staff || [];
   const statusColors: any = { 'Beklemede': 'bg-amber-100 text-amber-700 border-amber-200', 'Tamamlandı': 'bg-emerald-100 text-emerald-700 border-emerald-200', 'Devam Ediyor': 'bg-blue-100 text-blue-700 border-blue-200', 'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200' };
 
+  // Akıllı Form Modları (Eğer yoksa varsayılan olarak 'NONE' başlar)
+  const assetCustMode = assetForm.customerMode || 'NONE';
+  const custAssetMode = customerForm.assetMode || 'NONE';
+
   return (
     <>
       {/* PERSONEL DETAY MODALI */}
@@ -99,8 +103,14 @@ export default function DashboardModals({
                 <div>
                   <label className="text-[11px] font-semibold text-slate-600 block mb-1">Müşteri Seçimi</label>
                   <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={jobForm.customerName} onChange={e => setJobForm({...jobForm, customerName: e.target.value, assetId: ''})}>
-                    <option value="">Bağımsız İş (Müşteri Atanmadı)</option>
-                    {(data?.customers || []).map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                    <option value="">👉 Tıklayın: Müşteri Seçin (veya Boş Bırakın)</option>
+                    <optgroup label="👇 LİSTEDEN SEÇ 👇">
+                      {(data?.customers || []).length > 0 ? (
+                        (data?.customers || []).map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)
+                      ) : (
+                        <option disabled>Sistemde kayıtlı müşteri yok</option>
+                      )}
+                    </optgroup>
                   </select>
                 </div>
 
@@ -108,13 +118,22 @@ export default function DashboardModals({
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
                     <label className="text-[11px] font-semibold text-slate-600 block mb-1">İlgili Varlık / Cihaz</label>
                     <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={jobForm.assetId} onChange={e => setJobForm({...jobForm, assetId: e.target.value})}>
-                      <option value="">Bağımsız Görev (Cihaz Atanmadı)</option>
-                      {(data?.assets || []).filter((a: any) => {
-                        const selectedCust = data?.customers?.find((c: any) => c.name === jobForm.customerName);
-                        return selectedCust ? a.customer_id === selectedCust.id : false;
-                      }).map((a: any) => (
-                        <option key={a.id} value={a.id}>{a.name} - {a.location}</option>
-                      ))}
+                      <option value="">👉 Tıklayın: Cihaz Seçin (veya Boş Bırakın)</option>
+                      <optgroup label="👇 MÜŞTERİNİN CİHAZLARI 👇">
+                        {(data?.assets || []).filter((a: any) => {
+                          const selectedCust = data?.customers?.find((c: any) => c.name === jobForm.customerName);
+                          return selectedCust ? a.customer_id === selectedCust.id : false;
+                        }).length > 0 ? (
+                          (data?.assets || []).filter((a: any) => {
+                            const selectedCust = data?.customers?.find((c: any) => c.name === jobForm.customerName);
+                            return selectedCust ? a.customer_id === selectedCust.id : false;
+                          }).map((a: any) => (
+                            <option key={a.id} value={a.id}>{a.name} - {a.location}</option>
+                          ))
+                        ) : (
+                          <option disabled>Bu müşteriye ait cihaz yok</option>
+                        )}
+                      </optgroup>
                     </select>
                   </motion.div>
                 )}
@@ -122,8 +141,14 @@ export default function DashboardModals({
                 <div>
                   <label className="text-[11px] font-semibold text-slate-600 block mb-1">Sorumlu Personel</label>
                   <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={jobForm.staffId} onChange={e => setJobForm({...jobForm, staffId: e.target.value})}>
-                    <option value="">Sahadaki herkese açık (Personel Atanmadı)</option>
-                    {allStaff.map((m: any) => <option key={m.id} value={m.id}>{m.name} ({m.role})</option>)}
+                    <option value="">👉 Tıklayın: Personel Seçin (veya Boş Bırakın)</option>
+                    <optgroup label="👇 PERSONEL SEÇ 👇">
+                      {allStaff.length > 0 ? (
+                        allStaff.map((m: any) => <option key={m.id} value={m.id}>{m.name} ({m.role})</option>)
+                      ) : (
+                        <option disabled>Kayıtlı personel yok</option>
+                      )}
+                    </optgroup>
                   </select>
                 </div>
                 
@@ -137,7 +162,7 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* VARLIK (CİHAZ) MODALI */}
+      {/* VARLIK (CİHAZ) EKLERKEN AKORDEONLU MÜŞTERİ SEÇİMİ */}
       <AnimatePresence>
         {showAssetModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -145,26 +170,57 @@ export default function DashboardModals({
               <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">Varlık/Cihaz Ekle</h2><button onClick={() => setShowAssetModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button></div>
               <div className="space-y-4">
                 
-                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">CİHAZIN SAHİBİ (MÜŞTERİ)</label>
-                    <button type="button" onClick={() => setAssetForm({...assetForm, customerId: assetForm.customerId === 'NEW' ? '' : 'NEW'})} className="text-[10px] font-bold text-blue-600 hover:text-blue-800 bg-blue-100/50 px-2 py-1 rounded transition-colors">
-                      {assetForm.customerId === 'NEW' ? '🔄 Listeden Seç' : '➕ Yeni Oluştur'}
-                    </button>
+                {/* 3'LÜ RADYO BUTON AKORDEON */}
+                <div className="mb-4">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">CİHAZIN SAHİBİ (MÜŞTERİ)</label>
+                  <div className="grid grid-cols-1 gap-2">
+                    
+                    {/* Seçenek 1: Bağımsız */}
+                    <label className={`flex items-center p-2.5 border rounded-lg cursor-pointer transition-colors ${assetCustMode === 'NONE' ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+                      <input type="radio" name="custMode" className="hidden" checked={assetCustMode === 'NONE'} onChange={() => setAssetForm({...assetForm, customerMode: 'NONE', customerId: ''})} />
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center mr-3 ${assetCustMode === 'NONE' ? 'border-blue-600 bg-blue-100' : 'border-slate-300'}`}>
+                         {assetCustMode === 'NONE' && <div className="w-2 h-2 bg-blue-600 rounded-full"></div>}
+                      </div>
+                      <span className={`text-xs font-semibold ${assetCustMode === 'NONE' ? 'text-blue-800' : 'text-slate-700'}`}>Bağımsız (Müşteri Atanmasın)</span>
+                    </label>
+
+                    {/* Seçenek 2: Listeden Seç */}
+                    <div className={`border rounded-lg transition-colors ${assetCustMode === 'SELECT' ? 'border-blue-500 bg-blue-50/30' : 'border-slate-200 hover:bg-slate-50'}`}>
+                      <label className="flex items-center p-2.5 cursor-pointer">
+                        <input type="radio" name="custMode" className="hidden" checked={assetCustMode === 'SELECT'} onChange={() => setAssetForm({...assetForm, customerMode: 'SELECT', customerId: ''})} />
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center mr-3 ${assetCustMode === 'SELECT' ? 'border-blue-600 bg-blue-100' : 'border-slate-300'}`}>
+                           {assetCustMode === 'SELECT' && <div className="w-2 h-2 bg-blue-600 rounded-full"></div>}
+                        </div>
+                        <span className={`text-xs font-semibold ${assetCustMode === 'SELECT' ? 'text-blue-800' : 'text-slate-700'}`}>Mevcut Müşterilerden Seç</span>
+                      </label>
+                      {assetCustMode === 'SELECT' && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="px-3 pb-3 pt-1">
+                          <select className="w-full px-3 py-2 border border-slate-300 rounded-md text-xs outline-none bg-white focus:border-blue-400 shadow-sm" value={assetForm.customerId !== 'NEW' ? assetForm.customerId : ''} onChange={e => setAssetForm({...assetForm, customerId: e.target.value})}>
+                            <option value="">-- Müşteri Seçin --</option>
+                            {(data?.customers || []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          </select>
+                        </motion.div>
+                      )}
+                    </div>
+
+                    {/* Seçenek 3: Yeni Oluştur */}
+                    <div className={`border rounded-lg transition-colors ${assetCustMode === 'NEW' ? 'border-blue-500 bg-blue-50/30' : 'border-slate-200 hover:bg-slate-50'}`}>
+                      <label className="flex items-center p-2.5 cursor-pointer">
+                        <input type="radio" name="custMode" className="hidden" checked={assetCustMode === 'NEW'} onChange={() => setAssetForm({...assetForm, customerMode: 'NEW', customerId: 'NEW'})} />
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center mr-3 ${assetCustMode === 'NEW' ? 'border-blue-600 bg-blue-100' : 'border-slate-300'}`}>
+                           {assetCustMode === 'NEW' && <div className="w-2 h-2 bg-blue-600 rounded-full"></div>}
+                        </div>
+                        <span className={`text-xs font-semibold ${assetCustMode === 'NEW' ? 'text-blue-800' : 'text-slate-700'}`}>Sıfırdan Yeni Müşteri Oluştur</span>
+                      </label>
+                      {assetCustMode === 'NEW' && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="px-3 pb-3 pt-1 space-y-2">
+                           <input className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Firma / Müşteri Adı" value={assetForm.newCustomer?.name || ''} onChange={e => setAssetForm({...assetForm, newCustomer: {...assetForm.newCustomer, name: e.target.value}})} />
+                           <input className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Telefon / İletişim" value={assetForm.newCustomer?.contact || ''} onChange={e => setAssetForm({...assetForm, newCustomer: {...assetForm.newCustomer, contact: e.target.value}})} />
+                        </motion.div>
+                      )}
+                    </div>
+
                   </div>
-                  
-                  {assetForm.customerId !== 'NEW' ? (
-                    <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={assetForm.customerId} onChange={e => setAssetForm({...assetForm, customerId: e.target.value})}>
-                      <option value="">Bağımsız Cihaz (Müşteri Atanmadı)</option>
-                      {(data?.customers || []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                  ) : (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">
-                      <div className="flex items-center gap-1.5 text-blue-600 mb-1"><ArrowRight size={14}/> <span className="text-[11px] font-semibold">Cihazla birlikte yepyeni bir müşteri kaydedilecek</span></div>
-                      <input className="w-full px-3 py-2 border border-blue-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Firma / Müşteri Adı" value={assetForm.newCustomer?.name || ''} onChange={e => setAssetForm({...assetForm, newCustomer: {...assetForm.newCustomer, name: e.target.value}})} />
-                      <input className="w-full px-3 py-2 border border-blue-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Telefon / İletişim" value={assetForm.newCustomer?.contact || ''} onChange={e => setAssetForm({...assetForm, newCustomer: {...assetForm.newCustomer, contact: e.target.value}})} />
-                    </motion.div>
-                  )}
                 </div>
 
                 <div>
@@ -177,7 +233,7 @@ export default function DashboardModals({
                   </div>
                 </div>
 
-                <button disabled={isSaving} className="w-full bg-slate-900 text-white py-2.5 rounded-md font-semibold text-sm mt-4 hover:bg-slate-800 flex justify-center items-center" onClick={() => handleAction('add-asset', assetForm, setShowAssetModal, () => setAssetForm({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', newCustomer: { name: '', contact: '', address: '', taxInfo: '' } }))}>
+                <button disabled={isSaving} className="w-full bg-slate-900 text-white py-2.5 rounded-md font-semibold text-sm mt-4 hover:bg-slate-800 flex justify-center items-center" onClick={() => handleAction('add-asset', assetForm, setShowAssetModal, () => setAssetForm({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', customerMode: 'NONE', newCustomer: { name: '', contact: '', address: '', taxInfo: '' } }))}>
                   {isSaving ? <Loader2 className="animate-spin" size={16} /> : 'Varlığı Sisteme Kaydet'}
                 </button>
               </div>
@@ -186,7 +242,7 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* MÜŞTERİ MODALI */}
+      {/* MÜŞTERİ EKLERKEN AKORDEONLU CİHAZ SEÇİMİ */}
       <AnimatePresence>
         {showCustomerModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -204,31 +260,60 @@ export default function DashboardModals({
                   </div>
                 </div>
 
-                <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 mt-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">CİHAZ BAĞLANTISI</label>
-                    <button type="button" onClick={() => setCustomerForm({...customerForm, assetAction: customerForm.assetAction === 'NEW' ? '' : 'NEW'})} className="text-[10px] font-bold text-blue-700 hover:text-blue-900 bg-blue-200/50 px-2 py-1 rounded transition-colors">
-                      {customerForm.assetAction === 'NEW' ? '🔄 Listeden Seç' : '➕ Yeni Oluştur'}
-                    </button>
-                  </div>
+                {/* 3'LÜ RADYO BUTON AKORDEON */}
+                <div className="mt-4">
+                  <label className="text-[10px] font-bold text-blue-700 uppercase tracking-wider block mb-2">CİHAZ/VARLIK BAĞLANTISI (Opsiyonel)</label>
+                  <div className="grid grid-cols-1 gap-2">
+                    
+                    {/* Seçenek 1: Bağımsız */}
+                    <label className={`flex items-center p-2.5 border rounded-lg cursor-pointer transition-colors ${custAssetMode === 'NONE' ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+                      <input type="radio" name="assetMode" className="hidden" checked={custAssetMode === 'NONE'} onChange={() => setCustomerForm({...customerForm, assetMode: 'NONE', assetAction: ''})} />
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center mr-3 ${custAssetMode === 'NONE' ? 'border-blue-600 bg-blue-100' : 'border-slate-300'}`}>
+                         {custAssetMode === 'NONE' && <div className="w-2 h-2 bg-blue-600 rounded-full"></div>}
+                      </div>
+                      <span className={`text-xs font-semibold ${custAssetMode === 'NONE' ? 'text-blue-800' : 'text-slate-700'}`}>Bağlantı Yapma (Bağımsız Müşteri)</span>
+                    </label>
 
-                  {customerForm.assetAction !== 'NEW' ? (
-                    <select className="w-full px-3 py-2 border border-blue-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={customerForm.assetAction} onChange={e => setCustomerForm({...customerForm, assetAction: e.target.value})}>
-                      <option value="">Bağlantı Yapma (Bağımsız Müşteri)</option>
-                      {(data?.assets || []).map((a: any) => (
-                        <option key={a.id} value={a.id}>{a.name} {a.customer_id ? '(Üzerine Al)' : '(Boşta)'}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">
-                      <div className="flex items-center gap-1.5 text-blue-700 mb-1"><ArrowRight size={14}/> <span className="text-[11px] font-semibold">Müşteriyle birlikte yepyeni bir cihaz kaydedilecek</span></div>
-                      <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Cihaz Adı" value={customerForm.newAsset?.name || ''} onChange={e => setCustomerForm({...customerForm, newAsset: {...customerForm.newAsset, name: e.target.value}})} />
-                      <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Konum / Kat" value={customerForm.newAsset?.location || ''} onChange={e => setCustomerForm({...customerForm, newAsset: {...customerForm.newAsset, location: e.target.value}})} />
-                    </motion.div>
-                  )}
+                    {/* Seçenek 2: Listeden Seç */}
+                    <div className={`border rounded-lg transition-colors ${custAssetMode === 'SELECT' ? 'border-blue-500 bg-blue-50/30' : 'border-slate-200 hover:bg-slate-50'}`}>
+                      <label className="flex items-center p-2.5 cursor-pointer">
+                        <input type="radio" name="assetMode" className="hidden" checked={custAssetMode === 'SELECT'} onChange={() => setCustomerForm({...customerForm, assetMode: 'SELECT', assetAction: ''})} />
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center mr-3 ${custAssetMode === 'SELECT' ? 'border-blue-600 bg-blue-100' : 'border-slate-300'}`}>
+                           {custAssetMode === 'SELECT' && <div className="w-2 h-2 bg-blue-600 rounded-full"></div>}
+                        </div>
+                        <span className={`text-xs font-semibold ${custAssetMode === 'SELECT' ? 'text-blue-800' : 'text-slate-700'}`}>Mevcut Cihazlardan Birini Üzerine Al</span>
+                      </label>
+                      {custAssetMode === 'SELECT' && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="px-3 pb-3 pt-1">
+                          <select className="w-full px-3 py-2 border border-slate-300 rounded-md text-xs outline-none bg-white focus:border-blue-400 shadow-sm" value={customerForm.assetAction !== 'NEW' ? customerForm.assetAction : ''} onChange={e => setCustomerForm({...customerForm, assetAction: e.target.value})}>
+                            <option value="">-- Cihaz Seçin --</option>
+                            {(data?.assets || []).map((a: any) => <option key={a.id} value={a.id}>{a.name} {a.customer_id ? '(Başka Müşteride)' : '(Boşta)'}</option>)}
+                          </select>
+                        </motion.div>
+                      )}
+                    </div>
+
+                    {/* Seçenek 3: Yeni Oluştur */}
+                    <div className={`border rounded-lg transition-colors ${custAssetMode === 'NEW' ? 'border-blue-500 bg-blue-50/30' : 'border-slate-200 hover:bg-slate-50'}`}>
+                      <label className="flex items-center p-2.5 cursor-pointer">
+                        <input type="radio" name="assetMode" className="hidden" checked={custAssetMode === 'NEW'} onChange={() => setCustomerForm({...customerForm, assetMode: 'NEW', assetAction: 'NEW'})} />
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center mr-3 ${custAssetMode === 'NEW' ? 'border-blue-600 bg-blue-100' : 'border-slate-300'}`}>
+                           {custAssetMode === 'NEW' && <div className="w-2 h-2 bg-blue-600 rounded-full"></div>}
+                        </div>
+                        <span className={`text-xs font-semibold ${custAssetMode === 'NEW' ? 'text-blue-800' : 'text-slate-700'}`}>Sıfırdan Yeni Cihaz Tanımla</span>
+                      </label>
+                      {custAssetMode === 'NEW' && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="px-3 pb-3 pt-1 space-y-2">
+                           <input className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Cihaz Adı" value={customerForm.newAsset?.name || ''} onChange={e => setCustomerForm({...customerForm, newAsset: {...customerForm.newAsset, name: e.target.value}})} />
+                           <input className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Konum / Kat" value={customerForm.newAsset?.location || ''} onChange={e => setCustomerForm({...customerForm, newAsset: {...customerForm.newAsset, location: e.target.value}})} />
+                        </motion.div>
+                      )}
+                    </div>
+
+                  </div>
                 </div>
 
-                <button disabled={isSaving} className="w-full bg-blue-600 text-white py-2.5 rounded-md font-semibold text-sm mt-4 hover:bg-blue-700 flex justify-center items-center" onClick={() => handleAction('add-customer', customerForm, setShowCustomerModal, () => setCustomerForm({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } }))}>
+                <button disabled={isSaving} className="w-full bg-blue-600 text-white py-2.5 rounded-md font-semibold text-sm mt-4 hover:bg-blue-700 flex justify-center items-center" onClick={() => handleAction('add-customer', customerForm, setShowCustomerModal, () => setCustomerForm({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', assetMode: 'NONE', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } }))}>
                    {isSaving ? <Loader2 className="animate-spin" size={16} /> : 'Müşteriyi Kaydet'}
                 </button>
               </div>
