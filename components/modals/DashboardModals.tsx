@@ -25,7 +25,7 @@ export default function DashboardModals({
     return () => window.removeEventListener('keydown', handleEsc);
   }, [setShowJobModal, setShowAssetModal, setShowStaffModal, setShowCustomerModal, setShowStockModal, setShowStaffDetail]);
 
-  const managers = data?.staff?.filter((s: any) => s?.role === 'Yönetici') || [];
+  const allStaff = data?.staff || [];
   const statusColors: any = { 'Beklemede': 'bg-amber-100 text-amber-700 border-amber-200', 'Tamamlandı': 'bg-emerald-100 text-emerald-700 border-emerald-200', 'Devam Ediyor': 'bg-blue-100 text-blue-700 border-blue-200', 'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200' };
 
   return (
@@ -79,23 +79,56 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* İŞ EMRİ MODALI */}
+      {/* İŞ EMRİ MODALI (YENİLENDİ) */}
       <AnimatePresence>
         {showJobModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative overflow-y-auto max-h-[90vh] custom-scrollbar">
               <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">İş Emri Ata</h2><button onClick={() => setShowJobModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button></div>
               <div className="space-y-3">
+                
                 <div className="grid grid-cols-2 gap-2">
                    <button onClick={() => setJobForm({...jobForm, jobType: 'Anlık', scheduledDate: ''})} className={`py-1.5 text-xs font-semibold rounded-md border ${jobForm.jobType === 'Anlık' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-500 border-slate-200'}`}>Anlık Görev</button>
                    <button onClick={() => setJobForm({...jobForm, jobType: 'Planlı'})} className={`py-1.5 text-xs font-semibold rounded-md border ${jobForm.jobType === 'Planlı' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'}`}>Tarih Planla</button>
                 </div>
+                
                 {jobForm.jobType === 'Planlı' && (
                   <div><label className="text-[11px] font-semibold text-slate-600 block mb-1">Tarih</label><input type="date" className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" onChange={e => setJobForm({...jobForm, scheduledDate: e.target.value})} /></div>
                 )}
-                <div><label className="text-[11px] font-semibold text-slate-600 block mb-1">Müşteri / Lokasyon</label><input list="asset-list" className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Seç veya yaz..." value={jobForm.customerName} onChange={e => setJobForm({...jobForm, customerName: e.target.value})} /></div>
-                <datalist id="asset-list">{(data?.assets || []).concat(data?.customers || []).map((a: any,i: number) => <option key={i} value={a.name}>{a.location || a.address}</option>)}</datalist>
-                <div><label className="text-[11px] font-semibold text-slate-600 block mb-1">Sorumlu Yönetici</label><select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={jobForm.staffId} onChange={e => setJobForm({...jobForm, staffId: e.target.value})}><option value="">Seçiniz...</option>{managers.map((m: any) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
+                
+                {/* AKILLI MÜŞTERİ SEÇİMİ */}
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">Müşteri Seçimi</label>
+                  <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={jobForm.customerName} onChange={e => setJobForm({...jobForm, customerName: e.target.value, assetId: ''})}>
+                    <option value="">Bağımsız İş (Müşteri Yok)</option>
+                    {(data?.customers || []).map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                  </select>
+                </div>
+
+                {/* AKILLI VARLIK SEÇİMİ (Sadece o müşterinin varlıkları çıkar) */}
+                {jobForm.customerName && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-1">İlgili Varlık / Cihaz</label>
+                    <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={jobForm.assetId} onChange={e => setJobForm({...jobForm, assetId: e.target.value})}>
+                      <option value="">Bağımsız Görev (Cihaz Seçilmedi)</option>
+                      {(data?.assets || []).filter((a: any) => {
+                        const selectedCust = data?.customers?.find((c: any) => c.name === jobForm.customerName);
+                        return selectedCust ? a.customer_id === selectedCust.id : false;
+                      }).map((a: any) => (
+                        <option key={a.id} value={a.id}>{a.name} - {a.location}</option>
+                      ))}
+                    </select>
+                  </motion.div>
+                )}
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">Sorumlu Personel</label>
+                  <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={jobForm.staffId} onChange={e => setJobForm({...jobForm, staffId: e.target.value})}>
+                    <option value="">Sahadaki herkese açık (Seçilmedi)</option>
+                    {allStaff.map((m: any) => <option key={m.id} value={m.id}>{m.name} ({m.role})</option>)}
+                  </select>
+                </div>
+                
                 <div><label className="text-[11px] font-semibold text-slate-600 block mb-1">Görev Özeti</label><textarea rows={3} className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none resize-none focus:border-blue-400" placeholder="Talimatlar..." value={jobForm.taskNote} onChange={e => setJobForm({...jobForm, taskNote: e.target.value})} /></div>
               </div>
               <button disabled={isSaving} onClick={() => handleAction('add-job', { ...jobForm, details: { note: jobForm.taskNote } }, setShowJobModal, () => setJobForm({ customerName: '', assetId: '', staffId: '', workType: 'Görev', jobType: 'Anlık', scheduledDate: '', taskNote: '' }))} className="w-full bg-blue-600 text-white py-2 rounded-md font-semibold text-sm mt-5 hover:bg-blue-700 transition-colors flex justify-center items-center">
@@ -106,7 +139,7 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* VARLIK MODALI */}
+      {/* VARLIK EKLERKEN İÇİNDEN MÜŞTERİ OLUŞTURMA */}
       <AnimatePresence>
         {showAssetModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -114,7 +147,6 @@ export default function DashboardModals({
               <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">Varlık/Cihaz Ekle</h2><button onClick={() => setShowAssetModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button></div>
               <div className="space-y-4">
                 
-                {/* MÜŞTERİ SEÇİMİ VE YENİ MÜŞTERİ FORMU */}
                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">CİHAZIN SAHİBİ (MÜŞTERİ)</label>
                   <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400 mb-2" value={assetForm.customerId} onChange={e => setAssetForm({...assetForm, customerId: e.target.value})}>
@@ -151,7 +183,7 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* MÜŞTERİ MODALI */}
+      {/* MÜŞTERİ EKLERKEN İÇİNDEN VARLIK OLUŞTURMA */}
       <AnimatePresence>
         {showCustomerModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -169,7 +201,6 @@ export default function DashboardModals({
                   </div>
                 </div>
 
-                {/* VARLIK BAĞLAMA VE YENİ VARLIK FORMU */}
                 <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 mt-4">
                   <label className="text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-2 block">CİHAZ/VARLIK BAĞLANTISI (Opsiyonel)</label>
                   <select className="w-full px-3 py-2 border border-blue-200 rounded-md text-xs outline-none bg-white focus:border-blue-400 mb-2" value={customerForm.assetAction} onChange={e => setCustomerForm({...customerForm, assetAction: e.target.value})}>
