@@ -15,16 +15,6 @@ export default function Header({ data, searchTerm, setSearchTerm, setIsMobileMen
           <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">{data?.ownerName || 'Yönetim'}</span>
         </div>
       </div>
-      <div className="flex items-center gap-4">
-        <div className="hidden md:flex bg-slate-50 px-3 py-1.5 rounded-md border border-slate-200 items-center gap-2">
-          <Search size={14} className="text-slate-400" />
-          <input placeholder="Arama..." className="bg-transparent outline-none text-xs w-40 text-slate-600 placeholder:text-slate-400" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-        </div>
-        <div className="p-1.5 text-slate-400 hover:text-blue-600 cursor-pointer transition-all relative">
-          <Bell size={18} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
-        </div>
-      </div>
     </header>
   );
 }

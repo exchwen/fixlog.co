@@ -25,6 +25,7 @@ export default function DashboardModals({
     return () => window.removeEventListener('keydown', handleEsc);
   }, [setShowJobModal, setShowAssetModal, setShowStaffModal, setShowCustomerModal, setShowStockModal, setShowStaffDetail]);
 
+  const managers = data?.staff?.filter((s: any) => s?.role === 'Yönetici') || [];
   const allStaff = data?.staff || [];
   const statusColors: any = { 'Beklemede': 'bg-amber-100 text-amber-700 border-amber-200', 'Tamamlandı': 'bg-emerald-100 text-emerald-700 border-emerald-200', 'Devam Ediyor': 'bg-blue-100 text-blue-700 border-blue-200', 'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200' };
 
@@ -79,7 +80,7 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* İŞ EMRİ MODALI (YENİLENDİ) */}
+      {/* İŞ EMRİ MODALI */}
       <AnimatePresence>
         {showJobModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -96,27 +97,40 @@ export default function DashboardModals({
                   <div><label className="text-[11px] font-semibold text-slate-600 block mb-1">Tarih</label><input type="date" className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" onChange={e => setJobForm({...jobForm, scheduledDate: e.target.value})} /></div>
                 )}
                 
-                {/* AKILLI MÜŞTERİ SEÇİMİ */}
                 <div>
                   <label className="text-[11px] font-semibold text-slate-600 block mb-1">Müşteri Seçimi</label>
                   <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={jobForm.customerName} onChange={e => setJobForm({...jobForm, customerName: e.target.value, assetId: ''})}>
-                    <option value="">Bağımsız İş (Müşteri Yok)</option>
-                    {(data?.customers || []).map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                    <option value="">👉 Tıklayın: Müşteri Seçin (veya Boş Bırakın)</option>
+                    <optgroup label="👇 LİSTEDEN SEÇ 👇">
+                      {(data?.customers || []).length > 0 ? (
+                        (data?.customers || []).map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)
+                      ) : (
+                        <option disabled>Sistemde kayıtlı müşteri yok</option>
+                      )}
+                    </optgroup>
                   </select>
                 </div>
 
-                {/* AKILLI VARLIK SEÇİMİ (Sadece o müşterinin varlıkları çıkar) */}
                 {jobForm.customerName && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
                     <label className="text-[11px] font-semibold text-slate-600 block mb-1">İlgili Varlık / Cihaz</label>
                     <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={jobForm.assetId} onChange={e => setJobForm({...jobForm, assetId: e.target.value})}>
-                      <option value="">Bağımsız Görev (Cihaz Seçilmedi)</option>
-                      {(data?.assets || []).filter((a: any) => {
-                        const selectedCust = data?.customers?.find((c: any) => c.name === jobForm.customerName);
-                        return selectedCust ? a.customer_id === selectedCust.id : false;
-                      }).map((a: any) => (
-                        <option key={a.id} value={a.id}>{a.name} - {a.location}</option>
-                      ))}
+                      <option value="">👉 Tıklayın: Cihaz Seçin (veya Boş Bırakın)</option>
+                      <optgroup label="👇 MÜŞTERİNİN CİHAZLARI 👇">
+                        {(data?.assets || []).filter((a: any) => {
+                          const selectedCust = data?.customers?.find((c: any) => c.name === jobForm.customerName);
+                          return selectedCust ? a.customer_id === selectedCust.id : false;
+                        }).length > 0 ? (
+                          (data?.assets || []).filter((a: any) => {
+                            const selectedCust = data?.customers?.find((c: any) => c.name === jobForm.customerName);
+                            return selectedCust ? a.customer_id === selectedCust.id : false;
+                          }).map((a: any) => (
+                            <option key={a.id} value={a.id}>{a.name} - {a.location}</option>
+                          ))
+                        ) : (
+                          <option disabled>Bu müşteriye ait cihaz yok</option>
+                        )}
+                      </optgroup>
                     </select>
                   </motion.div>
                 )}
@@ -124,8 +138,14 @@ export default function DashboardModals({
                 <div>
                   <label className="text-[11px] font-semibold text-slate-600 block mb-1">Sorumlu Personel</label>
                   <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={jobForm.staffId} onChange={e => setJobForm({...jobForm, staffId: e.target.value})}>
-                    <option value="">Sahadaki herkese açık (Seçilmedi)</option>
-                    {allStaff.map((m: any) => <option key={m.id} value={m.id}>{m.name} ({m.role})</option>)}
+                    <option value="">👉 Tıklayın: Personel Seçin (veya Boş Bırakın)</option>
+                    <optgroup label="👇 PERSONEL SEÇ 👇">
+                      {allStaff.length > 0 ? (
+                        allStaff.map((m: any) => <option key={m.id} value={m.id}>{m.name} ({m.role})</option>)
+                      ) : (
+                        <option disabled>Kayıtlı personel yok</option>
+                      )}
+                    </optgroup>
                   </select>
                 </div>
                 
@@ -139,7 +159,7 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* VARLIK EKLERKEN İÇİNDEN MÜŞTERİ OLUŞTURMA */}
+      {/* VARLIK (CİHAZ) EKLERKEN MÜŞTERİ SEÇİMİ */}
       <AnimatePresence>
         {showAssetModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -150,9 +170,19 @@ export default function DashboardModals({
                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">CİHAZIN SAHİBİ (MÜŞTERİ)</label>
                   <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400 mb-2" value={assetForm.customerId} onChange={e => setAssetForm({...assetForm, customerId: e.target.value})}>
-                    <option value="">Bağımsız (Müşteri Atanmadı)</option>
-                    {(data?.customers || []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    <option value="NEW" className="font-bold text-blue-600">+ Yeni Müşteri Oluştur</option>
+                    <option value="">👉 Tıklayın: Müşteri Seçin veya Yeni Ekleyin</option>
+                    
+                    <optgroup label="👇 LİSTEDEN SEÇ 👇">
+                      {(data?.customers || []).length > 0 ? (
+                        (data?.customers || []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)
+                      ) : (
+                        <option disabled>Sistemde kayıtlı müşteri yok</option>
+                      )}
+                    </optgroup>
+
+                    <optgroup label="➕ YENİ OLUŞTUR">
+                      <option value="NEW" className="font-bold text-blue-600">+ Yeni Müşteri Kaydet</option>
+                    </optgroup>
                   </select>
                   
                   {assetForm.customerId === 'NEW' && (
@@ -183,7 +213,7 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* MÜŞTERİ EKLERKEN İÇİNDEN VARLIK OLUŞTURMA */}
+      {/* MÜŞTERİ EKLERKEN CİHAZ SEÇİMİ */}
       <AnimatePresence>
         {showCustomerModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -204,9 +234,21 @@ export default function DashboardModals({
                 <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 mt-4">
                   <label className="text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-2 block">CİHAZ/VARLIK BAĞLANTISI (Opsiyonel)</label>
                   <select className="w-full px-3 py-2 border border-blue-200 rounded-md text-xs outline-none bg-white focus:border-blue-400 mb-2" value={customerForm.assetAction} onChange={e => setCustomerForm({...customerForm, assetAction: e.target.value})}>
-                    <option value="">Bağlantı Yapma</option>
-                    {(data?.assets || []).filter((a:any) => !a.customer_id).map((a: any) => <option key={a.id} value={a.id}>{a.name} (Boşta)</option>)}
-                    <option value="NEW" className="font-bold text-blue-600">+ Sıfırdan Varlık Tanımla</option>
+                    <option value="">👉 Tıklayın: Cihaz Seçin veya Yeni Ekleyin</option>
+                    
+                    <optgroup label="👇 MEVCUT CİHAZLARDAN SEÇ 👇">
+                      {(data?.assets || []).length > 0 ? (
+                        (data?.assets || []).map((a: any) => (
+                          <option key={a.id} value={a.id}>{a.name} {a.customer_id ? '(Üzerine Al)' : '(Boşta)'}</option>
+                        ))
+                      ) : (
+                        <option disabled>Sistemde kayıtlı cihaz yok</option>
+                      )}
+                    </optgroup>
+
+                    <optgroup label="➕ YENİ OLUŞTUR">
+                      <option value="NEW" className="font-bold text-blue-600">+ Sıfırdan Varlık Tanımla</option>
+                    </optgroup>
                   </select>
 
                   {customerForm.assetAction === 'NEW' && (
