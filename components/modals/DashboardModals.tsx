@@ -25,7 +25,6 @@ export default function DashboardModals({
     return () => window.removeEventListener('keydown', handleEsc);
   }, [setShowJobModal, setShowAssetModal, setShowStaffModal, setShowCustomerModal, setShowStockModal, setShowStaffDetail]);
 
-  const managers = data?.staff?.filter((s: any) => s?.role === 'Yönetici') || [];
   const allStaff = data?.staff || [];
   const statusColors: any = { 'Beklemede': 'bg-amber-100 text-amber-700 border-amber-200', 'Tamamlandı': 'bg-emerald-100 text-emerald-700 border-emerald-200', 'Devam Ediyor': 'bg-blue-100 text-blue-700 border-blue-200', 'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200' };
 
@@ -100,14 +99,8 @@ export default function DashboardModals({
                 <div>
                   <label className="text-[11px] font-semibold text-slate-600 block mb-1">Müşteri Seçimi</label>
                   <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={jobForm.customerName} onChange={e => setJobForm({...jobForm, customerName: e.target.value, assetId: ''})}>
-                    <option value="">👉 Tıklayın: Müşteri Seçin (veya Boş Bırakın)</option>
-                    <optgroup label="👇 LİSTEDEN SEÇ 👇">
-                      {(data?.customers || []).length > 0 ? (
-                        (data?.customers || []).map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)
-                      ) : (
-                        <option disabled>Sistemde kayıtlı müşteri yok</option>
-                      )}
-                    </optgroup>
+                    <option value="">Bağımsız İş (Müşteri Atanmadı)</option>
+                    {(data?.customers || []).map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)}
                   </select>
                 </div>
 
@@ -115,22 +108,13 @@ export default function DashboardModals({
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
                     <label className="text-[11px] font-semibold text-slate-600 block mb-1">İlgili Varlık / Cihaz</label>
                     <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={jobForm.assetId} onChange={e => setJobForm({...jobForm, assetId: e.target.value})}>
-                      <option value="">👉 Tıklayın: Cihaz Seçin (veya Boş Bırakın)</option>
-                      <optgroup label="👇 MÜŞTERİNİN CİHAZLARI 👇">
-                        {(data?.assets || []).filter((a: any) => {
-                          const selectedCust = data?.customers?.find((c: any) => c.name === jobForm.customerName);
-                          return selectedCust ? a.customer_id === selectedCust.id : false;
-                        }).length > 0 ? (
-                          (data?.assets || []).filter((a: any) => {
-                            const selectedCust = data?.customers?.find((c: any) => c.name === jobForm.customerName);
-                            return selectedCust ? a.customer_id === selectedCust.id : false;
-                          }).map((a: any) => (
-                            <option key={a.id} value={a.id}>{a.name} - {a.location}</option>
-                          ))
-                        ) : (
-                          <option disabled>Bu müşteriye ait cihaz yok</option>
-                        )}
-                      </optgroup>
+                      <option value="">Bağımsız Görev (Cihaz Atanmadı)</option>
+                      {(data?.assets || []).filter((a: any) => {
+                        const selectedCust = data?.customers?.find((c: any) => c.name === jobForm.customerName);
+                        return selectedCust ? a.customer_id === selectedCust.id : false;
+                      }).map((a: any) => (
+                        <option key={a.id} value={a.id}>{a.name} - {a.location}</option>
+                      ))}
                     </select>
                   </motion.div>
                 )}
@@ -138,14 +122,8 @@ export default function DashboardModals({
                 <div>
                   <label className="text-[11px] font-semibold text-slate-600 block mb-1">Sorumlu Personel</label>
                   <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={jobForm.staffId} onChange={e => setJobForm({...jobForm, staffId: e.target.value})}>
-                    <option value="">👉 Tıklayın: Personel Seçin (veya Boş Bırakın)</option>
-                    <optgroup label="👇 PERSONEL SEÇ 👇">
-                      {allStaff.length > 0 ? (
-                        allStaff.map((m: any) => <option key={m.id} value={m.id}>{m.name} ({m.role})</option>)
-                      ) : (
-                        <option disabled>Kayıtlı personel yok</option>
-                      )}
-                    </optgroup>
+                    <option value="">Sahadaki herkese açık (Personel Atanmadı)</option>
+                    {allStaff.map((m: any) => <option key={m.id} value={m.id}>{m.name} ({m.role})</option>)}
                   </select>
                 </div>
                 
@@ -159,7 +137,7 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* VARLIK (CİHAZ) EKLERKEN MÜŞTERİ SEÇİMİ */}
+      {/* VARLIK (CİHAZ) MODALI */}
       <AnimatePresence>
         {showAssetModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -168,26 +146,21 @@ export default function DashboardModals({
               <div className="space-y-4">
                 
                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">CİHAZIN SAHİBİ (MÜŞTERİ)</label>
-                  <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400 mb-2" value={assetForm.customerId} onChange={e => setAssetForm({...assetForm, customerId: e.target.value})}>
-                    <option value="">👉 Tıklayın: Müşteri Seçin veya Yeni Ekleyin</option>
-                    
-                    <optgroup label="👇 LİSTEDEN SEÇ 👇">
-                      {(data?.customers || []).length > 0 ? (
-                        (data?.customers || []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)
-                      ) : (
-                        <option disabled>Sistemde kayıtlı müşteri yok</option>
-                      )}
-                    </optgroup>
-
-                    <optgroup label="➕ YENİ OLUŞTUR">
-                      <option value="NEW" className="font-bold text-blue-600">+ Yeni Müşteri Kaydet</option>
-                    </optgroup>
-                  </select>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">CİHAZIN SAHİBİ (MÜŞTERİ)</label>
+                    <button type="button" onClick={() => setAssetForm({...assetForm, customerId: assetForm.customerId === 'NEW' ? '' : 'NEW'})} className="text-[10px] font-bold text-blue-600 hover:text-blue-800 bg-blue-100/50 px-2 py-1 rounded transition-colors">
+                      {assetForm.customerId === 'NEW' ? '🔄 Listeden Seç' : '➕ Yeni Oluştur'}
+                    </button>
+                  </div>
                   
-                  {assetForm.customerId === 'NEW' && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2 mt-3 pt-3 border-t border-slate-200">
-                      <div className="flex items-center gap-1.5 text-blue-600 mb-1"><ArrowRight size={14}/> <span className="text-[11px] font-semibold">Beraberinde müşteri de kaydedilecek</span></div>
+                  {assetForm.customerId !== 'NEW' ? (
+                    <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={assetForm.customerId} onChange={e => setAssetForm({...assetForm, customerId: e.target.value})}>
+                      <option value="">Bağımsız Cihaz (Müşteri Atanmadı)</option>
+                      {(data?.customers || []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  ) : (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">
+                      <div className="flex items-center gap-1.5 text-blue-600 mb-1"><ArrowRight size={14}/> <span className="text-[11px] font-semibold">Cihazla birlikte yepyeni bir müşteri kaydedilecek</span></div>
                       <input className="w-full px-3 py-2 border border-blue-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Firma / Müşteri Adı" value={assetForm.newCustomer?.name || ''} onChange={e => setAssetForm({...assetForm, newCustomer: {...assetForm.newCustomer, name: e.target.value}})} />
                       <input className="w-full px-3 py-2 border border-blue-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Telefon / İletişim" value={assetForm.newCustomer?.contact || ''} onChange={e => setAssetForm({...assetForm, newCustomer: {...assetForm.newCustomer, contact: e.target.value}})} />
                     </motion.div>
@@ -213,7 +186,7 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* MÜŞTERİ EKLERKEN CİHAZ SEÇİMİ */}
+      {/* MÜŞTERİ MODALI */}
       <AnimatePresence>
         {showCustomerModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -232,27 +205,23 @@ export default function DashboardModals({
                 </div>
 
                 <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 mt-4">
-                  <label className="text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-2 block">CİHAZ/VARLIK BAĞLANTISI (Opsiyonel)</label>
-                  <select className="w-full px-3 py-2 border border-blue-200 rounded-md text-xs outline-none bg-white focus:border-blue-400 mb-2" value={customerForm.assetAction} onChange={e => setCustomerForm({...customerForm, assetAction: e.target.value})}>
-                    <option value="">👉 Tıklayın: Cihaz Seçin veya Yeni Ekleyin</option>
-                    
-                    <optgroup label="👇 MEVCUT CİHAZLARDAN SEÇ 👇">
-                      {(data?.assets || []).length > 0 ? (
-                        (data?.assets || []).map((a: any) => (
-                          <option key={a.id} value={a.id}>{a.name} {a.customer_id ? '(Üzerine Al)' : '(Boşta)'}</option>
-                        ))
-                      ) : (
-                        <option disabled>Sistemde kayıtlı cihaz yok</option>
-                      )}
-                    </optgroup>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">CİHAZ BAĞLANTISI</label>
+                    <button type="button" onClick={() => setCustomerForm({...customerForm, assetAction: customerForm.assetAction === 'NEW' ? '' : 'NEW'})} className="text-[10px] font-bold text-blue-700 hover:text-blue-900 bg-blue-200/50 px-2 py-1 rounded transition-colors">
+                      {customerForm.assetAction === 'NEW' ? '🔄 Listeden Seç' : '➕ Yeni Oluştur'}
+                    </button>
+                  </div>
 
-                    <optgroup label="➕ YENİ OLUŞTUR">
-                      <option value="NEW" className="font-bold text-blue-600">+ Sıfırdan Varlık Tanımla</option>
-                    </optgroup>
-                  </select>
-
-                  {customerForm.assetAction === 'NEW' && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2 mt-3 pt-3 border-t border-blue-100">
+                  {customerForm.assetAction !== 'NEW' ? (
+                    <select className="w-full px-3 py-2 border border-blue-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={customerForm.assetAction} onChange={e => setCustomerForm({...customerForm, assetAction: e.target.value})}>
+                      <option value="">Bağlantı Yapma (Bağımsız Müşteri)</option>
+                      {(data?.assets || []).map((a: any) => (
+                        <option key={a.id} value={a.id}>{a.name} {a.customer_id ? '(Üzerine Al)' : '(Boşta)'}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">
+                      <div className="flex items-center gap-1.5 text-blue-700 mb-1"><ArrowRight size={14}/> <span className="text-[11px] font-semibold">Müşteriyle birlikte yepyeni bir cihaz kaydedilecek</span></div>
                       <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Cihaz Adı" value={customerForm.newAsset?.name || ''} onChange={e => setCustomerForm({...customerForm, newAsset: {...customerForm.newAsset, name: e.target.value}})} />
                       <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Konum / Kat" value={customerForm.newAsset?.location || ''} onChange={e => setCustomerForm({...customerForm, newAsset: {...customerForm.newAsset, location: e.target.value}})} />
                     </motion.div>
