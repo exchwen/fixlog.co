@@ -5,13 +5,11 @@ import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ShieldCheck } from 'lucide-react';
 
-// Ortak Componentler
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import ChatPanel from '@/components/chat/ChatPanel';
 import DashboardModals from '@/components/modals/DashboardModals';
 
-// Patron Tabları
 import HomeTab from '@/components/patron/HomeTab';
 import JobsTab from '@/components/patron/JobsTab';
 import TeamTab from '@/components/patron/TeamTab';
@@ -26,14 +24,12 @@ const API_URL = 'https://backend.isdokumu.workers.dev';
 export default function PatronDashboard() {
   const { slug } = useParams();
   
-  // -- UI States --
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // -- Modal States --
   const [showJobModal, setShowJobModal] = useState(false);
   const [showAssetModal, setShowAssetModal] = useState(false);
   const [showStaffModal, setShowStaffModal] = useState(false);
@@ -43,17 +39,21 @@ export default function PatronDashboard() {
   const [isEditingStaff, setIsEditingStaff] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // -- Chat States --
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeChatId, setActiveChatId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
 
-  // -- Form States --
   const [jobForm, setJobForm] = useState({ customerName: '', assetId: '', staffId: '', workType: 'Genel Görev', jobType: 'Anlık', scheduledDate: '', taskNote: '' });
-  const [assetForm, setAssetForm] = useState({ name: '', location: '', apartmentName: '', deviceDetails: '' });
+  
+  // YENİ: Varlık eklerken içinden sıfır müşteri de oluşturabilmek için.
+  const [assetForm, setAssetForm] = useState({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', newCustomer: { name: '', contact: '', address: '', taxInfo: '' } });
+  
   const [staffForm, setStaffForm] = useState({ name: '', phone: '', role: 'Usta', branch: '', status: 'Aktif' });
-  const [customerForm, setCustomerForm] = useState({ name: '', contact: '', address: '', taxInfo: '' });
+  
+  // YENİ: Müşteri eklerken içinden sıfır varlık da oluşturabilmek için.
+  const [customerForm, setCustomerForm] = useState({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } });
+  
   const [stockForm, setStockForm] = useState({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', supplierName: '', supplierPhone: '' });
   const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '' });
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '' });
@@ -65,9 +65,7 @@ export default function PatronDashboard() {
       const result = await res.json();
       setData(result);
       if (result) {
-        setSettingsForm({
-          companyName: result.name || '', ownerName: result.ownerName || '', sector: result.sector || '', address: result.address || '', taxInfo: result.taxInfo || ''
-        });
+        setSettingsForm({ companyName: result.name || '', ownerName: result.ownerName || '', sector: result.sector || '', address: result.address || '', taxInfo: result.taxInfo || '' });
       }
     } catch (err) { console.error("Veri çekilemedi:", err); } finally { setLoading(false); }
   };

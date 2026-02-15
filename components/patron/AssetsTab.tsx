@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Plus, Box, MapPin } from 'lucide-react';
+import { Plus, Box, MapPin, Users } from 'lucide-react';
 
 export default function AssetsTab({ data, setShowAssetModal }: any) {
   return (
@@ -17,6 +17,12 @@ export default function AssetsTab({ data, setShowAssetModal }: any) {
           <div key={a.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-blue-300 transition-colors flex flex-col">
             <div className="w-8 h-8 bg-slate-50 rounded-md flex items-center justify-center text-slate-400 mb-3 border border-slate-100"><Box size={16} /></div>
             <div className="font-semibold text-slate-800 text-sm mb-1 truncate">{a.name}</div>
+            
+            {/* DEĞİŞTİ: Müşteri Adı Gösterimi */}
+            <div className="text-[11px] font-medium text-blue-600 mb-1 flex items-center gap-1">
+              <Users size={10}/> {data?.customers?.find((c: any) => c.id === a.customer_id)?.name || 'Müşteri Atanmamış'}
+            </div>
+
             <div className="text-[11px] text-slate-500 mb-2 flex items-center gap-1"><MapPin size={10}/> {a.location}</div>
             <div className="text-[10px] text-slate-400 bg-slate-50 p-2 rounded border border-slate-100 mb-4 flex-1 line-clamp-2">{a.device_details || 'Detay yok'}</div>
             <button className="w-full bg-slate-50 py-1.5 rounded-md text-[10px] font-medium text-slate-600 border border-slate-200 hover:bg-slate-100 transition-colors">QR Kod Yazdır</button>
