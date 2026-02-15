@@ -35,7 +35,13 @@ export default function PatronDashboard() {
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showStockModal, setShowStockModal] = useState(false);
+  
   const [showStaffDetail, setShowStaffDetail] = useState(null);
+  
+  // YENİ EKLENEN STATELER: Tıklanan Müşteri ve Cihaz Detayları İçin
+  const [showCustomerDetail, setShowCustomerDetail] = useState(null);
+  const [showAssetDetail, setShowAssetDetail] = useState(null);
+
   const [isEditingStaff, setIsEditingStaff] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -45,15 +51,9 @@ export default function PatronDashboard() {
   const [messageInput, setMessageInput] = useState('');
 
   const [jobForm, setJobForm] = useState({ customerName: '', assetId: '', staffId: '', workType: 'Genel Görev', jobType: 'Anlık', scheduledDate: '', taskNote: '' });
-  
-  // YENİ: Varlık eklerken içinden sıfır müşteri de oluşturabilmek için.
   const [assetForm, setAssetForm] = useState({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', newCustomer: { name: '', contact: '', address: '', taxInfo: '' } });
-  
   const [staffForm, setStaffForm] = useState({ name: '', phone: '', role: 'Usta', branch: '', status: 'Aktif' });
-  
-  // YENİ: Müşteri eklerken içinden sıfır varlık da oluşturabilmek için.
   const [customerForm, setCustomerForm] = useState({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } });
-  
   const [stockForm, setStockForm] = useState({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', supplierName: '', supplierPhone: '' });
   const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '' });
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '' });
@@ -118,18 +118,23 @@ export default function PatronDashboard() {
           {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} />}
           {activeTab === 'jobs' && <JobsTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} />}
           {activeTab === 'team' && <TeamTab data={data} setShowStaffModal={setShowStaffModal} setShowStaffDetail={setShowStaffDetail} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} />}
-          {activeTab === 'customers' && <CustomersTab data={data} setShowCustomerModal={setShowCustomerModal} />}
+          
+          {/* YENİ: Müşteriler ve Varlıklar sekmelerine detay açma fonksiyonlarını gönderdik */}
+          {activeTab === 'customers' && <CustomersTab data={data} setShowCustomerModal={setShowCustomerModal} setShowCustomerDetail={setShowCustomerDetail} />}
           {activeTab === 'stock' && <StockTab data={data} setShowStockModal={setShowStockModal} />}
           {activeTab === 'finance' && <FinanceTab data={data} />}
-          {activeTab === 'assets' && <AssetsTab data={data} setShowAssetModal={setShowAssetModal} />}
+          {activeTab === 'assets' && <AssetsTab data={data} setShowAssetModal={setShowAssetModal} setShowAssetDetail={setShowAssetDetail} />}
           {activeTab === 'settings' && <SettingsTab settingsForm={settingsForm} setSettingsForm={setSettingsForm} handleAction={handleAction} isSaving={isSaving} />}
         </div>
       </main>
 
       <ChatPanel isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} activeChatId={activeChatId} setActiveChatId={setActiveChatId} data={data} messages={messages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} />
 
+      {/* YENİ: Modalların içine yeni detay fonksiyonlarını gönderdik */}
       <DashboardModals 
         showStaffDetail={showStaffDetail} setShowStaffDetail={setShowStaffDetail} isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff} editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}
+        showCustomerDetail={showCustomerDetail} setShowCustomerDetail={setShowCustomerDetail}
+        showAssetDetail={showAssetDetail} setShowAssetDetail={setShowAssetDetail}
         showJobModal={showJobModal} setShowJobModal={setShowJobModal} jobForm={jobForm} setJobForm={setJobForm}
         showAssetModal={showAssetModal} setShowAssetModal={setShowAssetModal} assetForm={assetForm} setAssetForm={setAssetForm}
         showStaffModal={showStaffModal} setShowStaffModal={setShowStaffModal} staffForm={staffForm} setStaffForm={setStaffForm}

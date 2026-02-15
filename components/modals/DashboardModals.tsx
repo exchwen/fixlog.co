@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Settings, Trash2, Loader2, ArrowRight } from 'lucide-react';
+import { X, Settings, Trash2, Loader2, Search } from 'lucide-react';
 
 export default function DashboardModals({
   showStaffDetail, setShowStaffDetail, isEditingStaff, setIsEditingStaff, editStaffForm, setEditStaffForm,
+  showCustomerDetail, setShowCustomerDetail,
+  showAssetDetail, setShowAssetDetail,
   showJobModal, setShowJobModal, jobForm, setJobForm,
   showAssetModal, setShowAssetModal, assetForm, setAssetForm,
   showStaffModal, setShowStaffModal, staffForm, setStaffForm,
@@ -14,16 +16,22 @@ export default function DashboardModals({
   handleAction, isSaving, data
 }: any) {
   
+  // Arama / Filtreleme Stateleri
+  const [searchCust, setSearchCust] = useState('');
+  const [searchAsset, setSearchAsset] = useState('');
+
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setShowJobModal(false); setShowAssetModal(false); setShowStaffModal(false); 
         setShowCustomerModal(false); setShowStockModal(false); setShowStaffDetail(null);
+        if (setShowCustomerDetail) setShowCustomerDetail(null);
+        if (setShowAssetDetail) setShowAssetDetail(null);
       }
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [setShowJobModal, setShowAssetModal, setShowStaffModal, setShowCustomerModal, setShowStockModal, setShowStaffDetail]);
+  }, [setShowJobModal, setShowAssetModal, setShowStaffModal, setShowCustomerModal, setShowStockModal, setShowStaffDetail, setShowCustomerDetail, setShowAssetDetail]);
 
   const allStaff = data?.staff || [];
   const statusColors: any = { 'Beklemede': 'bg-amber-100 text-amber-700 border-amber-200', 'Tamamlandı': 'bg-emerald-100 text-emerald-700 border-emerald-200', 'Devam Ediyor': 'bg-blue-100 text-blue-700 border-blue-200', 'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200' };
@@ -83,6 +91,85 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
+      {/* MÜŞTERİ DETAY MODALI */}
+      <AnimatePresence>
+        {showCustomerDetail && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-lg rounded-xl p-6 shadow-xl relative flex flex-col max-h-[85vh]">
+              <div className="flex justify-between items-start mb-6">
+                <div><h2 className="text-xl font-bold text-slate-900">{showCustomerDetail.name}</h2><div className="text-xs text-slate-500 mt-0.5">Müşteri Profili</div></div>
+                <button onClick={() => setShowCustomerDetail(null)} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md"><X size={18} /></button>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">İletişim / Telefon</div><div className="text-xs font-medium text-slate-800 mt-0.5">{showCustomerDetail.contact || '-'}</div></div>
+                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Vergi No / T.C.</div><div className="text-xs font-medium text-slate-800 mt-0.5">{showCustomerDetail.tax_info || '-'}</div></div>
+                 <div className="col-span-2 bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Adres</div><div className="text-xs font-medium text-slate-800 mt-0.5">{showCustomerDetail.address || '-'}</div></div>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto space-y-4 mb-6 custom-scrollbar">
+                 <div>
+                   <h4 className="text-[11px] font-semibold text-blue-600 mb-2 uppercase tracking-wider">Kayıtlı Cihazları / Varlıkları</h4>
+                   {(data?.assets || []).filter((a: any) => a.customer_id === showCustomerDetail.id).length > 0 ? (data?.assets || []).filter((a: any) => a.customer_id === showCustomerDetail.id).map((a: any) => (
+                     <div key={a.id} className="p-3 border border-blue-100 rounded-lg bg-blue-50/30 text-xs mb-2">
+                        <div className="font-semibold text-blue-800">{a.name}</div>
+                        <div className="text-[10px] text-blue-600/80 mt-0.5">{a.apartment_name || ''} {a.location ? `- ${a.location}` : ''}</div>
+                     </div>
+                   )) : <div className="text-center p-4 text-slate-400 text-xs bg-slate-50 rounded-lg">Kayıtlı cihaz bulunmuyor.</div>}
+                 </div>
+
+                 <div>
+                   <h4 className="text-[11px] font-semibold text-slate-500 mb-2 uppercase tracking-wider">Geçmiş İş Kayıtları</h4>
+                   {(data?.jobs || []).filter((j: any) => j.customer_name === showCustomerDetail.name).length > 0 ? (data?.jobs || []).filter((j: any) => j.customer_name === showCustomerDetail.name).map((j: any) => (
+                     <div key={j.id} className="p-3 border border-slate-100 rounded-lg flex items-center justify-between bg-white text-xs mb-2">
+                        <div><div className="font-semibold text-slate-800">{j.work_type || 'Görev'}</div><div className="text-[10px] text-slate-500 mt-0.5">{j.scheduled_date || 'Anlık'}</div></div>
+                        <span className={`px-2 py-1 rounded text-[10px] font-medium border ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span>
+                     </div>
+                   )) : <div className="text-center p-4 text-slate-400 text-xs bg-slate-50 rounded-lg">Geçmiş iş kaydı bulunmuyor.</div>}
+                 </div>
+              </div>
+              
+              <div className="pt-4 border-t border-slate-100">
+                 <button onClick={async () => { if(confirm(`${showCustomerDetail.name} adlı müşteriyi silmek istediğinize emin misiniz?`)) { await handleAction('delete-customer', { id: showCustomerDetail.id }, () => setShowCustomerDetail(null), () => {}); } }} className="w-full bg-rose-50 text-rose-600 py-2 rounded-md text-xs font-semibold hover:bg-rose-100 transition-colors flex items-center justify-center gap-1.5"><Trash2 size={14} /> Müşteriyi Sil</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* VARLIK (CİHAZ) DETAY MODALI */}
+      <AnimatePresence>
+        {showAssetDetail && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-lg rounded-xl p-6 shadow-xl relative flex flex-col max-h-[85vh]">
+              <div className="flex justify-between items-start mb-6">
+                <div><h2 className="text-xl font-bold text-slate-900">{showAssetDetail.name}</h2><div className="text-xs text-slate-500 mt-0.5">Cihaz / Varlık Profili</div></div>
+                <button onClick={() => setShowAssetDetail(null)} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md"><X size={18} /></button>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Sahibi (Müşteri)</div><div className="text-xs font-medium text-blue-600 mt-0.5">{showAssetDetail.customer_id ? (data?.customers || []).find((c: any) => c.id === showAssetDetail.customer_id)?.name || 'Bilinmiyor' : 'Bağımsız Cihaz'}</div></div>
+                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Bina / Site</div><div className="text-xs font-medium text-slate-800 mt-0.5">{showAssetDetail.apartment_name || '-'}</div></div>
+                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Konum / Kat</div><div className="text-xs font-medium text-slate-800 mt-0.5">{showAssetDetail.location || '-'}</div></div>
+                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Teknik Detaylar</div><div className="text-xs font-medium text-slate-800 mt-0.5 line-clamp-2">{showAssetDetail.device_details || '-'}</div></div>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto space-y-2 mb-6 custom-scrollbar">
+                 <h4 className="text-[11px] font-semibold text-slate-500 mb-2 uppercase tracking-wider">Cihaza Ait Geçmiş İşler</h4>
+                 {(data?.jobs || []).filter((j: any) => j.asset_id === showAssetDetail.id).length > 0 ? (data?.jobs || []).filter((j: any) => j.asset_id === showAssetDetail.id).map((j: any) => (
+                   <div key={j.id} className="p-3 border border-slate-100 rounded-lg flex items-center justify-between bg-white text-xs">
+                      <div><div className="font-semibold text-slate-800">{j.work_type || 'Görev'}</div><div className="text-[10px] text-slate-500 mt-0.5">{j.scheduled_date || 'Anlık'}</div></div>
+                      <span className={`px-2 py-1 rounded text-[10px] font-medium border ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span>
+                   </div>
+                 )) : <div className="text-center p-4 text-slate-400 text-xs bg-slate-50 rounded-lg">Bu cihaz için geçmiş iş kaydı bulunmuyor.</div>}
+              </div>
+              
+              <div className="pt-4 border-t border-slate-100">
+                 <button onClick={async () => { if(confirm(`${showAssetDetail.name} cihazını silmek istediğinize emin misiniz?`)) { await handleAction('delete-asset', { id: showAssetDetail.id }, () => setShowAssetDetail(null), () => {}); } }} className="w-full bg-rose-50 text-rose-600 py-2 rounded-md text-xs font-semibold hover:bg-rose-100 transition-colors flex items-center justify-center gap-1.5"><Trash2 size={14} /> Cihazı Sil</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* İŞ EMRİ MODALI */}
       <AnimatePresence>
         {showJobModal && (
@@ -100,46 +187,41 @@ export default function DashboardModals({
                   <div><label className="text-[11px] font-semibold text-slate-600 block mb-1">Tarih</label><input type="date" className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" onChange={e => setJobForm({...jobForm, scheduledDate: e.target.value})} /></div>
                 )}
                 
+                {/* İŞ EMRİ - MÜŞTERİ SEÇİMİ VE ARAMA */}
                 <div>
                   <label className="text-[11px] font-semibold text-slate-600 block mb-1">Müşteri Seçimi</label>
-                  <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={jobForm.customerName} onChange={e => setJobForm({...jobForm, customerName: e.target.value, assetId: ''})}>
-                    <option value="">👉 Tıklayın: Müşteri Seçin (veya Boş Bırakın)</option>
-                    <optgroup label="👇 LİSTEDEN SEÇ 👇">
-                      {(data?.customers || []).length > 0 ? (
-                        (data?.customers || []).map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)
-                      ) : (
-                        <option disabled>Sistemde kayıtlı müşteri yok</option>
-                      )}
-                    </optgroup>
+                  <div className="relative mb-1">
+                    <Search className="absolute left-2.5 top-2 text-slate-400" size={14} />
+                    <input type="text" placeholder="İsim veya TC ile Müşteri Ara..." className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-slate-50" value={searchCust} onChange={e => setSearchCust(e.target.value)} />
+                  </div>
+                  <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400 custom-scrollbar" size={3} value={jobForm.customerName} onChange={e => setJobForm({...jobForm, customerName: e.target.value, assetId: ''})}>
+                    <option value="" className="font-semibold text-blue-600 border-b border-slate-100 pb-1 mb-1">Bağımsız İş (Müşteri Atanmasın)</option>
+                    {(data?.customers || []).filter((c:any) => c.name?.toLowerCase().includes(searchCust.toLowerCase()) || c.tax_info?.includes(searchCust)).map((c: any) => <option key={c.id} value={c.name} className="py-1">{c.name} {c.tax_info ? `(${c.tax_info})` : ''}</option>)}
                   </select>
                 </div>
 
+                {/* İŞ EMRİ - CİHAZ SEÇİMİ VE ARAMA */}
                 {jobForm.customerName && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
-                    <label className="text-[11px] font-semibold text-slate-600 block mb-1">İlgili Varlık / Cihaz</label>
-                    <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={jobForm.assetId} onChange={e => setJobForm({...jobForm, assetId: e.target.value})}>
-                      <option value="">👉 Tıklayın: Cihaz Seçin (veya Boş Bırakın)</option>
-                      <optgroup label="👇 MÜŞTERİNİN CİHAZLARI 👇">
-                        {(data?.assets || []).filter((a: any) => {
-                          const selectedCust = data?.customers?.find((c: any) => c.name === jobForm.customerName);
-                          return selectedCust ? a.customer_id === selectedCust.id : false;
-                        }).length > 0 ? (
-                          (data?.assets || []).filter((a: any) => {
-                            const selectedCust = data?.customers?.find((c: any) => c.name === jobForm.customerName);
-                            return selectedCust ? a.customer_id === selectedCust.id : false;
-                          }).map((a: any) => (
-                            <option key={a.id} value={a.id}>{a.name} - {a.location}</option>
-                          ))
-                        ) : (
-                          <option disabled>Bu müşteriye ait cihaz yok</option>
-                        )}
-                      </optgroup>
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-1 mt-2">İlgili Varlık / Cihaz</label>
+                    <div className="relative mb-1">
+                      <Search className="absolute left-2.5 top-2 text-slate-400" size={14} />
+                      <input type="text" placeholder="Cihaz Adı Ara..." className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-slate-50" value={searchAsset} onChange={e => setSearchAsset(e.target.value)} />
+                    </div>
+                    <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400 custom-scrollbar" size={3} value={jobForm.assetId} onChange={e => setJobForm({...jobForm, assetId: e.target.value})}>
+                      <option value="" className="font-semibold text-blue-600 border-b border-slate-100 pb-1 mb-1">Bağımsız Görev (Cihaz Atanmasın)</option>
+                      {(data?.assets || []).filter((a: any) => {
+                        const selectedCust = data?.customers?.find((c: any) => c.name === jobForm.customerName);
+                        return selectedCust ? a.customer_id === selectedCust.id : false;
+                      }).filter((a: any) => a.name?.toLowerCase().includes(searchAsset.toLowerCase())).map((a: any) => (
+                        <option key={a.id} value={a.id} className="py-1">{a.name} - {a.location}</option>
+                      ))}
                     </select>
                   </motion.div>
                 )}
 
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">Sorumlu Personel</label>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1 mt-2">Sorumlu Personel</label>
                   <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={jobForm.staffId} onChange={e => setJobForm({...jobForm, staffId: e.target.value})}>
                     <option value="">👉 Tıklayın: Personel Seçin (veya Boş Bırakın)</option>
                     <optgroup label="👇 PERSONEL SEÇ 👇">
@@ -193,11 +275,21 @@ export default function DashboardModals({
                         </div>
                         <span className={`text-xs font-semibold ${assetCustMode === 'SELECT' ? 'text-blue-800' : 'text-slate-700'}`}>Mevcut Müşterilerden Seç</span>
                       </label>
+                      {/* LİSTEDEN SEÇ - ARAMA KUTULU */}
                       {assetCustMode === 'SELECT' && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="px-3 pb-3 pt-1">
-                          <select className="w-full px-3 py-2 border border-slate-300 rounded-md text-xs outline-none bg-white focus:border-blue-400 shadow-sm" value={assetForm.customerId !== 'NEW' ? assetForm.customerId : ''} onChange={e => setAssetForm({...assetForm, customerId: e.target.value})}>
-                            <option value="">-- Müşteri Seçin --</option>
-                            {(data?.customers || []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="px-3 pb-3 pt-1 flex flex-col gap-2">
+                          <div className="relative">
+                            <Search className="absolute left-2.5 top-2 text-blue-400" size={14} />
+                            <input type="text" placeholder="İsim veya T.C. ile Müşteri Ara..." className="w-full pl-8 pr-3 py-1.5 border border-blue-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" value={searchCust} onChange={e => setSearchCust(e.target.value)} />
+                          </div>
+                          <select 
+                            className="w-full px-3 py-2 border border-blue-200 rounded-md text-xs outline-none bg-blue-50 focus:border-blue-400 custom-scrollbar" 
+                            size={4}
+                            value={assetForm.customerId !== 'NEW' ? assetForm.customerId : ''} 
+                            onChange={e => setAssetForm({...assetForm, customerId: e.target.value})}
+                          >
+                            <option value="" disabled className="font-semibold text-slate-500 border-b border-blue-100 pb-1 mb-1">-- Listeden Tıklayıp Seçin --</option>
+                            {(data?.customers || []).filter((c:any) => c.name?.toLowerCase().includes(searchCust.toLowerCase()) || c.tax_info?.includes(searchCust)).map((c: any) => <option key={c.id} value={c.id} className="py-1">{c.name} {c.tax_info ? `(${c.tax_info})` : ''}</option>)}
                           </select>
                         </motion.div>
                       )}
@@ -283,11 +375,21 @@ export default function DashboardModals({
                         </div>
                         <span className={`text-xs font-semibold ${custAssetMode === 'SELECT' ? 'text-blue-800' : 'text-slate-700'}`}>Mevcut Cihazlardan Birini Üzerine Al</span>
                       </label>
+                      {/* LİSTEDEN SEÇ - ARAMA KUTULU */}
                       {custAssetMode === 'SELECT' && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="px-3 pb-3 pt-1">
-                          <select className="w-full px-3 py-2 border border-slate-300 rounded-md text-xs outline-none bg-white focus:border-blue-400 shadow-sm" value={customerForm.assetAction !== 'NEW' ? customerForm.assetAction : ''} onChange={e => setCustomerForm({...customerForm, assetAction: e.target.value})}>
-                            <option value="">-- Cihaz Seçin --</option>
-                            {(data?.assets || []).map((a: any) => <option key={a.id} value={a.id}>{a.name} {a.customer_id ? '(Başka Müşteride)' : '(Boşta)'}</option>)}
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="px-3 pb-3 pt-1 flex flex-col gap-2">
+                          <div className="relative">
+                            <Search className="absolute left-2.5 top-2 text-blue-400" size={14} />
+                            <input type="text" placeholder="Cihaz Adı veya Konum Ara..." className="w-full pl-8 pr-3 py-1.5 border border-blue-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" value={searchAsset} onChange={e => setSearchAsset(e.target.value)} />
+                          </div>
+                          <select 
+                            className="w-full px-3 py-2 border border-blue-300 rounded-md text-xs outline-none bg-blue-50 focus:border-blue-500 custom-scrollbar" 
+                            size={4}
+                            value={customerForm.assetAction !== 'NEW' ? customerForm.assetAction : ''} 
+                            onChange={e => setCustomerForm({...customerForm, assetAction: e.target.value})}
+                          >
+                            <option value="" disabled className="font-semibold text-slate-500 border-b border-blue-100 pb-1 mb-1">-- Listeden Tıklayıp Seçin --</option>
+                            {(data?.assets || []).filter((a:any) => a.name?.toLowerCase().includes(searchAsset.toLowerCase()) || a.location?.toLowerCase().includes(searchAsset.toLowerCase())).map((a: any) => <option key={a.id} value={a.id} className="py-1">{a.name} {a.customer_id ? '(Başka Müşteride)' : '(Boşta)'}</option>)}
                           </select>
                         </motion.div>
                       )}

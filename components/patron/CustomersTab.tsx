@@ -3,7 +3,7 @@
 import React from 'react';
 import { Plus, Box } from 'lucide-react';
 
-export default function CustomersTab({ data, setShowCustomerModal }: any) {
+export default function CustomersTab({ data, setShowCustomerModal, setShowCustomerDetail }: any) {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -24,10 +24,13 @@ export default function CustomersTab({ data, setShowCustomerModal }: any) {
            </thead>
            <tbody className="divide-y divide-slate-100">
              {data?.customers?.length > 0 ? data.customers.map((c: any) => {
-               // Bu müşteriye ait varlıkları (cihazları) filtreliyoruz
                const customerAssets = data?.assets?.filter((a: any) => a.customer_id === c.id) || [];
                return (
-                 <tr key={c.id} className="hover:bg-slate-50">
+                 <tr 
+                   key={c.id} 
+                   onClick={() => setShowCustomerDetail && setShowCustomerDetail(c)} 
+                   className="hover:bg-blue-50 cursor-pointer transition-colors"
+                 >
                    <td className="px-5 py-3 font-semibold text-slate-800">{c.name}</td>
                    <td className="px-5 py-3 text-slate-600">{c.contact || '-'}</td>
                    <td className="px-5 py-3">
