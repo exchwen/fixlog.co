@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin, Calendar } from 'lucide-react';
+import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin, Calendar, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json'; 
 
 export default function DashboardModals({
@@ -14,7 +14,7 @@ export default function DashboardModals({
   showStaffModal, setShowStaffModal, staffForm, setStaffForm,
   showCustomerModal, setShowCustomerModal, customerForm, setCustomerForm,
   showStockModal, setShowStockModal, stockForm, setStockForm,
-  selectedJob, setSelectedJob, // YENİ EKLENDİ
+  selectedJob, setSelectedJob,
   handleAction, isSaving, data
 }: any) {
   
@@ -30,14 +30,30 @@ export default function DashboardModals({
   const [isEditingAsset, setIsEditingAsset] = useState(false);
   const [editAssetForm, setEditAssetForm] = useState({ id: '', name: '', location: '', apartmentName: '', deviceDetails: '' });
 
-  // İŞ DETAYI DÜZENLEME STATE (YENİ)
+  // İŞ DETAYI DÜZENLEME STATE
   const [isEditingJobDetail, setIsEditingJobDetail] = useState(false);
-  const [editJobDetailForm, setEditJobDetailForm] = useState({ scheduledDate: '', staffId: '', taskNote: '' });
+  // İptal onayı için state
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  
+  // Düzenleme formu (Yeni İş Emri formuyla aynı yapıda)
+  const [editJobDetailForm, setEditJobDetailForm] = useState({ 
+    workCategory: 'Normal İş Atama',
+    jobType: 'Anlık',
+    scheduledDate: '', 
+    staffId: '', 
+    taskNote: '',
+    customerName: '',
+    assetId: ''
+  });
 
   const handleCloseDetail = (type: string) => {
     if (type === 'customer' && setShowCustomerDetail) { setShowCustomerDetail(null); setIsEditingCustomer(false); }
     if (type === 'asset' && setShowAssetDetail) { setShowAssetDetail(null); setIsEditingAsset(false); }
-    if (type === 'job' && setSelectedJob) { setSelectedJob(null); setIsEditingJobDetail(false); } // YENİ
+    if (type === 'job' && setSelectedJob) { 
+        setSelectedJob(null); 
+        setIsEditingJobDetail(false); 
+        setShowCancelConfirm(false); 
+    }
   };
 
   useEffect(() => {
@@ -52,6 +68,26 @@ export default function DashboardModals({
     return () => window.removeEventListener('keydown', handleEsc);
   }, [setShowJobModal, setShowAssetModal, setShowStaffModal, setShowCustomerModal, setShowStockModal, setShowStaffDetail, setShowCustomerDetail, setShowAssetDetail, setSelectedJob]);
 
+  // İş Düzenleme Butonuna Basılınca Verileri Doldur
+  const handleEditClick = () => {
+    setIsEditingJobDetail(true);
+    setEditJobDetailForm({
+        workCategory: selectedJob.work_type === 'Genel Görev' ? 'Genel İş Atama' : 'Normal İş Atama',
+        jobType: selectedJob.job_type || 'Anlık',
+        scheduledDate: selectedJob.scheduled_date || '',
+        staffId: selectedJob.staff_id || '',
+        taskNote: selectedJob.details?.note || '',
+        customerName: selectedJob.customer_name || '',
+        assetId: selectedJob.asset_id || ''
+    });
+    // Eğer varlık seçiliyse, arama modunu ona göre ayarla
+    if (selectedJob.asset_id) {
+        setJobTargetMode('ASSET');
+    } else {
+        setJobTargetMode('CUSTOMER');
+    }
+  };
+
   const statusColors: any = { 
     'Beklemede': 'bg-amber-100 text-amber-700 border-amber-200', 
     'Tamamlandı': 'bg-emerald-100 text-emerald-700 border-emerald-200', 
@@ -62,8 +98,8 @@ export default function DashboardModals({
 
   const assetCustMode = assetForm.customerMode || 'NONE';
   const custAssetMode = customerForm.assetMode || 'NONE';
-  
   const isJobValid = jobForm.workCategory === 'Genel İş Atama' ? true : (jobForm.customerName || jobForm.assetId);
+  const isEditJobValid = editJobDetailForm.workCategory === 'Genel İş Atama' ? true : (editJobDetailForm.customerName || editJobDetailForm.assetId);
 
   const currentSector = data?.sector || '';
   const safeSectors: any = sectorsData;
@@ -73,22 +109,57 @@ export default function DashboardModals({
 
   return (
     <>
-      {/* İŞ DETAY VE DÜZENLEME MODALI (YENİ) */}
+      {/* İŞ DETAY VE DÜZENLEME MODALI */}
       <AnimatePresence>
         {selectedJob && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[130] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-lg rounded-xl p-6 shadow-xl relative flex flex-col max-h-[85vh]">
-              <div className="flex justify-between items-start mb-6">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-lg rounded-xl p-0 shadow-xl relative flex flex-col max-h-[90vh] overflow-hidden">
+              
+              {/* Header */}
+              <div className="flex justify-between items-start p-6 pb-4 border-b border-slate-100 bg-white z-10">
                 <div>
-                    <h2 className="text-xl font-bold text-slate-900">İş Emri Detayı</h2>
+                    <h2 className="text-xl font-bold text-slate-900">{isEditingJobDetail ? 'İş Emrini Düzenle' : 'İş Emri Detayı'}</h2>
                     <div className="text-xs text-slate-500 mt-0.5">ID: #{selectedJob.id} • {selectedJob.created_at?.split('T')[0] || ''}</div>
                 </div>
-                <button onClick={() => { setSelectedJob(null); setIsEditingJobDetail(false); }} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md"><X size={18} /></button>
+                <button onClick={() => { setSelectedJob(null); setIsEditingJobDetail(false); setShowCancelConfirm(false); }} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md"><X size={18} /></button>
               </div>
 
               {/* View Mode */}
               {!isEditingJobDetail ? (
-                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4 relative">
+                    
+                    {/* İPTAL ONAY MODALI (OVERLAY) */}
+                    <AnimatePresence>
+                    {showCancelConfirm && (
+                        <motion.div 
+                           initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
+                           className="absolute inset-0 z-20 bg-white/95 backdrop-blur-[2px] flex flex-col items-center justify-center p-8 text-center rounded-xl"
+                        >
+                           <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-3">
+                              <AlertTriangle size={24} />
+                           </div>
+                           <h3 className="text-lg font-bold text-slate-900 mb-1">İşi İptal Etmek İstiyor musun?</h3>
+                           <p className="text-xs text-slate-500 mb-6 max-w-[200px]">Bu işlem sonucunda iş emri 'İptal' durumuna geçecek ve listeden kaldırılmayacaktır.</p>
+                           <div className="flex gap-2 w-full">
+                               <button 
+                                  onClick={async () => {
+                                      await handleAction('update-job', { id: selectedJob.id, status: 'İptal' }, () => setSelectedJob(null), () => {});
+                                  }}
+                                  className="flex-1 bg-rose-600 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-rose-700 shadow-sm shadow-rose-200"
+                               >
+                                  {isSaving ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Evet, İptal Et'}
+                               </button>
+                               <button 
+                                  onClick={() => setShowCancelConfirm(false)}
+                                  className="flex-1 bg-white border border-slate-200 text-slate-700 py-2.5 rounded-lg text-xs font-bold hover:bg-slate-50"
+                               >
+                                  Vazgeç
+                               </button>
+                           </div>
+                        </motion.div>
+                    )}
+                    </AnimatePresence>
+
                     {/* Durum Badge */}
                     <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100">
                         <span className="text-xs font-semibold text-slate-500">GÜNCEL DURUM</span>
@@ -135,14 +206,7 @@ export default function DashboardModals({
 
                     <div className="pt-4 border-t border-slate-100 flex gap-2">
                         <button 
-                            onClick={() => { 
-                                setIsEditingJobDetail(true); 
-                                setEditJobDetailForm({ 
-                                    scheduledDate: selectedJob.scheduled_date || '', 
-                                    staffId: selectedJob.staff_id || '', 
-                                    taskNote: selectedJob.details?.note || '' 
-                                }); 
-                            }} 
+                            onClick={handleEditClick}
                             className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
                         >
                             <Settings size={14} /> Düzenle / Ata
@@ -150,11 +214,7 @@ export default function DashboardModals({
                         
                         {selectedJob.status !== 'İptal' && selectedJob.status !== 'Tamamlandı' && (
                             <button 
-                                onClick={async () => {
-                                    if(confirm('Bu iş emrini İPTAL etmek istediğinize emin misiniz?')) {
-                                        await handleAction('update-job', { id: selectedJob.id, status: 'İptal' }, () => setSelectedJob(null), () => {});
-                                    }
-                                }}
+                                onClick={() => setShowCancelConfirm(true)}
                                 className="px-4 bg-rose-50 text-rose-600 border border-rose-100 py-2.5 rounded-lg text-xs font-bold hover:bg-rose-100 transition-colors flex items-center justify-center gap-2"
                             >
                                 <X size={14} /> İptal Et
@@ -163,51 +223,93 @@ export default function DashboardModals({
                     </div>
                 </div>
               ) : (
-                // Edit Mode
-                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4">
-                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 mb-2">
-                        <div className="text-xs text-blue-800 font-medium">İş Emri Düzenleniyor: <span className="font-bold">{selectedJob.customer_name}</span></div>
+                // --- GELİŞMİŞ EDİT MODU (YENİ İŞ EMRİ İLE AYNI) ---
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
+                    
+                    {/* İŞ TÜRÜ SEÇİMİ */}
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-600 block mb-1.5">İş Türü</label>
+                      <div className="grid grid-cols-2 gap-2">
+                         <button onClick={() => setEditJobDetailForm({...editJobDetailForm, workCategory: 'Normal İş Atama'})} className={`py-2 text-xs font-semibold rounded-md border transition-colors ${editJobDetailForm.workCategory !== 'Genel İş Atama' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Normal İş Atama</button>
+                         <button onClick={() => setEditJobDetailForm({...editJobDetailForm, workCategory: 'Genel İş Atama', customerName: '', assetId: ''})} className={`py-2 text-xs font-semibold rounded-md border transition-colors ${editJobDetailForm.workCategory === 'Genel İş Atama' ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Genel İş Atama</button>
+                      </div>
                     </div>
 
+                    {/* ZAMANLAMA SEÇİMİ */}
                     <div>
-                        <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1.5">Planlanan Tarih</label>
-                        <input 
-                            type="date" 
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                            value={editJobDetailForm.scheduledDate}
-                            onChange={(e) => setEditJobDetailForm({...editJobDetailForm, scheduledDate: e.target.value})}
-                        />
+                      <label className="text-[11px] font-semibold text-slate-600 block mb-1.5">Tarih / Zamanlama</label>
+                      <div className="grid grid-cols-2 gap-2">
+                         <button onClick={() => setEditJobDetailForm({...editJobDetailForm, jobType: 'Anlık', scheduledDate: ''})} className={`py-1.5 text-xs font-semibold rounded-md border ${editJobDetailForm.jobType === 'Anlık' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>Anlık Görev</button>
+                         <button onClick={() => setEditJobDetailForm({...editJobDetailForm, jobType: 'Planlı'})} className={`py-1.5 text-xs font-semibold rounded-md border ${editJobDetailForm.jobType === 'Planlı' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>Tarih Planla</button>
+                      </div>
+                      {editJobDetailForm.jobType === 'Planlı' && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-2">
+                          <input type="date" value={editJobDetailForm.scheduledDate} className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" onChange={e => setEditJobDetailForm({...editJobDetailForm, scheduledDate: e.target.value})} />
+                        </motion.div>
+                      )}
                     </div>
 
-                    <div>
-                        <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1.5">Sorumlu Personel</label>
-                        <select 
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
-                            value={editJobDetailForm.staffId}
-                            onChange={(e) => setEditJobDetailForm({...editJobDetailForm, staffId: e.target.value})}
-                        >
-                            <option value="">-- Personel Seçin --</option>
-                            {(data?.staff || []).map((s:any) => (
-                                <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
-                            ))}
-                        </select>
-                    </div>
+                    {/* NORMAL İŞ İSE: MÜŞTERİ VEYA VARLIK SEÇİMİ */}
+                    {editJobDetailForm.workCategory !== 'Genel İş Atama' && (
+                      <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                        <div className="flex gap-2 mb-3">
+                          <button onClick={() => setJobTargetMode('CUSTOMER')} className={`flex-1 py-1.5 text-xs font-semibold rounded-md border transition-colors ${jobTargetMode === 'CUSTOMER' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-100'}`}>Müşteri Seç</button>
+                          <button onClick={() => setJobTargetMode('ASSET')} className={`flex-1 py-1.5 text-xs font-semibold rounded-md border transition-colors ${jobTargetMode === 'ASSET' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-100'}`}>Varlık Seç</button>
+                        </div>
 
+                        {jobTargetMode === 'CUSTOMER' ? (
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                            <div className="relative mb-2">
+                              <Search className="absolute left-2.5 top-2 text-slate-400" size={14} />
+                              <input type="text" placeholder="İsim veya TC ile Müşteri Ara..." className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" value={searchCust} onChange={e => setSearchCust(e.target.value)} />
+                            </div>
+                            <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400 custom-scrollbar" size={4} value={editJobDetailForm.customerName} onChange={e => setEditJobDetailForm({...editJobDetailForm, customerName: e.target.value, assetId: ''})}>
+                              <option value="" disabled className="font-semibold text-slate-400 border-b border-slate-100 pb-1 mb-1">-- Listeden Müşteri Seçin --</option>
+                              {(data?.customers || []).filter((c:any) => c.name?.toLowerCase().includes(searchCust.toLowerCase()) || c.tax_info?.includes(searchCust)).map((c: any) => <option key={c.id} value={c.name} className="py-1">{c.name} {c.tax_info ? `(${c.tax_info})` : ''}</option>)}
+                            </select>
+                          </motion.div>
+                        ) : (
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                            <div className="relative mb-2">
+                              <Search className="absolute left-2.5 top-2 text-slate-400" size={14} />
+                              <input type="text" placeholder="Cihaz Adı Ara..." className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" value={searchAsset} onChange={e => setSearchAsset(e.target.value)} />
+                            </div>
+                            <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400 custom-scrollbar" size={4} value={editJobDetailForm.assetId} onChange={e => {
+                              const selectedAsset = (data?.assets || []).find((a:any) => a.id === e.target.value);
+                              const parentCust = (data?.customers || []).find((c:any) => c.id === selectedAsset?.customer_id);
+                              setEditJobDetailForm({...editJobDetailForm, assetId: e.target.value, customerName: parentCust?.name || ''});
+                            }}>
+                              <option value="" disabled className="font-semibold text-slate-400 border-b border-slate-100 pb-1 mb-1">-- Listeden Varlık Seçin --</option>
+                              {(data?.assets || []).filter((a: any) => a.name?.toLowerCase().includes(searchAsset.toLowerCase())).map((a: any) => (
+                                <option key={a.id} value={a.id} className="py-1">{a.name} - {a.location}</option>
+                              ))}
+                            </select>
+                          </motion.div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* PERSONEL VE NOT */}
                     <div>
-                        <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1.5">Notlar / Talimatlar</label>
-                        <textarea 
-                            rows={4} 
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
-                            placeholder="İş ile ilgili notları güncelleyin..."
-                            value={editJobDetailForm.taskNote}
-                            onChange={(e) => setEditJobDetailForm({...editJobDetailForm, taskNote: e.target.value})}
-                        />
+                      <label className="text-[11px] font-semibold text-slate-600 block mb-1">Sorumlu Personel (Yalnızca Yöneticiler)</label>
+                      <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={editJobDetailForm.staffId} onChange={e => setEditJobDetailForm({...editJobDetailForm, staffId: e.target.value})}>
+                        <option value="">Kayıtlı Yöneticilerden Seçin...</option>
+                        {(data?.staff || []).map((s:any) => (
+                          <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-600 block mb-1">Görev Özeti / Talimatlar</label>
+                      <textarea rows={3} className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none resize-none focus:border-blue-400" placeholder="İşin detayı nedir?..." value={editJobDetailForm.taskNote} onChange={e => setEditJobDetailForm({...editJobDetailForm, taskNote: e.target.value})} />
                     </div>
 
                     <div className="pt-4 flex gap-2">
                         <button 
+                            disabled={!isEditJobValid || isSaving}
                             onClick={() => handleAction('update-job', { ...editJobDetailForm, id: selectedJob.id }, () => setSelectedJob(null), () => setIsEditingJobDetail(false))} 
-                            className="flex-1 bg-slate-900 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors"
+                            className="flex-1 bg-slate-900 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors disabled:opacity-50"
                         >
                             {isSaving ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Değişiklikleri Kaydet'}
                         </button>
