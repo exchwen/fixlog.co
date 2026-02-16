@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, CheckCircle, X, Loader2, ArrowDownRight, ArrowUpRight, Trash2, Download, Eye, Calendar, Clock } from 'lucide-react';
+import { Plus, CheckCircle, X, Loader2, ArrowDownRight, ArrowUpRight, Trash2, Download, Eye, Calendar, Clock, Filter } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
 
@@ -18,6 +18,20 @@ export default function FinanceTab({ data }: any) {
   const [financeItems, setFinanceItems] = useState([{ name: '', qty: '1' }]);
   const [financeAmount, setFinanceAmount] = useState('');
   const [isSavingFinance, setIsSavingFinance] = useState(false);
+
+  // Filtre State'leri (Her tablo için ayrı tutuluyor)
+  const [timeFilters, setTimeFilters] = useState<any>({
+    'Tüm Hesap Hareketleri': 'Tümü',
+    'Sadece Gelirler': 'Tümü',
+    'Sadece Giderler': 'Tümü'
+  });
+
+  // Özel Tarih Aralığı State'leri
+  const [customDateRanges, setCustomDateRanges] = useState<any>({
+    'Tüm Hesap Hareketleri': { start: '', end: '' },
+    'Sadece Gelirler': { start: '', end: '' },
+    'Sadece Giderler': { start: '', end: '' }
+  });
 
   // İş Detayı Gösterim Modalı State'i
   const [selectedJobDetail, setSelectedJobDetail] = useState<any>(null);
@@ -76,7 +90,6 @@ export default function FinanceTab({ data }: any) {
   };
 
   const handleAddFinanceRecord = async () => {
-    // VİRGÜL YERİNE \n (ALT SATIR) KULLANILARAK BİRLEŞTİRİLDİ
     const description = financeItems
       .filter((i: any) => i.name.trim() !== '')
       .map((i: any) => `${i.qty}x ${i.name}`)
@@ -121,7 +134,7 @@ export default function FinanceTab({ data }: any) {
     setFinanceAmount('');
   };
 
-  // İSTEMCİ TARAFINDA SIFIR MALİYETLİ GERÇEK EXCEL (.XLSX) ÇIKTISI ALMA
+  // İSTEMCİ TARAFINDA EXCEL ÇIKTISI
   const exportToExcel = (tableData: any[], title: string) => {
     const rows = tableData.map((f: any) => {
       const dateObj = new Date(f.created_at);
@@ -131,7 +144,6 @@ export default function FinanceTab({ data }: any) {
       return {
         'İşlem Tarihi': dateStr,
         'İşlem Saati': timeStr,
-        // Excel içinde alt satırlar düzgün görünmesi için \n leri tire ile ayırıyoruz
         'Açıklama / Kalemler': f.description.replace(/\n|,/g, ' - '), 
         'Miktar (TL)': f.amount,
         'İşlem Tipi': f.type
@@ -144,85 +156,161 @@ export default function FinanceTab({ data }: any) {
     XLSX.writeFile(workbook, `${title.replace(/\s+/g, '_')}_Rapor.xlsx`);
   };
 
-  // 3 FARKLI TABLOYU TEKRAR TEKRAR YAZMAMAK İÇİN OLUŞTURDUĞUMUZ RENDER FONKSİYONU
-  const renderFinanceTable = (title: string, tableData: any[]) => (
-    <div className="mb-8">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="text-lg font-bold text-slate-900">{title}</h3>
-        <button 
-          onClick={() => exportToExcel(tableData, title)} 
-          className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-100 transition-colors shadow-sm"
-        >
-          <Download size={14} /> Excel İndir (.xlsx)
-        </button>
-      </div>
+  // ZAMAN FİLTRESİ UYGULAMA FONKSİYONU (Özel Tarih Zekası Eklendi)
+  const applyTimeFilter = (data: any[], filterValue: string, title: string) => {
+    if (filterValue === 'Tümü') return data;
+    
+    const now = new Date();
+    return data.filter((item: any) => {
+      const itemDate = new Date(item.created_at);
       
-      {/* SCROLL MANTIĞI EKLENDİ (max-h ve overflow) */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-        <div className="overflow-x-auto overflow-y-auto max-h-[400px] custom-scrollbar">
-          <table className="w-full text-left text-xs relative">
-            <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 sticky top-0 z-10 shadow-sm">
-              <tr>
-                <th className="px-5 py-4 w-1/2">Açıklama (Kalemler)</th>
-                <th className="px-5 py-4">Tarih ve Saat</th>
-                <th className="px-5 py-4">Miktar (₺)</th>
-                <th className="px-5 py-4 text-right">Tip</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {tableData.length > 0 ? tableData.map((f: any) => {
-                const relatedJob = localJobs.find((j: any) => f.type === 'Gelir' && j.status === 'Tamamlandı' && f.description.includes(j.customer_name));
-                
-                // Eski virgüllü kayıtları ve yeni \n kayıtları akıllıca algılayıp alt alta listeye çevirme
-                const descriptionItems = f.description.split(/,|\n/).map((item: string) => item.trim()).filter((item: string) => item.length > 0);
-                const dateObj = new Date(f.created_at);
+      if (filterValue === 'Bugün') {
+        return itemDate.toDateString() === now.toDateString();
+      }
+      if (filterValue === 'Bu Ay') {
+        return itemDate.getMonth() === now.getMonth() && itemDate.getFullYear() === now.getFullYear();
+      }
+      if (filterValue === 'Bu Yıl') {
+        return itemDate.getFullYear() === now.getFullYear();
+      }
+      if (filterValue === 'Özel Tarih') {
+        const range = customDateRanges[title];
+        const itemTime = itemDate.getTime();
+        
+        const start = range.start ? new Date(range.start).setHours(0, 0, 0, 0) : 0;
+        const end = range.end ? new Date(range.end).setHours(23, 59, 59, 999) : Infinity;
+        
+        return itemTime >= start && itemTime <= end;
+      }
+      return true;
+    });
+  };
 
-                return (
-                <tr key={f.id} className="hover:bg-slate-50/80 transition-colors group">
-                  <td className="px-5 py-4 align-top">
-                    {/* KALEMLERİ ALT ALTA LİSTELEME */}
-                    <div className="flex flex-col gap-1.5">
-                      {descriptionItems.map((descItem: string, idx: number) => (
-                        <div key={idx} className="flex items-start gap-1.5">
-                           <span className="w-1.5 h-1.5 rounded-full bg-slate-300 flex-shrink-0 mt-1.5"></span>
-                           <span className="font-medium text-slate-700 leading-relaxed">{descItem}</span>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {/* EŞLEŞEN İŞ VARSA BUTONU GÖSTER */}
-                    {relatedJob && (
-                      <button 
-                        onClick={() => setSelectedJobDetail(relatedJob)} 
-                        className="mt-3 text-[10px] font-bold text-blue-600 bg-blue-50/80 px-2.5 py-1.5 rounded border border-blue-100 hover:bg-blue-100 flex items-center gap-1.5 transition-colors w-max shadow-sm"
-                      >
-                        <Eye size={12} /> İş Kaydını İncele
-                      </button>
-                    )}
-                  </td>
-                  <td className="px-5 py-4 align-top">
-                    <div className="flex flex-col gap-1">
-                      <div className="font-semibold text-slate-800 flex items-center gap-1.5"><Calendar size={12} className="text-slate-400"/> {dateObj.toLocaleDateString('tr-TR')}</div>
-                      <div className="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 ml-0.5"><Clock size={11} className="text-slate-400"/> {dateObj.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</div>
-                    </div>
-                  </td>
-                  <td className={`px-5 py-4 font-bold align-top text-sm ${f.type === 'Gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    <div className="flex items-center gap-1">
-                      {f.type === 'Gelir' ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-                      ₺{f.amount.toLocaleString('tr-TR')}
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 text-right align-top">
-                    <span className={`px-2.5 py-1.5 rounded-md text-[10px] font-bold border ${f.type === 'Gelir' ? 'bg-emerald-50 text-emerald-600 border-emerald-200 shadow-sm' : 'bg-rose-50 text-rose-600 border-rose-200 shadow-sm'}`}>{f.type}</span>
-                  </td>
+  // 3 FARKLI TABLOYU RENDER EDEN FONKSİYON
+  const renderFinanceTable = (title: string, rawData: any[]) => {
+    const currentFilter = timeFilters[title] || 'Tümü';
+    const filteredData = applyTimeFilter(rawData, currentFilter, title);
+
+    return (
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3">
+          <h3 className="text-lg font-bold text-slate-900">{title}</h3>
+          
+          <div className="flex flex-wrap items-center gap-2">
+            {/* ÖZEL TARİH SEÇİCİLER (Sadece "Özel Tarih" seçilirse görünür) */}
+            {currentFilter === 'Özel Tarih' && (
+              <div className="flex items-center gap-2 bg-white border border-blue-200 rounded-md shadow-sm px-2 py-1.5 animate-in fade-in slide-in-from-right-4">
+                <input 
+                  type="date" 
+                  className="text-xs text-slate-600 outline-none bg-transparent font-medium cursor-pointer"
+                  value={customDateRanges[title].start}
+                  onChange={e => setCustomDateRanges({...customDateRanges, [title]: {...customDateRanges[title], start: e.target.value}})}
+                />
+                <span className="text-slate-300 font-bold">-</span>
+                <input 
+                  type="date" 
+                  className="text-xs text-slate-600 outline-none bg-transparent font-medium cursor-pointer"
+                  value={customDateRanges[title].end}
+                  onChange={e => setCustomDateRanges({...customDateRanges, [title]: {...customDateRanges[title], end: e.target.value}})}
+                />
+              </div>
+            )}
+
+            {/* FİLTRELEME MENÜSÜ */}
+            <div className={`relative flex items-center bg-white border rounded-md shadow-sm overflow-hidden transition-colors ${currentFilter === 'Özel Tarih' ? 'border-blue-400 ring-1 ring-blue-400/20' : 'border-slate-200'}`}>
+              <div className={`pl-2.5 ${currentFilter === 'Tümü' ? 'text-slate-400' : 'text-blue-500'}`}><Filter size={14} /></div>
+              <select 
+                className="bg-transparent text-slate-700 px-2 py-1.5 text-xs font-semibold outline-none cursor-pointer"
+                value={currentFilter}
+                onChange={(e) => {
+                  setTimeFilters({...timeFilters, [title]: e.target.value});
+                  // Farklı filtre seçilince tarihleri sıfırla
+                  if (e.target.value !== 'Özel Tarih') {
+                    setCustomDateRanges({...customDateRanges, [title]: { start: '', end: '' }});
+                  }
+                }}
+              >
+                <option value="Tümü">Tüm Zamanlar</option>
+                <option value="Bugün">Bugün</option>
+                <option value="Bu Ay">Bu Ay</option>
+                <option value="Bu Yıl">Bu Yıl</option>
+                <option value="Özel Tarih">Özel Tarih Aralığı...</option>
+              </select>
+            </div>
+
+            {/* EXCEL BUTONU */}
+            <button 
+              onClick={() => exportToExcel(filteredData, title)} 
+              className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-100 transition-colors shadow-sm"
+            >
+              <Download size={14} /> Excel İndir
+            </button>
+          </div>
+        </div>
+        
+        {/* DİKEY ÇİZGİLİ VE ZEBRA DESENLİ TABLO */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <div className="overflow-x-auto overflow-y-auto max-h-[400px] custom-scrollbar">
+            <table className="w-full text-left text-xs relative border-collapse">
+              <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+                <tr>
+                  <th className="px-5 py-4 w-1/2 border-r border-slate-200 last:border-r-0">Açıklama (Kalemler)</th>
+                  <th className="px-5 py-4 border-r border-slate-200 last:border-r-0">Tarih ve Saat</th>
+                  <th className="px-5 py-4 border-r border-slate-200 last:border-r-0">Miktar (₺)</th>
+                  <th className="px-5 py-4 text-right border-r border-slate-200 last:border-r-0">Tip</th>
                 </tr>
-              )}) : <tr><td colSpan={4} className="p-12 text-center text-slate-400 font-medium">Bu tabloda henüz kayıt bulunmuyor.</td></tr>}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredData.length > 0 ? filteredData.map((f: any, index: number) => {
+                  const relatedJob = localJobs.find((j: any) => f.type === 'Gelir' && j.status === 'Tamamlandı' && f.description.includes(j.customer_name));
+                  const descriptionItems = f.description.split(/,|\n/).map((item: string) => item.trim()).filter((item: string) => item.length > 0);
+                  const dateObj = new Date(f.created_at);
+
+                  return (
+                  <tr key={f.id} className="hover:bg-blue-50/30 transition-colors group even:bg-slate-50/50">
+                    <td className="px-5 py-4 align-top border-r border-slate-100 last:border-r-0">
+                      <div className="flex flex-col gap-1.5">
+                        {descriptionItems.map((descItem: string, idx: number) => (
+                          <div key={idx} className="flex items-start gap-1.5">
+                             <span className="w-1.5 h-1.5 rounded-full bg-slate-300 flex-shrink-0 mt-1.5"></span>
+                             <span className="font-medium text-slate-700 leading-relaxed">{descItem}</span>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {relatedJob && (
+                        <button 
+                          onClick={() => setSelectedJobDetail(relatedJob)} 
+                          className="mt-3 text-[10px] font-bold text-blue-600 bg-blue-50/80 px-2.5 py-1.5 rounded border border-blue-100 hover:bg-blue-100 flex items-center gap-1.5 transition-colors w-max shadow-sm"
+                        >
+                          <Eye size={12} /> İş Kaydını İncele
+                        </button>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 align-top border-r border-slate-100 last:border-r-0">
+                      <div className="flex flex-col gap-1">
+                        <div className="font-semibold text-slate-800 flex items-center gap-1.5"><Calendar size={12} className="text-slate-400"/> {dateObj.toLocaleDateString('tr-TR')}</div>
+                        <div className="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 ml-0.5"><Clock size={11} className="text-slate-400"/> {dateObj.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</div>
+                      </div>
+                    </td>
+                    <td className={`px-5 py-4 font-extrabold align-top text-sm border-r border-slate-100 last:border-r-0 ${f.type === 'Gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      <div className="flex items-center gap-1">
+                        {f.type === 'Gelir' ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                        ₺{f.amount.toLocaleString('tr-TR')}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-right align-top border-r border-slate-100 last:border-r-0">
+                      <span className={`px-2.5 py-1.5 rounded-md text-[10px] font-bold border ${f.type === 'Gelir' ? 'bg-emerald-50 text-emerald-600 border-emerald-200 shadow-sm' : 'bg-rose-50 text-rose-600 border-rose-200 shadow-sm'}`}>{f.type}</span>
+                    </td>
+                  </tr>
+                )}) : <tr><td colSpan={4} className="p-12 text-center text-slate-400 font-medium">Bu filtreye uygun kayıt bulunmuyor.</td></tr>}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-8 relative pb-10">
