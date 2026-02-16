@@ -1,10 +1,56 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Save, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase } from 'lucide-react';
+// İl Verisini Çekiyoruz
+import trCitiesData from '@/lib/data/tr-cities.json';
+
+const CITY_DATA: any = trCitiesData;
 
 export default function SettingsTab({ settingsForm, setSettingsForm, handleAction, isSaving }: any) {
   
+  // Yerel state'ler (Dropdownların düzgün görünmesi için)
+  const [localCity, setLocalCity] = useState('');
+  const [localDistrict, setLocalDistrict] = useState('');
+  const [localDetail, setLocalDetail] = useState('');
+
+  // Sayfa yüklendiğinde mevcut adresi parçalara ayırıp yerel state'lere ata
+  useEffect(() => {
+    if (settingsForm.address) {
+      const parts = settingsForm.address.split(' / ');
+      // Format: "Detay / İlçe / İl" varsayıyoruz (DashboardModals ile uyumlu)
+      if (parts.length >= 3) {
+        const city = parts[parts.length - 1].trim();
+        const district = parts[parts.length - 2].trim();
+        
+        if (CITY_DATA[city]) {
+          setLocalCity(city);
+          setLocalDistrict(district);
+          // Geriye kalan ilk kısımları detay olarak al
+          setLocalDetail(parts.slice(0, parts.length - 2).join(' / ').trim());
+          return;
+        }
+      }
+      // Format uymuyorsa tamamını detaya bas
+      setLocalDetail(settingsForm.address);
+    }
+  }, []); // Sadece ilk yüklemede çalışsın
+
+  // Herhangi bir adres parçası değiştiğinde ana formu güncelle
+  const updateAddress = (newDetail: string, newCity: string, newDistrict: string) => {
+    // Önce yerel state'leri güncelle
+    setLocalDetail(newDetail);
+    setLocalCity(newCity);
+    setLocalDistrict(newDistrict);
+
+    // Sonra birleştirip ana forma gönder
+    let fullAddress = newDetail.trim();
+    if (newDistrict) fullAddress += ` / ${newDistrict}`;
+    if (newCity) fullAddress += ` / ${newCity}`;
+
+    setSettingsForm({ ...settingsForm, address: fullAddress });
+  };
+
   // Tüm alanların dolu olup olmadığını kontrol et
   const isFormValid = 
     settingsForm.companyName?.trim() &&
@@ -62,7 +108,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
           </div>
         </div>
 
-        {/* Sektör (KİLİTLİ) & Telefon (YENİ) */}
+        {/* Sektör (KİLİTLİ) & Telefon */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block flex items-center gap-1">
@@ -94,18 +140,56 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
           </div>
         </div>
 
-        {/* Adres */}
+        {/* Adres Yönetimi (YENİLENMİŞ) */}
         <div>
-          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Açık Adres</label>
-          <div className="relative">
-            <MapPin className="absolute left-3 top-3 text-slate-400" size={16} />
-            <textarea 
-              rows={3}
-              className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800 resize-none"
-              value={settingsForm.address}
-              onChange={(e) => setSettingsForm({ ...settingsForm, address: e.target.value })}
-              placeholder="Mahalle, Sokak, No, İlçe/İl..."
-            />
+          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Konum ve Adres</label>
+          <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+             
+             <div className="grid grid-cols-2 gap-4">
+                {/* İL SEÇİMİ */}
+                <div>
+                   <label className="text-[10px] text-slate-400 font-bold uppercase mb-1 block">İl</label>
+                   <select 
+                      className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none bg-white focus:border-blue-500"
+                      value={localCity}
+                      onChange={(e) => updateAddress(localDetail, e.target.value, '')}
+                   >
+                      <option value="">Seçiniz</option>
+                      {Object.keys(CITY_DATA).map(c => <option key={c} value={c}>{c}</option>)}
+                   </select>
+                </div>
+
+                {/* İLÇE SEÇİMİ */}
+                <div>
+                   <label className="text-[10px] text-slate-400 font-bold uppercase mb-1 block">İlçe</label>
+                   <select 
+                      className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none bg-white focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-400"
+                      value={localDistrict}
+                      onChange={(e) => updateAddress(localDetail, localCity, e.target.value)}
+                      disabled={!localCity}
+                   >
+                      <option value="">Seçiniz</option>
+                      {localCity && CITY_DATA[localCity]?.map((d: string) => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                   </select>
+                </div>
+             </div>
+
+             {/* DETAY ADRES */}
+             <div>
+                <label className="text-[10px] text-slate-400 font-bold uppercase mb-1 block">Adres Detayı (Mahalle, Cadde, Sokak, No...)</label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-3 text-slate-400" size={16} />
+                  <textarea 
+                    rows={2}
+                    className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800 resize-none bg-white"
+                    value={localDetail}
+                    onChange={(e) => updateAddress(e.target.value, localCity, localDistrict)}
+                    placeholder="Mahalle, Sokak, Bina No..."
+                  />
+                </div>
+             </div>
           </div>
         </div>
 
