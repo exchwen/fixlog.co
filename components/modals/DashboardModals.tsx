@@ -2,8 +2,20 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin, Calendar, AlertTriangle, ArrowRight, Filter, ShieldCheck, Clock } from 'lucide-react';
+import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin, Calendar, AlertTriangle, ArrowRight, Filter, ShieldCheck, Navigation } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json'; 
+
+// TÜRKİYE İL VE İLÇE VERİSİ (Örnek olarak büyük şehirler ve genel yapı)
+const CITY_DATA: any = {
+  "İstanbul": ["Adalar", "Arnavutköy", "Ataşehir", "Avcılar", "Bağcılar", "Bahçelievler", "Bakırköy", "Başakşehir", "Bayrampaşa", "Beşiktaş", "Beykoz", "Beylikdüzü", "Beyoğlu", "Büyükçekmece", "Çatalca", "Çekmeköy", "Esenler", "Esenyurt", "Eyüpsultan", "Fatih", "Gaziosmanpaşa", "Güngören", "Kadıköy", "Kağıthane", "Kartal", "Küçükçekmece", "Maltepe", "Pendik", "Sancaktepe", "Sarıyer", "Silivri", "Sultanbeyli", "Sultangazi", "Şile", "Şişli", "Tuzla", "Ümraniye", "Üsküdar", "Zeytinburnu"],
+  "Ankara": ["Akyurt", "Altındağ", "Ayaş", "Bala", "Beypazarı", "Çamlıdere", "Çankaya", "Çubuk", "Elmadağ", "Etimesgut", "Evren", "Gölbaşı", "Güdül", "Haymana", "Kahramankazan", "Kalecik", "Keçiören", "Kızılcahamam", "Mamak", "Nallıhan", "Polatlı", "Pursaklar", "Sincan", "Şereflikoçhisar", "Yenimahalle"],
+  "İzmir": ["Aliağa", "Balçova", "Bayındır", "Bayraklı", "Bergama", "Beydağ", "Bornova", "Buca", "Çeşme", "Çiğli", "Dikili", "Foça", "Gaziemir", "Güzelbahçe", "Karabağlar", "Karaburun", "Karşıyaka", "Kemalpaşa", "Kınık", "Kiraz", "Konak", "Menderes", "Menemen", "Narlıdere", "Ödemiş", "Seferihisar", "Selçuk", "Tire", "Torbalı", "Urla"],
+  "Bursa": ["Nilüfer", "Osmangazi", "Yıldırım", "Gemlik", "İnegöl", "Mudanya", "Gürsu", "Kestel"],
+  "Antalya": ["Muratpaşa", "Kepez", "Konyaaltı", "Alanya", "Manavgat", "Serik", "Kemer"],
+  "Kocaeli": ["İzmit", "Gebze", "Darıca", "Gölcük", "Körfez", "Derince"],
+  "Adana": ["Seyhan", "Çukurova", "Yüreğir", "Sarıçam"],
+  "Diğer": [] // Listede olmayanlar için manuel giriş
+};
 
 export default function DashboardModals({
   showStaffDetail, setShowStaffDetail, isEditingStaff, setIsEditingStaff, editStaffForm, setEditStaffForm,
@@ -24,6 +36,11 @@ export default function DashboardModals({
 
   // Personel Geçmişi Arama State'i
   const [staffJobSearch, setStaffJobSearch] = useState('');
+
+  // --- ADRES YÖNETİMİ İÇİN STATE'LER (YENİ) ---
+  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+  // -------------------------------------------
 
   // Müşteri Düzenleme State
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
@@ -123,6 +140,14 @@ export default function DashboardModals({
         )
     : [];
 
+  // --- ADRES BİRLEŞTİRME YARDIMCISI ---
+  const getFullAddress = (rawAddress: string, city: string, district: string) => {
+      let full = rawAddress;
+      if (district) full += ` ${district}`;
+      if (city && city !== 'Diğer') full += ` / ${city}`;
+      return full.trim();
+  };
+
   return (
     <>
       {/* İŞ DETAY VE DÜZENLEME MODALI (Z-INDEX 130) */}
@@ -143,7 +168,6 @@ export default function DashboardModals({
                 className="bg-white w-full max-w-lg rounded-xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 pointer-events-auto"
             >
               
-              {/* Header */}
               <div className="flex justify-between items-start p-6 pb-4 border-b border-slate-100 bg-white z-10 rounded-t-xl">
                 <div>
                     <h2 className="text-xl font-bold text-slate-900">{isEditingJobDetail ? 'İş Emrini Düzenle' : 'İş Emri Detayı'}</h2>
@@ -152,7 +176,6 @@ export default function DashboardModals({
                 <button onClick={() => { setSelectedJob(null); setIsEditingJobDetail(false); setShowCancelConfirm(false); }} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md transition-colors"><X size={18} /></button>
               </div>
 
-              {/* View Mode */}
               {!isEditingJobDetail ? (
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4 relative">
                     
@@ -173,7 +196,7 @@ export default function DashboardModals({
                                       await handleAction('update-job', { 
                                           id: selectedJob.id, 
                                           status: 'İptal',
-                                          lastEditedBy: data?.ownerName || 'Yönetici' // İptal edeni de kaydet
+                                          lastEditedBy: data?.ownerName || 'Yönetici' 
                                       }, () => setSelectedJob(null), () => {});
                                   }}
                                   className="flex-1 bg-rose-600 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-rose-700 shadow-sm shadow-rose-200"
@@ -191,7 +214,6 @@ export default function DashboardModals({
                     )}
                     </AnimatePresence>
 
-                    {/* Durum Badge */}
                     <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100">
                         <span className="text-xs font-semibold text-slate-500">GÜNCEL DURUM</span>
                         <span className={`px-2.5 py-1 rounded text-xs font-medium border ${statusColors[selectedJob.status] || 'bg-slate-100'}`}>{selectedJob.status}</span>
@@ -235,7 +257,6 @@ export default function DashboardModals({
                         </p>
                     </div>
 
-                    {/* YENİ: GÜVENLİK KAYDI (Son İşlem Yapan) */}
                     {selectedJob.details?.lastEditedBy && (
                         <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-100 rounded-md">
                             <ShieldCheck size={14} className="text-emerald-600" />
@@ -269,8 +290,6 @@ export default function DashboardModals({
               ) : (
                 // --- GELİŞMİŞ EDİT MODU ---
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
-                    
-                    {/* İŞ TÜRÜ SEÇİMİ */}
                     <div>
                       <label className="text-[11px] font-semibold text-slate-600 block mb-1.5">İş Türü</label>
                       <div className="grid grid-cols-2 gap-2">
@@ -279,7 +298,6 @@ export default function DashboardModals({
                       </div>
                     </div>
 
-                    {/* ZAMANLAMA SEÇİMİ */}
                     <div>
                       <label className="text-[11px] font-semibold text-slate-600 block mb-1.5">Tarih / Zamanlama</label>
                       <div className="grid grid-cols-2 gap-2">
@@ -293,7 +311,6 @@ export default function DashboardModals({
                       )}
                     </div>
 
-                    {/* NORMAL İŞ İSE: MÜŞTERİ VEYA VARLIK SEÇİMİ */}
                     {editJobDetailForm.workCategory !== 'Genel İş Atama' && (
                       <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                         <div className="flex gap-2 mb-3">
@@ -333,7 +350,6 @@ export default function DashboardModals({
                       </div>
                     )}
 
-                    {/* PERSONEL VE NOT */}
                     <div>
                       <label className="text-[11px] font-semibold text-slate-600 block mb-1">Sorumlu Personel (Yalnızca Yöneticiler)</label>
                       <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={editJobDetailForm.staffId} onChange={e => setEditJobDetailForm({...editJobDetailForm, staffId: e.target.value})}>
@@ -355,7 +371,7 @@ export default function DashboardModals({
                             onClick={() => handleAction('update-job', { 
                                 ...editJobDetailForm, 
                                 id: selectedJob.id,
-                                lastEditedBy: data?.ownerName || 'Yönetici' // Kaydeden Kişi
+                                lastEditedBy: data?.ownerName || 'Yönetici' 
                             }, () => setSelectedJob(null), () => setIsEditingJobDetail(false))} 
                             className="flex-1 bg-slate-900 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors disabled:opacity-50"
                         >
@@ -482,15 +498,15 @@ export default function DashboardModals({
                     <div className="flex items-center justify-between mt-0.5">
                       <div className="text-xs font-medium text-slate-800 line-clamp-2">{showCustomerDetail.address || '-'}</div>
                       {showCustomerDetail.address && (
-            <a 
-              href={`https://maps.google.com/?q=${encodeURIComponent(showCustomerDetail.address)}`} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-100/50 hover:bg-blue-100 px-2 py-1 rounded transition-colors whitespace-nowrap ml-2"
-            >
-              <MapPin size={12} /> Haritada Gör
-            </a>
-          )}
+                        <a 
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(showCustomerDetail.address)}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-100/50 hover:bg-blue-100 px-2 py-1 rounded transition-colors whitespace-nowrap ml-2"
+                        >
+                          <MapPin size={12} /> Haritada Gör
+                        </a>
+                      )}
                     </div>
                  </div>
               </div>
@@ -580,15 +596,15 @@ export default function DashboardModals({
                     <div className="flex flex-col mt-0.5 space-y-1">
                       <div className="text-xs font-medium text-slate-800">{showAssetDetail.location || '-'}</div>
                       {showAssetDetail.location && (
-            <a 
-              href={`https://maps.google.com/?q=${encodeURIComponent(showAssetDetail.location + ' ' + (showAssetDetail.apartmentName || ''))}`} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="self-start inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-100/50 hover:bg-blue-100 px-2 py-1 rounded transition-colors"
-            >
-              <MapPin size={12} /> Haritada Gör
-            </a>
-          )}
+                        <a 
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(showAssetDetail.location + ' ' + (showAssetDetail.apartmentName || ''))}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="self-start inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-100/50 hover:bg-blue-100 px-2 py-1 rounded transition-colors"
+                        >
+                          <MapPin size={12} /> Haritada Gör
+                        </a>
+                      )}
                     </div>
                  </div>
                  <div className="col-span-2 bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Teknik Detaylar</div><div className="text-xs font-medium text-slate-800 mt-0.5 line-clamp-2">{showAssetDetail.asset_details || '-'}</div></div>
@@ -724,7 +740,7 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* VARLIK (CİHAZ) EKLERKEN AKORDEONLU MÜŞTERİ SEÇİMİ */}
+      {/* VARLIK (CİHAZ) EKLERKEN AKORDEONLU MÜŞTERİ SEÇİMİ (GÜNCELLENDİ: ADRES FORMU) */}
       <AnimatePresence>
         {showAssetModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -774,7 +790,21 @@ export default function DashboardModals({
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="px-3 pb-3 pt-1 space-y-2">
                            <input className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Firma / Müşteri Adı" value={assetForm.newCustomer?.name || ''} onChange={e => setAssetForm({...assetForm, newCustomer: {...assetForm.newCustomer, name: e.target.value}})} />
                            <input className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Telefon / İletişim" value={assetForm.newCustomer?.contact || ''} onChange={e => setAssetForm({...assetForm, newCustomer: {...assetForm.newCustomer, contact: e.target.value}})} />
-                           <input className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Açık Adres" value={assetForm.newCustomer?.address || ''} onChange={e => setAssetForm({...assetForm, newCustomer: {...assetForm.newCustomer, address: e.target.value}})} />
+                           
+                           {/* İYİLEŞTİRİLMİŞ ADRES FORMU */}
+                           <div className="grid grid-cols-2 gap-2">
+                               <select className="px-3 py-2 border border-slate-300 rounded-md text-xs outline-none bg-white" value={selectedCity} onChange={(e) => { setSelectedCity(e.target.value); setSelectedDistrict(''); }}>
+                                  <option value="">İl Seçin</option>
+                                  {Object.keys(CITY_DATA).map(c => <option key={c} value={c}>{c}</option>)}
+                               </select>
+                               <select className="px-3 py-2 border border-slate-300 rounded-md text-xs outline-none bg-white" value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} disabled={!selectedCity}>
+                                  <option value="">İlçe Seçin</option>
+                                  {selectedCity && CITY_DATA[selectedCity]?.map((d:string) => <option key={d} value={d}>{d}</option>)}
+                               </select>
+                           </div>
+                           <textarea rows={2} className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white resize-none" placeholder="Mahalle, Sokak, Kapı No..." value={assetForm.newCustomer?.address || ''} onChange={e => setAssetForm({...assetForm, newCustomer: {...assetForm.newCustomer, address: e.target.value}})} />
+                           {/* ----------------------------- */}
+
                            <input className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Vergi No / T.C." value={assetForm.newCustomer?.taxInfo || ''} onChange={e => setAssetForm({...assetForm, newCustomer: {...assetForm.newCustomer, taxInfo: e.target.value}})} />
                         </motion.div>
                       )}
@@ -786,11 +816,48 @@ export default function DashboardModals({
                   <div className="space-y-2">
                     <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Varlık/Cihaz Adı (Örn: Yolcu Asansörü)" value={assetForm.name} onChange={e => setAssetForm({...assetForm, name: e.target.value})} />
                     <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Bina / Site Adı" value={assetForm.apartmentName} onChange={e => setAssetForm({...assetForm, apartmentName: e.target.value})} />
-                    <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Konum (Kat, Blok)" value={assetForm.location} onChange={e => setAssetForm({...assetForm, location: e.target.value})} />
+                    
+                    {/* VARLIK KONUMU İÇİN DE AYNI ADRES YAPISI */}
+                    <div className="p-2 bg-slate-50 border border-slate-100 rounded-md space-y-2">
+                        <div className="text-[10px] text-slate-400 font-bold uppercase">Konum / Adres Detayı</div>
+                        <div className="grid grid-cols-2 gap-2">
+                           <select className="px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white" value={selectedCity} onChange={(e) => { setSelectedCity(e.target.value); setSelectedDistrict(''); }}>
+                              <option value="">İl Seçin</option>
+                              {Object.keys(CITY_DATA).map(c => <option key={c} value={c}>{c}</option>)}
+                           </select>
+                           <select className="px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white" value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} disabled={!selectedCity}>
+                              <option value="">İlçe Seçin</option>
+                              {selectedCity && CITY_DATA[selectedCity]?.map((d:string) => <option key={d} value={d}>{d}</option>)}
+                           </select>
+                        </div>
+                        <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Kat, Daire No, Blok..." value={assetForm.location} onChange={e => setAssetForm({...assetForm, location: e.target.value})} />
+                    </div>
+                    {/* ----------------------------------------- */}
+
                     <textarea rows={3} className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none resize-none focus:border-blue-400" placeholder="Teknik Detaylar (Seri No, Model vs.)" value={assetForm.deviceDetails} onChange={e => setAssetForm({...assetForm, deviceDetails: e.target.value})} />
                   </div>
                 </div>
-                <button disabled={isSaving} className="w-full bg-slate-900 text-white py-2.5 rounded-md font-semibold text-sm mt-4 hover:bg-slate-800 flex justify-center items-center" onClick={() => handleAction('add-asset', assetForm, setShowAssetModal, () => setAssetForm({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', customerMode: 'NONE', newCustomer: { name: '', contact: '', address: '', taxInfo: '' } }))}>
+                <button 
+                    disabled={isSaving} 
+                    className="w-full bg-slate-900 text-white py-2.5 rounded-md font-semibold text-sm mt-4 hover:bg-slate-800 flex justify-center items-center" 
+                    onClick={() => {
+                        // ADRESLERİ BİRLEŞTİRİP GÖNDERME
+                        if (assetCustMode === 'NEW') {
+                            const combinedAddress = getFullAddress(assetForm.newCustomer.address, selectedCity, selectedDistrict);
+                            const updatedNewCust = { ...assetForm.newCustomer, address: combinedAddress };
+                            handleAction('add-asset', { ...assetForm, newCustomer: updatedNewCust }, setShowAssetModal, () => {
+                                setAssetForm({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', customerMode: 'NONE', newCustomer: { name: '', contact: '', address: '', taxInfo: '' } });
+                                setSelectedCity(''); setSelectedDistrict('');
+                            });
+                        } else {
+                            const combinedLocation = getFullAddress(assetForm.location, selectedCity, selectedDistrict);
+                            handleAction('add-asset', { ...assetForm, location: combinedLocation }, setShowAssetModal, () => {
+                                setAssetForm({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', customerMode: 'NONE', newCustomer: { name: '', contact: '', address: '', taxInfo: '' } });
+                                setSelectedCity(''); setSelectedDistrict('');
+                            });
+                        }
+                    }}
+                >
                   {isSaving ? <Loader2 className="animate-spin" size={16} /> : 'Varlığı Sisteme Kaydet'}
                 </button>
               </div>
@@ -799,7 +866,7 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* MÜŞTERİ EKLERKEN AKORDEONLU CİHAZ SEÇİMİ */}
+      {/* MÜŞTERİ EKLERKEN AKORDEONLU CİHAZ SEÇİMİ (GÜNCELLENDİ: ADRES FORMU) */}
       <AnimatePresence>
         {showCustomerModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -811,7 +878,21 @@ export default function DashboardModals({
                   <div className="space-y-2">
                     <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Firma / İsim" value={customerForm.name} onChange={e => setCustomerForm({...customerForm, name: e.target.value})} />
                     <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Telefon / E-posta" value={customerForm.contact} onChange={e => setCustomerForm({...customerForm, contact: e.target.value})} />
-                    <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Açık Adres" value={customerForm.address} onChange={e => setCustomerForm({...customerForm, address: e.target.value})} />
+                    
+                    {/* İYİLEŞTİRİLMİŞ ADRES FORMU */}
+                    <div className="grid grid-cols-2 gap-2">
+                        <select className="px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white" value={selectedCity} onChange={(e) => { setSelectedCity(e.target.value); setSelectedDistrict(''); }}>
+                            <option value="">İl Seçin</option>
+                            {Object.keys(CITY_DATA).map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <select className="px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white" value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} disabled={!selectedCity}>
+                            <option value="">İlçe Seçin</option>
+                            {selectedCity && CITY_DATA[selectedCity]?.map((d:string) => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                    </div>
+                    <textarea rows={2} className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 resize-none" placeholder="Mahalle, Sokak, Kapı No..." value={customerForm.address} onChange={e => setCustomerForm({...customerForm, address: e.target.value})} />
+                    {/* ----------------------------- */}
+
                     <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Vergi No / T.C." value={customerForm.taxInfo} onChange={e => setCustomerForm({...customerForm, taxInfo: e.target.value})} />
                   </div>
                 </div>
@@ -865,7 +946,18 @@ export default function DashboardModals({
                     </div>
                   </div>
                 </div>
-                <button disabled={isSaving} className="w-full bg-blue-600 text-white py-2.5 rounded-md font-semibold text-sm mt-4 hover:bg-blue-700 flex justify-center items-center" onClick={() => handleAction('add-customer', customerForm, setShowCustomerModal, () => setCustomerForm({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', assetMode: 'NONE', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } }))}>
+                <button 
+                    disabled={isSaving} 
+                    className="w-full bg-blue-600 text-white py-2.5 rounded-md font-semibold text-sm mt-4 hover:bg-blue-700 flex justify-center items-center" 
+                    onClick={() => {
+                        // ADRES BİRLEŞTİRME
+                        const combinedAddress = getFullAddress(customerForm.address, selectedCity, selectedDistrict);
+                        handleAction('add-customer', { ...customerForm, address: combinedAddress }, setShowCustomerModal, () => {
+                            setCustomerForm({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', assetMode: 'NONE', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } });
+                            setSelectedCity(''); setSelectedDistrict('');
+                        });
+                    }}
+                >
                    {isSaving ? <Loader2 className="animate-spin" size={16} /> : 'Müşteriyi Kaydet'}
                 </button>
               </div>
