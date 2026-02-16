@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin } from 'lucide-react';
-import sectorsData from '@/lib/data/sectors.json'; // Kendi projendeki dosya yoluna göre burayı güncelleyebilirsin
+import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin, Calendar } from 'lucide-react';
+import sectorsData from '@/lib/data/sectors.json'; 
 
 export default function DashboardModals({
   showStaffDetail, setShowStaffDetail, isEditingStaff, setIsEditingStaff, editStaffForm, setEditStaffForm,
@@ -14,6 +14,7 @@ export default function DashboardModals({
   showStaffModal, setShowStaffModal, staffForm, setStaffForm,
   showCustomerModal, setShowCustomerModal, customerForm, setCustomerForm,
   showStockModal, setShowStockModal, stockForm, setStockForm,
+  selectedJob, setSelectedJob, // YENİ EKLENDİ
   handleAction, isSaving, data
 }: any) {
   
@@ -21,15 +22,22 @@ export default function DashboardModals({
   const [searchAsset, setSearchAsset] = useState('');
   const [jobTargetMode, setJobTargetMode] = useState('CUSTOMER'); 
 
+  // Müşteri Düzenleme State
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
   const [editCustomerForm, setEditCustomerForm] = useState({ id: '', name: '', contact: '', address: '', taxInfo: '' });
 
+  // Varlık Düzenleme State
   const [isEditingAsset, setIsEditingAsset] = useState(false);
   const [editAssetForm, setEditAssetForm] = useState({ id: '', name: '', location: '', apartmentName: '', deviceDetails: '' });
+
+  // İŞ DETAYI DÜZENLEME STATE (YENİ)
+  const [isEditingJobDetail, setIsEditingJobDetail] = useState(false);
+  const [editJobDetailForm, setEditJobDetailForm] = useState({ scheduledDate: '', staffId: '', taskNote: '' });
 
   const handleCloseDetail = (type: string) => {
     if (type === 'customer' && setShowCustomerDetail) { setShowCustomerDetail(null); setIsEditingCustomer(false); }
     if (type === 'asset' && setShowAssetDetail) { setShowAssetDetail(null); setIsEditingAsset(false); }
+    if (type === 'job' && setSelectedJob) { setSelectedJob(null); setIsEditingJobDetail(false); } // YENİ
   };
 
   useEffect(() => {
@@ -37,21 +45,26 @@ export default function DashboardModals({
       if (e.key === 'Escape') {
         setShowJobModal(false); setShowAssetModal(false); setShowStaffModal(false); 
         setShowCustomerModal(false); setShowStockModal(false); setShowStaffDetail(null);
-        handleCloseDetail('customer'); handleCloseDetail('asset');
+        handleCloseDetail('customer'); handleCloseDetail('asset'); handleCloseDetail('job');
       }
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [setShowJobModal, setShowAssetModal, setShowStaffModal, setShowCustomerModal, setShowStockModal, setShowStaffDetail, setShowCustomerDetail, setShowAssetDetail]);
+  }, [setShowJobModal, setShowAssetModal, setShowStaffModal, setShowCustomerModal, setShowStockModal, setShowStaffDetail, setShowCustomerDetail, setShowAssetDetail, setSelectedJob]);
 
-  const statusColors: any = { 'Beklemede': 'bg-amber-100 text-amber-700 border-amber-200', 'Tamamlandı': 'bg-emerald-100 text-emerald-700 border-emerald-200', 'Devam Ediyor': 'bg-blue-100 text-blue-700 border-blue-200', 'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200' };
+  const statusColors: any = { 
+    'Beklemede': 'bg-amber-100 text-amber-700 border-amber-200', 
+    'Tamamlandı': 'bg-emerald-100 text-emerald-700 border-emerald-200', 
+    'Devam Ediyor': 'bg-blue-100 text-blue-700 border-blue-200', 
+    'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200',
+    'İptal': 'bg-rose-100 text-rose-700 border-rose-200'
+  };
 
   const assetCustMode = assetForm.customerMode || 'NONE';
   const custAssetMode = customerForm.assetMode || 'NONE';
   
   const isJobValid = jobForm.workCategory === 'Genel İş Atama' ? true : (jobForm.customerName || jobForm.assetId);
 
-  // JSON Verisini Güvenli Çekmek İçin TypeScript Koruması
   const currentSector = data?.sector || '';
   const safeSectors: any = sectorsData;
   const branchList = currentSector && safeSectors?.sectors?.[currentSector]?.subTypes 
@@ -60,6 +73,158 @@ export default function DashboardModals({
 
   return (
     <>
+      {/* İŞ DETAY VE DÜZENLEME MODALI (YENİ) */}
+      <AnimatePresence>
+        {selectedJob && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[130] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-lg rounded-xl p-6 shadow-xl relative flex flex-col max-h-[85vh]">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                    <h2 className="text-xl font-bold text-slate-900">İş Emri Detayı</h2>
+                    <div className="text-xs text-slate-500 mt-0.5">ID: #{selectedJob.id} • {selectedJob.created_at?.split('T')[0] || ''}</div>
+                </div>
+                <button onClick={() => { setSelectedJob(null); setIsEditingJobDetail(false); }} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md"><X size={18} /></button>
+              </div>
+
+              {/* View Mode */}
+              {!isEditingJobDetail ? (
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4">
+                    {/* Durum Badge */}
+                    <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100">
+                        <span className="text-xs font-semibold text-slate-500">GÜNCEL DURUM</span>
+                        <span className={`px-2.5 py-1 rounded text-xs font-medium border ${statusColors[selectedJob.status] || 'bg-slate-100'}`}>{selectedJob.status}</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-white p-3 border border-slate-100 rounded-lg shadow-sm">
+                            <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Müşteri / Lokasyon</div>
+                            <div className="text-sm font-semibold text-slate-800">{selectedJob.customer_name}</div>
+                            {selectedJob.asset_id && (
+                                <div className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                                    <Box size={12} />
+                                    {(data?.assets || []).find((a:any) => a.id === selectedJob.asset_id)?.name || 'Bilinmeyen Cihaz'}
+                                </div>
+                            )}
+                        </div>
+                        <div className="bg-white p-3 border border-slate-100 rounded-lg shadow-sm">
+                             <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Görev Tipi</div>
+                             <div className="text-sm font-semibold text-slate-800">{selectedJob.work_type}</div>
+                        </div>
+                        <div className="bg-white p-3 border border-slate-100 rounded-lg shadow-sm">
+                             <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Planlanan Tarih</div>
+                             <div className="text-sm font-medium text-slate-800 flex items-center gap-1.5">
+                                <Calendar size={14} className="text-slate-400"/>
+                                {selectedJob.scheduled_date || 'Anlık / Acil'}
+                             </div>
+                        </div>
+                        <div className="bg-white p-3 border border-slate-100 rounded-lg shadow-sm">
+                             <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Sorumlu Personel</div>
+                             <div className="text-sm font-medium text-slate-800 flex items-center gap-1.5">
+                                <User size={14} className="text-slate-400"/>
+                                {(data?.staff || []).find((s:any) => s.id === selectedJob.staff_id)?.name || 'Atanmamış'}
+                             </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase mb-2">GÖREV NOTLARI / AÇIKLAMA</div>
+                        <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">
+                            {selectedJob.details?.note || 'Herhangi bir not girilmemiş.'}
+                        </p>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-100 flex gap-2">
+                        <button 
+                            onClick={() => { 
+                                setIsEditingJobDetail(true); 
+                                setEditJobDetailForm({ 
+                                    scheduledDate: selectedJob.scheduled_date || '', 
+                                    staffId: selectedJob.staff_id || '', 
+                                    taskNote: selectedJob.details?.note || '' 
+                                }); 
+                            }} 
+                            className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+                        >
+                            <Settings size={14} /> Düzenle / Ata
+                        </button>
+                        
+                        {selectedJob.status !== 'İptal' && selectedJob.status !== 'Tamamlandı' && (
+                            <button 
+                                onClick={async () => {
+                                    if(confirm('Bu iş emrini İPTAL etmek istediğinize emin misiniz?')) {
+                                        await handleAction('update-job', { id: selectedJob.id, status: 'İptal' }, () => setSelectedJob(null), () => {});
+                                    }
+                                }}
+                                className="px-4 bg-rose-50 text-rose-600 border border-rose-100 py-2.5 rounded-lg text-xs font-bold hover:bg-rose-100 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <X size={14} /> İptal Et
+                            </button>
+                        )}
+                    </div>
+                </div>
+              ) : (
+                // Edit Mode
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4">
+                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 mb-2">
+                        <div className="text-xs text-blue-800 font-medium">İş Emri Düzenleniyor: <span className="font-bold">{selectedJob.customer_name}</span></div>
+                    </div>
+
+                    <div>
+                        <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1.5">Planlanan Tarih</label>
+                        <input 
+                            type="date" 
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                            value={editJobDetailForm.scheduledDate}
+                            onChange={(e) => setEditJobDetailForm({...editJobDetailForm, scheduledDate: e.target.value})}
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1.5">Sorumlu Personel</label>
+                        <select 
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
+                            value={editJobDetailForm.staffId}
+                            onChange={(e) => setEditJobDetailForm({...editJobDetailForm, staffId: e.target.value})}
+                        >
+                            <option value="">-- Personel Seçin --</option>
+                            {(data?.staff || []).map((s:any) => (
+                                <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1.5">Notlar / Talimatlar</label>
+                        <textarea 
+                            rows={4} 
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
+                            placeholder="İş ile ilgili notları güncelleyin..."
+                            value={editJobDetailForm.taskNote}
+                            onChange={(e) => setEditJobDetailForm({...editJobDetailForm, taskNote: e.target.value})}
+                        />
+                    </div>
+
+                    <div className="pt-4 flex gap-2">
+                        <button 
+                            onClick={() => handleAction('update-job', { ...editJobDetailForm, id: selectedJob.id }, () => setSelectedJob(null), () => setIsEditingJobDetail(false))} 
+                            className="flex-1 bg-slate-900 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors"
+                        >
+                            {isSaving ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Değişiklikleri Kaydet'}
+                        </button>
+                        <button 
+                            onClick={() => setIsEditingJobDetail(false)} 
+                            className="flex-1 bg-white border border-slate-200 text-slate-700 py-2.5 rounded-lg text-xs font-bold hover:bg-slate-50 transition-colors"
+                        >
+                            Vazgeç
+                        </button>
+                    </div>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* PERSONEL DETAY MODALI */}
       <AnimatePresence>
         {showStaffDetail && (
@@ -94,12 +259,12 @@ export default function DashboardModals({
                        <input className="px-3 py-1.5 rounded-md border border-slate-200 text-xs w-full outline-none focus:border-blue-400" value={editStaffForm.name} onChange={(e) => setEditStaffForm({...editStaffForm, name: e.target.value})} placeholder="Ad Soyad" />
                        <input className="px-3 py-1.5 rounded-md border border-slate-200 text-xs w-full outline-none focus:border-blue-400" value={editStaffForm.phone} onChange={(e) => setEditStaffForm({...editStaffForm, phone: e.target.value})} placeholder="Telefon" />
                        <select className="col-span-2 px-3 py-1.5 rounded-md border border-slate-200 text-xs w-full outline-none bg-white focus:border-blue-400" value={editStaffForm.branch} onChange={(e) => setEditStaffForm({...editStaffForm, branch: e.target.value})}>
-              <option value="">Branş / Uzmanlık Seçin</option>
-              {branchList.map((subType) => (
-                <option key={subType} value={subType}>{subType}</option>
-              ))}
-              <option value="Genel Usta">Genel Usta</option>
-           </select>
+                          <option value="">Branş / Uzmanlık Seçin</option>
+                          {branchList.map((subType: any) => (
+                            <option key={subType} value={subType}>{subType}</option>
+                          ))}
+                          <option value="Genel Usta">Genel Usta</option>
+                       </select>
                      </div>
                      <div className="flex gap-2 pt-2">
                        <button onClick={() => handleAction('add-staff', { ...editStaffForm, id: showStaffDetail.id }, () => setShowStaffDetail(null), () => setIsEditingStaff(false))} className="flex-1 bg-blue-600 text-white py-1.5 rounded-md text-xs font-semibold hover:bg-blue-700">{isSaving ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Kaydet'}</button>
@@ -277,7 +442,7 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* İŞ EMRİ MODALI */}
+      {/* İŞ EMRİ MODALI (YENİ EKLEME MODU) */}
       <AnimatePresence>
         {showJobModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -533,13 +698,13 @@ export default function DashboardModals({
                 <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Telefon" onChange={e => setStaffForm({...staffForm, phone: e.target.value})} />
                 
                 {/* DİNAMİK BRANŞ SEÇİMİ */}
-    <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" onChange={e => setStaffForm({...staffForm, branch: e.target.value})}>
-       <option value="">Branş / Uzmanlık Seçin</option>
-       {branchList.map((subType) => (
-         <option key={subType} value={subType}>{subType}</option>
-       ))}
-       <option value="Genel Usta">Genel Usta</option>
-    </select>
+                <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" onChange={e => setStaffForm({...staffForm, branch: e.target.value})}>
+                  <option value="">Branş / Uzmanlık Seçin</option>
+                  {branchList.map((subType: any) => (
+                    <option key={subType} value={subType}>{subType}</option>
+                  ))}
+                  <option value="Genel Usta">Genel Usta</option>
+                </select>
 
                 <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" onChange={e => setStaffForm({...staffForm, role: e.target.value})}>
                   <option value="Usta">Saha Ustası</option>

@@ -30,17 +30,21 @@ export default function PatronDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // MODAL STATE'LERİ
   const [showJobModal, setShowJobModal] = useState(false);
   const [showAssetModal, setShowAssetModal] = useState(false);
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showStockModal, setShowStockModal] = useState(false);
   
+  // DETAY STATE'LERİ
   const [showStaffDetail, setShowStaffDetail] = useState(null);
-  
-  // YENİ EKLENEN STATELER: Tıklanan Müşteri ve Cihaz Detayları İçin
   const [showCustomerDetail, setShowCustomerDetail] = useState(null);
   const [showAssetDetail, setShowAssetDetail] = useState(null);
+  
+  // --- YENİ EKLENEN KISIM: İŞ DETAYI İÇİN STATE ---
+  const [selectedJob, setSelectedJob] = useState(null); 
+  // ------------------------------------------------
 
   const [isEditingStaff, setIsEditingStaff] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -50,6 +54,7 @@ export default function PatronDashboard() {
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
 
+  // FORMLAR
   const [jobForm, setJobForm] = useState({ customerName: '', assetId: '', staffId: '', workType: 'Genel Görev', jobType: 'Anlık', scheduledDate: '', taskNote: '' });
   const [assetForm, setAssetForm] = useState({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', newCustomer: { name: '', contact: '', address: '', taxInfo: '' } });
   const [staffForm, setStaffForm] = useState({ name: '', phone: '', role: 'Usta', branch: '', status: 'Aktif' });
@@ -102,7 +107,13 @@ export default function PatronDashboard() {
     </div>
   );
 
-  const statusColors = { 'Beklemede': 'bg-amber-100 text-amber-700 border-amber-200', 'Tamamlandı': 'bg-emerald-100 text-emerald-700 border-emerald-200', 'Devam Ediyor': 'bg-blue-100 text-blue-700 border-blue-200', 'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200' };
+  const statusColors = { 
+    'Beklemede': 'bg-amber-100 text-amber-700 border-amber-200', 
+    'Tamamlandı': 'bg-emerald-100 text-emerald-700 border-emerald-200', 
+    'Devam Ediyor': 'bg-blue-100 text-blue-700 border-blue-200', 
+    'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200',
+    'İptal': 'bg-rose-100 text-rose-700 border-rose-200' 
+  };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex font-sans text-slate-900 text-sm overflow-hidden relative selection:bg-blue-100">
@@ -116,10 +127,19 @@ export default function PatronDashboard() {
 
         <div className="p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">
           {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} />}
-          {activeTab === 'jobs' && <JobsTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} />}
-          {activeTab === 'team' && <TeamTab data={data} setShowStaffModal={setShowStaffModal} setShowStaffDetail={setShowStaffDetail} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} />}
           
-          {/* YENİ: Müşteriler ve Varlıklar sekmelerine detay açma fonksiyonlarını gönderdik */}
+          {/* --- GÜNCELLENEN KISIM: JobsTab --- */}
+          {activeTab === 'jobs' && (
+            <JobsTab 
+              data={data} 
+              setShowJobModal={setShowJobModal} 
+              statusColors={statusColors} 
+              setSelectedJob={setSelectedJob} // ARTIK TIKLAYINCA ÇALIŞACAK
+            />
+          )}
+          {/* ---------------------------------- */}
+
+          {activeTab === 'team' && <TeamTab data={data} setShowStaffModal={setShowStaffModal} setShowStaffDetail={setShowStaffDetail} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} />}
           {activeTab === 'customers' && <CustomersTab data={data} setShowCustomerModal={setShowCustomerModal} setShowCustomerDetail={setShowCustomerDetail} />}
           {activeTab === 'stock' && <StockTab data={data} setShowStockModal={setShowStockModal} />}
           {activeTab === 'finance' && <FinanceTab data={data} />}
@@ -130,8 +150,9 @@ export default function PatronDashboard() {
 
       <ChatPanel isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} activeChatId={activeChatId} setActiveChatId={setActiveChatId} data={data} messages={messages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} />
 
-      {/* YENİ: Modalların içine yeni detay fonksiyonlarını gönderdik */}
+      {/* --- GÜNCELLENEN KISIM: DashboardModals --- */}
       <DashboardModals 
+        // Mevcut Proplar
         showStaffDetail={showStaffDetail} setShowStaffDetail={setShowStaffDetail} isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff} editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}
         showCustomerDetail={showCustomerDetail} setShowCustomerDetail={setShowCustomerDetail}
         showAssetDetail={showAssetDetail} setShowAssetDetail={setShowAssetDetail}
@@ -141,7 +162,12 @@ export default function PatronDashboard() {
         showCustomerModal={showCustomerModal} setShowCustomerModal={setShowCustomerModal} customerForm={customerForm} setCustomerForm={setCustomerForm}
         showStockModal={showStockModal} setShowStockModal={setShowStockModal} stockForm={stockForm} setStockForm={setStockForm}
         handleAction={handleAction} isSaving={isSaving} data={data}
+        
+        // YENİ EKLENEN PROPLAR
+        selectedJob={selectedJob} 
+        setSelectedJob={setSelectedJob}
       />
+      {/* ------------------------------------------ */}
     </div>
   );
 }
