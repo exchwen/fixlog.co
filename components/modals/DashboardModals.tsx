@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin, Calendar, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin, Calendar, AlertTriangle, ArrowRight } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json'; 
 
 export default function DashboardModals({
@@ -223,7 +223,7 @@ export default function DashboardModals({
                     </div>
                 </div>
               ) : (
-                // --- GELİŞMİŞ EDİT MODU (YENİ İŞ EMRİ İLE AYNI) ---
+                // --- GELİŞMİŞ EDİT MODU ---
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
                     
                     {/* İŞ TÜRÜ SEÇİMİ */}
@@ -343,9 +343,19 @@ export default function DashboardModals({
               <div className="flex-1 overflow-y-auto space-y-2 mb-6 custom-scrollbar">
                  <h4 className="text-[11px] font-semibold text-slate-500 mb-2">GÖREV GEÇMİŞİ</h4>
                  {(data?.jobs || []).filter((j: any) => j.staff_id === showStaffDetail.id).length > 0 ? (data?.jobs || []).filter((j: any) => j.staff_id === showStaffDetail.id).map((j: any) => (
-                   <div key={j.id} className="p-3 border border-slate-100 rounded-lg flex items-center justify-between bg-white text-xs">
-                      <div><div className="font-semibold text-slate-800">{j.customer_name}</div><div className="text-[10px] text-slate-500 mt-0.5">{j.scheduled_date || 'Anlık'}</div></div>
-                      <span className={`px-2 py-1 rounded text-[10px] font-medium border ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span>
+                   <div 
+                        key={j.id} 
+                        onClick={() => { setShowStaffDetail(null); setSelectedJob(j); }} 
+                        className="p-3 border border-slate-100 rounded-lg flex items-center justify-between bg-white text-xs cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-all group"
+                   >
+                      <div>
+                          <div className="font-semibold text-slate-800 group-hover:text-blue-700 transition-colors">{j.customer_name}</div>
+                          <div className="text-[10px] text-slate-500 mt-0.5">{j.scheduled_date || 'Anlık'}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 rounded text-[10px] font-medium border ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span>
+                          <ArrowRight size={14} className="text-slate-300 group-hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all" />
+                      </div>
                    </div>
                  )) : <div className="text-center p-6 text-slate-400 text-xs bg-slate-50 rounded-lg">Geçmiş görev bulunmuyor.</div>}
               </div>
