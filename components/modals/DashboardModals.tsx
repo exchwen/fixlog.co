@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin } from 'lucide-react';
+import sectorsData from '@/lib/data/sectors.json'; // Kendi projendeki dosya yoluna göre burayı güncelleyebilirsin
 
 export default function DashboardModals({
   showStaffDetail, setShowStaffDetail, isEditingStaff, setIsEditingStaff, editStaffForm, setEditStaffForm,
@@ -18,7 +19,7 @@ export default function DashboardModals({
   
   const [searchCust, setSearchCust] = useState('');
   const [searchAsset, setSearchAsset] = useState('');
-  const [jobTargetMode, setJobTargetMode] = useState('CUSTOMER'); // İş Emrinde Müşteri/Varlık sekmesi
+  const [jobTargetMode, setJobTargetMode] = useState('CUSTOMER'); 
 
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
   const [editCustomerForm, setEditCustomerForm] = useState({ id: '', name: '', contact: '', address: '', taxInfo: '' });
@@ -43,13 +44,19 @@ export default function DashboardModals({
     return () => window.removeEventListener('keydown', handleEsc);
   }, [setShowJobModal, setShowAssetModal, setShowStaffModal, setShowCustomerModal, setShowStockModal, setShowStaffDetail, setShowCustomerDetail, setShowAssetDetail]);
 
-  const allStaff = data?.staff || [];
   const statusColors: any = { 'Beklemede': 'bg-amber-100 text-amber-700 border-amber-200', 'Tamamlandı': 'bg-emerald-100 text-emerald-700 border-emerald-200', 'Devam Ediyor': 'bg-blue-100 text-blue-700 border-blue-200', 'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200' };
 
   const assetCustMode = assetForm.customerMode || 'NONE';
   const custAssetMode = customerForm.assetMode || 'NONE';
   
   const isJobValid = jobForm.workCategory === 'Genel İş Atama' ? true : (jobForm.customerName || jobForm.assetId);
+
+  // JSON Verisini Güvenli Çekmek İçin TypeScript Koruması
+  const currentSector = data?.sector || '';
+  const safeSectors: any = sectorsData;
+  const branchList = currentSector && safeSectors?.sectors?.[currentSector]?.subTypes 
+    ? Object.keys(safeSectors.sectors[currentSector].subTypes) 
+    : [];
 
   return (
     <>
@@ -62,9 +69,8 @@ export default function DashboardModals({
                 <div><h2 className="text-xl font-bold text-slate-900">{showStaffDetail.name}</h2><div className="text-xs text-slate-500 mt-0.5">Personel Dosyası</div></div>
                 <button onClick={() => setShowStaffDetail(null)} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md"><X size={18} /></button>
               </div>
-              <div className="grid grid-cols-3 gap-3 mb-6">
+              <div className="grid grid-cols-2 gap-3 mb-6">
                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Branş/Rol</div><div className="text-xs font-medium text-slate-800 mt-0.5">{showStaffDetail.branch || showStaffDetail.role}</div></div>
-                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Statü</div><div className="text-xs font-medium text-blue-600 mt-0.5">{showStaffDetail.status}</div></div>
                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Telefon</div><div className="text-xs font-medium text-slate-800 mt-0.5">{showStaffDetail.phone || '-'}</div></div>
               </div>
               <div className="flex-1 overflow-y-auto space-y-2 mb-6 custom-scrollbar">
@@ -87,8 +93,13 @@ export default function DashboardModals({
                      <div className="grid grid-cols-2 gap-3">
                        <input className="px-3 py-1.5 rounded-md border border-slate-200 text-xs w-full outline-none focus:border-blue-400" value={editStaffForm.name} onChange={(e) => setEditStaffForm({...editStaffForm, name: e.target.value})} placeholder="Ad Soyad" />
                        <input className="px-3 py-1.5 rounded-md border border-slate-200 text-xs w-full outline-none focus:border-blue-400" value={editStaffForm.phone} onChange={(e) => setEditStaffForm({...editStaffForm, phone: e.target.value})} placeholder="Telefon" />
-                       <input className="px-3 py-1.5 rounded-md border border-slate-200 text-xs w-full outline-none focus:border-blue-400" value={editStaffForm.branch} onChange={(e) => setEditStaffForm({...editStaffForm, branch: e.target.value})} placeholder="Branş" />
-                       <select className="px-3 py-1.5 rounded-md border border-slate-200 text-xs w-full outline-none bg-white focus:border-blue-400" value={editStaffForm.status} onChange={(e) => setEditStaffForm({...editStaffForm, status: e.target.value})}><option value="Aktif">Aktif</option><option value="Sahada">Sahada</option><option value="Mesai Dışı">Mesai Dışı</option></select>
+                       <select className="col-span-2 px-3 py-1.5 rounded-md border border-slate-200 text-xs w-full outline-none bg-white focus:border-blue-400" value={editStaffForm.branch} onChange={(e) => setEditStaffForm({...editStaffForm, branch: e.target.value})}>
+              <option value="">Branş / Uzmanlık Seçin</option>
+              {branchList.map((subType) => (
+                <option key={subType} value={subType}>{subType}</option>
+              ))}
+              <option value="Genel Usta">Genel Usta</option>
+           </select>
                      </div>
                      <div className="flex gap-2 pt-2">
                        <button onClick={() => handleAction('add-staff', { ...editStaffForm, id: showStaffDetail.id }, () => setShowStaffDetail(null), () => setIsEditingStaff(false))} className="flex-1 bg-blue-600 text-white py-1.5 rounded-md text-xs font-semibold hover:bg-blue-700">{isSaving ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Kaydet'}</button>
@@ -119,15 +130,15 @@ export default function DashboardModals({
                     <div className="flex items-center justify-between mt-0.5">
                       <div className="text-xs font-medium text-slate-800 line-clamp-2">{showCustomerDetail.address || '-'}</div>
                       {showCustomerDetail.address && (
-                        <a 
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(showCustomerDetail.address)}`} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-100/50 hover:bg-blue-100 px-2 py-1 rounded transition-colors whitespace-nowrap ml-2"
-                        >
-                          <MapPin size={12} /> Haritada Gör
-                        </a>
-                      )}
+            <a 
+              href={`https://maps.google.com/?q=${encodeURIComponent(showCustomerDetail.address)}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-100/50 hover:bg-blue-100 px-2 py-1 rounded transition-colors whitespace-nowrap ml-2"
+            >
+              <MapPin size={12} /> Haritada Gör
+            </a>
+          )}
                     </div>
                  </div>
               </div>
@@ -203,7 +214,6 @@ export default function DashboardModals({
                              <span 
                                onClick={() => { setShowAssetDetail(null); setShowCustomerDetail(cust); }} 
                                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 font-semibold border border-blue-200 rounded-md hover:bg-blue-100 hover:text-blue-800 transition-colors cursor-pointer"
-                               title="Müşteri profiline git"
                              >
                                <User size={12} className="opacity-70" />
                                {cust.name}
@@ -218,15 +228,15 @@ export default function DashboardModals({
                     <div className="flex flex-col mt-0.5 space-y-1">
                       <div className="text-xs font-medium text-slate-800">{showAssetDetail.location || '-'}</div>
                       {showAssetDetail.location && (
-                        <a 
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(showAssetDetail.location + ' ' + (showAssetDetail.apartmentName || ''))}`} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="self-start inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-100/50 hover:bg-blue-100 px-2 py-1 rounded transition-colors"
-                        >
-                          <MapPin size={12} /> Haritada Gör
-                        </a>
-                      )}
+            <a 
+              href={`https://maps.google.com/?q=${encodeURIComponent(showAssetDetail.location + ' ' + (showAssetDetail.apartmentName || ''))}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="self-start inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-100/50 hover:bg-blue-100 px-2 py-1 rounded transition-colors"
+            >
+              <MapPin size={12} /> Haritada Gör
+            </a>
+          )}
                     </div>
                  </div>
                  <div className="col-span-2 bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Teknik Detaylar</div><div className="text-xs font-medium text-slate-800 mt-0.5 line-clamp-2">{showAssetDetail.asset_details || '-'}</div></div>
@@ -521,12 +531,21 @@ export default function DashboardModals({
               <div className="space-y-3">
                 <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Ad Soyad" onChange={e => setStaffForm({...staffForm, name: e.target.value})} />
                 <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Telefon" onChange={e => setStaffForm({...staffForm, phone: e.target.value})} />
-                <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Branş" onChange={e => setStaffForm({...staffForm, branch: e.target.value})} />
+                
+                {/* DİNAMİK BRANŞ SEÇİMİ */}
+    <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" onChange={e => setStaffForm({...staffForm, branch: e.target.value})}>
+       <option value="">Branş / Uzmanlık Seçin</option>
+       {branchList.map((subType) => (
+         <option key={subType} value={subType}>{subType}</option>
+       ))}
+       <option value="Genel Usta">Genel Usta</option>
+    </select>
+
                 <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" onChange={e => setStaffForm({...staffForm, role: e.target.value})}>
                   <option value="Usta">Saha Ustası</option>
                   <option value="Yönetici">Yönetici</option>
                 </select>
-                <button className="w-full bg-slate-900 text-white py-2 rounded-md font-semibold text-sm mt-2 hover:bg-slate-800" onClick={() => handleAction('add-staff', staffForm, setShowStaffModal, () => setStaffForm({ name: '', phone: '', role: 'Usta', branch: '', status: 'Aktif' }))}>Kaydet</button>
+                <button className="w-full bg-slate-900 text-white py-2 rounded-md font-semibold text-sm mt-2 hover:bg-slate-800" onClick={() => handleAction('add-staff', staffForm, setShowStaffModal, () => setStaffForm({ name: '', phone: '', role: 'Usta', branch: '' }))}>Kaydet</button>
               </div>
             </motion.div>
           </div>

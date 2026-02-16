@@ -1,15 +1,17 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, CheckCircle, X, Loader2, ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { Plus, CheckCircle, X, Loader2, ArrowDownRight, ArrowUpRight, Trash2 } from 'lucide-react';
 
 export default function FinanceTab({ data }: any) {
   const [jobPrices, setJobPrices] = useState<any>({});
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   
-  const [showExpenseModal, setShowExpenseModal] = useState(false);
-  const [expenseForm, setExpenseForm] = useState({ description: '', amount: '' });
-  const [isSavingExpense, setIsSavingExpense] = useState(false);
+  // Gelir / Gider Modalı State'leri
+  const [financeModal, setFinanceModal] = useState<{isOpen: boolean, type: 'Gelir' | 'Gider'}>({ isOpen: false, type: 'Gider' });
+  const [financeItems, setFinanceItems] = useState([{ name: '', qty: '1' }]);
+  const [financeAmount, setFinanceAmount] = useState('');
+  const [isSavingFinance, setIsSavingFinance] = useState(false);
 
   // Ustaların bitirdiği ve Onay bekleyen işler
   const pendingJobs = (data?.jobs || []).filter((j: any) => j.status === 'Onay Bekliyor');
@@ -25,21 +27,44 @@ export default function FinanceTab({ data }: any) {
       await fetch('https://biz-backend.yazilimciburak.workers.dev/approve-job', {
         method: 'POST', body: JSON.stringify({ slug: companySlug, jobId: job.id, amount: parseFloat(amount), customerName: job.customer_name })
       });
-      window.location.reload(); // Değişikliklerin anında yansıması için
+      window.location.reload();
     } catch (e) { alert("Hata oluştu"); setIsProcessing(null); }
   };
 
-  // Manuel Gider / Fiş Ekleme
-  const handleAddExpense = async () => {
-    if(!expenseForm.description || !expenseForm.amount) return alert("Lütfen açıklama ve tutar giriniz.");
-    setIsSavingExpense(true);
+  // Dinamik Satır Ekleme / Çıkarma
+  const addItemRow = () => setFinanceItems([...financeItems, { name: '', qty: '1' }]);
+  const removeItemRow = (idx: number) => setFinanceItems(financeItems.filter((_, i) => i !== idx));
+  const handleItemChange = (idx: number, field: string, val: string) => {
+    const newItems = [...financeItems];
+    newItems[idx] = { ...newItems[idx], [field]: val };
+    setFinanceItems(newItems);
+  };
+
+  // Manuel Gelir veya Gider Kaydetme
+  const handleAddFinanceRecord = async () => {
+    const description = financeItems
+      .filter(i => i.name.trim() !== '')
+      .map(i => `${i.qty}x ${i.name}`)
+      .join(', ');
+
+    if(!description || !financeAmount) return alert("Lütfen kalemleri ve toplam tutarı eksiksiz giriniz.");
+    setIsSavingFinance(true);
+    
+    const endpoint = financeModal.type === 'Gelir' ? '/add-income' : '/add-expense';
+    
     try {
       const companySlug = localStorage.getItem('companySlug');
-      await fetch('https://biz-backend.yazilimciburak.workers.dev/add-expense', {
-        method: 'POST', body: JSON.stringify({ slug: companySlug, description: expenseForm.description, amount: parseFloat(expenseForm.amount) })
+      await fetch(`https://biz-backend.yazilimciburak.workers.dev${endpoint}`, {
+        method: 'POST', body: JSON.stringify({ slug: companySlug, description, amount: parseFloat(financeAmount) })
       });
       window.location.reload();
-    } catch (e) { alert("Hata oluştu"); setIsSavingExpense(false); }
+    } catch (e) { alert("Hata oluştu"); setIsSavingFinance(false); }
+  };
+
+  const closeFinanceModal = () => {
+    setFinanceModal({ isOpen: false, type: 'Gider' });
+    setFinanceItems([{ name: '', qty: '1' }]);
+    setFinanceAmount('');
   };
 
   return (
@@ -80,19 +105,24 @@ export default function FinanceTab({ data }: any) {
        <div>
          <div className="flex justify-between items-center mb-3">
            <h3 className="text-lg font-bold text-slate-900">Hesap Hareketleri & Fişler</h3>
-           <button onClick={() => setShowExpenseModal(true)} className="bg-rose-50 text-rose-600 border border-rose-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-rose-100 transition-colors">
-             <Plus size={14} strokeWidth={3} /> Gider / Fiş İşle
-           </button>
+           <div className="flex gap-2">
+             <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gelir' })} className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-emerald-100 transition-colors">
+               <Plus size={14} strokeWidth={3} /> Gelir İşle
+             </button>
+             <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gider' })} className="bg-rose-50 text-rose-600 border border-rose-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-rose-100 transition-colors">
+               <Plus size={14} strokeWidth={3} /> Gider / Fiş İşle
+             </button>
+           </div>
          </div>
          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
            <table className="w-full text-left text-xs">
              <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
-               <tr><th className="px-5 py-3">Açıklama</th><th className="px-5 py-3">Tarih</th><th className="px-5 py-3">Miktar</th><th className="px-5 py-3 text-right">Tip</th></tr>
+               <tr><th className="px-5 py-3">Açıklama (Kalemler)</th><th className="px-5 py-3">Tarih</th><th className="px-5 py-3">Miktar</th><th className="px-5 py-3 text-right">Tip</th></tr>
              </thead>
              <tbody className="divide-y divide-slate-100">
                {data?.finances?.length > 0 ? data.finances.map((f: any) => (
                  <tr key={f.id} className="hover:bg-slate-50 transition-colors">
-                   <td className="px-5 py-3 font-medium text-slate-800">{f.description}</td>
+                   <td className="px-5 py-3 font-medium text-slate-800 line-clamp-2">{f.description}</td>
                    <td className="px-5 py-3 text-slate-500">{new Date(f.created_at).toLocaleDateString('tr-TR')}</td>
                    <td className={`px-5 py-3 font-bold ${f.type === 'Gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
                      <div className="flex items-center gap-1">
@@ -110,17 +140,63 @@ export default function FinanceTab({ data }: any) {
          </div>
        </div>
 
-       {/* GİDER EKLEME MODALI */}
-       {showExpenseModal && (
+       {/* DİNAMİK GELİR / GİDER EKLEME MODALI */}
+       {financeModal.isOpen && (
          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-sm rounded-xl p-6 shadow-xl relative">
-              <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-rose-600">Gider / Fiş İşle</h2><button onClick={() => setShowExpenseModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button></div>
-              <div className="space-y-3">
-                <div><label className="text-[10px] font-bold text-slate-500 block mb-1">AÇIKLAMA (Ne alındı?)</label><input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-rose-400" placeholder="Örn: Ofis Kırtasiye, Yakıt Fişi" value={expenseForm.description} onChange={e => setExpenseForm({...expenseForm, description: e.target.value})} /></div>
-                <div><label className="text-[10px] font-bold text-slate-500 block mb-1">TUTAR (₺)</label><input type="number" className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-rose-400" placeholder="0.00" value={expenseForm.amount} onChange={e => setExpenseForm({...expenseForm, amount: e.target.value})} /></div>
+            <div className="bg-white w-full max-w-sm rounded-xl p-6 shadow-xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+              <div className="flex justify-between items-center mb-5">
+                <h2 className={`text-lg font-bold ${financeModal.type === 'Gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {financeModal.type === 'Gelir' ? 'Yeni Gelir Ekle' : 'Gider / Fiş İşle'}
+                </h2>
+                <button onClick={closeFinanceModal} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
               </div>
-              <button disabled={isSavingExpense} className="w-full bg-rose-600 text-white py-2.5 rounded-md font-bold text-sm mt-5 hover:bg-rose-700 flex justify-center items-center" onClick={handleAddExpense}>
-                {isSavingExpense ? <Loader2 className="animate-spin" size={16} /> : 'Kasadan Düş (Kaydet)'}
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-2 uppercase tracking-wider">
+                    {financeModal.type === 'Gelir' ? 'SATILAN / YAPILAN KALEMLER' : 'ALINAN / HARCANAN KALEMLER'}
+                  </label>
+                  <div className="space-y-2">
+                    {financeItems.map((item, index) => (
+                      <div key={index} className="flex gap-2">
+                        <input 
+                          className={`flex-[3] px-3 py-1.5 border border-slate-200 rounded-md text-xs outline-none focus:border-${financeModal.type === 'Gelir' ? 'emerald' : 'rose'}-400`} 
+                          placeholder={financeModal.type === 'Gelir' ? 'Örn: Bakım Ücreti, Parça X' : 'Örn: Ofis Kırtasiye, Yakıt Fişi'} 
+                          value={item.name} 
+                          onChange={e => handleItemChange(index, 'name', e.target.value)} 
+                        />
+                        <input 
+                          type="number" 
+                          className={`flex-1 px-3 py-1.5 border border-slate-200 rounded-md text-xs outline-none focus:border-${financeModal.type === 'Gelir' ? 'emerald' : 'rose'}-400 text-center`} 
+                          placeholder="Adet" 
+                          value={item.qty} 
+                          onChange={e => handleItemChange(index, 'qty', e.target.value)} 
+                        />
+                        {index > 0 && (
+                          <button onClick={() => removeItemRow(index)} className="p-1.5 text-rose-500 bg-rose-50 hover:bg-rose-100 rounded-md transition-colors"><Trash2 size={14} /></button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={addItemRow} className="mt-2 text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 w-full p-2 border border-dashed border-blue-200 rounded-md bg-blue-50/50 justify-center">
+                    <Plus size={14} /> Yeni Satır Ekle
+                  </button>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100">
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1">TOPLAM TUTAR (₺)</label>
+                  <input 
+                    type="number" 
+                    className={`w-full px-3 py-2 border border-slate-200 rounded-md text-sm font-bold outline-none focus:border-${financeModal.type === 'Gelir' ? 'emerald' : 'rose'}-400`} 
+                    placeholder="0.00" 
+                    value={financeAmount} 
+                    onChange={e => setFinanceAmount(e.target.value)} 
+                  />
+                </div>
+              </div>
+              
+              <button disabled={isSavingFinance} className={`w-full text-white py-2.5 rounded-md font-bold text-sm mt-6 flex justify-center items-center transition-colors ${financeModal.type === 'Gelir' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'}`} onClick={handleAddFinanceRecord}>
+                {isSavingFinance ? <Loader2 className="animate-spin" size={16} /> : (financeModal.type === 'Gelir' ? 'Geliri Kasaya İşle' : 'Gideri Kasadan Düş')}
               </button>
             </div>
          </div>
