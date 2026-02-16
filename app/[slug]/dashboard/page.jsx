@@ -70,7 +70,7 @@ export default function PatronDashboard() {
       const result = await res.json();
       setData(result);
       if (result) {
-        setSettingsForm({ companyName: result.name || '', ownerName: result.ownerName || '', sector: result.sector || '', address: result.address || '', taxInfo: result.taxInfo || '' });
+        setSettingsForm({ companyName: result.name || '', ownerName: result.ownerName || '', sector: result.sector || '', address: result.address || '', taxInfo: result.taxInfo || '', phone: result.phone || '' });
       }
     } catch (err) { console.error("Veri çekilemedi:", err); } finally { setLoading(false); }
   };
