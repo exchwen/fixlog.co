@@ -38,7 +38,10 @@ export default function TeamTab({ data, setShowStaffModal, setShowStaffDetail, s
               
               <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 mb-3 font-bold text-lg mt-2">{s.name.charAt(0)}</div>
               <div className="font-semibold text-slate-800 text-sm mb-0.5">{s.name}</div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-3">{s.branch || s.role}</div>
+              
+              {/* ROL VE BRANŞ AYRIMI BURADA YAPILDI */}
+              <div className="text-[11px] font-bold text-slate-700 uppercase tracking-wider mt-1">{s.role}</div>
+              <div className="text-[9px] text-slate-500 uppercase tracking-wider mb-3 mt-0.5">{s.branch ? s.branch : 'Genel Görev'}</div>
               
               {/* Otomatik Durum Rozeti */}
               <div className={`w-full flex flex-col items-center justify-center py-2 px-2 rounded-lg mb-4 ${status.bg} ${status.textCol} border border-white/20`}>

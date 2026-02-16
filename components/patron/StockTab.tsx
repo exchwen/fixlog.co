@@ -19,7 +19,7 @@ export default function StockTab({ data, setShowStockModal }: any) {
     setIsSaving(true);
     try {
       const companySlug = localStorage.getItem('companySlug');
-      await fetch('https://biz-backend.yazilimciburak.workers.dev/update-stock', {
+      await fetch('https://backend.isdokumu.workers.dev/update-stock', {
         method: 'POST', body: JSON.stringify({ slug: companySlug, ...editingStock })
       });
       window.location.reload();
@@ -29,7 +29,7 @@ export default function StockTab({ data, setShowStockModal }: any) {
   const handleDelete = async (id: string) => {
     if(confirm('Bu stok kaydını silmek istediğinize emin misiniz?')) {
       const companySlug = localStorage.getItem('companySlug');
-      await fetch('https://biz-backend.yazilimciburak.workers.dev/delete-stock', {
+      await fetch('https://backend.isdokumu.workers.dev/delete-stock', {
         method: 'POST', body: JSON.stringify({ slug: companySlug, id })
       });
       window.location.reload();

@@ -24,7 +24,7 @@ export default function FinanceTab({ data }: any) {
     setIsProcessing(job.id);
     try {
       const companySlug = localStorage.getItem('companySlug');
-      await fetch('https://biz-backend.yazilimciburak.workers.dev/approve-job', {
+      await fetch('https://backend.isdokumu.workers.dev/approve-job', {
         method: 'POST', body: JSON.stringify({ slug: companySlug, jobId: job.id, amount: parseFloat(amount), customerName: job.customer_name })
       });
       window.location.reload();
@@ -54,7 +54,7 @@ export default function FinanceTab({ data }: any) {
     
     try {
       const companySlug = localStorage.getItem('companySlug');
-      await fetch(`https://biz-backend.yazilimciburak.workers.dev${endpoint}`, {
+      await fetch(`https://backend.isdokumu.workers.dev${endpoint}`, {
         method: 'POST', body: JSON.stringify({ slug: companySlug, description, amount: parseFloat(financeAmount) })
       });
       window.location.reload();
