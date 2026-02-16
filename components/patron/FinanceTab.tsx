@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Plus, CheckCircle, X, Loader2, ArrowDownRight, ArrowUpRight, Trash2 } from 'lucide-react';
-import { useParams } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { Plus, CheckCircle, X, Loader2, ArrowDownRight, ArrowUpRight, Trash2, Download, Eye } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
 
 export default function FinanceTab({ data }: any) {
-  // useParams ile URL'deki slug'ı güvenli şekilde çekiyoruz
   const params = useParams();
+  const router = useRouter();
   const activeSlug = params?.slug || localStorage.getItem('companySlug');
 
   const [jobPrices, setJobPrices] = useState<any>({});
@@ -18,8 +18,19 @@ export default function FinanceTab({ data }: any) {
   const [financeAmount, setFinanceAmount] = useState('');
   const [isSavingFinance, setIsSavingFinance] = useState(false);
 
-  // Ustaların bitirdiği ve Onay bekleyen işler
-  const pendingJobs = (data?.jobs || []).filter((j: any) => j.status === 'Onay Bekliyor');
+  // İş Detayı Gösterim Modalı State'i
+  const [selectedJobDetail, setSelectedJobDetail] = useState<any>(null);
+
+  // Ekranda anında göstermek için yerel (Local) State'ler
+  const [localFinances, setLocalFinances] = useState(data?.finances || []);
+  const [localJobs, setLocalJobs] = useState(data?.jobs || []);
+
+  useEffect(() => {
+    setLocalFinances(data?.finances || []);
+    setLocalJobs(data?.jobs || []);
+  }, [data]);
+
+  const pendingJobs = localJobs.filter((j: any) => j.status === 'Onay Bekliyor');
 
   // Yönetici İşi Onaylayıp Gelir Olarak Kaydeder
   const handleApproveJob = async (job: any) => {
@@ -35,18 +46,26 @@ export default function FinanceTab({ data }: any) {
       });
       
       if (res.ok) {
-        window.location.reload();
+        setLocalJobs(localJobs.map((j: any) => j.id === job.id ? { ...j, status: 'Tamamlandı' } : j));
+        setLocalFinances([{
+            id: Date.now().toString(),
+            description: `${job.customer_name} - ${job.work_type}`,
+            amount: parseFloat(amount),
+            type: 'Gelir',
+            created_at: new Date().toISOString()
+        }, ...localFinances]);
+        
+        router.refresh(); 
       } else {
         alert("Sunucu reddetti. Lütfen veritabanı bağlantınızı kontrol edin.");
-        setIsProcessing(null);
       }
     } catch (e) { 
       alert("Ağ bağlantısı kurulamadı!"); 
-      setIsProcessing(null); 
+    } finally {
+      setIsProcessing(null);
     }
   };
 
-  // Dinamik Satır Ekleme / Çıkarma
   const addItemRow = () => setFinanceItems([...financeItems, { name: '', qty: '1' }]);
   const removeItemRow = (idx: number) => setFinanceItems(financeItems.filter((_, i) => i !== idx));
   const handleItemChange = (idx: number, field: string, val: string) => {
@@ -55,12 +74,12 @@ export default function FinanceTab({ data }: any) {
     setFinanceItems(newItems);
   };
 
-  // Manuel Gelir veya Gider Kaydetme
   const handleAddFinanceRecord = async () => {
+    // VİRGÜL YERİNE \n (ALT SATIR) KULLANILARAK BİRLEŞTİRİLDİ
     const description = financeItems
       .filter(i => i.name.trim() !== '')
       .map(i => `${i.qty}x ${i.name}`)
-      .join(', ');
+      .join('\n');
 
     if(!description || !financeAmount) return alert("Lütfen kalemleri ve toplam tutarı eksiksiz giriniz.");
     setIsSavingFinance(true);
@@ -75,13 +94,22 @@ export default function FinanceTab({ data }: any) {
       });
 
       if (res.ok) {
-        window.location.reload();
+        setLocalFinances([{
+            id: Date.now().toString(),
+            description,
+            amount: parseFloat(financeAmount),
+            type: financeModal.type,
+            created_at: new Date().toISOString()
+        }, ...localFinances]);
+
+        closeFinanceModal();
+        router.refresh(); 
       } else {
-        alert("Kayıt Başarısız! Lütfen Cloudflare'da yeni worker.js dosyanızı güncellediğinizden emin olun.");
-        setIsSavingFinance(false);
+        alert("Kayıt Başarısız! Lütfen Cloudflare bağlantınızı kontrol edin.");
       }
     } catch (e) { 
       alert("Bağlantı hatası oluştu!"); 
+    } finally {
       setIsSavingFinance(false); 
     }
   };
@@ -92,16 +120,106 @@ export default function FinanceTab({ data }: any) {
     setFinanceAmount('');
   };
 
+  // İSTEMCİ TARANFISINDA (SIFIR MALİYETLİ) EXCEL (CSV) ÇIKTISI ALMA FONKSİYONU
+  const exportToExcel = (tableData: any[], title: string) => {
+    const headers = ['Tarih', 'Aciklama', 'Miktar (TL)', 'Islem Tipi'];
+    const rows = tableData.map(f => {
+      const date = new Date(f.created_at).toLocaleDateString('tr-TR');
+      // Çift tırnakları düzelt ve Excel'in alt satırları ( \n ) okuyabilmesi için tüm açıklamayı tırnak içine al
+      const desc = `"${f.description.replace(/"/g, '""')}"`; 
+      const amount = f.amount;
+      const type = f.type;
+      return `${date},${desc},${amount},${type}`;
+    });
+    
+    // Türkçe karakter desteği için \uFEFF eklendi
+    const csvContent = "\uFEFF" + headers.join(',') + '\n' + rows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${title.replace(/\s+/g, '_')}_Rapor.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // 3 FARKLI TABLOYU TEKRAR TEKRAR YAZMAMAK İÇİN OLUŞTURDUĞUMUZ RENDER FONKSİYONU
+  const renderFinanceTable = (title: string, tableData: any[]) => (
+    <div className="mb-8">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-lg font-bold text-slate-900">{title}</h3>
+        <button 
+          onClick={() => exportToExcel(tableData, title)} 
+          className="bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 hover:bg-slate-200 transition-colors"
+        >
+          <Download size={14} /> Excel İndir
+        </button>
+      </div>
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <table className="w-full text-left text-xs">
+          <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
+            <tr><th className="px-5 py-3 w-1/2">Açıklama (Kalemler)</th><th className="px-5 py-3">Tarih</th><th className="px-5 py-3">Miktar</th><th className="px-5 py-3 text-right">Tip</th></tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {tableData.length > 0 ? tableData.map((f: any) => {
+              // İş eşleştirme mantığı: Gelirse ve açıklama müşteri adını içeriyorsa işi bul.
+              const relatedJob = localJobs.find((j: any) => f.type === 'Gelir' && j.status === 'Tamamlandı' && f.description.includes(j.customer_name));
+              
+              return (
+              <tr key={f.id} className="hover:bg-slate-50 transition-colors">
+                <td className="px-5 py-3">
+                  {/* whitespace-pre-line KULLANARAK \n KARAKTERLERİNİ ALT SATIRA İNDİRİYORUZ */}
+                  <div className="font-medium text-slate-800 whitespace-pre-line">{f.description}</div>
+                  
+                  {/* EŞLEŞEN İŞ VARSA BUTONU GÖSTER */}
+                  {relatedJob && (
+                    <button 
+                      onClick={() => setSelectedJobDetail(relatedJob)} 
+                      className="mt-2 text-[10px] font-bold text-blue-600 bg-blue-50/80 px-2 py-1.5 rounded border border-blue-100 hover:bg-blue-100 flex items-center gap-1.5 transition-colors w-max"
+                    >
+                      <Eye size={12} /> İş Kaydını İncele
+                    </button>
+                  )}
+                </td>
+                <td className="px-5 py-3 text-slate-500 align-top pt-4">{new Date(f.created_at).toLocaleDateString('tr-TR')}</td>
+                <td className={`px-5 py-3 font-bold align-top pt-4 ${f.type === 'Gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  <div className="flex items-center gap-1">
+                    {f.type === 'Gelir' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                    ₺{f.amount.toLocaleString('tr-TR')}
+                  </div>
+                </td>
+                <td className="px-5 py-3 text-right align-top pt-4">
+                  <span className={`px-2 py-1 rounded text-[10px] font-bold border ${f.type === 'Gelir' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>{f.type}</span>
+                </td>
+              </tr>
+            )}) : <tr><td colSpan={4} className="p-10 text-center text-slate-400">Bu tabloda henüz kayıt yok.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6 relative">
        
        {/* 1. ONAY BEKLEYEN İŞLER BÖLÜMÜ */}
        <div>
-         <h3 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
-           <span className="relative flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span></span>
-           Yönetici Onayı Bekleyen İşler
-         </h3>
-         <div className="bg-amber-50/50 rounded-xl border border-amber-200 shadow-sm overflow-hidden">
+         <div className="flex justify-between items-center mb-3">
+           <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+             <span className="relative flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span></span>
+             Yönetici Onayı Bekleyen İşler
+           </h3>
+           <div className="flex gap-2">
+             <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gelir' })} className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-emerald-100 transition-colors">
+               <Plus size={14} strokeWidth={3} /> Manuel Gelir İşle
+             </button>
+             <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gider' })} className="bg-rose-50 text-rose-600 border border-rose-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-rose-100 transition-colors">
+               <Plus size={14} strokeWidth={3} /> Gider / Fiş İşle
+             </button>
+           </div>
+         </div>
+         <div className="bg-amber-50/50 rounded-xl border border-amber-200 shadow-sm overflow-hidden mb-8">
            <table className="w-full text-left text-xs">
              <thead className="bg-amber-100/50 text-amber-800 font-semibold border-b border-amber-200">
                <tr><th className="px-5 py-3">Müşteri / İş</th><th className="px-5 py-3">Tarih</th><th className="px-5 py-3 w-48">Fiyat Gir (₺)</th><th className="px-5 py-3 text-right">İşlem</th></tr>
@@ -126,44 +244,10 @@ export default function FinanceTab({ data }: any) {
          </div>
        </div>
 
-       {/* 2. GENEL FİNANS HAREKETLERİ */}
-       <div>
-         <div className="flex justify-between items-center mb-3">
-           <h3 className="text-lg font-bold text-slate-900">Hesap Hareketleri & Fişler</h3>
-           <div className="flex gap-2">
-             <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gelir' })} className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-emerald-100 transition-colors">
-               <Plus size={14} strokeWidth={3} /> Gelir İşle
-             </button>
-             <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gider' })} className="bg-rose-50 text-rose-600 border border-rose-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-rose-100 transition-colors">
-               <Plus size={14} strokeWidth={3} /> Gider / Fiş İşle
-             </button>
-           </div>
-         </div>
-         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-           <table className="w-full text-left text-xs">
-             <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
-               <tr><th className="px-5 py-3">Açıklama (Kalemler)</th><th className="px-5 py-3">Tarih</th><th className="px-5 py-3">Miktar</th><th className="px-5 py-3 text-right">Tip</th></tr>
-             </thead>
-             <tbody className="divide-y divide-slate-100">
-               {data?.finances?.length > 0 ? data.finances.map((f: any) => (
-                 <tr key={f.id} className="hover:bg-slate-50 transition-colors">
-                   <td className="px-5 py-3 font-medium text-slate-800 line-clamp-2">{f.description}</td>
-                   <td className="px-5 py-3 text-slate-500">{new Date(f.created_at).toLocaleDateString('tr-TR')}</td>
-                   <td className={`px-5 py-3 font-bold ${f.type === 'Gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                     <div className="flex items-center gap-1">
-                       {f.type === 'Gelir' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                       ₺{f.amount.toLocaleString('tr-TR')}
-                     </div>
-                   </td>
-                   <td className="px-5 py-3 text-right">
-                     <span className={`px-2 py-1 rounded text-[10px] font-bold border ${f.type === 'Gelir' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>{f.type}</span>
-                   </td>
-                 </tr>
-               )) : <tr><td colSpan={4} className="p-10 text-center text-slate-400">Henüz finansal hareket yok.</td></tr>}
-             </tbody>
-           </table>
-         </div>
-       </div>
+       {/* TABLOLAR BÖLÜMÜ */}
+       {renderFinanceTable("Tüm Hesap Hareketleri", localFinances)}
+       {renderFinanceTable("Sadece Gelirler", localFinances.filter(f => f.type === 'Gelir'))}
+       {renderFinanceTable("Sadece Giderler", localFinances.filter(f => f.type === 'Gider'))}
 
        {/* DİNAMİK GELİR / GİDER EKLEME MODALI */}
        {financeModal.isOpen && (
@@ -186,7 +270,7 @@ export default function FinanceTab({ data }: any) {
                       <div key={index} className="flex gap-2">
                         <input 
                           className={`flex-[3] px-3 py-1.5 border border-slate-200 rounded-md text-xs outline-none focus:border-${financeModal.type === 'Gelir' ? 'emerald' : 'rose'}-400`} 
-                          placeholder={financeModal.type === 'Gelir' ? 'Örn: Bakım Ücreti, Parça X' : 'Örn: Ofis Kırtasiye, Yakıt Fişi'} 
+                          placeholder={financeModal.type === 'Gelir' ? 'Örn: Bakım, Parça' : 'Örn: Kırtasiye, Yakıt'} 
                           value={item.name} 
                           onChange={e => handleItemChange(index, 'name', e.target.value)} 
                         />
@@ -223,6 +307,42 @@ export default function FinanceTab({ data }: any) {
               <button disabled={isSavingFinance} className={`w-full text-white py-2.5 rounded-md font-bold text-sm mt-6 flex justify-center items-center transition-colors ${financeModal.type === 'Gelir' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'}`} onClick={handleAddFinanceRecord}>
                 {isSavingFinance ? <Loader2 className="animate-spin" size={16} /> : (financeModal.type === 'Gelir' ? 'Geliri Kasaya İşle' : 'Gideri Kasadan Düş')}
               </button>
+            </div>
+         </div>
+       )}
+
+       {/* İŞ DETAYI GÖSTERİM MODALI */}
+       {selectedJobDetail && (
+         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-sm rounded-xl p-6 shadow-xl relative">
+              <div className="flex justify-between items-start mb-5">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">İş Kaydı Detayı</h2>
+                  <div className="text-xs text-slate-500 mt-0.5">Bu gelir aşağıdaki işlemden oluşturuldu</div>
+                </div>
+                <button onClick={() => setSelectedJobDetail(null)} className="text-slate-400 hover:text-slate-600 bg-slate-100 p-1.5 rounded-md"><X size={16} /></button>
+              </div>
+              
+              <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                <div>
+                  <div className="text-[10px] font-bold text-slate-500 uppercase">Müşteri / Firma</div>
+                  <div className="text-sm font-semibold text-slate-800">{selectedJobDetail.customer_name}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-500 uppercase">İş Türü</div>
+                  <div className="text-sm font-medium text-slate-800">{selectedJobDetail.work_type}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-500 uppercase">Planlanan Tarih</div>
+                  <div className="text-sm font-medium text-slate-800">{selectedJobDetail.scheduled_date || 'Tarih Belirtilmedi'}</div>
+                </div>
+                {selectedJobDetail.details && selectedJobDetail.details.note && (
+                  <div>
+                    <div className="text-[10px] font-bold text-slate-500 uppercase">Sahadan Notlar</div>
+                    <div className="text-xs font-medium text-slate-700 bg-white p-2 border border-slate-200 rounded-md mt-1">{selectedJobDetail.details.note}</div>
+                  </div>
+                )}
+              </div>
             </div>
          </div>
        )}
