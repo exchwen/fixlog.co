@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin, Calendar, AlertTriangle, ArrowRight } from 'lucide-react';
+import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin, Calendar, AlertTriangle, ArrowRight, Filter } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json'; 
 
 export default function DashboardModals({
@@ -22,6 +22,9 @@ export default function DashboardModals({
   const [searchAsset, setSearchAsset] = useState('');
   const [jobTargetMode, setJobTargetMode] = useState('CUSTOMER'); 
 
+  // Personel Geçmişi Arama State'i (YENİ)
+  const [staffJobSearch, setStaffJobSearch] = useState('');
+
   // Müşteri Düzenleme State
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
   const [editCustomerForm, setEditCustomerForm] = useState({ id: '', name: '', contact: '', address: '', taxInfo: '' });
@@ -32,10 +35,8 @@ export default function DashboardModals({
 
   // İŞ DETAYI DÜZENLEME STATE
   const [isEditingJobDetail, setIsEditingJobDetail] = useState(false);
-  // İptal onayı için state
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   
-  // Düzenleme formu (Yeni İş Emri formuyla aynı yapıda)
   const [editJobDetailForm, setEditJobDetailForm] = useState({ 
     workCategory: 'Normal İş Atama',
     jobType: 'Anlık',
@@ -59,16 +60,23 @@ export default function DashboardModals({
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setShowJobModal(false); setShowAssetModal(false); setShowStaffModal(false); 
-        setShowCustomerModal(false); setShowStockModal(false); setShowStaffDetail(null);
-        handleCloseDetail('customer'); handleCloseDetail('asset'); handleCloseDetail('job');
+        // Z-Index sırasına göre kapatma mantığı
+        if (selectedJob) {
+            handleCloseDetail('job');
+        } else if (showStaffDetail || showCustomerDetail || showAssetDetail) {
+            setShowStaffDetail(null);
+            handleCloseDetail('customer'); 
+            handleCloseDetail('asset');
+        } else {
+            setShowJobModal(false); setShowAssetModal(false); setShowStaffModal(false); 
+            setShowCustomerModal(false); setShowStockModal(false);
+        }
       }
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [setShowJobModal, setShowAssetModal, setShowStaffModal, setShowCustomerModal, setShowStockModal, setShowStaffDetail, setShowCustomerDetail, setShowAssetDetail, setSelectedJob]);
+  }, [setShowJobModal, setShowAssetModal, setShowStaffModal, setShowCustomerModal, setShowStockModal, setShowStaffDetail, setShowCustomerDetail, setShowAssetDetail, setSelectedJob, selectedJob]);
 
-  // İş Düzenleme Butonuna Basılınca Verileri Doldur
   const handleEditClick = () => {
     setIsEditingJobDetail(true);
     setEditJobDetailForm({
@@ -80,7 +88,6 @@ export default function DashboardModals({
         customerName: selectedJob.customer_name || '',
         assetId: selectedJob.asset_id || ''
     });
-    // Eğer varlık seçiliyse, arama modunu ona göre ayarla
     if (selectedJob.asset_id) {
         setJobTargetMode('ASSET');
     } else {
@@ -107,13 +114,24 @@ export default function DashboardModals({
     ? Object.keys(safeSectors.sectors[currentSector].subTypes) 
     : [];
 
+  // Personel görev filtreleme mantığı
+  const filteredStaffJobs = showStaffDetail 
+    ? (data?.jobs || [])
+        .filter((j: any) => j.staff_id === showStaffDetail.id)
+        .filter((j: any) => 
+            j.customer_name.toLowerCase().includes(staffJobSearch.toLowerCase()) ||
+            (j.work_type && j.work_type.toLowerCase().includes(staffJobSearch.toLowerCase())) ||
+            (j.status && j.status.toLowerCase().includes(staffJobSearch.toLowerCase()))
+        )
+    : [];
+
   return (
     <>
-      {/* İŞ DETAY VE DÜZENLEME MODALI */}
+      {/* İŞ DETAY VE DÜZENLEME MODALI (Z-INDEX 130 - En Üstte) */}
       <AnimatePresence>
         {selectedJob && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[130] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-lg rounded-xl p-0 shadow-xl relative flex flex-col max-h-[90vh] overflow-hidden">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[130] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} className="bg-white w-full max-w-lg rounded-xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200">
               
               {/* Header */}
               <div className="flex justify-between items-start p-6 pb-4 border-b border-slate-100 bg-white z-10">
@@ -121,7 +139,7 @@ export default function DashboardModals({
                     <h2 className="text-xl font-bold text-slate-900">{isEditingJobDetail ? 'İş Emrini Düzenle' : 'İş Emri Detayı'}</h2>
                     <div className="text-xs text-slate-500 mt-0.5">ID: #{selectedJob.id} • {selectedJob.created_at?.split('T')[0] || ''}</div>
                 </div>
-                <button onClick={() => { setSelectedJob(null); setIsEditingJobDetail(false); setShowCancelConfirm(false); }} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md"><X size={18} /></button>
+                <button onClick={() => { setSelectedJob(null); setIsEditingJobDetail(false); setShowCancelConfirm(false); }} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md transition-colors"><X size={18} /></button>
               </div>
 
               {/* View Mode */}
@@ -225,8 +243,7 @@ export default function DashboardModals({
               ) : (
                 // --- GELİŞMİŞ EDİT MODU ---
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
-                    
-                    {/* İŞ TÜRÜ SEÇİMİ */}
+                    {/* ... (Edit Mode Kodları Aynı) ... */}
                     <div>
                       <label className="text-[11px] font-semibold text-slate-600 block mb-1.5">İş Türü</label>
                       <div className="grid grid-cols-2 gap-2">
@@ -235,7 +252,6 @@ export default function DashboardModals({
                       </div>
                     </div>
 
-                    {/* ZAMANLAMA SEÇİMİ */}
                     <div>
                       <label className="text-[11px] font-semibold text-slate-600 block mb-1.5">Tarih / Zamanlama</label>
                       <div className="grid grid-cols-2 gap-2">
@@ -249,7 +265,6 @@ export default function DashboardModals({
                       )}
                     </div>
 
-                    {/* NORMAL İŞ İSE: MÜŞTERİ VEYA VARLIK SEÇİMİ */}
                     {editJobDetailForm.workCategory !== 'Genel İş Atama' && (
                       <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                         <div className="flex gap-2 mb-3">
@@ -289,7 +304,6 @@ export default function DashboardModals({
                       </div>
                     )}
 
-                    {/* PERSONEL VE NOT */}
                     <div>
                       <label className="text-[11px] font-semibold text-slate-600 block mb-1">Sorumlu Personel (Yalnızca Yöneticiler)</label>
                       <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={editJobDetailForm.staffId} onChange={e => setEditJobDetailForm({...editJobDetailForm, staffId: e.target.value})}>
@@ -327,39 +341,60 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* PERSONEL DETAY MODALI */}
+      {/* PERSONEL DETAY MODALI (Z-INDEX 120 - Altta) */}
       <AnimatePresence>
         {showStaffDetail && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-lg rounded-xl p-6 shadow-xl relative flex flex-col max-h-[85vh]">
               <div className="flex justify-between items-start mb-6">
                 <div><h2 className="text-xl font-bold text-slate-900">{showStaffDetail.name}</h2><div className="text-xs text-slate-500 mt-0.5">Personel Dosyası</div></div>
-                <button onClick={() => setShowStaffDetail(null)} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md"><X size={18} /></button>
+                <button onClick={() => setShowStaffDetail(null)} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md transition-colors"><X size={18} /></button>
               </div>
               <div className="grid grid-cols-2 gap-3 mb-6">
                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Branş/Rol</div><div className="text-xs font-medium text-slate-800 mt-0.5">{showStaffDetail.branch || showStaffDetail.role}</div></div>
                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Telefon</div><div className="text-xs font-medium text-slate-800 mt-0.5">{showStaffDetail.phone || '-'}</div></div>
               </div>
-              <div className="flex-1 overflow-y-auto space-y-2 mb-6 custom-scrollbar">
-                 <h4 className="text-[11px] font-semibold text-slate-500 mb-2">GÖREV GEÇMİŞİ</h4>
-                 {(data?.jobs || []).filter((j: any) => j.staff_id === showStaffDetail.id).length > 0 ? (data?.jobs || []).filter((j: any) => j.staff_id === showStaffDetail.id).map((j: any) => (
-                   <div 
-                        key={j.id} 
-                        onClick={() => { setShowStaffDetail(null); setSelectedJob(j); }} 
-                        className="p-3 border border-slate-100 rounded-lg flex items-center justify-between bg-white text-xs cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-all group"
-                   >
-                      <div>
-                          <div className="font-semibold text-slate-800 group-hover:text-blue-700 transition-colors">{j.customer_name}</div>
-                          <div className="text-[10px] text-slate-500 mt-0.5">{j.scheduled_date || 'Anlık'}</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                          <span className={`px-2 py-1 rounded text-[10px] font-medium border ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span>
-                          <ArrowRight size={14} className="text-slate-300 group-hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all" />
-                      </div>
-                   </div>
-                 )) : <div className="text-center p-6 text-slate-400 text-xs bg-slate-50 rounded-lg">Geçmiş görev bulunmuyor.</div>}
+              
+              <div className="flex-1 flex flex-col overflow-hidden">
+                 <div className="flex justify-between items-center mb-3">
+                    <h4 className="text-[11px] font-semibold text-slate-500">GÖREV GEÇMİŞİ</h4>
+                    <span className="text-[10px] text-slate-400">{filteredStaffJobs.length} Kayıt</span>
+                 </div>
+                 
+                 {/* YENİ: İŞ GEÇMİŞİ ARAMA KUTUSU */}
+                 <div className="relative mb-3">
+                    <Search className="absolute left-3 top-2.5 text-slate-400" size={14} />
+                    <input 
+                      type="text" 
+                      placeholder="Geçmiş işlerde ara..." 
+                      className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-400 bg-slate-50" 
+                      value={staffJobSearch}
+                      onChange={(e) => setStaffJobSearch(e.target.value)}
+                    />
+                 </div>
+
+                 <div className="overflow-y-auto custom-scrollbar space-y-2 flex-1 pr-1">
+                     {filteredStaffJobs.length > 0 ? filteredStaffJobs.map((j: any) => (
+                       <div 
+                            key={j.id} 
+                            // BURADAKİ DEĞİŞİKLİK: ARTIK PERSONEL MODALI KAPANMIYOR, SADECE İŞ DETAY AÇILIYOR
+                            onClick={() => setSelectedJob(j)} 
+                            className="p-3 border border-slate-100 rounded-lg flex items-center justify-between bg-white text-xs cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-all group"
+                       >
+                          <div>
+                              <div className="font-semibold text-slate-800 group-hover:text-blue-700 transition-colors">{j.customer_name}</div>
+                              <div className="text-[10px] text-slate-500 mt-0.5">{j.scheduled_date || 'Anlık'}</div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                              <span className={`px-2 py-1 rounded text-[10px] font-medium border ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span>
+                              <ArrowRight size={14} className="text-slate-300 group-hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all" />
+                          </div>
+                       </div>
+                     )) : <div className="text-center p-6 text-slate-400 text-xs bg-slate-50 rounded-lg">Kriterlere uygun kayıt bulunamadı.</div>}
+                 </div>
               </div>
-              <div className="pt-4 border-t border-slate-100">
+
+              <div className="pt-4 border-t border-slate-100 mt-4">
                  {!isEditingStaff ? (
                    <div className="flex gap-2 w-full">
                      <button onClick={() => setIsEditingStaff(true)} className="flex-[2] bg-slate-100 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5"><Settings size={14} /> Düzenle</button>
@@ -391,6 +426,7 @@ export default function DashboardModals({
       </AnimatePresence>
 
       {/* MÜŞTERİ DETAY MODALI */}
+      {/* ... (Buradan sonrası aynı kalıyor, sadece copy-paste için tam hali aşağıda) ... */}
       <AnimatePresence>
         {showCustomerDetail && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
