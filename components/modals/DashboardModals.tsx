@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Settings, Trash2, Loader2, Search } from 'lucide-react';
+import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin } from 'lucide-react';
 
 export default function DashboardModals({
   showStaffDetail, setShowStaffDetail, isEditingStaff, setIsEditingStaff, editStaffForm, setEditStaffForm,
@@ -114,7 +114,22 @@ export default function DashboardModals({
               <div className="grid grid-cols-2 gap-3 mb-6">
                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">İletişim / Telefon</div><div className="text-xs font-medium text-slate-800 mt-0.5">{showCustomerDetail.contact || '-'}</div></div>
                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Vergi No / T.C.</div><div className="text-xs font-medium text-slate-800 mt-0.5">{showCustomerDetail.tax_info || '-'}</div></div>
-                 <div className="col-span-2 bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Adres</div><div className="text-xs font-medium text-slate-800 mt-0.5">{showCustomerDetail.address || '-'}</div></div>
+                 <div className="col-span-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <div className="text-[10px] font-semibold text-slate-500 uppercase">Adres</div>
+                    <div className="flex items-center justify-between mt-0.5">
+                      <div className="text-xs font-medium text-slate-800 line-clamp-2">{showCustomerDetail.address || '-'}</div>
+                      {showCustomerDetail.address && (
+                        <a 
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(showCustomerDetail.address)}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-100/50 hover:bg-blue-100 px-2 py-1 rounded transition-colors whitespace-nowrap ml-2"
+                        >
+                          <MapPin size={12} /> Haritada Gör
+                        </a>
+                      )}
+                    </div>
+                 </div>
               </div>
               
               <div className="flex-1 overflow-y-auto space-y-4 mb-6 custom-scrollbar">
@@ -181,21 +196,39 @@ export default function DashboardModals({
               <div className="grid grid-cols-2 gap-3 mb-6">
                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
                     <div className="text-[10px] font-semibold text-slate-500 uppercase">Sahibi (Müşteri)</div>
-                    <div className="text-xs font-medium text-blue-600 mt-0.5">
+                    <div className="text-xs font-medium mt-1">
                        {showAssetDetail.customer_id ? (() => {
                           const cust = (data?.customers || []).find((c: any) => c.id === showAssetDetail.customer_id);
                           return cust ? (
                              <span 
                                onClick={() => { setShowAssetDetail(null); setShowCustomerDetail(cust); }} 
-                               className="cursor-pointer hover:underline"
+                               className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 font-semibold border border-blue-200 rounded-md hover:bg-blue-100 hover:text-blue-800 transition-colors cursor-pointer"
+                               title="Müşteri profiline git"
                              >
+                               <User size={12} className="opacity-70" />
                                {cust.name}
+                               <ExternalLink size={12} className="opacity-50 ml-1" />
                              </span>
-                          ) : 'Bilinmiyor';
-                       })() : 'Bağımsız Cihaz'}
+                          ) : <span className="text-slate-500">Bilinmiyor</span>;
+                       })() : <span className="text-slate-500">Bağımsız Cihaz</span>}
                     </div>
                  </div>
-                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Tam Konum</div><div className="text-xs font-medium text-slate-800 mt-0.5">{showAssetDetail.location || '-'}</div></div>
+                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <div className="text-[10px] font-semibold text-slate-500 uppercase">Tam Konum</div>
+                    <div className="flex flex-col mt-0.5 space-y-1">
+                      <div className="text-xs font-medium text-slate-800">{showAssetDetail.location || '-'}</div>
+                      {showAssetDetail.location && (
+                        <a 
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(showAssetDetail.location + ' ' + (showAssetDetail.apartmentName || ''))}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="self-start inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-100/50 hover:bg-blue-100 px-2 py-1 rounded transition-colors"
+                        >
+                          <MapPin size={12} /> Haritada Gör
+                        </a>
+                      )}
+                    </div>
+                 </div>
                  <div className="col-span-2 bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Teknik Detaylar</div><div className="text-xs font-medium text-slate-800 mt-0.5 line-clamp-2">{showAssetDetail.asset_details || '-'}</div></div>
               </div>
               
