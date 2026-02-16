@@ -2,8 +2,13 @@
 
 import React, { useState } from 'react';
 import { Plus, CheckCircle, X, Loader2, ArrowDownRight, ArrowUpRight, Trash2 } from 'lucide-react';
+import { useParams } from 'next/navigation';
 
 export default function FinanceTab({ data }: any) {
+  // useParams ile URL'deki slug'ı güvenli şekilde çekiyoruz
+  const params = useParams();
+  const activeSlug = params?.slug || localStorage.getItem('companySlug');
+
   const [jobPrices, setJobPrices] = useState<any>({});
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   
@@ -23,12 +28,22 @@ export default function FinanceTab({ data }: any) {
     
     setIsProcessing(job.id);
     try {
-      const companySlug = localStorage.getItem('companySlug');
-      await fetch('https://backend.isdokumu.workers.dev/approve-job', {
-        method: 'POST', body: JSON.stringify({ slug: companySlug, jobId: job.id, amount: parseFloat(amount), customerName: job.customer_name })
+      const res = await fetch('https://backend.isdokumu.workers.dev/approve-job', {
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: activeSlug, jobId: job.id, amount: parseFloat(amount), customerName: job.customer_name })
       });
-      window.location.reload();
-    } catch (e) { alert("Hata oluştu"); setIsProcessing(null); }
+      
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        alert("Sunucu reddetti. Lütfen veritabanı bağlantınızı kontrol edin.");
+        setIsProcessing(null);
+      }
+    } catch (e) { 
+      alert("Ağ bağlantısı kurulamadı!"); 
+      setIsProcessing(null); 
+    }
   };
 
   // Dinamik Satır Ekleme / Çıkarma
@@ -53,12 +68,22 @@ export default function FinanceTab({ data }: any) {
     const endpoint = financeModal.type === 'Gelir' ? '/add-income' : '/add-expense';
     
     try {
-      const companySlug = localStorage.getItem('companySlug');
-      await fetch(`https://backend.isdokumu.workers.dev${endpoint}`, {
-        method: 'POST', body: JSON.stringify({ slug: companySlug, description, amount: parseFloat(financeAmount) })
+      const res = await fetch(`https://backend.isdokumu.workers.dev${endpoint}`, {
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: activeSlug, description, amount: parseFloat(financeAmount) })
       });
-      window.location.reload();
-    } catch (e) { alert("Hata oluştu"); setIsSavingFinance(false); }
+
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        alert("Kayıt Başarısız! Lütfen Cloudflare'da yeni worker.js dosyanızı güncellediğinizden emin olun.");
+        setIsSavingFinance(false);
+      }
+    } catch (e) { 
+      alert("Bağlantı hatası oluştu!"); 
+      setIsSavingFinance(false); 
+    }
   };
 
   const closeFinanceModal = () => {
