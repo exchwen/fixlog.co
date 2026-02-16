@@ -67,7 +67,7 @@ export default function FinanceTab({ data }: any) {
   };
 
   const addItemRow = () => setFinanceItems([...financeItems, { name: '', qty: '1' }]);
-  const removeItemRow = (idx: number) => setFinanceItems(financeItems.filter((_, i) => i !== idx));
+  const removeItemRow = (idx: number) => setFinanceItems(financeItems.filter((_: any, i: number) => i !== idx));
   const handleItemChange = (idx: number, field: string, val: string) => {
     const newItems = [...financeItems];
     newItems[idx] = { ...newItems[idx], [field]: val };
@@ -77,8 +77,8 @@ export default function FinanceTab({ data }: any) {
   const handleAddFinanceRecord = async () => {
     // VİRGÜL YERİNE \n (ALT SATIR) KULLANILARAK BİRLEŞTİRİLDİ
     const description = financeItems
-      .filter(i => i.name.trim() !== '')
-      .map(i => `${i.qty}x ${i.name}`)
+      .filter((i: any) => i.name.trim() !== '')
+      .map((i: any) => `${i.qty}x ${i.name}`)
       .join('\n');
 
     if(!description || !financeAmount) return alert("Lütfen kalemleri ve toplam tutarı eksiksiz giriniz.");
@@ -123,7 +123,7 @@ export default function FinanceTab({ data }: any) {
   // İSTEMCİ TARANFISINDA (SIFIR MALİYETLİ) EXCEL (CSV) ÇIKTISI ALMA FONKSİYONU
   const exportToExcel = (tableData: any[], title: string) => {
     const headers = ['Tarih', 'Aciklama', 'Miktar (TL)', 'Islem Tipi'];
-    const rows = tableData.map(f => {
+    const rows = tableData.map((f: any) => {
       const date = new Date(f.created_at).toLocaleDateString('tr-TR');
       // Çift tırnakları düzelt ve Excel'in alt satırları ( \n ) okuyabilmesi için tüm açıklamayı tırnak içine al
       const desc = `"${f.description.replace(/"/g, '""')}"`; 
@@ -246,8 +246,8 @@ export default function FinanceTab({ data }: any) {
 
        {/* TABLOLAR BÖLÜMÜ */}
        {renderFinanceTable("Tüm Hesap Hareketleri", localFinances)}
-       {renderFinanceTable("Sadece Gelirler", localFinances.filter(f => f.type === 'Gelir'))}
-       {renderFinanceTable("Sadece Giderler", localFinances.filter(f => f.type === 'Gider'))}
+       {renderFinanceTable("Sadece Gelirler", localFinances.filter((f: any) => f.type === 'Gelir'))}
+       {renderFinanceTable("Sadece Giderler", localFinances.filter((f: any) => f.type === 'Gider'))}
 
        {/* DİNAMİK GELİR / GİDER EKLEME MODALI */}
        {financeModal.isOpen && (
