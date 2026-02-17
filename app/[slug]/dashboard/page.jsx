@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, AlertTriangle, ArrowRight, Settings } from 'lucide-react';
@@ -28,7 +28,10 @@ export default function PatronDashboard() {
   
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<any>(null); // Type any eklendi
+  
+  // HATA DÜZELTİLDİ: <any> kaldırıldı. Artık tarayıcıda hata vermez.
+  const [data, setData] = useState(null); 
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -109,26 +112,28 @@ export default function PatronDashboard() {
     setMessageInput(''); fetchMessages();
   };
 
-  // --- EKSİK BİLGİ KONTROLÜ (GÜÇLENDİRİLDİ & DEBUG EKLENDİ) ---
-  let isCompanyDataIncomplete = false;
-  if (data) {
-    const name = data.name?.trim().toLowerCase() || '';
-    const owner = data.ownerName?.trim().toLowerCase() || '';
-    const phone = data.phone?.trim() || '';
-    const address = data.address?.trim() || '';
-    const taxInfo = data.taxInfo?.trim() || '';
+  // --- EKSİK BİLGİ KONTROLÜ (DÜZELTİLDİ) ---
+  const isCompanyDataIncomplete = useMemo(() => {
+    if (!data) return false;
+    
+    // Veriye güvenli erişim (Optional chaining ile)
+    // TypeScript/JavaScript çakışmasını önlemek için 'any' tip zorlaması yerine doğrudan erişim
+    const d = data || {};
 
-    // Varsayılan değer kontrolü (Küçük harfe çevirerek kontrol ediyoruz)
+    const name = d.name?.trim().toLowerCase() || '';
+    const owner = d.ownerName?.trim().toLowerCase() || '';
+    const phone = d.phone?.trim() || '';
+    const address = d.address?.trim() || '';
+    const taxInfo = d.taxInfo?.trim() || '';
+
+    // Varsayılan veya boş değer kontrolü
     const isDefaultName = name === 'işletme' || name === '';
     const isDefaultOwner = owner === 'kullanıcı' || owner === 'yönetici' || owner === '';
     
-    // Debug için konsola basıyoruz (Sorunu anlamak için F12'den bakabilirsiniz)
-    // console.log("[DEBUG] Eksik Veri Kontrolü:", { name, isDefaultName, owner, isDefaultOwner, phone, address, taxInfo });
-
-    if (isDefaultName || isDefaultOwner || !phone || !address || !taxInfo) {
-      isCompanyDataIncomplete = true;
-    }
-  }
+    return (
+      isDefaultName || isDefaultOwner || !phone || !address || !taxInfo
+    );
+  }, [data]);
 
   if (loading) return (
     <div className="h-screen flex flex-col items-center justify-center bg-slate-950">
@@ -185,7 +190,7 @@ export default function PatronDashboard() {
       
       <AssetQRModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} asset={selectedQRAsset} />
 
-      {/* --- ZORUNLU AYARLAR MODALI (Z-INDEX ARTIRILDI) --- */}
+      {/* --- ZORUNLU AYARLAR MODALI --- */}
       <AnimatePresence>
         {isCompanyDataIncomplete && activeTab !== 'settings' && (
           <motion.div 
@@ -214,11 +219,12 @@ export default function PatronDashboard() {
                 <div className="text-xs text-slate-500 bg-slate-50 p-4 rounded-lg border border-slate-100">
                   <p className="font-bold text-slate-700 mb-2">Eksik Olan Bilgiler:</p>
                   <ul className="list-disc list-inside space-y-1">
-                    {(data.name?.trim().toLowerCase() === 'işletme' || !data.name?.trim()) && <li>Firma Ünvanı</li>}
-                    {(data.ownerName?.trim().toLowerCase() === 'kullanıcı' || data.ownerName?.trim().toLowerCase() === 'yönetici' || !data.ownerName?.trim()) && <li>Yetkili Ad Soyad</li>}
-                    {!data.phone?.trim() && <li>İşletme Telefonu</li>}
-                    {!data.address?.trim() && <li>Adres Bilgisi</li>}
-                    {!data.taxInfo?.trim() && <li>Vergi Numarası</li>}
+                    {/* Hata veren (data as any) kısımları temizlendi */}
+                    {(data?.name?.trim().toLowerCase() === 'işletme' || !data?.name?.trim()) && <li>Firma Ünvanı</li>}
+                    {(data?.ownerName?.trim().toLowerCase() === 'kullanıcı' || data?.ownerName?.trim().toLowerCase() === 'yönetici' || !data?.ownerName?.trim()) && <li>Yetkili Ad Soyad</li>}
+                    {!data?.phone?.trim() && <li>İşletme Telefonu</li>}
+                    {!data?.address?.trim() && <li>Adres Bilgisi</li>}
+                    {!data?.taxInfo?.trim() && <li>Vergi Numarası</li>}
                   </ul>
                 </div>
               </div>
