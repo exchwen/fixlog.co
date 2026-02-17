@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Save, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase } from 'lucide-react';
+import { Save, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle } from 'lucide-react';
 // İl Verisini Çekiyoruz
 import trCitiesData from '@/lib/data/tr-cities.json';
 
@@ -125,18 +125,38 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
             </div>
           </div>
 
-          <div>
-            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">İşletme Telefonu</label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-2.5 text-slate-400" size={16} />
-              <input 
-                type="tel"
-                className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800"
-                value={settingsForm.phone || ''}
-                onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
-                placeholder="05XX XXX XX XX"
-              />
-            </div>
+          {/* İLETİŞİM BİLGİLERİ */}
+          <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">İşletme Telefonu</label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-2.5 text-slate-400" size={16} />
+                  <input 
+                    type="tel"
+                    className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800"
+                    value={settingsForm.phone || ''}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
+                    placeholder="05XX XXX XX XX"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-rose-600 uppercase tracking-wider mb-1.5 block flex items-center gap-1">
+                    <AlertTriangle size={12} /> Acil Durum Hattı (7/24)
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-2.5 text-rose-400" size={16} />
+                  <input 
+                    type="tel"
+                    className="w-full pl-10 pr-3 py-2.5 border border-rose-200 bg-rose-50 rounded-lg text-sm outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all text-slate-800 placeholder:text-rose-300"
+                    value={settingsForm.emergencyPhone || ''}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, emergencyPhone: e.target.value })}
+                    placeholder="05XX XXX XX XX"
+                  />
+                </div>
+                <p className="text-[9px] text-slate-400 mt-1">QR kod sayfasındaki "Acil Destek" butonunda bu numara aranır.</p>
+              </div>
           </div>
         </div>
 

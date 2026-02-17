@@ -67,7 +67,8 @@ export default function PatronDashboard() {
   const [staffForm, setStaffForm] = useState({ name: '', phone: '', role: 'Usta', branch: '', status: 'Aktif' });
   const [customerForm, setCustomerForm] = useState({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } });
   const [stockForm, setStockForm] = useState({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', supplierName: '', supplierPhone: '' });
-  const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '' });
+  // GÜNCELLEME: phone ve emergencyPhone eklendi
+  const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', emergencyPhone: '' });
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '' });
 
   const fetchData = async () => {
@@ -77,7 +78,15 @@ export default function PatronDashboard() {
       const result = await res.json();
       setData(result);
       if (result) {
-        setSettingsForm({ companyName: result.name || '', ownerName: result.ownerName || '', sector: result.sector || '', address: result.address || '', taxInfo: result.taxInfo || '', phone: result.phone || '' });
+        setSettingsForm({ 
+            companyName: result.name || '', 
+            ownerName: result.ownerName || '', 
+            sector: result.sector || '', 
+            address: result.address || '', 
+            taxInfo: result.taxInfo || '', 
+            phone: result.phone || '',
+            emergencyPhone: result.emergencyPhone || '' // GÜNCELLEME: Eklendi
+        });
       }
     } catch (err) { console.error("Veri çekilemedi:", err); } finally { setLoading(false); }
   };
