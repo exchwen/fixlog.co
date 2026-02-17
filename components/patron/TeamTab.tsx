@@ -11,8 +11,8 @@ export default function TeamTab({ data, setShowStaffModal, setShowStaffDetail, s
     const activeJobs = data?.jobs?.filter((j: any) => j.staff_id === staffId && (j.status === 'Devam Ediyor' || j.status === 'Sahada')) || [];
     
     if (activeJobs.length > 0) {
-      // Tüm aktif işlerin müşteri isimlerini bir liste haline getiriyoruz
-      const detailsArray = activeJobs.map((j: any) => j.customer_name);
+      // Eğer müşteri adı boşsa 'İsimsiz Görev' yazdırarak boş satır çıkmasını engelliyoruz
+      const detailsArray = activeJobs.map((j: any) => j.customer_name || j.title || 'İsimsiz Görev');
       return { text: 'Şu an Sahada', details: detailsArray, color: 'bg-blue-500', bg: 'bg-blue-50', textCol: 'text-blue-700', icon: <Activity size={12} /> };
     }
     
@@ -20,9 +20,9 @@ export default function TeamTab({ data, setShowStaffModal, setShowStaffDetail, s
     const pendingJobs = data?.jobs?.filter((j: any) => j.staff_id === staffId && (j.status === 'Beklemede' || j.status === 'Gelecek')) || [];
     
     if (pendingJobs.length > 0) {
-      // Tüm bekleyen işlerin müşteri isimlerini bir liste haline getiriyoruz
-      const detailsArray = pendingJobs.map((j: any) => `Sıradaki: ${j.customer_name}`);
-      return { text: 'Görev Bekliyor', details: detailsArray, color: 'bg-amber-500', bg: 'bg-amber-50', textCol: 'text-amber-700', icon: <MapPin size={12} /> };
+      // Eğer müşteri adı boşsa 'İsimsiz Görev' yazdırarak boş satır çıkmasını engelliyoruz
+      const detailsArray = pendingJobs.map((j: any) => `İş Bilgisi: ${j.customer_name || j.title || 'İsimsiz Görev'}`);
+      return { text: 'İş Atandı', details: detailsArray, color: 'bg-amber-500', bg: 'bg-amber-50', textCol: 'text-amber-700', icon: <MapPin size={12} /> };
     }
 
     // 3. Hiçbir işi yoksa müsait döndürelim
@@ -60,19 +60,21 @@ export default function TeamTab({ data, setShowStaffModal, setShowStaffDetail, s
               <div className={`w-full flex flex-col items-center justify-center py-2 px-2 rounded-lg mb-4 ${status.bg} ${status.textCol} border border-white/20`}>
                 <div className="flex items-center gap-1.5 font-bold text-[11px] mb-1">{status.icon} {status.text}</div>
                 
-                {/* Tüm işleri alt alta listeleyen alan (Sabit boyut ve kaydırma eklendi) */}
-                <div className="w-full flex flex-col gap-0.5 max-h-[48px] overflow-y-auto pr-1">
+                {/* Tüm işleri alt alta listeleyen alan (Yükseklik artırıldı, taşma sorunu çözüldü) */}
+                <div className="w-full flex flex-col gap-0.5 max-h-20 overflow-y-auto pr-1">
                   {status.details.map((detailText: string, idx: number) => (
-                    <div key={idx} className="text-[9px] opacity-80 font-medium truncate w-full shrink-0 text-left pl-1">
+                    <div key={idx} className="text-[9px] opacity-80 font-medium truncate w-full shrink-0 text-left pl-1" title={detailText}>
                       {detailText}
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 w-full pt-3 border-t border-slate-100">
-                 <button onClick={() => { setShowStaffDetail(s); setEditStaffForm(s); setIsEditingStaff(false); }} className="flex items-center justify-center gap-1 bg-white border border-slate-200 text-slate-600 py-1.5 rounded-md text-xs font-medium hover:bg-slate-50 transition-colors">Dosya</button>
-                 <button onClick={() => { setActiveChatId(s.id); setIsChatOpen(true); }} className="flex items-center justify-center gap-1 bg-blue-50 text-blue-600 py-1.5 rounded-md text-xs font-medium hover:bg-blue-100 transition-colors">Mesaj</button>
+              {/* Alt Butonlar: İş Ata, Dosya, Mesaj - Üçlü Grid Yapısı */}
+              <div className="grid grid-cols-3 gap-1.5 w-full pt-3 border-t border-slate-100">
+                 <button onClick={() => { console.log('İş ata tıklandı', s.id); }} className="flex items-center justify-center gap-1 bg-emerald-50 text-emerald-600 border border-emerald-100 py-1.5 rounded-md text-[11px] font-medium hover:bg-emerald-100 transition-colors">İş Ata</button>
+                 <button onClick={() => { setShowStaffDetail(s); setEditStaffForm(s); setIsEditingStaff(false); }} className="flex items-center justify-center gap-1 bg-white border border-slate-200 text-slate-600 py-1.5 rounded-md text-[11px] font-medium hover:bg-slate-50 transition-colors">Dosya</button>
+                 <button onClick={() => { setActiveChatId(s.id); setIsChatOpen(true); }} className="flex items-center justify-center gap-1 bg-blue-50 text-blue-600 border border-blue-50 py-1.5 rounded-md text-[11px] font-medium hover:bg-blue-100 transition-colors">Mesaj</button>
               </div>
             </div>
           )
