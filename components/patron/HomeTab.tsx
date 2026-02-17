@@ -8,7 +8,7 @@ import {
   Package, AlertTriangle, ShieldCheck, Activity, User, Lock, Settings, X, Wrench
 } from 'lucide-react';
 
-export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob }: any) {
+export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob, setActiveTab }: any) {
 
   // 1. PROFİL DOLULUK KONTROLÜ (ZORUNLU KİLİT)
   const isProfileComplete = data?.name && data?.ownerName && data?.sector && data?.address && data?.phone && data?.taxInfo;
@@ -130,22 +130,34 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
       <AnimatePresence>
         {showLowStockModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-sm rounded-xl p-6 shadow-xl relative">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-slate-900 flex items-center gap-2">
                    <AlertTriangle size={18} className="text-amber-500" /> Kritik Stoklar
                 </h3>
                 <button onClick={() => setShowLowStockModal(false)} className="text-slate-400 hover:bg-slate-100 p-1.5 rounded-md transition-colors"><X size={18} /></button>
               </div>
-              <div className="max-h-[300px] overflow-y-auto custom-scrollbar space-y-2 pr-1">
+              <div className="max-h-[350px] overflow-y-auto custom-scrollbar space-y-2 pr-1">
                 {lowStockItems.map((item: any) => (
-                  <div key={item.id} className="flex justify-between items-center p-3 bg-amber-50/50 border border-amber-100 rounded-lg">
+                  <div key={item.id} className="flex justify-between items-center p-3 bg-amber-50/50 border border-amber-100 rounded-lg group">
                     <div>
                       <div className="text-xs font-bold text-slate-800">{item.item_name}</div>
                       <div className="text-[10px] text-slate-500 mt-0.5">{item.supplier_name || 'Tedarikçi Kaydı Yok'}</div>
                     </div>
-                    <div className="text-sm font-black text-amber-600 bg-amber-100 px-2 py-1 rounded-md">
-                      {item.quantity} <span className="text-[10px] uppercase">{item.unit_name}</span>
+                    <div className="flex items-center gap-3">
+                       <div className="text-sm font-black text-amber-600 bg-amber-100 px-2 py-1 rounded-md">
+                         {item.quantity} <span className="text-[10px] uppercase">{item.unit_name}</span>
+                       </div>
+                       <button 
+                         onClick={() => {
+                           setShowLowStockModal(false);
+                           if (setActiveTab) setActiveTab('stock');
+                         }}
+                         className="px-2 py-1.5 bg-white border border-slate-200 text-blue-600 rounded-md text-[10px] font-bold hover:bg-blue-50 hover:border-blue-200 transition-all shadow-sm flex items-center gap-1"
+                         title="Stok Sayfasına Git"
+                       >
+                         Stoğa Git <ArrowUpRight size={12} />
+                       </button>
                     </div>
                   </div>
                 ))}
@@ -381,6 +393,9 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                 const isApproved = j.status === 'Tamamlandı';
                 const staffColor = isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200';
                 
+                // YENİ EKLENEN KONTROL: Atayan ve Sorumlu aynı kişi mi?
+                const isSamePerson = assignedManager && assignedManager.name === actionBy;
+                
                 return (
                   <tr 
                     key={j.id} 
@@ -397,29 +412,42 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                     <td className="px-5 py-3 align-middle">
                       <div className="flex flex-col gap-1.5">
                         
-                        {/* 1. SEVİYE: İŞİ OLUŞTURAN / ATAYAN */}
-                        <div className="flex items-center gap-1.5">
-                          <ShieldCheck size={12} className={isApproved ? 'text-emerald-500' : 'text-slate-400'} />
-                          <span className="text-[9px] font-bold text-slate-400 uppercase w-[52px]">Atayan:</span>
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-slate-600 bg-slate-50 border-slate-200'}`}>
-                            {actionBy}
-                          </span>
-                        </div>
-
-                        {/* 2. SEVİYE: SORUMLU YÖNETİCİ */}
-                        <div className="flex items-center gap-1.5">
-                          <User size={12} className={assignedManager ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
-                          <span className="text-[9px] font-bold text-slate-400 uppercase w-[52px]">Sorumlu:</span>
-                          {assignedManager ? (
+                        {isSamePerson ? (
+                          /* 1 VE 2. SEVİYE BİRLEŞİK: ATAYAN VE SORUMLU AYNI KİŞİ */
+                          <div className="flex items-center gap-1.5">
+                            <ShieldCheck size={12} className={isApproved ? 'text-emerald-500' : 'text-amber-500'} />
+                            <span className="text-[9px] font-bold text-slate-400 uppercase w-[95px]">Atayan & Sorumlu:</span>
                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${staffColor}`}>
                               {assignedManager.name}
                             </span>
-                          ) : (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border border-slate-200 bg-slate-100 text-slate-400">
-                              Atanmadı
-                            </span>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          <>
+                            {/* 1. SEVİYE: İŞİ OLUŞTURAN / ATAYAN */}
+                            <div className="flex items-center gap-1.5">
+                              <ShieldCheck size={12} className={isApproved ? 'text-emerald-500' : 'text-slate-400'} />
+                              <span className="text-[9px] font-bold text-slate-400 uppercase w-[52px]">Atayan:</span>
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-slate-600 bg-slate-50 border-slate-200'}`}>
+                                {actionBy}
+                              </span>
+                            </div>
+
+                            {/* 2. SEVİYE: SORUMLU YÖNETİCİ */}
+                            <div className="flex items-center gap-1.5">
+                              <User size={12} className={assignedManager ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
+                              <span className="text-[9px] font-bold text-slate-400 uppercase w-[52px]">Sorumlu:</span>
+                              {assignedManager ? (
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${staffColor}`}>
+                                  {assignedManager.name}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border border-slate-200 bg-slate-100 text-slate-400">
+                                  Atanmadı
+                                </span>
+                              )}
+                            </div>
+                          </>
+                        )}
 
                         {/* 3. SEVİYE: SAHA USTASI (İlerisi İçin Hazırlandı) */}
                         <div className="flex items-center gap-1.5">

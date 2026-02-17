@@ -126,7 +126,7 @@ export default function PatronDashboard() {
         <Header data={data} searchTerm={searchTerm} setSearchTerm={setSearchTerm} setIsMobileMenuOpen={setIsMobileMenuOpen} />
 
         <div className="p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">
-        {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} />}
+        {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} />}
           
           {/* --- GÜNCELLENEN KISIM: JobsTab --- */}
           {activeTab === 'jobs' && (
