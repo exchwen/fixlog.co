@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClipboardList, Users, Box, Wallet, Plus, ArrowUpRight, 
   CheckCircle, Clock, Calendar, TrendingUp, TrendingDown, 
-  Package, AlertTriangle, ShieldCheck, Activity, User, Lock, Settings, X
+  Package, AlertTriangle, ShieldCheck, Activity, User, Lock, Settings, X, Wrench
 } from 'lucide-react';
 
 export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob }: any) {
@@ -372,14 +372,15 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
             </thead>
             <tbody className="divide-y divide-slate-50">
               {jobs.slice(0, 10).map((j: any) => {
-                const assignedStaff = j.staff_id ? staff.find((s:any) => s.id === j.staff_id) : null;
-                // İşi kimin atadığını yakalıyoruz:
-                const managerName = j.details?.lastEditedBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
+                
+                // Zeka: Değişkenleri İleriye Dönük Olarak Tanımladık
+                const assignedManager = j.staff_id ? staff.find((s:any) => s.id === j.staff_id) : null;
+                const assignedWorker = j.details?.worker_id ? staff.find((s:any) => s.id === j.details?.worker_id) : null;
+                const actionBy = j.details?.lastEditedBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
                 
                 const isApproved = j.status === 'Tamamlandı';
                 const staffColor = isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200';
-                const managerColor = isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200';
-
+                
                 return (
                   <tr 
                     key={j.id} 
@@ -395,19 +396,23 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                     
                     <td className="px-5 py-3 align-middle">
                       <div className="flex flex-col gap-1.5">
+                        
+                        {/* 1. SEVİYE: İŞİ OLUŞTURAN / ATAYAN */}
                         <div className="flex items-center gap-1.5">
-                          <ShieldCheck size={12} className={isApproved ? 'text-emerald-500' : 'text-amber-500'} />
-                          <span className="text-[9px] font-bold text-slate-400 uppercase w-12">Yönetici:</span>
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${managerColor}`}>
-                            {managerName}
+                          <ShieldCheck size={12} className={isApproved ? 'text-emerald-500' : 'text-slate-400'} />
+                          <span className="text-[9px] font-bold text-slate-400 uppercase w-[52px]">Atayan:</span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-slate-600 bg-slate-50 border-slate-200'}`}>
+                            {actionBy}
                           </span>
                         </div>
+
+                        {/* 2. SEVİYE: SORUMLU YÖNETİCİ */}
                         <div className="flex items-center gap-1.5">
-                          <User size={12} className={assignedStaff ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
-                          <span className="text-[9px] font-bold text-slate-400 uppercase w-12">Usta:</span>
-                          {assignedStaff ? (
+                          <User size={12} className={assignedManager ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
+                          <span className="text-[9px] font-bold text-slate-400 uppercase w-[52px]">Sorumlu:</span>
+                          {assignedManager ? (
                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${staffColor}`}>
-                              {assignedStaff.name}
+                              {assignedManager.name}
                             </span>
                           ) : (
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border border-slate-200 bg-slate-100 text-slate-400">
@@ -415,6 +420,22 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                             </span>
                           )}
                         </div>
+
+                        {/* 3. SEVİYE: SAHA USTASI (İlerisi İçin Hazırlandı) */}
+                        <div className="flex items-center gap-1.5">
+                          <Wrench size={12} className={assignedWorker ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
+                          <span className="text-[9px] font-bold text-slate-400 uppercase w-[52px]">Usta:</span>
+                          {assignedWorker ? (
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${staffColor}`}>
+                              {assignedWorker.name}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border border-slate-200 bg-slate-100 text-slate-400">
+                              Atanmadı
+                            </span>
+                          )}
+                        </div>
+
                       </div>
                     </td>
 
