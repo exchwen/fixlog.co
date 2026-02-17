@@ -1,249 +1,206 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, AlertTriangle, ArrowRight, Settings } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Save, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle } from 'lucide-react';
+import trCitiesData from '@/lib/data/tr-cities.json';
 
-import Sidebar from '@/components/layout/Sidebar';
-import Header from '@/components/layout/Header';
-import ChatPanel from '@/components/chat/ChatPanel';
-import DashboardModals from '@/components/modals/DashboardModals';
+const CITY_DATA = trCitiesData;
 
-import HomeTab from '@/components/patron/HomeTab';
-import JobsTab from '@/components/patron/JobsTab';
-import TeamTab from '@/components/patron/TeamTab';
-import CustomersTab from '@/components/patron/CustomersTab';
-import StockTab from '@/components/patron/StockTab';
-import FinanceTab from '@/components/patron/FinanceTab';
-import AssetsTab from '@/components/patron/AssetsTab';
-import SettingsTab from '@/components/patron/SettingsTab';
-import PendingJobsTab from '@/components/patron/PendingJobsTab'; 
-import AssetQRModal from '@/components/modals/AssetQRModal';
-
-const API_URL = 'https://backend.isdokumu.workers.dev';
-
-export default function PatronDashboard() {
-  const { slug } = useParams();
+export default function SettingsTab({ settingsForm, setSettingsForm, handleAction, isSaving }) {
   
-  const [activeTab, setActiveTab] = useState('home');
-  const [loading, setLoading] = useState(true);
-  
-  // HATA DÜZELTİLDİ: <any> kaldırıldı. Artık tarayıcıda hata vermez.
-  const [data, setData] = useState(null); 
-  
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [localCity, setLocalCity] = useState('');
+  const [localDistrict, setLocalDistrict] = useState('');
+  const [localDetail, setLocalDetail] = useState('');
 
-  // MODAL STATE'LERİ
-  const [showJobModal, setShowJobModal] = useState(false);
-  const [showAssetModal, setShowAssetModal] = useState(false);
-  const [showStaffModal, setShowStaffModal] = useState(false);
-  const [showCustomerModal, setShowCustomerModal] = useState(false);
-  const [showStockModal, setShowStockModal] = useState(false);
-  
-  const [showStaffDetail, setShowStaffDetail] = useState(null);
-  const [showCustomerDetail, setShowCustomerDetail] = useState(null);
-  const [showAssetDetail, setShowAssetDetail] = useState(null);
-  
-  const [selectedJob, setSelectedJob] = useState(null); 
-  const [showQRModal, setShowQRModal] = useState(false);
-  const [selectedQRAsset, setSelectedQRAsset] = useState(null);
-
-  const [isEditingStaff, setIsEditingStaff] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [activeChatId, setActiveChatId] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [messageInput, setMessageInput] = useState('');
-
-  // FORMLAR
-  const [jobForm, setJobForm] = useState({ customerName: '', assetId: '', staffId: '', workType: 'Genel Görev', jobType: 'Anlık', scheduledDate: '', taskNote: '' });
-  const [assetForm, setAssetForm] = useState({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', newCustomer: { name: '', contact: '', address: '', taxInfo: '' } });
-  const [staffForm, setStaffForm] = useState({ name: '', phone: '', role: 'Usta', branch: '', status: 'Aktif' });
-  const [customerForm, setCustomerForm] = useState({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } });
-  const [stockForm, setStockForm] = useState({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', supplierName: '', supplierPhone: '' });
-  const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', emergencyPhone: '' });
-  const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '' });
-
-  const fetchData = async () => {
-    try {
-      const res = await fetch(`${API_URL}/dashboard-data?slug=${slug}`);
-      if (!res.ok) throw new Error("Ağ hatası");
-      const result = await res.json();
-      setData(result);
-      if (result) {
-        setSettingsForm({ 
-            companyName: result.name || '', 
-            ownerName: result.ownerName || '', 
-            sector: result.sector || '', 
-            address: result.address || '', 
-            taxInfo: result.taxInfo || '', 
-            phone: result.phone || '',
-            emergencyPhone: result.emergencyPhone || ''
-        });
+  useEffect(() => {
+    if (settingsForm.address) {
+      const parts = settingsForm.address.split(' / ');
+      if (parts.length >= 3) {
+        const city = parts[parts.length - 1].trim();
+        const district = parts[parts.length - 2].trim();
+        
+        if (CITY_DATA[city]) {
+          setLocalCity(city);
+          setLocalDistrict(district);
+          setLocalDetail(parts.slice(0, parts.length - 2).join(' / ').trim());
+          return;
+        }
       }
-    } catch (err) { console.error("Veri çekilemedi:", err); } finally { setLoading(false); }
+      setLocalDetail(settingsForm.address);
+    }
+  }, [settingsForm.address]); 
+
+  const updateAddress = (newDetail, newCity, newDistrict) => {
+    setLocalDetail(newDetail);
+    setLocalCity(newCity);
+    setLocalDistrict(newDistrict);
+
+    let fullAddress = newDetail.trim();
+    if (newDistrict) fullAddress += ` / ${newDistrict}`;
+    if (newCity) fullAddress += ` / ${newCity}`;
+
+    setSettingsForm({ ...settingsForm, address: fullAddress });
   };
 
-  const fetchMessages = async () => {
-    if (!activeChatId) return;
-    try {
-      const res = await fetch(`${API_URL}/get-messages?slug=${slug}&staffId=${activeChatId}`);
-      setMessages(await res.json() || []);
-    } catch (err) {}
-  };
-
-  useEffect(() => { fetchData(); const int = setInterval(fetchData, 15000); return () => clearInterval(int); }, [slug]);
-  useEffect(() => { if (isChatOpen && activeChatId) { fetchMessages(); const cInt = setInterval(fetchMessages, 4000); return () => clearInterval(cInt); } }, [isChatOpen, activeChatId]);
-
-  const handleAction = async (endpoint, body, closeFn, resetFn) => {
-    setIsSaving(true);
-    try {
-      const res = await fetch(`${API_URL}/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, slug }) });
-      if (res.ok) { if(closeFn) closeFn(false); if(resetFn) resetFn(); await fetchData(); } else { alert("Veritabanı kayıt hatası."); }
-    } catch (err) { alert("Bağlantı kurulamadı."); } finally { setIsSaving(false); }
-  };
-
-  const sendMessage = async () => {
-    if (!messageInput.trim() || !activeChatId) return;
-    await fetch(`${API_URL}/send-message`, { method: 'POST', body: JSON.stringify({ slug, senderId: 'PATRON', receiverId: activeChatId, message: messageInput }) });
-    setMessageInput(''); fetchMessages();
-  };
-
-  // --- EKSİK BİLGİ KONTROLÜ (DÜZELTİLDİ) ---
-  const isCompanyDataIncomplete = useMemo(() => {
-    if (!data) return false;
-    
-    // Veriye güvenli erişim (Optional chaining ile)
-    // TypeScript/JavaScript çakışmasını önlemek için 'any' tip zorlaması yerine doğrudan erişim
-    const d = data || {};
-
-    const name = d.name?.trim().toLowerCase() || '';
-    const owner = d.ownerName?.trim().toLowerCase() || '';
-    const phone = d.phone?.trim() || '';
-    const address = d.address?.trim() || '';
-    const taxInfo = d.taxInfo?.trim() || '';
-
-    // Varsayılan veya boş değer kontrolü
-    const isDefaultName = name === 'işletme' || name === '';
-    const isDefaultOwner = owner === 'kullanıcı' || owner === 'yönetici' || owner === '';
-    
-    return (
-      isDefaultName || isDefaultOwner || !phone || !address || !taxInfo
-    );
-  }, [data]);
-
-  if (loading) return (
-    <div className="h-screen flex flex-col items-center justify-center bg-slate-950">
-      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }} className="mb-4"><ShieldCheck className="text-blue-500 w-12 h-12" /></motion.div>
-      <div className="text-white font-black tracking-widest text-[11px] uppercase opacity-40">D1 Senkronize Ediliyor...</div>
-    </div>
-  );
-
-  const statusColors = { 
-    'Beklemede': 'bg-amber-100 text-amber-700 border-amber-200', 
-    'Tamamlandı': 'bg-emerald-100 text-emerald-700 border-emerald-200', 
-    'Devam Ediyor': 'bg-blue-100 text-blue-700 border-blue-200', 
-    'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200',
-    'İptal': 'bg-rose-100 text-rose-700 border-rose-200' 
-  };
+  const isFormValid = 
+    settingsForm.companyName?.trim() &&
+    settingsForm.ownerName?.trim() &&
+    settingsForm.sector?.trim() &&
+    settingsForm.phone?.trim() &&
+    settingsForm.address?.trim() &&
+    settingsForm.taxInfo?.trim();
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex font-sans text-slate-900 text-sm overflow-hidden relative selection:bg-blue-100">
-      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400/5 blur-[120px] rounded-full z-0 pointer-events-none"></div>
-      <div className="fixed inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.015] pointer-events-none z-0"></div>
-
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-
-      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto relative z-10">
-        <Header data={data} searchTerm={searchTerm} setSearchTerm={setSearchTerm} setIsMobileMenuOpen={setIsMobileMenuOpen} />
-
-        <div className="p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">
-          {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} />}
-          {activeTab === 'jobs' && <JobsTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} />}
-          {activeTab === 'pending' && <PendingJobsTab data={data} setSelectedJob={setSelectedJob} />}
-          {activeTab === 'team' && <TeamTab data={data} setShowStaffModal={setShowStaffModal} setShowJobModal={setShowJobModal} setShowStaffDetail={setShowStaffDetail} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} setSelectedJob={setSelectedJob} />}
-          {activeTab === 'customers' && <CustomersTab data={data} setShowCustomerModal={setShowCustomerModal} setShowCustomerDetail={setShowCustomerDetail} />}
-          {activeTab === 'stock' && <StockTab data={data} setShowStockModal={setShowStockModal} />}
-          {activeTab === 'finance' && <FinanceTab data={data} />}
-          {activeTab === 'assets' && <AssetsTab data={data} setShowAssetModal={setShowAssetModal} setShowAssetDetail={setShowAssetDetail} setShowQRModal={setShowQRModal} setSelectedQRAsset={setSelectedQRAsset} />}
-          {activeTab === 'settings' && <SettingsTab settingsForm={settingsForm} setSettingsForm={setSettingsForm} handleAction={handleAction} isSaving={isSaving} />}
+    <div className="max-w-3xl mx-auto space-y-6">
+      <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+        <div>
+          <h3 className="text-lg font-bold text-slate-900">İşletme Ayarları</h3>
+          <p className="text-xs text-slate-500 mt-1">Firma bilgilerinizi buradan güncelleyebilirsiniz.</p>
         </div>
-      </main>
+        <button 
+          disabled={isSaving || !isFormValid} 
+          onClick={() => handleAction('update-settings', settingsForm)} 
+          className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm hover:bg-blue-700 transition-colors disabled:opacity-50"
+        >
+          {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+          Ayarları Kaydet
+        </button>
+      </div>
 
-      <ChatPanel isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} activeChatId={activeChatId} setActiveChatId={setActiveChatId} data={data} messages={messages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} />
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Firma Ünvanı</label>
+            <div className="relative">
+              <Building2 className="absolute left-3 top-2.5 text-slate-400" size={16} />
+              <input 
+                className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                value={settingsForm.companyName || ''}
+                onChange={(e) => setSettingsForm({ ...settingsForm, companyName: e.target.value })}
+                placeholder="Örn: Kaya Asansör Ltd. Şti."
+              />
+            </div>
+          </div>
 
-      <DashboardModals 
-        showStaffDetail={showStaffDetail} setShowStaffDetail={setShowStaffDetail} isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff} editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}
-        showCustomerDetail={showCustomerDetail} setShowCustomerDetail={setShowCustomerDetail}
-        showAssetDetail={showAssetDetail} setShowAssetDetail={setShowAssetDetail}
-        showJobModal={showJobModal} setShowJobModal={setShowJobModal} jobForm={jobForm} setJobForm={setJobForm}
-        showAssetModal={showAssetModal} setShowAssetModal={setShowAssetModal} assetForm={assetForm} setAssetForm={setAssetForm}
-        showStaffModal={showStaffModal} setShowStaffModal={setShowStaffModal} staffForm={staffForm} setStaffForm={setStaffForm}
-        showCustomerModal={showCustomerModal} setShowCustomerModal={setShowCustomerModal} customerForm={customerForm} setCustomerForm={setCustomerForm}
-        showStockModal={showStockModal} setShowStockModal={setShowStockModal} stockForm={stockForm} setStockForm={setStockForm}
-        handleAction={handleAction} isSaving={isSaving} data={data}
-        selectedJob={selectedJob} setSelectedJob={setSelectedJob}
-      />
-      
-      <AssetQRModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} asset={selectedQRAsset} />
+          <div>
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Yetkili Ad Soyad</label>
+            <div className="relative">
+              <User className="absolute left-3 top-2.5 text-slate-400" size={16} />
+              <input 
+                className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                value={settingsForm.ownerName || ''}
+                onChange={(e) => setSettingsForm({ ...settingsForm, ownerName: e.target.value })}
+                placeholder="Ad Soyad"
+              />
+            </div>
+          </div>
+        </div>
 
-      {/* --- ZORUNLU AYARLAR MODALI --- */}
-      <AnimatePresence>
-        {isCompanyDataIncomplete && activeTab !== 'settings' && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-6"
-          >
-            <motion.div 
-              key="setup-modal"
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-200"
-            >
-              <div className="bg-amber-50 p-6 border-b border-amber-100 flex items-start gap-4">
-                <div className="bg-amber-100 p-3 rounded-full text-amber-600 animate-pulse">
-                  <AlertTriangle size={28} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Faaliyet Sektörü</label>
+            <div className="relative">
+              <Briefcase className="absolute left-3 top-2.5 text-slate-400" size={16} />
+              <input 
+                className="w-full pl-10 pr-3 py-2.5 border border-slate-200 bg-slate-50 text-slate-500 rounded-lg text-sm outline-none"
+                value={settingsForm.sector || ''}
+                readOnly
+              />
+            </div>
+          </div>
+
+          <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">İşletme Telefonu</label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-2.5 text-slate-400" size={16} />
+                  <input 
+                    type="tel"
+                    className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                    value={settingsForm.phone || ''}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
+                    placeholder="05XX XXX XX XX"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-rose-600 uppercase tracking-wider mb-1.5 block flex items-center gap-1">
+                    <AlertTriangle size={12} /> Acil Durum Hattı
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-2.5 text-rose-400" size={16} />
+                  <input 
+                    type="tel"
+                    className="w-full pl-10 pr-3 py-2.5 border border-rose-200 bg-rose-50 rounded-lg text-sm outline-none focus:border-rose-500"
+                    value={settingsForm.emergencyPhone || ''}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, emergencyPhone: e.target.value })}
+                    placeholder="05XX XXX XX XX"
+                  />
+                </div>
+              </div>
+          </div>
+        </div>
+
+        <div>
+          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Konum ve Adres</label>
+          <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+             <div className="grid grid-cols-2 gap-4">
+                <div>
+                   <label className="text-[10px] text-slate-400 font-bold uppercase mb-1 block">İl</label>
+                   <select 
+                      className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none bg-white focus:border-blue-500"
+                      value={localCity}
+                      onChange={(e) => updateAddress(localDetail, e.target.value, '')}
+                   >
+                      <option value="">Seçiniz</option>
+                      {Object.keys(CITY_DATA).map(c => <option key={c} value={c}>{c}</option>)}
+                   </select>
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Kurulumu Tamamla</h2>
-                  <p className="text-sm text-slate-600 mt-1">Sistemi kullanmaya başlamadan önce lütfen firma bilgilerinizi eksiksiz doldurun.</p>
+                   <label className="text-[10px] text-slate-400 font-bold uppercase mb-1 block">İlçe</label>
+                   <select 
+                      className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none bg-white focus:border-blue-500 disabled:bg-slate-100"
+                      value={localDistrict}
+                      onChange={(e) => updateAddress(localDetail, localCity, e.target.value)}
+                      disabled={!localCity}
+                   >
+                      <option value="">Seçiniz</option>
+                      {localCity && CITY_DATA[localCity]?.map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                   </select>
                 </div>
-              </div>
-
-              <div className="p-6 space-y-4">
-                <div className="text-xs text-slate-500 bg-slate-50 p-4 rounded-lg border border-slate-100">
-                  <p className="font-bold text-slate-700 mb-2">Eksik Olan Bilgiler:</p>
-                  <ul className="list-disc list-inside space-y-1">
-                    {/* Hata veren (data as any) kısımları temizlendi */}
-                    {(data?.name?.trim().toLowerCase() === 'işletme' || !data?.name?.trim()) && <li>Firma Ünvanı</li>}
-                    {(data?.ownerName?.trim().toLowerCase() === 'kullanıcı' || data?.ownerName?.trim().toLowerCase() === 'yönetici' || !data?.ownerName?.trim()) && <li>Yetkili Ad Soyad</li>}
-                    {!data?.phone?.trim() && <li>İşletme Telefonu</li>}
-                    {!data?.address?.trim() && <li>Adres Bilgisi</li>}
-                    {!data?.taxInfo?.trim() && <li>Vergi Numarası</li>}
-                  </ul>
+             </div>
+             <div>
+                <label className="text-[10px] text-slate-400 font-bold uppercase mb-1 block">Adres Detayı</label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-3 text-slate-400" size={16} />
+                  <textarea 
+                    rows={2}
+                    className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 resize-none bg-white"
+                    value={localDetail}
+                    onChange={(e) => updateAddress(e.target.value, localCity, localDistrict)}
+                    placeholder="Mahalle, Sokak, Bina No..."
+                  />
                 </div>
-              </div>
+             </div>
+          </div>
+        </div>
 
-              <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
-                <button 
-                  onClick={() => setActiveTab('settings')}
-                  className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg active:scale-95 w-full justify-center"
-                >
-                  <Settings size={16} />
-                  Ayarları Tamamla
-                  <ArrowRight size={16} />
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
+        <div>
+          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Vergi Dairesi / VKN / T.C.</label>
+          <div className="relative">
+            <FileText className="absolute left-3 top-2.5 text-slate-400" size={16} />
+            <input 
+              className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+              value={settingsForm.taxInfo || ''}
+              onChange={(e) => setSettingsForm({ ...settingsForm, taxInfo: e.target.value })}
+              placeholder="Vergi Dairesi ve Numarası"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
