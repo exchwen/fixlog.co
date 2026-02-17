@@ -3,32 +3,41 @@
 import React from 'react';
 import { UserPlus, Activity, MapPin, CheckCircle, Plus } from 'lucide-react';
 
-// --- TİP TANIMLAMALARI ---
+// --- TİP TANIMLAMALARI (INTERFACES) ---
+
+// İş (Job) nesnesi için tip tanımı
 interface Job {
   id: string | number;
   staff_id: string | number;
   status: string;
   customer_name?: string;
   title?: string;
-  [key: string]: any; // Diğer olası alanlar için
+  created_at?: string;
+  work_type?: string;
+  scheduled_date?: string;
+  [key: string]: any; // Diğer olası dinamik alanlar için
 }
 
+// Personel (Staff) nesnesi için tip tanımı
 interface Staff {
   id: string | number;
   name: string;
   role: string;
   branch?: string;
+  phone?: string;
   [key: string]: any;
 }
 
-interface Data {
+// Data nesnesi (Dashboard verisi) için tip tanımı
+interface DashboardData {
   jobs?: Job[];
   staff?: Staff[];
   [key: string]: any;
 }
 
+// Bileşenin alacağı Props için tip tanımı
 interface TeamTabProps {
-  data: Data | null;
+  data: DashboardData | null;
   setShowStaffModal: (show: boolean) => void;
   setShowStaffDetail: (staff: Staff | null) => void;
   setEditStaffForm: (staff: any) => void;
@@ -39,9 +48,19 @@ interface TeamTabProps {
   setSelectedJob: (job: Job | null) => void;
 }
 
+// Otomatik durum hesaplama fonksiyonunun dönüş tipi
 interface DetailItem {
   text: string;
   jobData: Job | null;
+}
+
+interface StatusResult {
+  text: string;
+  details: DetailItem[];
+  color: string;
+  bg: string;
+  textCol: string;
+  icon: React.ReactNode;
 }
 // -------------------------
 
@@ -58,12 +77,12 @@ export default function TeamTab({
 }: TeamTabProps) {
   
   // Personelin anlık durumunu belirleyen fonksiyon
-  const getAutoStatus = (staffId: string | number) => {
+  const getAutoStatus = (staffId: string | number): StatusResult => {
     // Veri güvenliği kontrolü
     if (!data || !data.jobs) {
        return { 
         text: 'Müsait', 
-        details: [{ text: 'Veri yükleniyor...', jobData: null }] as DetailItem[], 
+        details: [{ text: 'Veri yükleniyor...', jobData: null }], 
         color: 'bg-emerald-500', 
         bg: 'bg-emerald-50', 
         textCol: 'text-emerald-700', 
@@ -112,7 +131,7 @@ export default function TeamTab({
     // 3. Müsait
     return { 
       text: 'Müsait', 
-      details: [{ text: 'Şu an boşta', jobData: null }] as DetailItem[], 
+      details: [{ text: 'Şu an boşta', jobData: null }], 
       color: 'bg-emerald-500', 
       bg: 'bg-emerald-50', 
       textCol: 'text-emerald-700', 
