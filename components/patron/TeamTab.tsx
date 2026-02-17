@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { UserPlus, Activity, MapPin, CheckCircle } from 'lucide-react';
+import { UserPlus, Activity, MapPin, CheckCircle, Plus } from 'lucide-react';
 
-export default function TeamTab({ data, setShowStaffModal, setShowStaffDetail, setEditStaffForm, setIsEditingStaff, setActiveChatId, setIsChatOpen }: any) {
+export default function TeamTab({ data, setShowStaffModal, setShowStaffDetail, setEditStaffForm, setIsEditingStaff, setActiveChatId, setIsChatOpen, setShowJobModal }: any) {
   
   // Personelin anlık durumunu görev geçmişinden otomatik çeken zeka (Tüm işleri listeler)
   const getAutoStatus = (staffId: string) => {
@@ -36,9 +36,15 @@ export default function TeamTab({ data, setShowStaffModal, setShowStaffDetail, s
            <h3 className="text-lg font-bold text-slate-900">Saha Operasyon Ekibi</h3>
            <p className="text-slate-500 text-xs">Personel durumları iş emirlerine göre otomatik güncellenir.</p>
         </div>
-        <button onClick={() => setShowStaffModal(true)} className="bg-slate-900 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-slate-800">
-          <UserPlus size={14} /> Personel Ekle
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Yeni Eklenen İş Ata Butonu */}
+          <button onClick={() => setShowJobModal(true)} className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-blue-700 transition-colors">
+            <Plus size={14} /> İş Ata
+          </button>
+          <button onClick={() => setShowStaffModal(true)} className="bg-slate-900 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-slate-800 transition-colors">
+            <UserPlus size={14} /> Personel Ekle
+          </button>
+        </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {data?.staff?.map((s: any) => {
@@ -70,11 +76,10 @@ export default function TeamTab({ data, setShowStaffModal, setShowStaffDetail, s
                 </div>
               </div>
 
-              {/* Alt Butonlar: İş Ata, Dosya, Mesaj - Üçlü Grid Yapısı */}
-              <div className="grid grid-cols-3 gap-1.5 w-full pt-3 border-t border-slate-100">
-                 <button onClick={() => { console.log('İş ata tıklandı', s.id); }} className="flex items-center justify-center gap-1 bg-emerald-50 text-emerald-600 border border-emerald-100 py-1.5 rounded-md text-[11px] font-medium hover:bg-emerald-100 transition-colors">İş Ata</button>
-                 <button onClick={() => { setShowStaffDetail(s); setEditStaffForm(s); setIsEditingStaff(false); }} className="flex items-center justify-center gap-1 bg-white border border-slate-200 text-slate-600 py-1.5 rounded-md text-[11px] font-medium hover:bg-slate-50 transition-colors">Dosya</button>
-                 <button onClick={() => { setActiveChatId(s.id); setIsChatOpen(true); }} className="flex items-center justify-center gap-1 bg-blue-50 text-blue-600 border border-blue-50 py-1.5 rounded-md text-[11px] font-medium hover:bg-blue-100 transition-colors">Mesaj</button>
+              {/* Alt Butonlar: Kartların içi kalabalık olmasın diye tekrar 2'li düzene geçirildi */}
+              <div className="grid grid-cols-2 gap-2 w-full pt-3 border-t border-slate-100">
+                 <button onClick={() => { setShowStaffDetail(s); setEditStaffForm(s); setIsEditingStaff(false); }} className="flex items-center justify-center gap-1 bg-white border border-slate-200 text-slate-600 py-1.5 rounded-md text-xs font-medium hover:bg-slate-50 transition-colors">Dosya</button>
+                 <button onClick={() => { setActiveChatId(s.id); setIsChatOpen(true); }} className="flex items-center justify-center gap-1 bg-blue-50 text-blue-600 py-1.5 rounded-md text-xs font-medium hover:bg-blue-100 transition-colors">Mesaj</button>
               </div>
             </div>
           )

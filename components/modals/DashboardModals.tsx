@@ -203,18 +203,15 @@ export default function DashboardModals({
           // Eğer Staff detayı açıksa arkaplanı şeffaf yap (yan yana görünüm için)
           <div className={`fixed inset-0 z-[130] flex items-center justify-center p-4 ${showStaffDetail ? 'bg-transparent pointer-events-none' : 'bg-slate-900/40 backdrop-blur-sm'}`}>
             
-            {showStaffDetail ? (
-                // Yan yana moddaysa, sadece bu div'e tıklayınca iş detayını kapat (arkadaki staff detayını kapatma)
-                <div className="absolute inset-0 pointer-events-auto" onClick={() => handleCloseDetail('job')}></div>
-            ) : (
+            {showStaffDetail ? null : (
                 <div className="absolute inset-0" onClick={() => handleCloseDetail('job')}></div>
             )}
 
             <motion.div 
-                // YAN YANA AÇILMA EFEKTİ: Eğer Staff detayı açıksa, İş detayı sağa (280px) kayar.
-                initial={{ opacity: 0, scale: 0.95, x: 0 }} 
+                // YAN YANA AÇILMA EFEKTİ: Artık ortadan doğmak yerine hedef x noktasında doğarak animasyon çakışmasını önlüyor
+                initial={{ opacity: 0, scale: 0.95, x: showStaffDetail ? 280 : 0 }} 
                 animate={{ opacity: 1, scale: 1, x: showStaffDetail ? 280 : 0 }} 
-                exit={{ opacity: 0, scale: 0.95, x: 0 }} 
+                exit={{ opacity: 0, scale: 0.95, x: showStaffDetail ? 280 : 0 }} 
                 className="bg-white w-full max-w-lg rounded-xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 pointer-events-auto"
             >
               
@@ -456,10 +453,10 @@ export default function DashboardModals({
         {showStaffDetail && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
             <motion.div 
-                // YAN YANA AÇILMA EFEKTİ
-                initial={{ opacity: 0, scale: 0.95, x: 0 }} 
+                // YAN YANA AÇILMA EFEKTİ: Başlangıç noktası merkeze değil hedef ofsete ayarlandı
+                initial={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} 
                 animate={{ opacity: 1, scale: 1, x: selectedJob ? -280 : 0 }} 
-                exit={{ opacity: 0, scale: 0.95, x: 0 }} 
+                exit={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} 
                 className="bg-white w-full max-w-lg rounded-xl p-6 shadow-xl relative flex flex-col max-h-[85vh] transition-transform duration-300"
             >
               <div className="flex justify-between items-start mb-6">
