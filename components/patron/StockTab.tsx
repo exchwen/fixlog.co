@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Loader2, AlertTriangle, Package } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Loader2, AlertTriangle, Package, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function StockTab({ data, setShowStockModal }: any) {
@@ -77,23 +77,41 @@ export default function StockTab({ data, setShowStockModal }: any) {
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-amber-900 tracking-tight">Kritik Stok Uyarısı</h3>
-                    <p className="text-[11px] font-medium text-amber-700">Tükenmek üzere olan <span className="font-bold underline">{criticalStocks.length} parça</span> tespit edildi.</p>
+                    <p className="text-[11px] font-medium text-amber-700">Tükenmek üzere olan <span className="font-bold underline">{criticalStocks.length} parça</span> tespit edildi. Acil sipariş geçmeniz önerilir.</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mt-4">
                   {criticalStocks.map((item: any) => (
-                    <div key={item.id} className="bg-white/80 backdrop-blur-sm border border-amber-100 rounded-lg p-3 flex justify-between items-center shadow-sm">
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        <Package size={14} className="text-amber-500 shrink-0" />
-                        <div className="truncate">
-                          <div className="text-xs font-bold text-slate-800 truncate">{item.item_name}</div>
-                          <div className="text-[9px] text-slate-500 uppercase font-semibold truncate">{item.supplier_name || 'Tedarikçi Yok'}</div>
+                    <div key={item.id} className="bg-white/90 backdrop-blur-sm border border-amber-200/60 rounded-lg p-3 flex flex-col justify-between shadow-sm relative group hover:border-amber-300 transition-colors">
+                      
+                      {/* Üst Kısım: Ürün Adı ve Miktar */}
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-start gap-2 overflow-hidden pr-2">
+                          <Package size={14} className="text-amber-500 shrink-0 mt-0.5" />
+                          <div className="text-xs font-bold text-slate-800 line-clamp-2 leading-tight">
+                            {item.item_name}
+                          </div>
+                        </div>
+                        <div className="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs font-black shrink-0 border border-amber-200/50">
+                          {item.quantity} <span className="text-[9px] font-bold uppercase">{item.unit_name}</span>
                         </div>
                       </div>
-                      <div className="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs font-black shrink-0 ml-2">
-                        {item.quantity} <span className="text-[9px] font-bold uppercase">{item.unit_name}</span>
+
+                      {/* Alt Kısım: Tedarikçi Bilgileri */}
+                      <div className="mt-auto pt-2 border-t border-amber-100/50">
+                        <div className="text-[10px] text-slate-500 font-bold uppercase truncate mb-1">
+                          {item.supplier_name || 'Tedarikçi Kaydı Yok'}
+                        </div>
+                        {item.supplier_phone ? (
+                          <a href={`tel:${item.supplier_phone}`} className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded border border-blue-100 transition-colors w-max">
+                            <Phone size={10} /> {item.supplier_phone}
+                          </a>
+                        ) : (
+                          <div className="text-[10px] text-slate-400 font-medium italic">Telefon eklenmemiş</div>
+                        )}
                       </div>
+
                     </div>
                   ))}
                 </div>
