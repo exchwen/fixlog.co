@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, AlertTriangle, ArrowRight, Settings } from 'lucide-react';
@@ -28,7 +28,7 @@ export default function PatronDashboard() {
   
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState(null);
+  const [data, setData] = useState<any>(null); // Type any eklendi
   const [searchTerm, setSearchTerm] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -109,23 +109,26 @@ export default function PatronDashboard() {
     setMessageInput(''); fetchMessages();
   };
 
-  // --- EKSİK BİLGİ KONTROLÜ (GÜÇLENDİRİLDİ) ---
-  const isCompanyDataIncomplete = useMemo(() => {
-    if (!data) return false;
+  // --- EKSİK BİLGİ KONTROLÜ (GÜÇLENDİRİLDİ & DEBUG EKLENDİ) ---
+  let isCompanyDataIncomplete = false;
+  if (data) {
+    const name = data.name?.trim().toLowerCase() || '';
+    const owner = data.ownerName?.trim().toLowerCase() || '';
+    const phone = data.phone?.trim() || '';
+    const address = data.address?.trim() || '';
+    const taxInfo = data.taxInfo?.trim() || '';
+
+    // Varsayılan değer kontrolü (Küçük harfe çevirerek kontrol ediyoruz)
+    const isDefaultName = name === 'işletme' || name === '';
+    const isDefaultOwner = owner === 'kullanıcı' || owner === 'yönetici' || owner === '';
     
-    // Varsayılan değerler de "eksik" kabul ediliyor
-    const isDefaultName = data.name === 'İşletme';
-    const isDefaultOwner = data.ownerName === 'Kullanıcı' || data.ownerName === 'Yönetici';
-    
-    return (
-      !data.name?.trim() || isDefaultName ||
-      !data.ownerName?.trim() || isDefaultOwner ||
-      !data.sector?.trim() ||
-      !data.address?.trim() ||
-      !data.taxInfo?.trim() ||
-      !data.phone?.trim()
-    );
-  }, [data]);
+    // Debug için konsola basıyoruz (Sorunu anlamak için F12'den bakabilirsiniz)
+    // console.log("[DEBUG] Eksik Veri Kontrolü:", { name, isDefaultName, owner, isDefaultOwner, phone, address, taxInfo });
+
+    if (isDefaultName || isDefaultOwner || !phone || !address || !taxInfo) {
+      isCompanyDataIncomplete = true;
+    }
+  }
 
   if (loading) return (
     <div className="h-screen flex flex-col items-center justify-center bg-slate-950">
@@ -192,6 +195,7 @@ export default function PatronDashboard() {
             className="fixed inset-0 z-[9999] bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-6"
           >
             <motion.div 
+              key="setup-modal"
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-200"
@@ -210,8 +214,8 @@ export default function PatronDashboard() {
                 <div className="text-xs text-slate-500 bg-slate-50 p-4 rounded-lg border border-slate-100">
                   <p className="font-bold text-slate-700 mb-2">Eksik Olan Bilgiler:</p>
                   <ul className="list-disc list-inside space-y-1">
-                    {(!data.name?.trim() || data.name === 'İşletme') && <li>Firma Ünvanı</li>}
-                    {(!data.ownerName?.trim() || data.ownerName === 'Kullanıcı' || data.ownerName === 'Yönetici') && <li>Yetkili Ad Soyad</li>}
+                    {(data.name?.trim().toLowerCase() === 'işletme' || !data.name?.trim()) && <li>Firma Ünvanı</li>}
+                    {(data.ownerName?.trim().toLowerCase() === 'kullanıcı' || data.ownerName?.trim().toLowerCase() === 'yönetici' || !data.ownerName?.trim()) && <li>Yetkili Ad Soyad</li>}
                     {!data.phone?.trim() && <li>İşletme Telefonu</li>}
                     {!data.address?.trim() && <li>Adres Bilgisi</li>}
                     {!data.taxInfo?.trim() && <li>Vergi Numarası</li>}
