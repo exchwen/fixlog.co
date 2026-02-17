@@ -2,51 +2,166 @@
 
 import React, { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Send, X, MessageSquare } from 'lucide-react';
+import { ChevronDown, Send, X, MessageSquare, ArrowLeft } from 'lucide-react';
 
 export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, setActiveChatId, data, messages, messageInput, setMessageInput, sendMessage }: any) {
   const chatEndRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
+  // Aktif personeli bul
+  const activeStaff = activeChatId ? data?.staff?.find((s: any) => s.id === activeChatId) : null;
+
+  // Personelin üzerindeki İŞ DURUMUNA göre otomatik durum ve renk belirleyen zeka
+  const getDynamicStaffStatus = (staffId: string) => {
+    // Personelin üzerine atanmış tüm işleri bul (Sorumlu veya Usta olarak)
+    const staffJobs = data?.jobs?.filter((j: any) => j.staff_id === staffId || j.details?.worker_id === staffId) || [];
+    
+    // İş durumlarını kontrol et
+    const isWorking = staffJobs.some((j: any) => j.status === 'Devam Ediyor');
+    const isAssigned = staffJobs.some((j: any) => j.status === 'Beklemede' || j.status === 'Gelecek');
+    
+    if (isWorking) {
+      return { 
+        label: 'Çalışıyor', 
+        dot: 'bg-amber-500', 
+        badge: 'bg-amber-50 text-amber-600 border-amber-100' 
+      };
+    } else if (isAssigned) {
+      return { 
+        label: 'İş Atandı', 
+        dot: 'bg-blue-500', 
+        badge: 'bg-blue-50 text-blue-600 border-blue-100' 
+      };
+    } else {
+      return { 
+        label: 'Müsait', 
+        dot: 'bg-emerald-500', 
+        badge: 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+      };
+    }
+  };
+
+  const activeStatus = activeStaff ? getDynamicStaffStatus(activeStaff.id) : null;
+
   return (
     <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-3">
       <AnimatePresence>
         {isChatOpen && (
-          <motion.div initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }} className="w-72 h-[400px] bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
-            <div className="p-3 bg-slate-900 text-white flex items-center justify-between font-medium text-xs">
-              <div className="flex items-center gap-2">{activeChatId ? data?.staff?.find((s: any) => s.id === activeChatId)?.name : 'İletişim Paneli'}</div>
-              <ChevronDown className="cursor-pointer" onClick={() => setIsChatOpen(false)} size={16} />
+          <motion.div initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }} className="w-[320px] h-[480px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+            
+            {/* ÜST BİLGİ ALANI (HEADER) */}
+            <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between font-medium text-xs shadow-md z-10">
+              <div className="flex items-center gap-2">
+                {activeStaff && activeStatus ? (
+                  <div className="flex items-center gap-2.5">
+                    <button onClick={() => setActiveChatId(null)} className="p-1.5 bg-slate-800/50 hover:bg-slate-700 rounded-md transition-colors">
+                      <ArrowLeft size={16} />
+                    </button>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-[13px]">{activeStaff.name}</span>
+                      <span className="text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5 font-semibold tracking-wide">
+                         <span className={`w-1.5 h-1.5 rounded-full ${activeStatus.dot} shadow-[0_0_4px_rgba(0,0,0,0.5)]`}></span>
+                         {activeStaff.role}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col pl-1">
+                    <span className="text-[14px] font-black tracking-wide">Saha Ekibi İletişim</span>
+                    <span className="text-[10px] font-medium text-slate-400 mt-0.5">Personel seçip mesajlaşmaya başlayın</span>
+                  </div>
+                )}
+              </div>
+              <ChevronDown className="cursor-pointer hover:text-blue-400 transition-colors mr-1 p-1" onClick={() => setIsChatOpen(false)} size={20} />
             </div>
+
+            {/* SOHBET / PERSONEL LİSTESİ ALANI (BODY) */}
             {!activeChatId ? (
-              <div className="flex-1 p-2 space-y-1 overflow-y-auto bg-slate-50">
-                 {data?.staff?.map((m: any) => <div key={m.id} onClick={() => setActiveChatId(m.id)} className="p-2.5 bg-white hover:bg-slate-50 rounded-lg cursor-pointer text-xs font-medium flex items-center gap-2 shadow-sm border border-slate-100 transition-colors">
-                   <div className="w-6 h-6 bg-blue-100 text-blue-700 rounded-md flex items-center justify-center font-bold">{m.name.charAt(0)}</div>
-                   {m.name}
-                 </div>)}
+              <div className="flex-1 p-2 space-y-1.5 overflow-y-auto bg-slate-50 custom-scrollbar">
+                 {data?.staff?.map((m: any) => {
+                   const status = getDynamicStaffStatus(m.id);
+                   
+                   return (
+                     <div key={m.id} onClick={() => setActiveChatId(m.id)} className="p-3 bg-white hover:bg-slate-100 rounded-xl cursor-pointer flex items-center gap-3 shadow-sm border border-slate-100 transition-colors group">
+                       <div className="relative">
+                         <div className="w-10 h-10 bg-slate-100 text-slate-700 border border-slate-200 rounded-full flex items-center justify-center font-bold text-sm group-hover:bg-slate-200 transition-colors">
+                           {m.name.charAt(0)}
+                         </div>
+                         {/* Dinamik Renkli Nokta */}
+                         <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${status.dot}`}></span>
+                       </div>
+                       <div className="flex-1 overflow-hidden">
+                         <div className="text-sm font-bold text-slate-800 truncate">{m.name}</div>
+                         <div className="text-[11px] text-slate-500 font-medium truncate mt-1 flex items-center justify-between">
+                           <span className="uppercase tracking-wider font-bold text-[9px]">{m.role}</span>
+                           {/* Dinamik Durum Rozeti */}
+                           <span className={`px-2 py-0.5 rounded text-[9px] font-bold border ${status.badge}`}>
+                             {status.label}
+                           </span>
+                         </div>
+                       </div>
+                     </div>
+                   );
+                 })}
+                 {(!data?.staff || data?.staff.length === 0) && (
+                   <div className="text-center p-8 text-slate-400 text-xs font-medium">
+                     Kayıtlı personel bulunamadı.
+                   </div>
+                 )}
               </div>
             ) : (
-              <><div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 text-xs custom-scrollbar">
-                  <button onClick={() => setActiveChatId(null)} className="text-[10px] font-semibold text-slate-500 mb-2 hover:text-slate-700">← Geri</button>
+              <>
+                <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-slate-50/50 text-xs custom-scrollbar">
+                  {/* Sohbetteki o anki durum bildirimi */}
+                  {activeStatus && (
+                    <div className="flex justify-center mb-4">
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold border ${activeStatus.badge} shadow-sm opacity-80`}>
+                        Şu anki durumu: {activeStatus.label}
+                      </span>
+                    </div>
+                  )}
+
                   {messages.map((m: any, i: number) => (
                     <div key={i} className={`flex flex-col ${m.sender_id === 'PATRON' ? 'items-end' : 'items-start'}`}>
-                      <div className={`px-3 py-2 rounded-lg max-w-[85%] ${m.sender_id === 'PATRON' ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white text-slate-700 border border-slate-200 rounded-tl-none'}`}>{m.message}</div>
-                      <div className="text-[8px] text-slate-400 mt-1">{new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                      <div className={`px-3.5 py-2.5 rounded-2xl max-w-[85%] shadow-sm text-[13px] leading-relaxed ${m.sender_id === 'PATRON' ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-white text-slate-700 border border-slate-200 rounded-tl-sm'}`}>
+                        {m.message}
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-1 font-medium px-1">
+                        {new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </div>
                     </div>
                   ))}
+                  {(!messages || messages.length === 0) && (
+                    <div className="text-center mt-12 text-slate-400 text-[11px] font-medium px-4">
+                      Henüz mesajlaşma yok. Tüm görüşmeler uçtan uca güvenli bir şekilde saklanır.
+                    </div>
+                  )}
                   <div ref={chatEndRef} />
                 </div>
-                <div className="p-3 bg-white border-t border-slate-100 flex gap-2">
-                  <input value={messageInput} onChange={e => setMessageInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()} placeholder="Mesaj yazın..." className="flex-1 bg-slate-50 px-3 py-1.5 rounded-md text-xs outline-none border border-slate-200" />
-                  <button onClick={sendMessage} className="bg-blue-600 text-white p-1.5 rounded-md hover:bg-blue-700 transition-colors"><Send size={14} /></button>
+                <div className="p-3 bg-white border-t border-slate-100 flex gap-2 items-center">
+                  <input 
+                    value={messageInput} 
+                    onChange={e => setMessageInput(e.target.value)} 
+                    onKeyDown={e => e.key === 'Enter' && sendMessage()} 
+                    placeholder="Mesaj yazın..." 
+                    className="flex-1 bg-slate-50 px-4 py-2.5 rounded-xl text-[13px] outline-none border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all placeholder:text-slate-400" 
+                  />
+                  <button 
+                    onClick={sendMessage} 
+                    disabled={!messageInput.trim()}
+                    className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center"
+                  >
+                    <Send size={18} />
+                  </button>
                 </div>
               </>
             )}
           </motion.div>
         )}
       </AnimatePresence>
-      <button onClick={() => setIsChatOpen(!isChatOpen)} className="w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition-colors relative">
-        {isChatOpen ? <X size={20} /> : <MessageSquare size={20} />}
+      <button onClick={() => setIsChatOpen(!isChatOpen)} className="w-14 h-14 bg-slate-900 text-white rounded-full shadow-xl flex items-center justify-center hover:bg-slate-800 transition-all hover:scale-105 active:scale-95 relative border-2 border-white">
+        {isChatOpen ? <X size={24} /> : <MessageSquare size={24} />}
       </button>
     </div>
   );

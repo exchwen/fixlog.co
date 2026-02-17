@@ -5,15 +5,28 @@ import { UserPlus, Activity, MapPin, CheckCircle } from 'lucide-react';
 
 export default function TeamTab({ data, setShowStaffModal, setShowStaffDetail, setEditStaffForm, setIsEditingStaff, setActiveChatId, setIsChatOpen }: any) {
   
-  // Personelin anlık durumunu görev geçmişinden otomatik çeken zeka
+  // Personelin anlık durumunu görev geçmişinden otomatik çeken zeka (Tüm işleri listeler)
   const getAutoStatus = (staffId: string) => {
-    const activeJob = data?.jobs?.find((j: any) => j.staff_id === staffId && (j.status === 'Devam Ediyor' || j.status === 'Sahada'));
-    if (activeJob) return { text: 'Şu an Sahada', detail: activeJob.customer_name, color: 'bg-blue-500', bg: 'bg-blue-50', textCol: 'text-blue-700', icon: <Activity size={12} /> };
+    // 1. Önce aktif işlerin tümünü bulalım (Sahada veya Devam Ediyor olanlar)
+    const activeJobs = data?.jobs?.filter((j: any) => j.staff_id === staffId && (j.status === 'Devam Ediyor' || j.status === 'Sahada')) || [];
     
-    const pendingJob = data?.jobs?.find((j: any) => j.staff_id === staffId && (j.status === 'Beklemede' || j.status === 'Gelecek'));
-    if (pendingJob) return { text: 'Görev Bekliyor', detail: `Sıradaki: ${pendingJob.customer_name}`, color: 'bg-amber-500', bg: 'bg-amber-50', textCol: 'text-amber-700', icon: <MapPin size={12} /> };
+    if (activeJobs.length > 0) {
+      // Tüm aktif işlerin müşteri isimlerini bir liste haline getiriyoruz
+      const detailsArray = activeJobs.map((j: any) => j.customer_name);
+      return { text: 'Şu an Sahada', details: detailsArray, color: 'bg-blue-500', bg: 'bg-blue-50', textCol: 'text-blue-700', icon: <Activity size={12} /> };
+    }
+    
+    // 2. Eğer aktif iş yoksa, bekleyen işlerin tümünü bulalım (Beklemede veya Gelecek olanlar)
+    const pendingJobs = data?.jobs?.filter((j: any) => j.staff_id === staffId && (j.status === 'Beklemede' || j.status === 'Gelecek')) || [];
+    
+    if (pendingJobs.length > 0) {
+      // Tüm bekleyen işlerin müşteri isimlerini bir liste haline getiriyoruz
+      const detailsArray = pendingJobs.map((j: any) => `Sıradaki: ${j.customer_name}`);
+      return { text: 'Görev Bekliyor', details: detailsArray, color: 'bg-amber-500', bg: 'bg-amber-50', textCol: 'text-amber-700', icon: <MapPin size={12} /> };
+    }
 
-    return { text: 'Müsait', detail: 'Şu an boşta', color: 'bg-emerald-500', bg: 'bg-emerald-50', textCol: 'text-emerald-700', icon: <CheckCircle size={12} /> };
+    // 3. Hiçbir işi yoksa müsait döndürelim
+    return { text: 'Müsait', details: ['Şu an boşta'], color: 'bg-emerald-500', bg: 'bg-emerald-50', textCol: 'text-emerald-700', icon: <CheckCircle size={12} /> };
   };
 
   return (
@@ -45,8 +58,16 @@ export default function TeamTab({ data, setShowStaffModal, setShowStaffDetail, s
               
               {/* Otomatik Durum Rozeti */}
               <div className={`w-full flex flex-col items-center justify-center py-2 px-2 rounded-lg mb-4 ${status.bg} ${status.textCol} border border-white/20`}>
-                <div className="flex items-center gap-1.5 font-bold text-[11px] mb-0.5">{status.icon} {status.text}</div>
-                <div className="text-[9px] opacity-80 font-medium truncate w-full px-2">{status.detail}</div>
+                <div className="flex items-center gap-1.5 font-bold text-[11px] mb-1">{status.icon} {status.text}</div>
+                
+                {/* Tüm işleri alt alta listeleyen alan (Sabit boyut ve kaydırma eklendi) */}
+                <div className="w-full flex flex-col gap-0.5 max-h-[48px] overflow-y-auto pr-1">
+                  {status.details.map((detailText: string, idx: number) => (
+                    <div key={idx} className="text-[9px] opacity-80 font-medium truncate w-full shrink-0 text-left pl-1">
+                      {detailText}
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2 w-full pt-3 border-t border-slate-100">
