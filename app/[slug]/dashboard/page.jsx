@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { ShieldCheck } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion'; // AnimatePresence eklendi
+import { ShieldCheck, AlertTriangle, ArrowRight, Settings } from 'lucide-react'; // Ikonlar eklendi
 
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
@@ -116,6 +116,17 @@ export default function PatronDashboard() {
     setMessageInput(''); fetchMessages();
   };
 
+  // --- EKSİK BİLGİ KONTROLÜ ---
+  // Eğer veriler yüklendiyse ve zorunlu alanlardan biri boşsa TRUE döner
+  const isCompanyDataIncomplete = data && (
+    !data.name?.trim() ||
+    !data.ownerName?.trim() ||
+    !data.sector?.trim() ||
+    !data.address?.trim() ||
+    !data.taxInfo?.trim() ||
+    !data.phone?.trim()
+  );
+
   if (loading) return (
     <div className="h-screen flex flex-col items-center justify-center bg-slate-950">
       <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }} className="mb-4"><ShieldCheck className="text-blue-500 w-12 h-12" /></motion.div>
@@ -202,6 +213,62 @@ export default function PatronDashboard() {
         asset={selectedQRAsset} 
       />
       {/* ------------------------------------------ */}
+
+      {/* --- ZORUNLU AYARLAR MODALI --- */}
+      {/* Eğer veriler eksikse ve kullanıcı şu an Ayarlar sekmesinde değilse göster */}
+      <AnimatePresence>
+        {isCompanyDataIncomplete && activeTab !== 'settings' && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-200"
+            >
+              {/* Header */}
+              <div className="bg-amber-50 p-6 border-b border-amber-100 flex items-start gap-4">
+                <div className="bg-amber-100 p-3 rounded-full text-amber-600">
+                  <AlertTriangle size={28} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">Kurulum Tamamlanmadı</h2>
+                  <p className="text-sm text-slate-600 mt-1">Sistemi kullanmaya başlamadan önce lütfen firma bilgilerinizi eksiksiz doldurun.</p>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-4">
+                <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <p className="font-semibold mb-1">Neden gerekli?</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>İş emirlerinde firma bilgileriniz görünür.</li>
+                    <li>QR kod sisteminde iletişim bilgileriniz kullanılır.</li>
+                    <li>Faturalandırma ve raporlama için zorunludur.</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                <button 
+                  onClick={() => setActiveTab('settings')}
+                  className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg active:scale-95 w-full justify-center"
+                >
+                  <Settings size={16} />
+                  Ayarları Tamamla
+                  <ArrowRight size={16} />
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* -------------------------------------- */}
+
     </div>
   );
 }
