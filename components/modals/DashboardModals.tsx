@@ -414,7 +414,7 @@ export default function DashboardModals({
                       <label className="text-[11px] font-semibold text-slate-600 block mb-1">Sorumlu Personel (Yalnızca Yöneticiler)</label>
                       <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={editJobDetailForm.staffId} onChange={e => setEditJobDetailForm({...editJobDetailForm, staffId: e.target.value})}>
                         <option value="">Kayıtlı Yöneticilerden Seçin...</option>
-                        {(data?.staff || []).map((s:any) => (
+                        {(data?.staff || []).filter((s:any) => s.role === 'Yönetici').map((s:any) => (
                           <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
                         ))}
                       </select>
