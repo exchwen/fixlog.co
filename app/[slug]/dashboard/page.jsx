@@ -19,6 +19,9 @@ import FinanceTab from '@/components/patron/FinanceTab';
 import AssetsTab from '@/components/patron/AssetsTab';
 import SettingsTab from '@/components/patron/SettingsTab';
 
+// YENİ EKLENEN DOSYA IMPORTU
+import PendingJobsTab from '@/components/patron/PendingJobsTab'; 
+
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
 export default function PatronDashboard() {
@@ -126,7 +129,7 @@ export default function PatronDashboard() {
         <Header data={data} searchTerm={searchTerm} setSearchTerm={setSearchTerm} setIsMobileMenuOpen={setIsMobileMenuOpen} />
 
         <div className="p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">
-        {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} />}
+          {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} />}
           
           {/* --- GÜNCELLENEN KISIM: JobsTab --- */}
           {activeTab === 'jobs' && (
@@ -137,6 +140,10 @@ export default function PatronDashboard() {
               setSelectedJob={setSelectedJob} // ARTIK TIKLAYINCA ÇALIŞACAK
             />
           )}
+
+          {/* YENİ EKLENEN SEKME: Onay Bekleyen İşler */}
+          {activeTab === 'pending' && <PendingJobsTab data={data} setSelectedJob={setSelectedJob} />}
+
           {/* ---------------------------------- */}
 
           {activeTab === 'team' && <TeamTab data={data} setShowStaffModal={setShowStaffModal} setShowStaffDetail={setShowStaffDetail} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} />}

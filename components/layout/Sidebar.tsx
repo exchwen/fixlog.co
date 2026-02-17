@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, ShieldCheck, CheckSquare } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab }: any) {
   return (
@@ -14,6 +14,8 @@ export default function Sidebar({ activeTab, setActiveTab }: any) {
         {[
           { id: 'home', label: 'Genel Bakış', icon: LayoutDashboard },
           { id: 'jobs', label: 'İş Emirleri', icon: ClipboardList },
+          // YENİ EKLENEN SEKME: İş Emirlerinin hemen altında
+          { id: 'pending', label: 'Onay Bekleyenler', icon: CheckSquare },
           { id: 'team', label: 'Saha Ekibi', icon: Users },
           { id: 'customers', label: 'Müşteriler', icon: UserPlus },
           { id: 'assets', label: 'Varlıklar', icon: Box },
@@ -24,9 +26,14 @@ export default function Sidebar({ activeTab, setActiveTab }: any) {
           <button 
             key={item.id} 
             onClick={() => setActiveTab(item.id)} 
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all ${activeTab === item.id ? 'bg-blue-600/10 text-blue-500' : 'hover:bg-slate-800 hover:text-white'}`}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all relative ${activeTab === item.id ? 'bg-blue-600/10 text-blue-500' : 'hover:bg-slate-800 hover:text-white'}`}
           >
-            <item.icon size={16} /> <span className="text-[13px]">{item.label}</span>
+            <item.icon size={16} /> 
+            <span className="text-[13px]">{item.label}</span>
+            {/* Onay Bekleyenler sekmesine ufak bir dikkat çekici nokta koyduk */}
+            {item.id === 'pending' && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+            )}
           </button>
         ))}
       </nav>

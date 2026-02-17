@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, CheckCircle, X, Loader2, ArrowDownRight, ArrowUpRight, Trash2, Download, Eye, Calendar, Clock, Filter } from 'lucide-react';
+import { Plus, X, Loader2, ArrowDownRight, ArrowUpRight, Trash2, Download, Eye, Calendar, Clock, Filter } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
 
@@ -9,9 +9,6 @@ export default function FinanceTab({ data }: any) {
   const params = useParams();
   const router = useRouter();
   const activeSlug = params?.slug || localStorage.getItem('companySlug');
-
-  const [jobPrices, setJobPrices] = useState<any>({});
-  const [isProcessing, setIsProcessing] = useState<string | null>(null);
   
   // Gelir / Gider Modalı State'leri
   const [financeModal, setFinanceModal] = useState<{isOpen: boolean, type: 'Gelir' | 'Gider'}>({ isOpen: false, type: 'Gider' });
@@ -44,42 +41,6 @@ export default function FinanceTab({ data }: any) {
     setLocalFinances(data?.finances || []);
     setLocalJobs(data?.jobs || []);
   }, [data]);
-
-  const pendingJobs = localJobs.filter((j: any) => j.status === 'Onay Bekliyor');
-
-  // Yönetici İşi Onaylayıp Gelir Olarak Kaydeder
-  const handleApproveJob = async (job: any) => {
-    const amount = jobPrices[job.id];
-    if (!amount || amount <= 0) return alert("Lütfen onaylamadan önce geçerli bir fiyat giriniz.");
-    
-    setIsProcessing(job.id);
-    try {
-      const res = await fetch('https://backend.isdokumu.workers.dev/approve-job', {
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug: activeSlug, jobId: job.id, amount: parseFloat(amount), customerName: job.customer_name })
-      });
-      
-      if (res.ok) {
-        setLocalJobs(localJobs.map((j: any) => j.id === job.id ? { ...j, status: 'Tamamlandı' } : j));
-        setLocalFinances([{
-            id: Date.now().toString(),
-            description: `${job.customer_name} - ${job.work_type}`,
-            amount: parseFloat(amount),
-            type: 'Gelir',
-            created_at: new Date().toISOString()
-        }, ...localFinances]);
-        
-        router.refresh(); 
-      } else {
-        alert("Sunucu reddetti. Lütfen veritabanı bağlantınızı kontrol edin.");
-      }
-    } catch (e) { 
-      alert("Ağ bağlantısı kurulamadı!"); 
-    } finally {
-      setIsProcessing(null);
-    }
-  };
 
   const addItemRow = () => setFinanceItems([...financeItems, { name: '', qty: '1' }]);
   const removeItemRow = (idx: number) => setFinanceItems(financeItems.filter((_: any, i: number) => i !== idx));
@@ -156,7 +117,7 @@ export default function FinanceTab({ data }: any) {
     XLSX.writeFile(workbook, `${title.replace(/\s+/g, '_')}_Rapor.xlsx`);
   };
 
-  // ZAMAN FİLTRESİ UYGULAMA FONKSİYONU (Özel Tarih Zekası Eklendi)
+  // ZAMAN FİLTRESİ UYGULAMA FONKSİYONU
   const applyTimeFilter = (data: any[], filterValue: string, title: string) => {
     if (filterValue === 'Tümü') return data;
     
@@ -315,44 +276,18 @@ export default function FinanceTab({ data }: any) {
   return (
     <div className="space-y-8 relative pb-10">
        
-       {/* 1. ONAY BEKLEYEN İŞLER BÖLÜMÜ */}
-       <div>
-         <div className="flex justify-between items-center mb-4">
-           <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-             <span className="relative flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span></span>
-             Yönetici Onayı Bekleyen İşler
-           </h3>
-           <div className="flex gap-2">
-             <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gelir' })} className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-emerald-100 transition-colors">
-               <Plus size={14} strokeWidth={3} /> Manuel Gelir İşle
-             </button>
-             <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gider' })} className="bg-rose-50 text-rose-600 border border-rose-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-rose-100 transition-colors">
-               <Plus size={14} strokeWidth={3} /> Gider / Fiş İşle
-             </button>
-           </div>
+       <div className="flex justify-between items-center mb-6">
+         <div>
+           <h2 className="text-2xl font-black text-slate-900 tracking-tight">Finans ve Kasa Yönetimi</h2>
+           <p className="text-xs font-medium text-slate-500 mt-1">İşletmenizin tüm gelir ve gider hareketlerini buradan takip edebilirsiniz.</p>
          </div>
-         <div className="bg-gradient-to-r from-amber-50 to-amber-100/50 rounded-xl border border-amber-200 shadow-sm overflow-hidden mb-8">
-           <table className="w-full text-left text-xs">
-             <thead className="bg-amber-100/80 text-amber-800 font-semibold border-b border-amber-200">
-               <tr><th className="px-5 py-4">Müşteri / İş</th><th className="px-5 py-4">Tarih</th><th className="px-5 py-4 w-48">Fiyat Gir (₺)</th><th className="px-5 py-4 text-right">İşlem</th></tr>
-             </thead>
-             <tbody className="divide-y divide-amber-100/50">
-               {pendingJobs.length > 0 ? pendingJobs.map((j: any) => (
-                 <tr key={j.id} className="hover:bg-amber-100/30 transition-colors">
-                   <td className="px-5 py-4"><div className="font-bold text-slate-800 text-sm mb-0.5">{j.customer_name}</div><div className="text-[10px] font-medium text-slate-500 uppercase">{j.work_type}</div></td>
-                   <td className="px-5 py-4 font-medium text-slate-600">{j.scheduled_date || 'Tarihsiz'}</td>
-                   <td className="px-5 py-4">
-                     <input type="number" placeholder="Örn: 1500" className="w-full px-3 py-2 border border-amber-200 rounded-md outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 bg-white shadow-sm transition-all" value={jobPrices[j.id] || ''} onChange={e => setJobPrices({...jobPrices, [j.id]: e.target.value})} />
-                   </td>
-                   <td className="px-5 py-4 text-right">
-                     <button onClick={() => handleApproveJob(j)} disabled={isProcessing === j.id} className="bg-emerald-600 text-white px-4 py-2 rounded-md text-xs font-bold hover:bg-emerald-700 transition-colors inline-flex items-center gap-1.5 shadow-md disabled:opacity-50">
-                       {isProcessing === j.id ? <Loader2 className="animate-spin" size={14} /> : <><CheckCircle size={14} /> Onayla & Gelir Yaz</>}
-                     </button>
-                   </td>
-                 </tr>
-               )) : <tr><td colSpan={4} className="p-12 text-center text-amber-600/70 font-semibold">Onay bekleyen iş bulunmuyor. Harika!</td></tr>}
-             </tbody>
-           </table>
+         <div className="flex gap-2">
+           <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gelir' })} className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-emerald-100 transition-colors">
+             <Plus size={14} strokeWidth={3} /> Manuel Gelir İşle
+           </button>
+           <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gider' })} className="bg-rose-50 text-rose-600 border border-rose-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-rose-100 transition-colors">
+             <Plus size={14} strokeWidth={3} /> Gider / Fiş İşle
+           </button>
          </div>
        </div>
 
