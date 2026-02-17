@@ -1,17 +1,20 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import React, { useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClipboardList, Users, Box, Wallet, Plus, ArrowUpRight, 
   CheckCircle, Clock, Calendar, TrendingUp, TrendingDown, 
-  Package, AlertTriangle, ShieldCheck, Activity, User, Lock, Settings
+  Package, AlertTriangle, ShieldCheck, Activity, User, Lock, Settings, X
 } from 'lucide-react';
 
-export default function HomeTab({ data, setShowJobModal, statusColors }: any) {
+export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob }: any) {
 
   // 1. PROFİL DOLULUK KONTROLÜ (ZORUNLU KİLİT)
   const isProfileComplete = data?.name && data?.ownerName && data?.sector && data?.address && data?.phone && data?.taxInfo;
+
+  // STOK DETAY MODALI İÇİN STATE
+  const [showLowStockModal, setShowLowStockModal] = useState(false);
 
   // 2. VERİLERİ PARÇALAMA VE HESAPLAMA
   const jobs = data?.jobs || [];
@@ -60,7 +63,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors }: any) {
   const netCash = totalIncome - totalExpense;
   const recentFinances = finances.slice(0, 4);
 
-  // ZEKİ VE SAF SVG TREND GRAFİĞİ (Recharts kütüphanesine gerek kalmadan)
+  // ZEKİ VE SAF SVG TREND GRAFİĞİ 
   const miniChartPoints = useMemo(() => {
     const chartData = [...finances].reverse().slice(-10).map((f: any) => 
       f.type === 'Gelir' ? Number(f.amount) : -Math.abs(Number(f.amount))
@@ -72,7 +75,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors }: any) {
     const min = Math.min(...chartData);
     const range = max - min || 1;
     
-    // 100x40 boyutlarında bir alana koordinatları hesaplar
     return chartData.map((val, i) => {
       const x = (i / (chartData.length - 1)) * 100;
       const y = 40 - ((val - min) / range) * 40;
@@ -124,6 +126,38 @@ export default function HomeTab({ data, setShowJobModal, statusColors }: any) {
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       
+      {/* KRİTİK STOK DETAY MODALI */}
+      <AnimatePresence>
+        {showLowStockModal && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-sm rounded-xl p-6 shadow-xl relative">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                   <AlertTriangle size={18} className="text-amber-500" /> Kritik Stoklar
+                </h3>
+                <button onClick={() => setShowLowStockModal(false)} className="text-slate-400 hover:bg-slate-100 p-1.5 rounded-md transition-colors"><X size={18} /></button>
+              </div>
+              <div className="max-h-[300px] overflow-y-auto custom-scrollbar space-y-2 pr-1">
+                {lowStockItems.map((item: any) => (
+                  <div key={item.id} className="flex justify-between items-center p-3 bg-amber-50/50 border border-amber-100 rounded-lg">
+                    <div>
+                      <div className="text-xs font-bold text-slate-800">{item.item_name}</div>
+                      <div className="text-[10px] text-slate-500 mt-0.5">{item.supplier_name || 'Tedarikçi Kaydı Yok'}</div>
+                    </div>
+                    <div className="text-sm font-black text-amber-600 bg-amber-100 px-2 py-1 rounded-md">
+                      {item.quantity} <span className="text-[10px] uppercase">{item.unit_name}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => setShowLowStockModal(false)} className="w-full mt-4 bg-slate-100 text-slate-700 py-2 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors">
+                Kapat
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* BAŞLIK VE SİSTEM DURUMU */}
       <div className="flex justify-between items-end">
         <div>
@@ -291,9 +325,14 @@ export default function HomeTab({ data, setShowJobModal, statusColors }: any) {
                {lowStockItems.length > 0 ? (
                  <>
                    <div className="text-2xl font-black text-slate-900">{lowStockItems.length} Parça</div>
-                   <p className="text-[11px] text-amber-600 mt-2 font-bold flex items-center gap-1">
-                     <AlertTriangle size={12} /> Kritik seviyenin (5 adet) altında.
-                   </p>
+                   <div className="flex items-center justify-between mt-2">
+                     <p className="text-[11px] text-amber-600 font-bold flex items-center gap-1">
+                       <AlertTriangle size={12} /> Kritik seviyenin altında.
+                     </p>
+                     <button onClick={() => setShowLowStockModal(true)} className="bg-amber-100 hover:bg-amber-200 text-amber-700 px-3 py-1.5 rounded-md text-[10px] font-bold transition-colors">
+                       Detayları Gör
+                     </button>
+                   </div>
                  </>
                ) : (
                  <>
@@ -334,6 +373,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors }: any) {
             <tbody className="divide-y divide-slate-50">
               {jobs.slice(0, 10).map((j: any) => {
                 const assignedStaff = j.staff_id ? staff.find((s:any) => s.id === j.staff_id) : null;
+                // İşi kimin atadığını yakalıyoruz:
                 const managerName = j.details?.lastEditedBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
                 
                 const isApproved = j.status === 'Tamamlandı';
@@ -341,9 +381,13 @@ export default function HomeTab({ data, setShowJobModal, statusColors }: any) {
                 const managerColor = isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200';
 
                 return (
-                  <tr key={j.id} className="hover:bg-slate-50/80 transition-colors group">
+                  <tr 
+                    key={j.id} 
+                    onClick={() => setSelectedJob && setSelectedJob(j)}
+                    className="hover:bg-blue-50/50 transition-colors group cursor-pointer relative"
+                  >
                     <td className="px-5 py-3 align-middle">
-                      <div className="font-bold text-slate-800">{j.customer_name}</div>
+                      <div className="font-bold text-slate-800 group-hover:text-blue-700 transition-colors">{j.customer_name}</div>
                       <div className="text-[10px] text-slate-500 mt-0.5 font-medium flex items-center gap-1">
                         <span className="w-1 h-1 rounded-full bg-slate-300"></span> {j.work_type}
                       </div>
@@ -378,9 +422,15 @@ export default function HomeTab({ data, setShowJobModal, statusColors }: any) {
                       {j.scheduled_date || 'Anlık Kayıt'}
                     </td>
                     <td className="px-5 py-3 align-middle text-right">
-                      <span className={`px-2.5 py-1.5 rounded-md text-[10px] font-bold border ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>
-                        {j.status}
-                      </span>
+                      <div className="flex items-center justify-end gap-3">
+                         <span className={`px-2.5 py-1.5 rounded-md text-[10px] font-bold border ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                           {j.status}
+                         </span>
+                         {/* Satırın üstüne gelince beliren detay oku */}
+                         <div className="w-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <ArrowUpRight size={14} className="text-blue-500" />
+                         </div>
+                      </div>
                     </td>
                   </tr>
                 );
