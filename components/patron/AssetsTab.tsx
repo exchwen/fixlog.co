@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Box, MapPin, Users, Search } from 'lucide-react';
+import { Plus, Box, MapPin, Users, Search, QrCode } from 'lucide-react';
 
-export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail }: any) {
+export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail, setShowQRModal, setSelectedQRAsset }: any) {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Arama filtresi mantığı
@@ -61,10 +61,16 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail 
             <div className="text-[10px] text-slate-400 bg-slate-50 p-2 rounded border border-slate-100 mb-4 flex-1 line-clamp-2">{a.device_details || 'Detay yok'}</div>
             
             <button 
-              onClick={(e) => e.stopPropagation()} 
-              className="w-full bg-slate-50 py-1.5 rounded-md text-[10px] font-medium text-slate-600 border border-slate-200 hover:bg-slate-100 transition-colors"
+              onClick={(e) => { 
+                e.stopPropagation();
+                if (setSelectedQRAsset && setShowQRModal) {
+                    setSelectedQRAsset(a);
+                    setShowQRModal(true);
+                }
+              }} 
+              className="w-full bg-slate-900 text-white py-2 rounded-md text-[10px] font-bold mt-auto flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors shadow-sm"
             >
-              QR Kod Yazdır
+              <QrCode size={12} /> QR Kod / Etiket
             </button>
           </div>
         )) : (

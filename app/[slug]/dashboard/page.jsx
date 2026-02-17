@@ -21,6 +21,7 @@ import SettingsTab from '@/components/patron/SettingsTab';
 
 // YENİ EKLENEN DOSYA IMPORTU
 import PendingJobsTab from '@/components/patron/PendingJobsTab'; 
+import AssetQRModal from '@/components/modals/AssetQRModal';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
@@ -47,6 +48,9 @@ export default function PatronDashboard() {
   
   // --- YENİ EKLENEN KISIM: İŞ DETAYI İÇİN STATE ---
   const [selectedJob, setSelectedJob] = useState(null); 
+  // --- QR SİSTEMİ STATE ---
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [selectedQRAsset, setSelectedQRAsset] = useState(null);
   // ------------------------------------------------
 
   const [isEditingStaff, setIsEditingStaff] = useState(false);
@@ -150,7 +154,15 @@ export default function PatronDashboard() {
           {activeTab === 'customers' && <CustomersTab data={data} setShowCustomerModal={setShowCustomerModal} setShowCustomerDetail={setShowCustomerDetail} />}
           {activeTab === 'stock' && <StockTab data={data} setShowStockModal={setShowStockModal} />}
           {activeTab === 'finance' && <FinanceTab data={data} />}
-          {activeTab === 'assets' && <AssetsTab data={data} setShowAssetModal={setShowAssetModal} setShowAssetDetail={setShowAssetDetail} />}
+          {activeTab === 'assets' && (
+            <AssetsTab 
+                data={data} 
+                setShowAssetModal={setShowAssetModal} 
+                setShowAssetDetail={setShowAssetDetail} 
+                setShowQRModal={setShowQRModal}
+                setSelectedQRAsset={setSelectedQRAsset}
+            />
+          )}
           {activeTab === 'settings' && <SettingsTab settingsForm={settingsForm} setSettingsForm={setSettingsForm} handleAction={handleAction} isSaving={isSaving} />}
         </div>
       </main>
@@ -173,6 +185,12 @@ export default function PatronDashboard() {
         // YENİ EKLENEN PROPLAR
         selectedJob={selectedJob} 
         setSelectedJob={setSelectedJob}
+      />
+      
+      <AssetQRModal 
+        isOpen={showQRModal} 
+        onClose={() => setShowQRModal(false)} 
+        asset={selectedQRAsset} 
       />
       {/* ------------------------------------------ */}
     </div>

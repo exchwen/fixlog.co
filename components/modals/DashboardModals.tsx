@@ -857,7 +857,25 @@ export default function DashboardModals({
                     <textarea rows={3} className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none resize-none focus:border-blue-400" placeholder="Teknik Detaylar (Seri No, Model vs.)" value={assetForm.deviceDetails} onChange={e => setAssetForm({...assetForm, deviceDetails: e.target.value})} />
                   </div>
                 </div>
-                <button disabled={isSaving} className="w-full bg-slate-900 text-white py-2.5 rounded-md font-semibold text-sm mt-4 hover:bg-slate-800 flex justify-center items-center" onClick={() => { if (assetCustMode === 'NEW') { const combinedAddress = getFullAddress(assetForm.newCustomer.address, buildingNo, selectedCity, selectedDistrict); const updatedNewCust = { ...assetForm.newCustomer, address: combinedAddress }; handleAction('add-asset', { ...assetForm, newCustomer: updatedNewCust }, setShowAssetModal, () => { setAssetForm({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', customerMode: 'NONE', newCustomer: { name: '', contact: '', address: '', taxInfo: '', assetAction: '', assetMode: 'NONE', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } } }); setSelectedCity(''); setSelectedDistrict(''); setBuildingNo(''); }); } else { const combinedLocation = getFullAddress(assetForm.location, buildingNo, selectedCity, selectedDistrict); handleAction('add-asset', { ...assetForm, location: combinedLocation }, setShowAssetModal, () => { setAssetForm({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', customerMode: 'NONE', newCustomer: { name: '', contact: '', address: '', taxInfo: '', assetAction: '', assetMode: 'NONE', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } } }); setSelectedCity(''); setSelectedDistrict(''); setBuildingNo(''); }); } }}>{isSaving ? <Loader2 className="animate-spin" size={16} /> : 'Varlığı Sisteme Kaydet'}</button>
+                <button disabled={isSaving} className="w-full bg-slate-900 text-white py-2.5 rounded-md font-semibold text-sm mt-4 hover:bg-slate-800 flex justify-center items-center" onClick={() => { 
+    // GÜNCELLEME: UUID ÜRETİLİYOR
+    const newUUID = self.crypto.randomUUID();
+
+    if (assetCustMode === 'NEW') { 
+        const combinedAddress = getFullAddress(assetForm.newCustomer.address, buildingNo, selectedCity, selectedDistrict); 
+        const updatedNewCust = { ...assetForm.newCustomer, address: combinedAddress }; 
+        // GÜNCELLEME: uuid parametresi eklendi
+        handleAction('add-asset', { ...assetForm, newCustomer: updatedNewCust, uuid: newUUID }, setShowAssetModal, () => { 
+            setAssetForm({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', customerMode: 'NONE', newCustomer: { name: '', contact: '', address: '', taxInfo: '', assetAction: '', assetMode: 'NONE', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } } }); setSelectedCity(''); setSelectedDistrict(''); setBuildingNo(''); 
+        }); 
+    } else { 
+        const combinedLocation = getFullAddress(assetForm.location, buildingNo, selectedCity, selectedDistrict); 
+        // GÜNCELLEME: uuid parametresi eklendi
+        handleAction('add-asset', { ...assetForm, location: combinedLocation, uuid: newUUID }, setShowAssetModal, () => { 
+            setAssetForm({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', customerMode: 'NONE', newCustomer: { name: '', contact: '', address: '', taxInfo: '', assetAction: '', assetMode: 'NONE', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } } }); setSelectedCity(''); setSelectedDistrict(''); setBuildingNo(''); 
+        }); 
+    } 
+}}>{isSaving ? <Loader2 className="animate-spin" size={16} /> : 'Varlığı Sisteme Kaydet'}</button>
               </div>
             </motion.div>
           </div>
