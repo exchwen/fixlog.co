@@ -2,23 +2,20 @@
 
 import React, { useEffect, useState } from 'react';
 import { Save, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle } from 'lucide-react';
-// İl Verisini Çekiyoruz
 import trCitiesData from '@/lib/data/tr-cities.json';
 
 const CITY_DATA: any = trCitiesData;
 
 export default function SettingsTab({ settingsForm, setSettingsForm, handleAction, isSaving }: any) {
   
-  // Yerel state'ler (Dropdownların düzgün görünmesi için)
   const [localCity, setLocalCity] = useState('');
   const [localDistrict, setLocalDistrict] = useState('');
   const [localDetail, setLocalDetail] = useState('');
 
-  // Sayfa yüklendiğinde mevcut adresi parçalara ayırıp yerel state'lere ata
+  // Veri geldiğinde parçala (Dependency güncellendi)
   useEffect(() => {
     if (settingsForm.address) {
       const parts = settingsForm.address.split(' / ');
-      // Format: "Detay / İlçe / İl" varsayıyoruz (DashboardModals ile uyumlu)
       if (parts.length >= 3) {
         const city = parts[parts.length - 1].trim();
         const district = parts[parts.length - 2].trim();
@@ -26,24 +23,19 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
         if (CITY_DATA[city]) {
           setLocalCity(city);
           setLocalDistrict(district);
-          // Geriye kalan ilk kısımları detay olarak al
           setLocalDetail(parts.slice(0, parts.length - 2).join(' / ').trim());
           return;
         }
       }
-      // Format uymuyorsa tamamını detaya bas
       setLocalDetail(settingsForm.address);
     }
-  }, []); // Sadece ilk yüklemede çalışsın
+  }, [settingsForm.address]); // settingsForm.address değişirse tekrar çalışsın
 
-  // Herhangi bir adres parçası değiştiğinde ana formu güncelle
   const updateAddress = (newDetail: string, newCity: string, newDistrict: string) => {
-    // Önce yerel state'leri güncelle
     setLocalDetail(newDetail);
     setLocalCity(newCity);
     setLocalDistrict(newDistrict);
 
-    // Sonra birleştirip ana forma gönder
     let fullAddress = newDetail.trim();
     if (newDistrict) fullAddress += ` / ${newDistrict}`;
     if (newCity) fullAddress += ` / ${newCity}`;
@@ -51,7 +43,6 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
     setSettingsForm({ ...settingsForm, address: fullAddress });
   };
 
-  // Tüm alanların dolu olup olmadığını kontrol et
   const isFormValid = 
     settingsForm.companyName?.trim() &&
     settingsForm.ownerName?.trim() &&
@@ -87,7 +78,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
               <Building2 className="absolute left-3 top-2.5 text-slate-400" size={16} />
               <input 
                 className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800 font-medium"
-                value={settingsForm.companyName}
+                value={settingsForm.companyName || ''}
                 onChange={(e) => setSettingsForm({ ...settingsForm, companyName: e.target.value })}
                 placeholder="Örn: Kaya Asansör Ltd. Şti."
               />
@@ -100,7 +91,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
               <User className="absolute left-3 top-2.5 text-slate-400" size={16} />
               <input 
                 className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800"
-                value={settingsForm.ownerName}
+                value={settingsForm.ownerName || ''}
                 onChange={(e) => setSettingsForm({ ...settingsForm, ownerName: e.target.value })}
                 placeholder="Ad Soyad"
               />
@@ -118,7 +109,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
               <Briefcase className="absolute left-3 top-2.5 text-slate-400" size={16} />
               <input 
                 className="w-full pl-10 pr-3 py-2.5 border border-slate-200 bg-slate-50 text-slate-500 rounded-lg text-sm outline-none cursor-not-allowed font-medium"
-                value={settingsForm.sector}
+                value={settingsForm.sector || ''}
                 readOnly
                 placeholder="Sektör"
               />
@@ -160,13 +151,11 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
           </div>
         </div>
 
-        {/* Adres Yönetimi (YENİLENMİŞ) */}
+        {/* Adres Yönetimi */}
         <div>
           <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Konum ve Adres</label>
           <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
-             
              <div className="grid grid-cols-2 gap-4">
-                {/* İL SEÇİMİ */}
                 <div>
                    <label className="text-[10px] text-slate-400 font-bold uppercase mb-1 block">İl</label>
                    <select 
@@ -178,8 +167,6 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
                       {Object.keys(CITY_DATA).map(c => <option key={c} value={c}>{c}</option>)}
                    </select>
                 </div>
-
-                {/* İLÇE SEÇİMİ */}
                 <div>
                    <label className="text-[10px] text-slate-400 font-bold uppercase mb-1 block">İlçe</label>
                    <select 
@@ -195,8 +182,6 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
                    </select>
                 </div>
              </div>
-
-             {/* DETAY ADRES */}
              <div>
                 <label className="text-[10px] text-slate-400 font-bold uppercase mb-1 block">Adres Detayı (Mahalle, Cadde, Sokak, No...)</label>
                 <div className="relative">
@@ -220,7 +205,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
             <FileText className="absolute left-3 top-2.5 text-slate-400" size={16} />
             <input 
               className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800"
-              value={settingsForm.taxInfo}
+              value={settingsForm.taxInfo || ''}
               onChange={(e) => setSettingsForm({ ...settingsForm, taxInfo: e.target.value })}
               placeholder="Vergi Dairesi ve Numarası"
             />

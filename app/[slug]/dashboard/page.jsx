@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion'; // AnimatePresence eklendi
-import { ShieldCheck, AlertTriangle, ArrowRight, Settings } from 'lucide-react'; // Ikonlar eklendi
+import { motion, AnimatePresence } from 'framer-motion';
+import { ShieldCheck, AlertTriangle, ArrowRight, Settings } from 'lucide-react';
 
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
@@ -18,8 +18,6 @@ import StockTab from '@/components/patron/StockTab';
 import FinanceTab from '@/components/patron/FinanceTab';
 import AssetsTab from '@/components/patron/AssetsTab';
 import SettingsTab from '@/components/patron/SettingsTab';
-
-// YENİ EKLENEN DOSYA IMPORTU
 import PendingJobsTab from '@/components/patron/PendingJobsTab'; 
 import AssetQRModal from '@/components/modals/AssetQRModal';
 
@@ -41,17 +39,13 @@ export default function PatronDashboard() {
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showStockModal, setShowStockModal] = useState(false);
   
-  // DETAY STATE'LERİ
   const [showStaffDetail, setShowStaffDetail] = useState(null);
   const [showCustomerDetail, setShowCustomerDetail] = useState(null);
   const [showAssetDetail, setShowAssetDetail] = useState(null);
   
-  // --- YENİ EKLENEN KISIM: İŞ DETAYI İÇİN STATE ---
   const [selectedJob, setSelectedJob] = useState(null); 
-  // --- QR SİSTEMİ STATE ---
   const [showQRModal, setShowQRModal] = useState(false);
   const [selectedQRAsset, setSelectedQRAsset] = useState(null);
-  // ------------------------------------------------
 
   const [isEditingStaff, setIsEditingStaff] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -67,7 +61,6 @@ export default function PatronDashboard() {
   const [staffForm, setStaffForm] = useState({ name: '', phone: '', role: 'Usta', branch: '', status: 'Aktif' });
   const [customerForm, setCustomerForm] = useState({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } });
   const [stockForm, setStockForm] = useState({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', supplierName: '', supplierPhone: '' });
-  // GÜNCELLEME: phone ve emergencyPhone eklendi
   const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', emergencyPhone: '' });
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '' });
 
@@ -85,7 +78,7 @@ export default function PatronDashboard() {
             address: result.address || '', 
             taxInfo: result.taxInfo || '', 
             phone: result.phone || '',
-            emergencyPhone: result.emergencyPhone || '' // GÜNCELLEME: Eklendi
+            emergencyPhone: result.emergencyPhone || ''
         });
       }
     } catch (err) { console.error("Veri çekilemedi:", err); } finally { setLoading(false); }
@@ -116,16 +109,23 @@ export default function PatronDashboard() {
     setMessageInput(''); fetchMessages();
   };
 
-  // --- EKSİK BİLGİ KONTROLÜ ---
-  // Eğer veriler yüklendiyse ve zorunlu alanlardan biri boşsa TRUE döner
-  const isCompanyDataIncomplete = data && (
-    !data.name?.trim() ||
-    !data.ownerName?.trim() ||
-    !data.sector?.trim() ||
-    !data.address?.trim() ||
-    !data.taxInfo?.trim() ||
-    !data.phone?.trim()
-  );
+  // --- EKSİK BİLGİ KONTROLÜ (GÜÇLENDİRİLDİ) ---
+  const isCompanyDataIncomplete = useMemo(() => {
+    if (!data) return false;
+    
+    // Varsayılan değerler de "eksik" kabul ediliyor
+    const isDefaultName = data.name === 'İşletme';
+    const isDefaultOwner = data.ownerName === 'Kullanıcı' || data.ownerName === 'Yönetici';
+    
+    return (
+      !data.name?.trim() || isDefaultName ||
+      !data.ownerName?.trim() || isDefaultOwner ||
+      !data.sector?.trim() ||
+      !data.address?.trim() ||
+      !data.taxInfo?.trim() ||
+      !data.phone?.trim()
+    );
+  }, [data]);
 
   if (loading) return (
     <div className="h-screen flex flex-col items-center justify-center bg-slate-950">
@@ -154,44 +154,20 @@ export default function PatronDashboard() {
 
         <div className="p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">
           {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} />}
-          
-          {/* --- GÜNCELLENEN KISIM: JobsTab --- */}
-          {activeTab === 'jobs' && (
-            <JobsTab 
-              data={data} 
-              setShowJobModal={setShowJobModal} 
-              statusColors={statusColors} 
-              setSelectedJob={setSelectedJob} // ARTIK TIKLAYINCA ÇALIŞACAK
-            />
-          )}
-
-          {/* YENİ EKLENEN SEKME: Onay Bekleyen İşler */}
+          {activeTab === 'jobs' && <JobsTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} />}
           {activeTab === 'pending' && <PendingJobsTab data={data} setSelectedJob={setSelectedJob} />}
-
-          {/* ---------------------------------- */}
-
           {activeTab === 'team' && <TeamTab data={data} setShowStaffModal={setShowStaffModal} setShowJobModal={setShowJobModal} setShowStaffDetail={setShowStaffDetail} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} setSelectedJob={setSelectedJob} />}
           {activeTab === 'customers' && <CustomersTab data={data} setShowCustomerModal={setShowCustomerModal} setShowCustomerDetail={setShowCustomerDetail} />}
           {activeTab === 'stock' && <StockTab data={data} setShowStockModal={setShowStockModal} />}
           {activeTab === 'finance' && <FinanceTab data={data} />}
-          {activeTab === 'assets' && (
-            <AssetsTab 
-                data={data} 
-                setShowAssetModal={setShowAssetModal} 
-                setShowAssetDetail={setShowAssetDetail} 
-                setShowQRModal={setShowQRModal}
-                setSelectedQRAsset={setSelectedQRAsset}
-            />
-          )}
+          {activeTab === 'assets' && <AssetsTab data={data} setShowAssetModal={setShowAssetModal} setShowAssetDetail={setShowAssetDetail} setShowQRModal={setShowQRModal} setSelectedQRAsset={setSelectedQRAsset} />}
           {activeTab === 'settings' && <SettingsTab settingsForm={settingsForm} setSettingsForm={setSettingsForm} handleAction={handleAction} isSaving={isSaving} />}
         </div>
       </main>
 
       <ChatPanel isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} activeChatId={activeChatId} setActiveChatId={setActiveChatId} data={data} messages={messages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} />
 
-      {/* --- GÜNCELLENEN KISIM: DashboardModals --- */}
       <DashboardModals 
-        // Mevcut Proplar
         showStaffDetail={showStaffDetail} setShowStaffDetail={setShowStaffDetail} isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff} editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}
         showCustomerDetail={showCustomerDetail} setShowCustomerDetail={setShowCustomerDetail}
         showAssetDetail={showAssetDetail} setShowAssetDetail={setShowAssetDetail}
@@ -201,58 +177,48 @@ export default function PatronDashboard() {
         showCustomerModal={showCustomerModal} setShowCustomerModal={setShowCustomerModal} customerForm={customerForm} setCustomerForm={setCustomerForm}
         showStockModal={showStockModal} setShowStockModal={setShowStockModal} stockForm={stockForm} setStockForm={setStockForm}
         handleAction={handleAction} isSaving={isSaving} data={data}
-        
-        // YENİ EKLENEN PROPLAR
-        selectedJob={selectedJob} 
-        setSelectedJob={setSelectedJob}
+        selectedJob={selectedJob} setSelectedJob={setSelectedJob}
       />
       
-      <AssetQRModal 
-        isOpen={showQRModal} 
-        onClose={() => setShowQRModal(false)} 
-        asset={selectedQRAsset} 
-      />
-      {/* ------------------------------------------ */}
+      <AssetQRModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} asset={selectedQRAsset} />
 
-      {/* --- ZORUNLU AYARLAR MODALI --- */}
-      {/* Eğer veriler eksikse ve kullanıcı şu an Ayarlar sekmesinde değilse göster */}
+      {/* --- ZORUNLU AYARLAR MODALI (Z-INDEX ARTIRILDI) --- */}
       <AnimatePresence>
         {isCompanyDataIncomplete && activeTab !== 'settings' && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-6"
+            className="fixed inset-0 z-[9999] bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-6"
           >
             <motion.div 
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-200"
             >
-              {/* Header */}
               <div className="bg-amber-50 p-6 border-b border-amber-100 flex items-start gap-4">
-                <div className="bg-amber-100 p-3 rounded-full text-amber-600">
+                <div className="bg-amber-100 p-3 rounded-full text-amber-600 animate-pulse">
                   <AlertTriangle size={28} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Kurulum Tamamlanmadı</h2>
+                  <h2 className="text-lg font-bold text-slate-900">Kurulumu Tamamla</h2>
                   <p className="text-sm text-slate-600 mt-1">Sistemi kullanmaya başlamadan önce lütfen firma bilgilerinizi eksiksiz doldurun.</p>
                 </div>
               </div>
 
-              {/* Body */}
               <div className="p-6 space-y-4">
-                <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                  <p className="font-semibold mb-1">Neden gerekli?</p>
+                <div className="text-xs text-slate-500 bg-slate-50 p-4 rounded-lg border border-slate-100">
+                  <p className="font-bold text-slate-700 mb-2">Eksik Olan Bilgiler:</p>
                   <ul className="list-disc list-inside space-y-1">
-                    <li>İş emirlerinde firma bilgileriniz görünür.</li>
-                    <li>QR kod sisteminde iletişim bilgileriniz kullanılır.</li>
-                    <li>Faturalandırma ve raporlama için zorunludur.</li>
+                    {(!data.name?.trim() || data.name === 'İşletme') && <li>Firma Ünvanı</li>}
+                    {(!data.ownerName?.trim() || data.ownerName === 'Kullanıcı' || data.ownerName === 'Yönetici') && <li>Yetkili Ad Soyad</li>}
+                    {!data.phone?.trim() && <li>İşletme Telefonu</li>}
+                    {!data.address?.trim() && <li>Adres Bilgisi</li>}
+                    {!data.taxInfo?.trim() && <li>Vergi Numarası</li>}
                   </ul>
                 </div>
               </div>
 
-              {/* Footer */}
               <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
                 <button 
                   onClick={() => setActiveTab('settings')}
@@ -267,7 +233,6 @@ export default function PatronDashboard() {
           </motion.div>
         )}
       </AnimatePresence>
-      {/* -------------------------------------- */}
 
     </div>
   );
