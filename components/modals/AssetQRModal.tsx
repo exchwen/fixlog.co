@@ -17,12 +17,12 @@ interface AssetQRModalProps {
 export default function AssetQRModal({ isOpen, onClose, asset, companyName, companyLogo }: AssetQRModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
-  const [logoBgColor, setLogoBgColor] = useState<string>('#1e293b'); // Varsayılan slate-800
+  const [logoBgColor, setLogoBgColor] = useState<string>('#ffffff');
 
-  // Logodan dominant rengi çekme işlemi
+  // Logodan zıt/farklı rengi çekme işlemi (Mavi, Siyah, Beyaz arasından seçer)
   useEffect(() => {
     if (!companyLogo) {
-      setLogoBgColor('#1e293b');
+      setLogoBgColor('#ffffff');
       return;
     }
 
@@ -43,11 +43,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
         let r = 0, g = 0, b = 0, count = 0;
         
         for (let i = 0; i < data.length; i += 4) {
-          // Saydam pikselleri atla
           if (data[i + 3] < 128) continue; 
-          // Beyaz ve beyaza çok yakın arka plan piksellerini atla
-          if (data[i] > 240 && data[i+1] > 240 && data[i+2] > 240) continue;
-          
           r += data[i];
           g += data[i + 1];
           b += data[i + 2];
@@ -58,7 +54,26 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           r = Math.floor(r / count);
           g = Math.floor(g / count);
           b = Math.floor(b / count);
-          setLogoBgColor(`rgb(${r}, ${g}, ${b})`);
+
+          // Kullanabileceğimiz 3 ana arka plan rengi
+          const palette = [
+            { name: 'white', rgb: [255, 255, 255], hex: '#ffffff' },
+            { name: 'black', rgb: [15, 23, 42], hex: '#0f172a' }, // slate-900
+            { name: 'blue', rgb: [37, 99, 235], hex: '#2563eb' }  // blue-600
+          ];
+
+          let maxDist = -1;
+          let selectedColor = '#ffffff';
+
+          // Logodaki ortalama renge EN UZAK olan (en zıt) rengi bul
+          for (const color of palette) {
+            const dist = Math.sqrt(Math.pow(r - color.rgb[0], 2) + Math.pow(g - color.rgb[1], 2) + Math.pow(b - color.rgb[2], 2));
+            if (dist > maxDist) {
+              maxDist = dist;
+              selectedColor = color.hex;
+            }
+          }
+          setLogoBgColor(selectedColor);
         }
       } catch (e) {
         console.error("Renk analizi yapılamadı:", e);

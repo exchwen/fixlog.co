@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, AlertTriangle, ArrowRight, Settings, Filter, ShieldAlert } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, ArrowRight, Settings, Filter, ShieldAlert, Info, MapPin, Check } from 'lucide-react';
 
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
@@ -19,6 +19,7 @@ import FinanceTab from '@/components/patron/FinanceTab';
 import AssetsTab from '@/components/patron/AssetsTab';
 import SettingsTab from '@/components/patron/SettingsTab';
 import PendingJobsTab from '@/components/patron/PendingJobsTab'; 
+import AlertsTab from '@/components/patron/AlertsTab'; // YENİ IMPORT
 import AssetQRModal from '@/components/modals/AssetQRModal';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
@@ -134,7 +135,7 @@ export default function PatronDashboard() {
     setMessageInput(''); fetchMessages();
   };
 
-  // ACİL DURUM KONTROLÜ VE KAPATMA FONKSİYONU
+  // 🚨 ACİL DURUM KONTROLÜ VE KAPATMA FONKSİYONU
   const activeEmergencies = data?.activeEmergencies || [];
   const hasEmergency = activeEmergencies.length > 0;
 
@@ -146,7 +147,27 @@ export default function PatronDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: emergencyId, slug })
       });
-      await fetchData(); // Veriyi yenile, kırmızı ekran kalksın
+      await fetchData(); 
+    } catch (err) {
+      alert("İşlem başarısız oldu.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ⚠️ ARIZA BİLDİRİM KONTROLÜ
+  const pendingFaults = data?.pendingFaults || [];
+  const hasFault = pendingFaults.length > 0;
+
+  const handleResolveFault = async (faultId) => {
+    setIsSaving(true);
+    try {
+      await fetch(`${API_URL}/resolve-fault`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: faultId, slug })
+      });
+      await fetchData(); 
     } catch (err) {
       alert("İşlem başarısız oldu.");
     } finally {
@@ -213,7 +234,7 @@ export default function PatronDashboard() {
         </>
       )}
 
-      {/* ACİL DURUM KIRMIZI EKRAN UYARISI (TAM EKRAN KAPLAMA) */}
+      {/* 🚨 ACİL DURUM KIRMIZI EKRAN UYARISI (TAM EKRAN KAPLAMA) */}
       <AnimatePresence>
         {hasEmergency && (
           <motion.div 
@@ -228,8 +249,15 @@ export default function PatronDashboard() {
             <div className="relative z-10 flex flex-col items-center max-w-lg text-center">
                 <ShieldAlert size={100} className="text-white mb-6 animate-pulse" />
                 <h1 className="text-5xl font-black mb-2 tracking-tight uppercase">Acil Durum Bildirildi!</h1>
-                <p className="text-xl text-rose-100 mb-8 font-medium">Sahadan veya bir müşteriden acil durum butonu tetiklendi. Lütfen acil durum hattınızı kontrol edin.</p>
+                <p className="text-xl text-rose-100 mb-8 font-medium">Sahadan veya bir müşteriden acil durum butonu tetiklendi.</p>
                 
+                {/* Varlık Bilgileri ve Konumu */}
+                <div className="bg-white/10 p-6 rounded-3xl backdrop-blur-md border border-white/20 mb-8 w-full max-w-md text-left shadow-2xl">
+                   <div className="text-rose-200 text-xs font-bold uppercase tracking-wider mb-1">İlgili Varlık & Konum</div>
+                   <div className="text-2xl font-black text-white mb-2">{activeEmergencies[0]?.asset_name || 'Bilinmeyen Varlık'}</div>
+                   <div className="flex items-center gap-2 text-rose-100"><MapPin size={18} /> {activeEmergencies[0]?.asset_location || 'Konum alınamadı'}</div>
+                </div>
+
                 <button 
                   onClick={() => handleResolveEmergency(activeEmergencies[0]?.id)}
                   disabled={isSaving}
@@ -243,6 +271,50 @@ export default function PatronDashboard() {
         )}
       </AnimatePresence>
 
+      {/* ⚠️ SARI ARIZA BİLDİRİMİ MODALI */}
+      <AnimatePresence>
+        {hasFault && !hasEmergency && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[99998] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-6"
+          >
+            <motion.div 
+               initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+               className="bg-amber-400 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden text-amber-950 flex flex-col"
+            >
+               <div className="p-8 flex flex-col items-center text-center border-b border-amber-500/30">
+                  <AlertTriangle size={64} className="mb-4 animate-bounce" />
+                  <h2 className="text-3xl font-black mb-2 uppercase tracking-tight">Arıza Bildirimi!</h2>
+                  <p className="font-bold opacity-80 text-amber-900">Müşterinizden yeni bir arıza kaydı ulaştı.</p>
+               </div>
+               
+               <div className="bg-white p-8 flex flex-col gap-4">
+                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                     <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">İlgili Varlık & Konum</div>
+                     <div className="font-black text-xl text-slate-800 leading-none mb-2">{pendingFaults[0]?.asset_name || 'Bilinmeyen Varlık'}</div>
+                     <div className="text-slate-600 font-semibold flex items-center gap-1.5"><MapPin size={16} className="text-slate-400"/> {pendingFaults[0]?.asset_location || 'Konum belirtilmemiş'}</div>
+                  </div>
+                  
+                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                     <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Müşteri & Şikayet Detayı</div>
+                     <div className="font-bold text-slate-800 text-base">{pendingFaults[0]?.reporter_name} - {pendingFaults[0]?.reporter_phone}</div>
+                     <div className="text-slate-600 mt-3 text-sm italic border-l-4 border-amber-300 pl-3">"{pendingFaults[0]?.description}"</div>
+                  </div>
+                  
+                  <button 
+                    onClick={() => handleResolveFault(pendingFaults[0]?.id)} 
+                    disabled={isSaving}
+                    className="mt-4 w-full bg-slate-900 hover:bg-slate-800 text-amber-400 py-4.5 rounded-2xl font-black text-lg flex items-center justify-center gap-2 transition-all shadow-xl disabled:opacity-50 active:scale-95"
+                  >
+                    <Check size={24} /> 
+                    {isSaving ? 'Kapatılıyor...' : 'GÖRÜLDÜ / BİLDİRİMİ KAPAT'}
+                  </button>
+               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto relative z-10">
@@ -252,6 +324,7 @@ export default function PatronDashboard() {
           {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} />}
           {activeTab === 'jobs' && <JobsTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} />}
           {activeTab === 'pending' && <PendingJobsTab data={data} setSelectedJob={setSelectedJob} />}
+          {activeTab === 'alerts' && <AlertsTab data={data} />} {/* YENİ SEKME EKLENDİ */}
           {activeTab === 'team' && <TeamTab data={data} setShowStaffModal={setShowStaffModal} setShowJobModal={setShowJobModal} setShowStaffDetail={setShowStaffDetail} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} setSelectedJob={setSelectedJob} />}
           {activeTab === 'customers' && <CustomersTab data={data} setShowCustomerModal={setShowCustomerModal} setShowCustomerDetail={setShowCustomerDetail} />}
           
@@ -304,55 +377,37 @@ export default function PatronDashboard() {
       
       <AssetQRModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} asset={selectedQRAsset} companyName={data?.name} companyLogo={data?.logo} />
 
+      {/* 🛠️ SİSTEM KURULUMU TAMAMLANMADI EKRANI (Ortada Büyük Modal) */}
       <AnimatePresence>
-        {isCompanyDataIncomplete && activeTab !== 'settings' && (
+        {isCompanyDataIncomplete && activeTab !== 'settings' && !hasEmergency && !hasFault && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-6"
+            className="fixed inset-0 z-[9999] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-6"
           >
             <motion.div 
               key="setup-modal"
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
-              className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-200"
+              className="bg-white w-full max-w-[420px] rounded-[32px] shadow-2xl p-10 flex flex-col items-center text-center border border-slate-100"
             >
-              <div className="bg-amber-50 p-6 border-b border-amber-100 flex items-start gap-4">
-                <div className="bg-amber-100 p-3 rounded-full text-amber-600 animate-pulse">
-                  <AlertTriangle size={28} />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900">Kurulumu Tamamla</h2>
-                  <p className="text-sm text-slate-600 mt-1">Lütfen işlemlerinize devam edebilmek için eksik bilgileri doldurunuz.</p>
-                </div>
+              <div className="bg-blue-50 text-blue-500 w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                <Info size={48} strokeWidth={2.5} />
               </div>
-
-              <div className="p-6 space-y-4">
-                <div className="text-xs text-slate-500 bg-slate-50 p-4 rounded-lg border border-slate-100">
-                  <p className="font-bold text-slate-700 mb-2">Eksik Olan Bilgiler:</p>
-                  <ul className="list-disc list-inside space-y-1">
-                    {(!(data?.name || '').trim() || (data?.name || '').trim().toLowerCase() === 'işletme') && <li>Firma Ünvanı</li>}
-                    {(!(data?.ownerName || '').trim() || ['kullanıcı', 'yönetici'].includes((data?.ownerName || '').trim().toLowerCase())) && <li>Yetkili Ad Soyad</li>}
-                    {!(data?.sector || '').trim() && <li>Faaliyet Sektörü</li>}
-                    {!(data?.phone || '').trim() && <li>İşletme Telefonu</li>}
-                    {!(data?.emergencyPhone || '').trim() && <li>Acil Durum Hattı (7/24)</li>}
-                    {!(data?.address || '').trim() && <li>Adres Bilgisi</li>}
-                    {!(data?.taxInfo || '').trim() && <li>Vergi Numarası</li>}
-                  </ul>
-                </div>
-              </div>
-
-              <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
-                <button 
-                  onClick={() => setActiveTab('settings')}
-                  className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg active:scale-95 w-full justify-center"
-                >
-                  <Settings size={16} />
-                  Ayarları Tamamla
-                  <ArrowRight size={16} />
-                </button>
-              </div>
+              
+              <h2 className="text-[26px] font-black text-slate-800 mb-4 leading-tight tracking-tight">Sistem Kurulumu<br/>Tamamlanmadı</h2>
+              
+              <p className="text-[15px] text-slate-500 mb-10 font-medium leading-relaxed px-2">
+                Lütfen sol menüden <span className="font-bold text-slate-700">'Ayarlar'</span> sekmesine giderek işletme bilgilerinizi eksiksiz doldurunuz.
+              </p>
+              
+              <button 
+                onClick={() => setActiveTab('settings')}
+                className="bg-blue-600 hover:bg-blue-700 text-white w-full py-4.5 rounded-2xl font-bold text-[17px] flex items-center justify-center gap-2 transition-all shadow-xl shadow-blue-600/20 active:scale-95"
+              >
+                Ayarlara Git <ArrowRight size={20} />
+              </button>
             </motion.div>
           </motion.div>
         )}

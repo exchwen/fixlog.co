@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, ShieldCheck, CheckSquare } from 'lucide-react';
+import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, ShieldCheck, CheckSquare, Bell } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab }: any) {
   return (
@@ -14,8 +14,8 @@ export default function Sidebar({ activeTab, setActiveTab }: any) {
         {[
           { id: 'home', label: 'Genel Bakış', icon: LayoutDashboard },
           { id: 'jobs', label: 'İş Emirleri', icon: ClipboardList },
-          // YENİ EKLENEN SEKME: İş Emirlerinin hemen altında
           { id: 'pending', label: 'Onay Bekleyenler', icon: CheckSquare },
+          { id: 'alerts', label: 'Kayıt Geçmişi', icon: Bell }, // YENİ EKLENEN SEKME
           { id: 'team', label: 'Saha Ekibi', icon: Users },
           { id: 'customers', label: 'Müşteriler', icon: UserPlus },
           { id: 'assets', label: 'Varlıklar', icon: Box },

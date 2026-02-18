@@ -20,7 +20,7 @@ export default function AssetScanPage() {
   const [faultForm, setFaultForm] = useState({ name: '', phone: '', description: '' });
 
   // Logo Arka Plan Rengi
-  const [logoBgColor, setLogoBgColor] = useState<string>('rgba(255, 255, 255, 0.1)');
+  const [logoBgColor, setLogoBgColor] = useState<string>('#ffffff');
 
   const API_URL = 'https://backend.isdokumu.workers.dev'; 
 
@@ -40,10 +40,10 @@ export default function AssetScanPage() {
     if (uuid) fetchAsset();
   }, [uuid]);
 
-  // LOGODAN RENK ANALİZİ YAPAN KISIM
+  // LOGODAN ZIT RENK SEÇİMİ (Mavi, Siyah veya Beyaz)
   useEffect(() => {
     if (!asset?.logo) {
-      setLogoBgColor('rgba(255, 255, 255, 0.1)');
+      setLogoBgColor('#ffffff');
       return;
     }
 
@@ -65,13 +65,32 @@ export default function AssetScanPage() {
         
         for (let i = 0; i < data.length; i += 4) {
           if (data[i + 3] < 128) continue; 
-          if (data[i] > 240 && data[i+1] > 240 && data[i+2] > 240) continue;
           
           r += data[i]; g += data[i + 1]; b += data[i + 2]; count++;
         }
         
         if (count > 0) {
-          setLogoBgColor(`rgb(${Math.floor(r / count)}, ${Math.floor(g / count)}, ${Math.floor(b / count)})`);
+          r = Math.floor(r / count);
+          g = Math.floor(g / count);
+          b = Math.floor(b / count);
+
+          const palette = [
+            { name: 'white', rgb: [255, 255, 255], hex: '#ffffff' },
+            { name: 'black', rgb: [15, 23, 42], hex: '#0f172a' }, 
+            { name: 'blue', rgb: [37, 99, 235], hex: '#2563eb' }  
+          ];
+
+          let maxDist = -1;
+          let selectedColor = '#ffffff';
+
+          for (const color of palette) {
+            const dist = Math.sqrt(Math.pow(r - color.rgb[0], 2) + Math.pow(g - color.rgb[1], 2) + Math.pow(b - color.rgb[2], 2));
+            if (dist > maxDist) {
+              maxDist = dist;
+              selectedColor = color.hex;
+            }
+          }
+          setLogoBgColor(selectedColor);
         }
       } catch (e) {
         console.error("Renk analizi yapılamadı:", e);
@@ -85,7 +104,6 @@ export default function AssetScanPage() {
   const handleEmergencyConfirm = async () => {
     setIsSubmitting(true);
     try {
-      // Önce veritabanına acil durum bildirimi gönder
       await fetch(`${API_URL}/public/trigger-emergency`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -96,7 +114,6 @@ export default function AssetScanPage() {
     } finally {
       setIsSubmitting(false);
       setShowEmergencyConfirm(false);
-      // Aramaya yönlendir
       if (asset.emergency_phone) {
         window.location.href = `tel:${asset.emergency_phone}`;
       }
@@ -209,7 +226,6 @@ export default function AssetScanPage() {
 
           {/* AKSİYON BUTONLARI */}
           <div className="space-y-3">
-            {/* Arıza Bildir Butonu (Modalı Açar) */}
             <button 
               onClick={() => setShowFaultModal(true)}
               className="w-full flex items-center justify-center gap-3 bg-amber-400 hover:bg-amber-500 text-amber-950 py-4 rounded-xl font-bold text-lg shadow-lg shadow-amber-200/50 transition-all active:scale-98"
@@ -217,7 +233,6 @@ export default function AssetScanPage() {
               <AlertTriangle size={24} /> Arıza Bildir
             </button>
             
-            {/* WhatsApp Destek */}
             <a 
                 href={asset.whatsapp_phone ? `https://wa.me/${asset.whatsapp_phone.replace(/\D/g, '').length >= 10 ? '90' + asset.whatsapp_phone.replace(/\D/g, '').slice(-10) : asset.whatsapp_phone.replace(/\D/g, '')}?text=${encodeURIComponent('Merhaba, ' + asset.name + ' cihazı için destek almak istiyorum.')}` : '#'} 
                 target={asset.whatsapp_phone ? "_blank" : undefined} rel={asset.whatsapp_phone ? "noopener noreferrer" : undefined} onClick={(e) => !asset.whatsapp_phone && e.preventDefault()}
@@ -228,7 +243,6 @@ export default function AssetScanPage() {
               <MessageCircle size={24} /> {asset.whatsapp_phone ? 'WhatsApp Destek' : 'WhatsApp Tanımlı Değil'}
             </a>
 
-            {/* Acil Destek Butonu (Modalı Açar) */}
             <button 
                 onClick={(e) => {
                   if(!asset.emergency_phone) return;
