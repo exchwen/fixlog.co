@@ -19,7 +19,7 @@ import FinanceTab from '@/components/patron/FinanceTab';
 import AssetsTab from '@/components/patron/AssetsTab';
 import SettingsTab from '@/components/patron/SettingsTab';
 import PendingJobsTab from '@/components/patron/PendingJobsTab'; 
-import AlertsTab from '@/components/patron/AlertsTab'; // YENİ IMPORT
+import AlertsTab from '@/components/patron/AlertsTab';
 import AssetQRModal from '@/components/modals/AssetQRModal';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
@@ -65,11 +65,17 @@ export default function PatronDashboard() {
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
 
-  // FORMLAR
+  // FORMLAR - apartmentName EKLENDİ
   const [jobForm, setJobForm] = useState({ customerName: '', assetId: '', staffId: '', workType: 'Genel Görev', jobType: 'Anlık', scheduledDate: '', taskNote: '' });
+  
+  // assetForm state'i: apartmentName alanı eklendi
   const [assetForm, setAssetForm] = useState({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', customerMode: 'NONE', newCustomer: { name: '', contact: '', address: '', taxInfo: '' } });
+  
   const [staffForm, setStaffForm] = useState({ name: '', phone: '', role: 'Usta', branch: '', status: 'Aktif' });
+  
+  // customerForm state'i: newAsset içinde apartmentName alanı eklendi
   const [customerForm, setCustomerForm] = useState({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', assetMode: 'NONE', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } });
+  
   const [stockForm, setStockForm] = useState({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', category: '', supplierId: '', supplierMode: 'NONE', newSupplier: { name: '', phone: '' } });
   const [supplierForm, setSupplierForm] = useState({ name: '', phone: '' });
   const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', emergencyPhone: '', whatsappPhone: '', logo: '' });
@@ -254,8 +260,17 @@ export default function PatronDashboard() {
                 {/* Varlık Bilgileri ve Konumu */}
                 <div className="bg-white/10 p-6 rounded-3xl backdrop-blur-md border border-white/20 mb-8 w-full max-w-md text-left shadow-2xl">
                    <div className="text-rose-200 text-xs font-bold uppercase tracking-wider mb-1">İlgili Varlık & Konum</div>
-                   <div className="text-2xl font-black text-white mb-2">{activeEmergencies[0]?.asset_name || 'Bilinmeyen Varlık'}</div>
-                   <div className="flex items-center gap-2 text-rose-100"><MapPin size={18} /> {activeEmergencies[0]?.asset_location || 'Konum alınamadı'}</div>
+                   {/* Hiyerarşi Düzenlendi: Önce Apartman Varsa O, Yoksa Cihaz Adı */}
+                   <div className="text-2xl font-black text-white mb-2">
+                      {activeEmergencies[0]?.asset_apartment || activeEmergencies[0]?.asset_name || 'Bilinmeyen Varlık'}
+                   </div>
+                   <div className="flex items-center gap-2 text-rose-100">
+                      <MapPin size={18} /> 
+                      {/* Konumdan Apartman Adını Temizleyerek Gösterim (Tekrar olmasın diye) */}
+                      {activeEmergencies[0]?.asset_location 
+                        ? activeEmergencies[0].asset_location.replace(activeEmergencies[0].asset_apartment || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() 
+                        : 'Konum alınamadı'}
+                   </div>
                 </div>
 
                 <button 
@@ -291,8 +306,16 @@ export default function PatronDashboard() {
                <div className="bg-white p-8 flex flex-col gap-4">
                   <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
                      <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">İlgili Varlık & Konum</div>
-                     <div className="font-black text-xl text-slate-800 leading-none mb-2">{pendingFaults[0]?.asset_name || 'Bilinmeyen Varlık'}</div>
-                     <div className="text-slate-600 font-semibold flex items-center gap-1.5"><MapPin size={16} className="text-slate-400"/> {pendingFaults[0]?.asset_location || 'Konum belirtilmemiş'}</div>
+                     {/* Hiyerarşi Düzenlendi */}
+                     <div className="font-black text-xl text-slate-800 leading-none mb-2">
+                        {pendingFaults[0]?.asset_apartment || pendingFaults[0]?.asset_name || 'Bilinmeyen Varlık'}
+                     </div>
+                     <div className="text-slate-600 font-semibold flex items-center gap-1.5">
+                        <MapPin size={16} className="text-slate-400"/> 
+                        {pendingFaults[0]?.asset_location 
+                            ? pendingFaults[0].asset_location.replace(pendingFaults[0].asset_apartment || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim()
+                            : 'Konum belirtilmemiş'}
+                     </div>
                   </div>
                   
                   <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
@@ -324,7 +347,7 @@ export default function PatronDashboard() {
           {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} />}
           {activeTab === 'jobs' && <JobsTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} />}
           {activeTab === 'pending' && <PendingJobsTab data={data} setSelectedJob={setSelectedJob} />}
-          {activeTab === 'alerts' && <AlertsTab data={data} />} {/* YENİ SEKME EKLENDİ */}
+          {activeTab === 'alerts' && <AlertsTab data={data} />} 
           {activeTab === 'team' && <TeamTab data={data} setShowStaffModal={setShowStaffModal} setShowJobModal={setShowJobModal} setShowStaffDetail={setShowStaffDetail} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} setSelectedJob={setSelectedJob} />}
           {activeTab === 'customers' && <CustomersTab data={data} setShowCustomerModal={setShowCustomerModal} setShowCustomerDetail={setShowCustomerDetail} />}
           
