@@ -40,6 +40,7 @@ export default function PatronDashboard() {
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showStockModal, setShowStockModal] = useState(false);
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
   
   const [showStaffDetail, setShowStaffDetail] = useState(null);
   const [showCustomerDetail, setShowCustomerDetail] = useState(null);
@@ -62,7 +63,8 @@ export default function PatronDashboard() {
   const [assetForm, setAssetForm] = useState({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', newCustomer: { name: '', contact: '', address: '', taxInfo: '' } });
   const [staffForm, setStaffForm] = useState({ name: '', phone: '', role: 'Usta', branch: '', status: 'Aktif' });
   const [customerForm, setCustomerForm] = useState({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } });
-  const [stockForm, setStockForm] = useState({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', supplierName: '', supplierPhone: '' });
+  const [stockForm, setStockForm] = useState({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', category: '', supplierId: '', supplierMode: 'NONE', newSupplier: { name: '', phone: '' } });
+  const [supplierForm, setSupplierForm] = useState({ name: '', phone: '' });
   const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', emergencyPhone: '' });
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '' });
 
@@ -111,7 +113,6 @@ export default function PatronDashboard() {
     setMessageInput(''); fetchMessages();
   };
 
-  // --- EKSİK BİLGİ KONTROLÜ (GÜNCELLENDİ: Tüm kutular denetleniyor) ---
   const isCompanyDataIncomplete = useMemo(() => {
     if (!data) return false;
     
@@ -125,7 +126,6 @@ export default function PatronDashboard() {
     const taxInfo = d.taxInfo?.trim() || '';
     const sector = d.sector?.trim() || '';
 
-    // Varsayılan veya boş değer kontrolü
     const isDefaultName = name === 'işletme' || name === '';
     const isDefaultOwner = owner === 'kullanıcı' || owner === 'yönetici' || owner === '';
     
@@ -165,7 +165,7 @@ export default function PatronDashboard() {
           {activeTab === 'pending' && <PendingJobsTab data={data} setSelectedJob={setSelectedJob} />}
           {activeTab === 'team' && <TeamTab data={data} setShowStaffModal={setShowStaffModal} setShowJobModal={setShowJobModal} setShowStaffDetail={setShowStaffDetail} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} setSelectedJob={setSelectedJob} />}
           {activeTab === 'customers' && <CustomersTab data={data} setShowCustomerModal={setShowCustomerModal} setShowCustomerDetail={setShowCustomerDetail} />}
-          {activeTab === 'stock' && <StockTab data={data} setShowStockModal={setShowStockModal} />}
+          {activeTab === 'stock' && <StockTab data={data} setShowStockModal={setShowStockModal} setShowSupplierModal={setShowSupplierModal} />}
           {activeTab === 'finance' && <FinanceTab data={data} />}
           {activeTab === 'assets' && <AssetsTab data={data} setShowAssetModal={setShowAssetModal} setShowAssetDetail={setShowAssetDetail} setShowQRModal={setShowQRModal} setSelectedQRAsset={setSelectedQRAsset} />}
           {activeTab === 'settings' && <SettingsTab settingsForm={settingsForm} setSettingsForm={setSettingsForm} handleAction={handleAction} isSaving={isSaving} />}
@@ -183,13 +183,13 @@ export default function PatronDashboard() {
         showStaffModal={showStaffModal} setShowStaffModal={setShowStaffModal} staffForm={staffForm} setStaffForm={setStaffForm}
         showCustomerModal={showCustomerModal} setShowCustomerModal={setShowCustomerModal} customerForm={customerForm} setCustomerForm={setCustomerForm}
         showStockModal={showStockModal} setShowStockModal={setShowStockModal} stockForm={stockForm} setStockForm={setStockForm}
+        showSupplierModal={showSupplierModal} setShowSupplierModal={setShowSupplierModal} supplierForm={supplierForm} setSupplierForm={setSupplierForm}
         handleAction={handleAction} isSaving={isSaving} data={data}
         selectedJob={selectedJob} setSelectedJob={setSelectedJob}
       />
       
       <AssetQRModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} asset={selectedQRAsset} />
 
-      {/* --- ZORUNLU AYARLAR MODALI --- */}
       <AnimatePresence>
         {isCompanyDataIncomplete && activeTab !== 'settings' && (
           <motion.div 
