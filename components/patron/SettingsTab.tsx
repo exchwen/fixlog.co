@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Save, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle } from 'lucide-react';
+import { Save, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle, MessageCircle } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
 
 const CITY_DATA: any = trCitiesData;
@@ -101,7 +101,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
           </div>
         </div>
 
-        {/* Sektör (KİLİTLİ) & Telefon */}
+        {/* Sektör (KİLİTLİ) & İletişim */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block flex items-center gap-1">
@@ -117,44 +117,59 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
               />
             </div>
           </div>
+        </div>
 
-          {/* İLETİŞİM BİLGİLERİ */}
-          <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">İşletme Telefonu</label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-2.5 text-slate-400" size={16} />
-                  <input 
-                    type="tel"
-                    className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800"
-                    value={settingsForm.phone || ''}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
-                    placeholder="05XX XXX XX XX"
-                  />
-                </div>
+        {/* İLETİŞİM BİLGİLERİ (3'LÜ GRID) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 border-t border-slate-100 pt-5">
+            <div>
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">İşletme Telefonu</label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-2.5 text-slate-400" size={16} />
+                <input 
+                  type="tel"
+                  className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800"
+                  value={settingsForm.phone || ''}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
+                  placeholder="05XX XXX XX XX"
+                />
               </div>
+            </div>
 
-              <div>
-                <label className="text-[11px] font-bold text-rose-600 uppercase tracking-wider mb-1.5 block flex items-center gap-1">
-                    <AlertTriangle size={12} /> Acil Durum Hattı (7/24)
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-2.5 text-rose-400" size={16} />
-                  <input 
-                    type="tel"
-                    className="w-full pl-10 pr-3 py-2.5 border border-rose-200 bg-rose-50 rounded-lg text-sm outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all text-slate-800 placeholder:text-rose-300"
-                    value={settingsForm.emergencyPhone || ''}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, emergencyPhone: e.target.value })}
-                    placeholder="05XX XXX XX XX"
-                  />
-                </div>
-                <p className="text-[9px] text-slate-400 mt-1">QR kod sayfasındaki "Acil Destek" butonunda bu numara aranır.</p>
+            <div>
+              <label className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider mb-1.5 block">WhatsApp Numarası</label>
+              <div className="relative">
+                <MessageCircle className="absolute left-3 top-2.5 text-emerald-500" size={16} />
+                <input 
+                  type="tel"
+                  className="w-full pl-10 pr-3 py-2.5 border border-emerald-200 bg-emerald-50/30 rounded-lg text-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-slate-800 placeholder:text-emerald-300"
+                  value={settingsForm.whatsappPhone || ''}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, whatsappPhone: e.target.value })}
+                  placeholder="05XX XXX XX XX"
+                />
               </div>
-          </div>
+              <p className="text-[9px] text-slate-400 mt-1">Tedarikçi ve müşterilere bu numaradan whatsapp mesajı gönderebilirsiniz.</p>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-bold text-rose-600 uppercase tracking-wider mb-1.5 block flex items-center gap-1">
+                  <AlertTriangle size={12} /> Acil Durum Hattı
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-2.5 text-rose-400" size={16} />
+                <input 
+                  type="tel"
+                  className="w-full pl-10 pr-3 py-2.5 border border-rose-200 bg-rose-50 rounded-lg text-sm outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all text-slate-800 placeholder:text-rose-300"
+                  value={settingsForm.emergencyPhone || ''}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, emergencyPhone: e.target.value })}
+                  placeholder="05XX XXX XX XX"
+                />
+              </div>
+              <p className="text-[9px] text-slate-400 mt-1">QR kod sayfasındaki "Acil Destek" butonunda bu numara aranır.</p>
+            </div>
         </div>
 
         {/* Adres Yönetimi */}
-        <div>
+        <div className="border-t border-slate-100 pt-5">
           <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Konum ve Adres</label>
           <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
              <div className="grid grid-cols-2 gap-4">
@@ -217,7 +232,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
         {!isFormValid && (
            <div className="bg-amber-50 text-amber-600 px-4 py-3 rounded-lg text-xs font-medium border border-amber-100 flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
-              Kaydetmek için lütfen tüm alanları eksiksiz doldurunuz.
+              Kaydetmek için lütfen tüm alanları (WhatsApp hariç) eksiksiz doldurunuz.
            </div>
         )}
 

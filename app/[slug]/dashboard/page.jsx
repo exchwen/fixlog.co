@@ -71,7 +71,7 @@ export default function PatronDashboard() {
   const [customerForm, setCustomerForm] = useState({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', assetMode: 'NONE', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } });
   const [stockForm, setStockForm] = useState({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', category: '', supplierId: '', supplierMode: 'NONE', newSupplier: { name: '', phone: '' } });
   const [supplierForm, setSupplierForm] = useState({ name: '', phone: '' });
-  const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', emergencyPhone: '' });
+  const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', emergencyPhone: '', whatsappPhone: '' });
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '' });
 
   const fetchData = async () => {
@@ -88,7 +88,8 @@ export default function PatronDashboard() {
             address: result.address || '', 
             taxInfo: result.taxInfo || '', 
             phone: result.phone || '',
-            emergencyPhone: result.emergencyPhone || ''
+            emergencyPhone: result.emergencyPhone || '',
+            whatsappPhone: result.whatsappPhone || ''
         });
       }
     } catch (err) { console.error("Veri çekilemedi:", err); } finally { setLoading(false); }
