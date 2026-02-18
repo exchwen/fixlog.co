@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Box, Search } from 'lucide-react';
+import { Plus, Box, Search, MessageCircle } from 'lucide-react';
 
 export default function CustomersTab({ data, setShowCustomerModal, setShowCustomerDetail }: any) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,7 +60,23 @@ export default function CustomersTab({ data, setShowCustomerModal, setShowCustom
                    className="hover:bg-blue-50 cursor-pointer transition-colors"
                  >
                    <td className="px-5 py-3 font-semibold text-slate-800">{c.name}</td>
-                   <td className="px-5 py-3 text-slate-600">{c.contact || '-'}</td>
+                   <td className="px-5 py-3">
+                     <div className="flex items-center gap-2">
+                       <span className="text-slate-600">{c.contact || '-'}</span>
+                       {c.contact && (
+                         <a 
+                           href={`https://wa.me/${c.contact.replace(/\D/g, '').length >= 10 ? '90' + c.contact.replace(/\D/g, '').slice(-10) : c.contact.replace(/\D/g, '')}?text=${encodeURIComponent('Merhaba ' + c.name + ',')}`}
+                           target="_blank" 
+                           rel="noopener noreferrer" 
+                           className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-md transition-colors inline-flex items-center justify-center shadow-sm"
+                           title="WhatsApp Mesajı Gönder"
+                           onClick={(e) => e.stopPropagation()}
+                         >
+                           <MessageCircle size={14} />
+                         </a>
+                       )}
+                     </div>
+                   </td>
                    <td className="px-5 py-3">
                      {customerAssets.length > 0 ? (
                        <div className="flex flex-wrap gap-1.5">

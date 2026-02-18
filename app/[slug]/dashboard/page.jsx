@@ -111,8 +111,21 @@ export default function PatronDashboard() {
     setIsSaving(true);
     try {
       const res = await fetch(`${API_URL}/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, slug }) });
-      if (res.ok) { if(closeFn) closeFn(false); if(resetFn) resetFn(); await fetchData(); } else { alert("Veritabanı kayıt hatası."); }
-    } catch (err) { alert("Bağlantı kurulamadı."); } finally { setIsSaving(false); }
+      if (res.ok) { 
+        if(closeFn) closeFn(false); 
+        if(resetFn) resetFn(); 
+        await fetchData(); 
+        return true; 
+      } else { 
+        if (endpoint !== 'update-settings') alert("Veritabanı kayıt hatası."); 
+        return false; 
+      }
+    } catch (err) { 
+      if (endpoint !== 'update-settings') alert("Bağlantı kurulamadı."); 
+      return false; 
+    } finally { 
+      setIsSaving(false); 
+    }
   };
 
   const sendMessage = async () => {

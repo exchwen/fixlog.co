@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Save, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle, MessageCircle, ImagePlus } from 'lucide-react';
+import { Save, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle, MessageCircle, ImagePlus, CheckCircle } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const CITY_DATA: any = trCitiesData;
 
@@ -11,6 +12,8 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
   const [localCity, setLocalCity] = useState('');
   const [localDistrict, setLocalDistrict] = useState('');
   const [localDetail, setLocalDetail] = useState('');
+  
+  const [modalState, setModalState] = useState<'idle' | 'success' | 'error'>('idle');
 
   useEffect(() => {
     if (settingsForm.address) {
@@ -81,6 +84,16 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
     reader.readAsDataURL(file);
   };
 
+  const handleSave = async () => {
+    const success = await handleAction('update-settings', settingsForm);
+    if (success) {
+      setModalState('success');
+      setTimeout(() => setModalState('idle'), 3000);
+    } else {
+      setModalState('error');
+    }
+  };
+
   const isFormValid = 
     settingsForm.companyName?.trim() &&
     settingsForm.ownerName?.trim() &&
@@ -92,6 +105,45 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      
+      {/* Modal - Onay veya Hata */}
+      <AnimatePresence>
+        {modalState !== 'idle' && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }} 
+              animate={{ scale: 1, opacity: 1 }} 
+              exit={{ scale: 0.9, opacity: 0 }} 
+              className="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center max-w-sm w-full"
+            >
+              {modalState === 'success' ? (
+                <>
+                  <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4">
+                    <CheckCircle size={32} />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800 mb-2">Başarılı!</h3>
+                  <p className="text-slate-500 text-center text-sm mb-6">İşletme ayarlarınız başarıyla güncellendi ve sisteme kaydedildi.</p>
+                </>
+              ) : (
+                <>
+                  <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-4">
+                    <AlertTriangle size={32} />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800 mb-2">Hata Oluştu!</h3>
+                  <p className="text-slate-500 text-center text-sm mb-6">Ayarlar kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.</p>
+                </>
+              )}
+              <button 
+                onClick={() => setModalState('idle')} 
+                className="w-full py-2.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-colors"
+              >
+                Kapat
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <div className="flex justify-between items-center border-b border-slate-200 pb-4">
         <div>
           <h3 className="text-lg font-bold text-slate-900">İşletme Ayarları</h3>
@@ -99,7 +151,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
         </div>
         <button 
           disabled={isSaving || !isFormValid} 
-          onClick={() => handleAction('update-settings', settingsForm)} 
+          onClick={handleSave} 
           className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
