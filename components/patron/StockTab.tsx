@@ -129,11 +129,19 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
               animate={{ opacity: 1, y: 0 }} 
               className="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm relative overflow-hidden"
            >
-              {/* SİPARİŞ VER BUTONU - SAĞ ÜST */}
-              <div className="absolute top-4 right-4 z-20">
+              {/* SİPARİŞ VER BUTONLARI - SAĞ ÜST (İKİYE AYRILDI) */}
+              <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
                 <button 
                     onClick={() => setShowOrderModal(true)}
-                    className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg shadow-amber-600/20 flex items-center gap-2 transition-transform active:scale-95"
+                    className="bg-white text-amber-600 border border-amber-200 hover:bg-amber-100 px-3 py-2 rounded-lg text-xs font-bold shadow-sm flex items-center gap-2 transition-transform active:scale-95"
+                >
+                    <Package size={16} />
+                    Sipariş Oluştur
+                </button>
+
+                <button 
+                    onClick={() => setShowOrderModal(true)}
+                    className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg text-xs font-bold shadow-lg shadow-amber-600/20 flex items-center gap-2 transition-transform active:scale-95"
                 >
                     <ShoppingCart size={16} />
                     Toplu Sipariş Oluştur
@@ -189,7 +197,6 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
          )}
        </AnimatePresence>
 
-       {/* ... (ARAMA VE LİSTE KISIMLARI AYNI KALIYOR) ... */}
        {/* 2. ANA LİSTE BAŞLIĞI VE ARAMA KUTUSU */}
        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
          <h3 className="text-lg font-bold text-slate-900">Tüm Envanter & Parçalar</h3>
