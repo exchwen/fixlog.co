@@ -110,7 +110,7 @@ export default function AssetScanPage() {
         body: JSON.stringify({ uuid: asset.uuid || uuid, company_slug: asset.company_slug })
       });
     } catch (err) {
-      console.error("Acil durum bildirilemedi, ancak yine de aramaya yönlendirilecek.", err);
+      console.error("Acil durum bildirilemedi.", err);
     } finally {
       setIsSubmitting(false);
       setShowEmergencyConfirm(false);
@@ -135,11 +135,11 @@ export default function AssetScanPage() {
         })
       });
       if (res.ok) {
-        alert("Arıza kaydınız başarıyla iletildi. En kısa sürede sizinle iletişime geçilecektir.");
+        alert("Arıza kaydınız başarıyla iletildi.");
         setShowFaultModal(false);
         setFaultForm({ name: '', phone: '', description: '' });
       } else {
-        alert("Bir sorun oluştu. Lütfen doğrudan arama butonunu kullanınız.");
+        alert("Bir sorun oluştu.");
       }
     } catch (err) {
       alert("Bağlantı kurulamadı.");
@@ -148,11 +148,12 @@ export default function AssetScanPage() {
     }
   };
 
-  // Harita URL'sini oluşturan yardımcı fonksiyon (Sadece net lokasyon bilgisini kullanır)
+  // Harita URL'sini oluşturan fonksiyon
   const getMapsUrl = () => {
       if (!asset?.location) return '#';
-      // Kesinlikle bina adı eklenmez, sadece net adres (location) gönderilir.
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(asset.location)}`;
+      // SADECE LOKASYON BİLGİSİNİ GÖNDER (Bina adı dahil edilmez, %100 doğruluk sağlar)
+      const cleanLocation = asset.location;
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleanLocation)}`;
   };
 
   if (loading) return (
@@ -212,10 +213,14 @@ export default function AssetScanPage() {
                 </div>
                 <div>
                     <div className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Cihaz Konumu</div>
-                    {/* UI'da bina adı/site adı tamamen kaldırıldı */}
+                    {/* BİNA/SİTE ADI SADECE BURADA GÖRÜNÜR */}
+                    {asset.apartment_name && (
+                        <div className="text-xs text-blue-600 font-bold mb-0.5">{asset.apartment_name}</div>
+                    )}
                     <div className="text-sm text-slate-700 font-semibold leading-snug">{asset.location}</div>
                 </div>
              </div>
+             {/* HARİTA LİNKİ SADECE asset.location BİLGİSİNİ ÇEKER */}
              <a href={getMapsUrl()} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 text-xs font-bold py-2.5 rounded-lg hover:bg-slate-100 transition-colors shadow-sm">
                 <MapPin size={14} /> Haritada Görüntüle
              </a>
