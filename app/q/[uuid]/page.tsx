@@ -148,11 +148,11 @@ export default function AssetScanPage() {
     }
   };
 
-  // Harita URL'sini oluşturan yardımcı fonksiyon (Bina adını dahil etmez)
+  // Harita URL'sini oluşturan yardımcı fonksiyon
   const getMapsUrl = () => {
       if (!asset?.location) return '#';
       // Sadece temiz adresi göndererek doğru konumu bulmasını sağla
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(asset.location)}`;
+      return `https://maps.google.com/?q=${encodeURIComponent(asset.location)}`;
   };
 
   if (loading) return (
@@ -212,10 +212,6 @@ export default function AssetScanPage() {
                 </div>
                 <div>
                     <div className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Cihaz Konumu</div>
-                    {/* Bina adı sadece UI'da gösteriliyor, harita linkine eklenmiyor */}
-                    {asset.apartment_name && (
-                        <div className="text-xs text-blue-600 font-bold mb-0.5">{asset.apartment_name}</div>
-                    )}
                     <div className="text-sm text-slate-700 font-semibold leading-snug">{asset.location}</div>
                 </div>
              </div>
