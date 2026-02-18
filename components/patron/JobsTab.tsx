@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Plus, Calendar, User, ArrowRight } from 'lucide-react';
+import { Plus, Calendar, User, ArrowRight, Clock } from 'lucide-react';
 
 export default function JobsTab({ data, setShowJobModal, statusColors, setSelectedJob }: any) {
   return (
@@ -18,7 +18,7 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
              <tr>
                <th className="px-5 py-3">Lokasyon / Müşteri</th>
                <th className="px-5 py-3">Görev Tipi</th>
-               <th className="px-5 py-3">Tarih</th>
+               <th className="px-5 py-3">Tarih / Saat</th>
                <th className="px-5 py-3">Sorumlu</th>
                <th className="px-5 py-3 text-right">Durum</th>
                <th className="px-5 py-3 w-10"></th>
@@ -33,13 +33,25 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                >
                  <td className="px-5 py-3 font-semibold text-slate-800">
                     {j.customer_name}
-                    <div className="text-[10px] text-slate-400 font-normal">
+                    <div className="text-[10px] text-slate-400 font-normal mt-0.5">
                       {data?.assets?.find((a:any) => a.id === j.asset_id)?.location || ''}
                     </div>
                  </td>
                  <td className="px-5 py-3 text-slate-600">{j.work_type}</td>
-                 <td className="px-5 py-3 text-slate-500 flex items-center gap-1">
-                    <Calendar size={12} className="opacity-50"/> {j.scheduled_date || 'Anlık'}
+                 <td className="px-5 py-3">
+                    <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+                       <Calendar size={12} className="text-slate-400"/> 
+                       {j.scheduled_date || 'Anlık'}
+                    </div>
+                    {j.created_at && (
+                       <div className="text-[10px] text-slate-400 font-normal mt-1 flex items-center gap-1" title="Oluşturulma Zamanı">
+                          <Clock size={10} />
+                          {new Date(j.created_at).toLocaleDateString('tr-TR', { 
+                             day: '2-digit', month: '2-digit', year: 'numeric', 
+                             hour: '2-digit', minute: '2-digit' 
+                          })}
+                       </div>
+                    )}
                  </td>
                  <td className="px-5 py-3 text-slate-600">
                     <div className="flex items-center gap-1.5">
