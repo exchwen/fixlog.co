@@ -40,7 +40,7 @@ export default function AssetScanPage() {
     if (uuid) fetchAsset();
   }, [uuid]);
 
-  // LOGODAN ZIT RENK SEÇİMİ (Mavi, Siyah veya Beyaz)
+  // LOGODAN ZIT RENK SEÇİMİ
   useEffect(() => {
     if (!asset?.logo) {
       setLogoBgColor('#ffffff');
@@ -110,7 +110,7 @@ export default function AssetScanPage() {
         body: JSON.stringify({ uuid: asset.uuid || uuid, company_slug: asset.company_slug })
       });
     } catch (err) {
-      console.error("Acil durum bildirilemedi, ancak yine de aramaya yönlendirilecek.", err);
+      console.error("Acil durum bildirilemedi.", err);
     } finally {
       setIsSubmitting(false);
       setShowEmergencyConfirm(false);
@@ -135,11 +135,11 @@ export default function AssetScanPage() {
         })
       });
       if (res.ok) {
-        alert("Arıza kaydınız başarıyla iletildi. En kısa sürede sizinle iletişime geçilecektir.");
+        alert("Arıza kaydınız başarıyla iletildi.");
         setShowFaultModal(false);
         setFaultForm({ name: '', phone: '', description: '' });
       } else {
-        alert("Bir sorun oluştu. Lütfen doğrudan arama butonunu kullanınız.");
+        alert("Bir sorun oluştu.");
       }
     } catch (err) {
       alert("Bağlantı kurulamadı.");
@@ -151,8 +151,8 @@ export default function AssetScanPage() {
   // Harita URL'sini oluşturan yardımcı fonksiyon
   const getMapsUrl = () => {
       if (!asset?.location) return '#';
-      // Sadece temiz adresi göndererek doğru konumu bulmasını sağla
-      return `https://maps.google.com/?q=${encodeURIComponent(asset.location)}`;
+      // Sadece temiz adresi gönder
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(asset.location)}`;
   };
 
   if (loading) return (
@@ -205,6 +205,7 @@ export default function AssetScanPage() {
              <User size={16} /> Personel Girişi
           </a>
 
+          {/* KONUM KARTI - Sadece lokasyon bilgisi var */}
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-6 flex flex-col gap-3">
              <div className="flex items-start gap-3">
                 <div className="bg-white p-2 rounded-full border border-slate-200 text-slate-400 mt-1">
