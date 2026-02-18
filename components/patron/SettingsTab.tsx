@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Save, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle, MessageCircle, ImagePlus, CheckCircle } from 'lucide-react';
+import { Save, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle, MessageCircle, ImagePlus, CheckCircle, Globe } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -216,7 +216,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
           </div>
         </div>
 
-        {/* Sektör (KİLİTLİ) & İletişim */}
+        {/* Sektör (KİLİTLİ) & Web Sitesi */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block flex items-center gap-1">
@@ -232,12 +232,27 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
               />
             </div>
           </div>
+
+          {/* YENİ: Web Sitesi Alanı (Faaliyet Sektörünün Yanı) */}
+          <div>
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Web Sitesi</label>
+            <div className="relative">
+              <Globe className="absolute left-3 top-2.5 text-slate-400" size={16} />
+              <input 
+                type="url"
+                className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800"
+                value={settingsForm.website || ''}
+                onChange={(e) => setSettingsForm({ ...settingsForm, website: e.target.value })}
+                placeholder="www.firmaniz.com"
+              />
+            </div>
+          </div>
         </div>
 
-        {/* İLETİŞİM BİLGİLERİ (3'LÜ GRID) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 border-t border-slate-100 pt-5">
+        {/* İLETİŞİM BİLGİLERİ (4'LÜ GRID) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 border-t border-slate-100 pt-5">
             <div>
-              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">İşletme Telefonu</label>
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">İşletme Telefonu (Cep)</label>
               <div className="relative">
                 <Phone className="absolute left-3 top-2.5 text-slate-400" size={16} />
                 <input 
@@ -248,7 +263,22 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
                   placeholder="05XX XXX XX XX"
                 />
               </div>
-              <p className="text-[9px] text-slate-400 mt-1">İş Dökümü yetkililerinin sizinle iletişime geçebileceği ana irtibat numarasıdır. Lütfen doğrudan firma sahibine ait numarayı giriniz.</p>
+              <p className="text-[9px] text-slate-400 mt-1">İş Dökümü yetkililerinin sizinle iletişime geçebileceği ana irtibat numarasıdır.</p>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-bold text-blue-600 uppercase tracking-wider mb-1.5 block">Sabit Hat Numarası</label>
+              <div className="relative">
+                <Building2 className="absolute left-3 top-2.5 text-blue-400" size={16} />
+                <input 
+                  type="tel"
+                  className="w-full pl-10 pr-3 py-2.5 border border-blue-200 bg-blue-50/30 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800 placeholder:text-blue-300"
+                  value={settingsForm.landlinePhone || ''}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, landlinePhone: e.target.value })}
+                  placeholder="02XX XXX XX XX"
+                />
+              </div>
+              <p className="text-[9px] text-slate-400 mt-1">İşletmenizin sabit hattı. (Cihaz QR etiketlerinde görünür)</p>
             </div>
 
             <div>
@@ -263,7 +293,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
                   placeholder="05XX XXX XX XX"
                 />
               </div>
-              <p className="text-[9px] text-slate-400 mt-1">Tedarikçi ve müşterilere bu numaradan whatsapp mesajı gönderebilirsiniz.</p>
+              <p className="text-[9px] text-slate-400 mt-1">Müşterilere mesaj atabileceğiniz hat. (QR etiketinde görünür)</p>
             </div>
 
             <div>

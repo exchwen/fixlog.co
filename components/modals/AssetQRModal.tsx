@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, Printer, Copy, Check, Building2 } from 'lucide-react';
+import { X, Printer, Copy, Check, Building2, Phone, MessageCircle, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReactToPrint } from 'react-to-print';
 
@@ -12,9 +12,12 @@ interface AssetQRModalProps {
   asset: any;
   companyName?: string;
   companyLogo?: string;
+  landlinePhone?: string;
+  whatsappPhone?: string;
+  companyWebsite?: string;
 }
 
-export default function AssetQRModal({ isOpen, onClose, asset, companyName, companyLogo }: AssetQRModalProps) {
+export default function AssetQRModal({ isOpen, onClose, asset, companyName, companyLogo, landlinePhone, whatsappPhone, companyWebsite }: AssetQRModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const [logoBgColor, setLogoBgColor] = useState<string>('#ffffff');
@@ -87,10 +90,33 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
     documentTitle: `QR-${asset?.apartmentName || asset?.name || 'Varlik'}`,
     onAfterPrint: () => console.log('Yazdırma işlemi tamamlandı'),
     pageStyle: `
-      @page { size: auto; margin: 0; }
+      @page { size: 80mm 80mm; margin: 0; }
       @media print { 
-        body { -webkit-print-color-adjust: exact; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; } 
-        .print-container { width: 100vw !important; height: 100vh !important; border: none !important; box-shadow: none !important; border-radius: 0 !important; padding: 2mm !important; }
+        body { 
+          -webkit-print-color-adjust: exact; 
+          margin: 0; 
+          padding: 0; 
+          width: 80mm;
+          height: 80mm;
+          display: flex; 
+          justify-content: center; 
+          align-items: center; 
+        } 
+        .print-container { 
+          width: 80mm !important; 
+          height: 80mm !important; 
+          border: none !important; 
+          box-shadow: none !important; 
+          border-radius: 0 !important; 
+          padding: 3mm !important; 
+          margin: 0 !important;
+          display: flex !important;
+          flex-direction: column !important;
+          justify-content: space-between !important;
+        }
+        .print-container * {
+          color: black !important;
+        }
       }
     `
   });
@@ -98,6 +124,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
   if (!isOpen || !asset) return null;
 
   const uniqueId = asset.uuid || asset.id;
+  // QR her zaman İş Dökümü varlık sayfasına gidecek. Asla şirket web sitesine yönlendirmeyecek.
   const qrUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/q/${uniqueId}`;
 
   // Mantık: Apartman adı varsa Ana Başlık o olur, yoksa Cihaz adı olur.
@@ -130,24 +157,24 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
             
             <div 
               ref={printRef} 
-              className="print-container w-[280px] bg-white border-2 border-slate-900 rounded-xl flex flex-col items-center justify-between p-5 text-center shadow-lg box-border"
+              className="print-container w-[280px] h-auto min-h-[280px] bg-white border-2 border-slate-900 rounded-xl flex flex-col items-center justify-between p-5 text-center shadow-lg box-border"
             >
               {/* Logo ve Firma Adı */}
-              <div className="w-full flex flex-col items-center justify-center mb-3 border-b-2 border-slate-100 pb-3 print:pb-2 print:mb-2">
+              <div className="w-full flex flex-col items-center justify-center mb-3 border-b-2 border-slate-100 pb-3 print:pb-2 print:mb-2 print:border-black">
                 
                 {/* Dinamik Arka Planlı Logo Alanı */}
                 <div 
-                  className="w-16 h-16 rounded-full flex items-center justify-center mb-3 overflow-hidden shadow-sm border-2 border-white ring-1 ring-slate-100 print:w-12 print:h-12 print:mb-2"
+                  className="w-16 h-16 rounded-full flex items-center justify-center mb-2 overflow-hidden shadow-sm border-2 border-white ring-1 ring-slate-100 print:w-12 print:h-12 print:mb-1 print:border-black print:ring-0"
                   style={{ backgroundColor: companyLogo ? logoBgColor : '#f8fafc' }}
                 >
                   {companyLogo ? (
-                    <img src={companyLogo} alt="Logo" className="w-10 h-10 object-contain print:w-8 print:h-8 drop-shadow-md" />
+                    <img src={companyLogo} alt="Logo" className="w-10 h-10 object-contain print:w-8 print:h-8 drop-shadow-md print:drop-shadow-none" />
                   ) : (
-                    <Building2 size={24} className="text-slate-400 print:w-5 print:h-5" />
+                    <Building2 size={24} className="text-slate-400 print:w-5 print:h-5 print:text-black" />
                   )}
                 </div>
 
-                <div className="text-xl font-black text-slate-900 tracking-tighter uppercase print:text-sm print:leading-tight">
+                <div className="text-lg font-black text-slate-900 tracking-tighter uppercase print:text-xs print:leading-none">
                   {companyName || 'İşletme Adı'}
                 </div>
               </div>
@@ -156,32 +183,51 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
               <div className="flex-1 flex items-center justify-center py-2 print:py-0">
                 <QRCodeSVG 
                   value={qrUrl} 
-                  size={150} 
+                  size={120} 
                   level="Q"
                   includeMargin={false}
                 />
               </div>
 
               {/* Alt Bilgiler */}
-              <div className="w-full pt-3 mt-2 border-t border-slate-200 print:pt-1 print:mt-1 flex flex-col items-center">
+              <div className="w-full pt-3 mt-2 border-t border-slate-200 print:pt-1 print:mt-1 print:border-black flex flex-col items-center">
                 {/* Ana Başlık: Apartman Adı (Yoksa Cihaz Adı) */}
-                <h2 className="text-lg font-bold text-slate-900 leading-tight mb-1 break-words print:text-xs">
+                <h2 className="text-base font-bold text-slate-900 leading-tight mb-1 break-words print:text-[10px]">
                   {mainTitle}
                 </h2>
                 
-                {/* Alt Başlık: Cihaz Adı (Eğer Apartman Adı varsa) - BURADA GÖRÜNECEK */}
+                {/* Alt Başlık: Cihaz Adı (Eğer Apartman Adı varsa) */}
                 {subTitle && (
-                  <div className="text-sm font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded print:text-[9px] print:bg-transparent print:p-0 print:text-slate-700 mb-1">
+                  <div className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded print:text-[8px] print:bg-transparent print:p-0 print:text-black mb-1">
                     {subTitle}
                   </div>
                 )}
 
-                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-bold print:text-[6px] mt-1">Teknik Servis Takip</div>
+                {/* İLETİŞİM BİLGİLERİ (SABİT HAT & WHATSAPP & WEBSITE) */}
+                {(landlinePhone || whatsappPhone || companyWebsite) && (
+                  <div className="flex flex-col items-center gap-1 w-full mt-2 border-t border-slate-100 pt-2 print:border-black print:mt-1 print:pt-1">
+                    {landlinePhone && (
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 print:text-[8px] print:text-black">
+                        <Phone size={12} className="print:w-2.5 print:h-2.5 print:text-black" /> {landlinePhone}
+                      </div>
+                    )}
+                    {whatsappPhone && (
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 print:text-[8px] print:text-black">
+                        <MessageCircle size={12} className="print:w-2.5 print:h-2.5 print:text-black" /> {whatsappPhone}
+                      </div>
+                    )}
+                    {companyWebsite && (
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 print:text-[8px] print:text-black">
+                        <Globe size={12} className="print:w-2.5 print:h-2.5 print:text-black" /> {companyWebsite.replace(/^https?:\/\//, '')}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Powered By */}
-              <div className="mt-4 text-[9px] text-slate-400 font-medium uppercase print:text-[6px] print:mt-2">
-                 isdokumu.com • Powered by İş Dökümü
+              <div className="mt-4 text-[9px] text-slate-400 font-medium uppercase print:text-[6px] print:mt-1 print:text-black">
+                 isdokumu.com • Teknik Servis Takip
               </div>
             </div>
           
