@@ -233,7 +233,6 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
             </div>
           </div>
 
-          {/* YENİ: Web Sitesi Alanı (Faaliyet Sektörünün Yanı) */}
           <div>
             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Web Sitesi</label>
             <div className="relative">
@@ -376,9 +375,9 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
         </div>
 
         {!isFormValid && (
-           <div className="bg-amber-50 text-amber-600 px-4 py-3 rounded-lg text-xs font-medium border border-amber-100 flex items-center gap-2">
+           <div className="bg-amber-50 text-amber-600 px-4 py-3 rounded-lg text-xs font-medium border border-amber-100 flex items-center gap-2 mt-4">
               <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
-              Kaydetmek için lütfen tüm alanları eksiksiz doldurunuz.
+              Sistemi kullanmaya devam edebilmek için lütfen tüm zorunlu alanları eksiksiz doldurup kaydedin.
            </div>
         )}
 

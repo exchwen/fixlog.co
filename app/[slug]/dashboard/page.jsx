@@ -65,29 +65,28 @@ export default function PatronDashboard() {
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
 
-  // FORMLAR - apartmentName EKLENDİ
+  // FORMLAR
   const [jobForm, setJobForm] = useState({ customerName: '', assetId: '', staffId: '', workType: 'Genel Görev', jobType: 'Anlık', scheduledDate: '', taskNote: '' });
-  
-  // assetForm state'i: apartmentName alanı eklendi
   const [assetForm, setAssetForm] = useState({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', customerMode: 'NONE', newCustomer: { name: '', contact: '', address: '', taxInfo: '' } });
-  
   const [staffForm, setStaffForm] = useState({ name: '', phone: '', role: 'Usta', branch: '', status: 'Aktif' });
-  
-  // customerForm state'i: newAsset içinde apartmentName alanı eklendi
   const [customerForm, setCustomerForm] = useState({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', assetMode: 'NONE', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } });
-  
   const [stockForm, setStockForm] = useState({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', category: '', supplierId: '', supplierMode: 'NONE', newSupplier: { name: '', phone: '' } });
   const [supplierForm, setSupplierForm] = useState({ name: '', phone: '' });
-  const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', emergencyPhone: '', whatsappPhone: '', logo: '' });
+  
+  // YENİ: landlinePhone ve website eklendi
+  const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', landlinePhone: '', emergencyPhone: '', whatsappPhone: '', website: '', logo: '' });
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '' });
 
-  const fetchData = async () => {
+  // YENİ: isInitial parametresi eklendi, böylece 15 saniyede bir formu ezmesi engellendi
+  const fetchData = async (isInitial = false) => {
     try {
       const res = await fetch(`${API_URL}/dashboard-data?slug=${slug}`);
       if (!res.ok) throw new Error("Ağ hatası");
       const result = await res.json();
       setData(result);
-      if (result) {
+      
+      // Sadece sayfa ilk yüklendiğinde veya ayarlar kaydedildiğinde formu doldur
+      if (result && isInitial) {
         setSettingsForm({ 
             companyName: result.name || '', 
             ownerName: result.ownerName || '', 
@@ -95,8 +94,10 @@ export default function PatronDashboard() {
             address: result.address || '', 
             taxInfo: result.taxInfo || '', 
             phone: result.phone || '',
+            landlinePhone: result.landlinePhone || '', 
             emergencyPhone: result.emergencyPhone || '',
             whatsappPhone: result.whatsappPhone || '',
+            website: result.website || '', 
             logo: result.logo || ''
         });
       }
@@ -111,7 +112,13 @@ export default function PatronDashboard() {
     } catch (err) {}
   };
 
-  useEffect(() => { fetchData(); const int = setInterval(fetchData, 15000); return () => clearInterval(int); }, [slug]);
+  // YENİ: setInterval içinde isInitial false olarak çağrılıyor
+  useEffect(() => { 
+    fetchData(true); 
+    const int = setInterval(() => fetchData(false), 15000); 
+    return () => clearInterval(int); 
+  }, [slug]);
+  
   useEffect(() => { if (isChatOpen && activeChatId) { fetchMessages(); const cInt = setInterval(fetchMessages, 4000); return () => clearInterval(cInt); } }, [isChatOpen, activeChatId]);
 
   const handleAction = async (endpoint, body, closeFn, resetFn) => {
@@ -121,7 +128,9 @@ export default function PatronDashboard() {
       if (res.ok) { 
         if(closeFn) closeFn(false); 
         if(resetFn) resetFn(); 
-        await fetchData(); 
+        
+        // Kayıt başarılıysa veriyi ve formu tazeleyebiliriz
+        await fetchData(true); 
         return true; 
       } else { 
         if (endpoint !== 'update-settings') alert("Veritabanı kayıt hatası."); 
@@ -153,7 +162,7 @@ export default function PatronDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: emergencyId, slug })
       });
-      await fetchData(); 
+      await fetchData(false); 
     } catch (err) {
       alert("İşlem başarısız oldu.");
     } finally {
@@ -173,7 +182,7 @@ export default function PatronDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: faultId, slug })
       });
-      await fetchData(); 
+      await fetchData(false); 
     } catch (err) {
       alert("İşlem başarısız oldu.");
     } finally {
@@ -199,6 +208,13 @@ export default function PatronDashboard() {
       isDefaultName || isDefaultOwner || !phone || !emergencyPhone || !address || !taxInfo || !sector
     );
   }, [data]);
+
+  // YENİ: Veriler eksikse kullanıcıyı zorla Ayarlar sekmesinde tut
+  useEffect(() => {
+    if (isCompanyDataIncomplete && !hasEmergency && !hasFault) {
+      setActiveTab('settings');
+    }
+  }, [isCompanyDataIncomplete, hasEmergency, hasFault]);
 
   const filteredDataForTabs = useMemo(() => {
     if (!data) return null;
@@ -338,12 +354,27 @@ export default function PatronDashboard() {
         )}
       </AnimatePresence>
 
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      {/* YENİ: Veriler eksikse Sidebar kilitlenir */}
+      <div className={isCompanyDataIncomplete ? "pointer-events-none opacity-50 grayscale transition-all duration-300" : ""}>
+        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      </div>
 
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto relative z-10">
-        <Header data={data} searchTerm={searchTerm} setSearchTerm={setSearchTerm} setIsMobileMenuOpen={setIsMobileMenuOpen} />
+        <div className={isCompanyDataIncomplete ? "pointer-events-none" : ""}>
+          <Header data={data} searchTerm={searchTerm} setSearchTerm={setSearchTerm} setIsMobileMenuOpen={setIsMobileMenuOpen} />
+        </div>
 
         <div className="p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">
+          
+          {/* YENİ: Bilgiler eksikse sadece SettingsTab gösterilir */}
+          {isCompanyDataIncomplete && !hasEmergency && !hasFault && (
+            <div className="bg-rose-50 border border-rose-200 text-rose-700 p-5 rounded-2xl shadow-sm mb-6 flex flex-col items-center text-center">
+              <ShieldAlert size={40} className="mb-3 text-rose-500" />
+              <h3 className="font-black text-lg mb-1">Sistem Kurulumu Tamamlanmadı!</h3>
+              <p className="text-sm font-medium opacity-90">Sistemi kullanmaya başlamadan önce lütfen aşağıdaki işletme ayarlarını (Firma Adı, Yetkili, Telefon, Adres vb.) eksiksiz doldurup kaydedin.</p>
+            </div>
+          )}
+
           {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} />}
           {activeTab === 'jobs' && <JobsTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} />}
           {activeTab === 'pending' && <PendingJobsTab data={data} setSelectedJob={setSelectedJob} />}
@@ -398,43 +429,7 @@ export default function PatronDashboard() {
         selectedJob={selectedJob} setSelectedJob={setSelectedJob}
       />
       
-      <AssetQRModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} asset={selectedQRAsset} companyName={data?.name} companyLogo={data?.logo} />
-
-      {/* 🛠️ SİSTEM KURULUMU TAMAMLANMADI EKRANI (Ortada Büyük Modal) */}
-      <AnimatePresence>
-        {isCompanyDataIncomplete && activeTab !== 'settings' && !hasEmergency && !hasFault && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-6"
-          >
-            <motion.div 
-              key="setup-modal"
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="bg-white w-full max-w-[420px] rounded-[32px] shadow-2xl p-10 flex flex-col items-center text-center border border-slate-100"
-            >
-              <div className="bg-blue-50 text-blue-500 w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                <Info size={48} strokeWidth={2.5} />
-              </div>
-              
-              <h2 className="text-[26px] font-black text-slate-800 mb-4 leading-tight tracking-tight">Sistem Kurulumu<br/>Tamamlanmadı</h2>
-              
-              <p className="text-[15px] text-slate-500 mb-10 font-medium leading-relaxed px-2">
-                Lütfen sol menüden <span className="font-bold text-slate-700">'Ayarlar'</span> sekmesine giderek işletme bilgilerinizi eksiksiz doldurunuz.
-              </p>
-              
-              <button 
-                onClick={() => setActiveTab('settings')}
-                className="bg-blue-600 hover:bg-blue-700 text-white w-full py-4.5 rounded-2xl font-bold text-[17px] flex items-center justify-center gap-2 transition-all shadow-xl shadow-blue-600/20 active:scale-95"
-              >
-                Ayarlara Git <ArrowRight size={20} />
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AssetQRModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} asset={selectedQRAsset} companyName={data?.name} companyLogo={data?.logo} landlinePhone={data?.landlinePhone} whatsappPhone={data?.whatsappPhone} companyWebsite={data?.website} />
 
     </div>
   );
