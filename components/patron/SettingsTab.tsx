@@ -120,7 +120,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
           </div>
           <div className="flex-1">
             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Firma Logosu</label>
-            <p className="text-xs text-slate-500 mb-3">Lütfen şeffaf arka plana sahip bir PNG dosyası yükleyin. Sistem, veritabanını şişirmemek adına görseli anında optimize edecektir.</p>
+            <p className="text-xs text-slate-500 mb-3">Şeffaf arka plana sahip bir PNG dosyası yüklemeniz önerilir. Sistemimiz görseli anında optimize edecektir.</p>
             <div className="flex gap-2">
               <label className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-xs font-bold cursor-pointer hover:bg-slate-50 transition-colors shadow-sm inline-block">
                 <input type="file" accept="image/png" className="hidden" onChange={handleLogoUpload} />
@@ -295,7 +295,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
         {!isFormValid && (
            <div className="bg-amber-50 text-amber-600 px-4 py-3 rounded-lg text-xs font-medium border border-amber-100 flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
-              Kaydetmek için lütfen tüm alanları (WhatsApp hariç) eksiksiz doldurunuz.
+              Kaydetmek için lütfen tüm alanları eksiksiz doldurunuz.
            </div>
         )}
 
