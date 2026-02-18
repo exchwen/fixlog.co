@@ -64,12 +64,7 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
   const getMapsUrl = (location: string, apartmentName: string) => {
     if (!location) return '#';
     let mapQuery = location;
-    if (apartmentName && mapQuery.includes(apartmentName)) {
-      mapQuery = mapQuery.replace(apartmentName, '').trim();
-      if (mapQuery.startsWith('-') || mapQuery.startsWith('/')) {
-        mapQuery = mapQuery.substring(1).trim();
-      }
-    }
+    // Harita araması yaparken bina adını tekrar eklemeye gerek yok, adres yeterli
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
   };
 
@@ -142,12 +137,12 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
                 </div>
               </div>
 
-              {/* HİYERARŞİ: BİNA ADI ANA BAŞLIK */}
+              {/* ANA BAŞLIK: APARTMAN ADI (Eğer varsa) */}
               <div className="font-bold text-slate-900 text-base mb-1 group-hover:text-blue-600 transition-colors truncate">
-                {a.apartmentName || a.name}
+                {a.apartmentName ? a.apartmentName : a.name}
               </div>
 
-              {/* ALT BAŞLIK: SADECE APARTMAN ADI VARSA CİHAZ ADINI GÖSTER */}
+              {/* ALT BAŞLIK: CİHAZ ADI (Eğer apartman adı varsa cihaz adı altına gelir, yoksa boş) */}
               {a.apartmentName && (
                 <div className="text-xs font-semibold text-slate-500 mb-3 truncate">
                     {a.name}
@@ -159,9 +154,9 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
                 <div className="flex items-start gap-2.5">
                   <MapPin size={16} className="text-slate-400 shrink-0 mt-0.5" />
                   <div className="flex flex-col gap-2">
-                    {/* Bina adı konumda tekrarlanıyorsa temizle */}
+                    {/* Bina adı konumda tekrarlanıyorsa görsel olarak temizle */}
                     <div className="text-[11px] text-slate-600 leading-relaxed line-clamp-2 font-medium">
-                      {a.location ? a.location.replace(a.apartmentName || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : '-'}
+                      {a.location ? a.location : '-'}
                     </div>
                     
                     {/* Haritada Görüntüle Butonu */}

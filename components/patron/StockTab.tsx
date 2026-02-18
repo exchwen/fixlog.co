@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Loader2, AlertTriangle, Package, Phone, Tag, Truck, Tags, ShoppingCart, Send, ArrowRight, CheckCircle2, ExternalLink } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Loader2, AlertTriangle, Package, Phone, Tag, Truck, Tags, ShoppingCart, Send, ArrowRight, CheckCircle2, ExternalLink, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function StockTab({ data, handleAction, setShowStockModal, setShowSupplierModal, setShowSupplierListModal, setShowCategoryModal }: any) {
@@ -13,6 +13,8 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
 
   // SİPARİŞ MODALI STATE'LERİ
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [orderMode, setOrderMode] = useState<'SINGLE' | 'BULK'>('SINGLE'); // SİPARİŞ MODU SEÇİMİ
+  const [selectedSupplierForOrder, setSelectedSupplierForOrder] = useState<any>(null); // TEKİL SİPARİŞ İÇİN SEÇİLEN TEDARİKÇİ
   const [orderQuantities, setOrderQuantities] = useState<{[key: string]: string}>({});
   const [orderStep, setOrderStep] = useState<'INPUT' | 'SENDING'>('INPUT'); // INPUT: Adet Girişi, SENDING: Gönderim Ekranı
   const [sentSuppliers, setSentSuppliers] = useState<string[]>([]); // Hangi tedarikçilere gönderildiğini takip etmek için
@@ -55,7 +57,7 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
     return Array.from(supplierMap.values());
   }, [criticalStocks, suppliers]);
 
-  // SADECE GÖNDERİM YAPILACAK TEDARİKÇİLERİ FİLTRELE (Adet girilmiş olanlar)
+  // SADECE GÖNDERİM YAPILACAK TEDARİKÇİLERİ FİLTRELE (Adet girilmiş olanlar - TOPLU MOD İÇİN)
   const suppliersToProcess = useMemo(() => {
     return suppliersWithCriticalStock.filter(supplier => {
         return supplier.items.some((item: any) => orderQuantities[item.id] && Number(orderQuantities[item.id]) > 0);
@@ -82,7 +84,42 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
     }
   };
 
-  // TEKİL TEDARİKÇİ İÇİN WHATSAPP LİNKİ OLUŞTURMA VE AÇMA
+  // TEKİL SİPARİŞ GÖNDERME (TEK BUTON)
+  const sendSingleOrder = () => {
+    if (!selectedSupplierForOrder) return;
+
+    const itemsToOrder = selectedSupplierForOrder.items.filter((item:any) => orderQuantities[item.id] && Number(orderQuantities[item.id]) > 0);
+
+    if (itemsToOrder.length === 0) {
+        alert("Lütfen en az bir ürün için adet giriniz.");
+        return;
+    }
+
+    let messageText = `Merhaba, ${companyName} firmasından sipariş geçmek istiyoruz.\n`;
+    messageText += `Aşağıdaki ürünlerin temini rica olunur:\n\n`;
+    
+    itemsToOrder.forEach((item: any) => {
+        const qty = orderQuantities[item.id];
+        messageText += `- ${item.item_name}: *${qty} ${item.unit_name}*\n`;
+    });
+
+    messageText += `\nİyi çalışmalar.`;
+
+    let phone = selectedSupplierForOrder.phone.replace(/[^0-9]/g, '');
+    if (phone.length === 10 && phone.startsWith('5')) {
+        phone = '90' + phone;
+    }
+
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(messageText)}`;
+    window.open(url, '_blank');
+    
+    // Temizlik
+    setOrderQuantities({});
+    setShowOrderModal(false);
+    setSelectedSupplierForOrder(null);
+  };
+
+  // TOPLU SİPARİŞ İÇİN WHATSAPP LİNKİ OLUŞTURMA VE AÇMA
   const openWhatsappForSupplier = (supplier: any) => {
     const itemsToOrder = supplier.items.filter((item:any) => orderQuantities[item.id] && Number(orderQuantities[item.id]) > 0);
     if (itemsToOrder.length === 0) return;
@@ -116,6 +153,7 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
     setOrderQuantities({}); 
     setOrderStep('INPUT'); 
     setSentSuppliers([]);
+    setSelectedSupplierForOrder(null);
   };
 
   return (
@@ -129,10 +167,10 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
               animate={{ opacity: 1, y: 0 }} 
               className="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm relative overflow-hidden"
            >
-              {/* SİPARİŞ VER BUTONLARI - SAĞ ÜST (İKİYE AYRILDI) */}
+              {/* SİPARİŞ VER BUTONLARI - SAĞ ÜST */}
               <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
                 <button 
-                    onClick={() => setShowOrderModal(true)}
+                    onClick={() => { setOrderMode('SINGLE'); setShowOrderModal(true); }}
                     className="bg-white text-amber-600 border border-amber-200 hover:bg-amber-100 px-3 py-2 rounded-lg text-xs font-bold shadow-sm flex items-center gap-2 transition-transform active:scale-95"
                 >
                     <Package size={16} />
@@ -140,7 +178,7 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                 </button>
 
                 <button 
-                    onClick={() => setShowOrderModal(true)}
+                    onClick={() => { setOrderMode('BULK'); setShowOrderModal(true); }}
                     className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg text-xs font-bold shadow-lg shadow-amber-600/20 flex items-center gap-2 transition-transform active:scale-95"
                 >
                     <ShoppingCart size={16} />
@@ -301,7 +339,7 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
          </div>
        </div>
 
-       {/* 4. TOPLU SİPARİŞ MODALI */}
+       {/* 4. SİPARİŞ MODALI (TEKİL VE TOPLU MODLARI) */}
        <AnimatePresence>
          {showOrderModal && (
            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
@@ -314,123 +352,211 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                             {orderStep === 'INPUT' ? <ShoppingCart size={20} /> : <CheckCircle2 size={20} />}
                         </div>
                         <div>
+                            {/* DİNAMİK BAŞLIK: TEKİL SİPARİŞTE TEDARİKÇİ ADI, TOPLUDA GENEL BAŞLIK */}
                             <h2 className="text-lg font-black text-slate-800 leading-none">
-                                {orderStep === 'INPUT' ? 'Toplu Sipariş Oluştur' : 'Siparişler Gönderiliyor'}
+                                {orderMode === 'SINGLE' 
+                                    ? (selectedSupplierForOrder ? selectedSupplierForOrder.name : 'Tedarikçi Seçimi') 
+                                    : (orderStep === 'INPUT' ? 'Toplu Sipariş Oluştur' : 'Siparişler Gönderiliyor')
+                                }
                             </h2>
                             <p className="text-[11px] text-slate-500 font-medium mt-1">
-                                {orderStep === 'INPUT' 
-                                    ? `Tedarikçilere göre kritik stok ürünleri listelenmiştir.` 
-                                    : `Siparişleri sırasıyla WhatsApp üzerinden gönderin.`}
+                                {orderMode === 'SINGLE' 
+                                    ? (selectedSupplierForOrder ? 'Tedarik edilecek ürünlerin adetlerini girin.' : 'Sipariş verilecek tedarikçiyi seçin.')
+                                    : (orderStep === 'INPUT' ? 'Tedarikçilere göre kritik stok ürünleri listelenmiştir.' : 'Siparişleri sırasıyla WhatsApp üzerinden gönderin.')
+                                }
                             </p>
                         </div>
                     </div>
-                    <button onClick={handleCloseOrderModal} className="text-slate-400 hover:bg-slate-200 p-2 rounded-full transition-colors"><X size={20} /></button>
+                    <div className="flex gap-2">
+                        {/* TEKİL SİPARİŞTE GERİ BUTONU */}
+                        {orderMode === 'SINGLE' && selectedSupplierForOrder && (
+                            <button onClick={() => { setSelectedSupplierForOrder(null); setOrderQuantities({}); }} className="text-slate-400 hover:bg-slate-200 p-2 rounded-full transition-colors"><ArrowLeft size={20} /></button>
+                        )}
+                        <button onClick={handleCloseOrderModal} className="text-slate-400 hover:bg-slate-200 p-2 rounded-full transition-colors"><X size={20} /></button>
+                    </div>
                 </div>
 
                 {/* Content */}
                 <div className="p-5 overflow-y-auto custom-scrollbar flex-1">
                     
-                    {orderStep === 'INPUT' ? (
-                        // ADIM 1: TÜM TEDARİKÇİLER VE ÜRÜNLER (ADET GİRİŞİ)
-                        <div className="space-y-6">
-                            {suppliersWithCriticalStock.length > 0 ? suppliersWithCriticalStock.map((supplier: any) => (
-                                <div key={supplier.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                                    <div className="bg-slate-50/80 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold text-xs">
+                    {/* --- TEKİL SİPARİŞ MODU --- */}
+                    {orderMode === 'SINGLE' && (
+                        !selectedSupplierForOrder ? (
+                            // ADIM 1: TEDARİKÇİ SEÇİM LİSTESİ
+                            <div className="grid grid-cols-1 gap-3">
+                                {suppliersWithCriticalStock.length > 0 ? suppliersWithCriticalStock.map((supplier: any) => (
+                                    <button 
+                                        key={supplier.id}
+                                        onClick={() => setSelectedSupplierForOrder(supplier)}
+                                        className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-400 hover:shadow-md transition-all group text-left"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold text-sm group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                                 {supplier.name.substring(0, 2).toUpperCase()}
                                             </div>
-                                            <div className="font-bold text-slate-700 text-sm">{supplier.name}</div>
-                                        </div>
-                                        <div className="text-[10px] bg-white border border-slate-200 px-2 py-1 rounded-md text-slate-500 font-medium flex items-center gap-1">
-                                            <Phone size={10} /> {supplier.phone || 'Tel Yok'}
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="divide-y divide-slate-50">
-                                        {supplier.items.map((item: any) => (
-                                            <div key={item.id} className="p-3 flex items-center gap-3 hover:bg-slate-50 transition-colors">
-                                                <div className="flex-1">
-                                                    <div className="text-xs font-bold text-slate-800">{item.item_name}</div>
-                                                    <div className="text-[10px] text-amber-600 font-medium">Kalan: {item.quantity} {item.unit_name}</div>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <input 
-                                                        type="number" 
-                                                        placeholder="0"
-                                                        className="w-16 h-8 text-center border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50"
-                                                        value={orderQuantities[item.id] || ''}
-                                                        onChange={(e) => setOrderQuantities({...orderQuantities, [item.id]: e.target.value})}
-                                                    />
-                                                    <span className="text-[10px] font-bold text-slate-400 w-10 text-center">{item.unit_name}</span>
+                                            <div>
+                                                <div className="font-bold text-slate-800">{supplier.name}</div>
+                                                <div className="text-xs text-slate-500 font-medium flex items-center gap-2">
+                                                    <span className="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[10px] font-bold">{supplier.items.length} Kritik Ürün</span>
+                                                    {supplier.phone && <span className="flex items-center gap-1"><Phone size={10}/> {supplier.phone}</span>}
                                                 </div>
                                             </div>
-                                        ))}
+                                        </div>
+                                        <div className="text-slate-300">
+                                            <ArrowRight size={20} />
+                                        </div>
+                                    </button>
+                                )) : (
+                                    <div className="text-center py-10">
+                                        <p className="text-slate-500 font-medium">Kayıtlı tedarikçisi olan kritik stok bulunamadı.</p>
                                     </div>
-                                </div>
-                            )) : (
-                                <div className="text-center py-10">
-                                    <p className="text-slate-500 font-medium">Kayıtlı tedarikçisi olan kritik stok bulunamadı.</p>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        // ADIM 2: GÖNDERİM EKRANI
-                        <div className="space-y-4">
-                            {suppliersToProcess.length > 0 ? suppliersToProcess.map((supplier: any) => {
-                                const isSent = sentSuppliers.includes(supplier.id);
-                                return (
-                                    <div key={supplier.id} className={`flex items-center justify-between p-4 rounded-xl border transition-all ${isSent ? 'bg-green-50 border-green-200 opacity-60' : 'bg-white border-blue-200 shadow-md'}`}>
-                                        <div>
-                                            <div className="font-bold text-slate-800 flex items-center gap-2">
-                                                {supplier.name}
-                                                {isSent && <span className="text-[10px] bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><CheckCircle2 size={10} /> GÖNDERİLDİ</span>}
+                                )}
+                            </div>
+                        ) : (
+                            // ADIM 2: SEÇİLEN TEDARİKÇİ İÇİN ÜRÜN LİSTESİ
+                            <div className="space-y-3">
+                                {selectedSupplierForOrder.items.map((item: any) => (
+                                    <div key={item.id} className="flex items-center gap-3 p-3 border border-slate-100 rounded-xl bg-slate-50/50">
+                                        <div className="w-10 h-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0">
+                                            <Package size={18} className="text-slate-400" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-sm font-bold text-slate-700 truncate">{item.item_name}</div>
+                                            <div className="text-[10px] font-semibold text-amber-600">Mevcut: {item.quantity} {item.unit_name}</div>
+                                        </div>
+                                        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg p-1 shadow-sm">
+                                            <input 
+                                                type="number" 
+                                                placeholder="0"
+                                                className="w-16 text-center outline-none text-sm font-bold text-slate-800"
+                                                value={orderQuantities[item.id] || ''}
+                                                onChange={(e) => setOrderQuantities({...orderQuantities, [item.id]: e.target.value})}
+                                            />
+                                            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-1 rounded-md uppercase">{item.unit_name}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )
+                    )}
+
+                    {/* --- TOPLU SİPARİŞ MODU --- */}
+                    {orderMode === 'BULK' && (
+                         orderStep === 'INPUT' ? (
+                            // ADIM 1: TÜM TEDARİKÇİLER VE ÜRÜNLER (ADET GİRİŞİ)
+                            <div className="space-y-6">
+                                {suppliersWithCriticalStock.length > 0 ? suppliersWithCriticalStock.map((supplier: any) => (
+                                    <div key={supplier.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                        <div className="bg-slate-50/80 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold text-xs">
+                                                    {supplier.name.substring(0, 2).toUpperCase()}
+                                                </div>
+                                                <div className="font-bold text-slate-700 text-sm">{supplier.name}</div>
                                             </div>
-                                            <div className="text-xs text-slate-500 mt-1">
-                                                {supplier.items.filter((i:any) => orderQuantities[i.id] && Number(orderQuantities[i.id]) > 0).length} Kalem Ürün Sipariş Edilecek
+                                            <div className="text-[10px] bg-white border border-slate-200 px-2 py-1 rounded-md text-slate-500 font-medium flex items-center gap-1">
+                                                <Phone size={10} /> {supplier.phone || 'Tel Yok'}
                                             </div>
                                         </div>
                                         
-                                        <button 
-                                            onClick={() => openWhatsappForSupplier(supplier)}
-                                            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-xs transition-all active:scale-95 ${isSent ? 'bg-white border border-green-200 text-green-700' : 'bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-600/20'}`}
-                                        >
-                                            {isSent ? 'Tekrar Gönder' : 'WhatsApp İle Gönder'}
-                                            {!isSent && <ExternalLink size={14} />}
-                                        </button>
+                                        <div className="divide-y divide-slate-50">
+                                            {supplier.items.map((item: any) => (
+                                                <div key={item.id} className="p-3 flex items-center gap-3 hover:bg-slate-50 transition-colors">
+                                                    <div className="flex-1">
+                                                        <div className="text-xs font-bold text-slate-800">{item.item_name}</div>
+                                                        <div className="text-[10px] text-amber-600 font-medium">Kalan: {item.quantity} {item.unit_name}</div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <input 
+                                                            type="number" 
+                                                            placeholder="0"
+                                                            className="w-16 h-8 text-center border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50"
+                                                            value={orderQuantities[item.id] || ''}
+                                                            onChange={(e) => setOrderQuantities({...orderQuantities, [item.id]: e.target.value})}
+                                                        />
+                                                        <span className="text-[10px] font-bold text-slate-400 w-10 text-center">{item.unit_name}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                );
-                            }) : (
-                                <div className="text-center py-10 text-rose-500 font-bold">
-                                    Lütfen en az bir ürüne adet giriniz.
-                                </div>
-                            )}
-                        </div>
+                                )) : (
+                                    <div className="text-center py-10">
+                                        <p className="text-slate-500 font-medium">Kayıtlı tedarikçisi olan kritik stok bulunamadı.</p>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            // ADIM 2: GÖNDERİM EKRANI (TOPLU MOD)
+                            <div className="space-y-4">
+                                {suppliersToProcess.length > 0 ? suppliersToProcess.map((supplier: any) => {
+                                    const isSent = sentSuppliers.includes(supplier.id);
+                                    return (
+                                        <div key={supplier.id} className={`flex items-center justify-between p-4 rounded-xl border transition-all ${isSent ? 'bg-green-50 border-green-200 opacity-60' : 'bg-white border-blue-200 shadow-md'}`}>
+                                            <div>
+                                                <div className="font-bold text-slate-800 flex items-center gap-2">
+                                                    {supplier.name}
+                                                    {isSent && <span className="text-[10px] bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><CheckCircle2 size={10} /> GÖNDERİLDİ</span>}
+                                                </div>
+                                                <div className="text-xs text-slate-500 mt-1">
+                                                    {supplier.items.filter((i:any) => orderQuantities[i.id] && Number(orderQuantities[i.id]) > 0).length} Kalem Ürün Sipariş Edilecek
+                                                </div>
+                                            </div>
+                                            
+                                            <button 
+                                                onClick={() => openWhatsappForSupplier(supplier)}
+                                                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-xs transition-all active:scale-95 ${isSent ? 'bg-white border border-green-200 text-green-700' : 'bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-600/20'}`}
+                                            >
+                                                {isSent ? 'Tekrar Gönder' : 'WhatsApp İle Gönder'}
+                                                {!isSent && <ExternalLink size={14} />}
+                                            </button>
+                                        </div>
+                                    );
+                                }) : (
+                                    <div className="text-center py-10 text-rose-500 font-bold">
+                                        Lütfen en az bir ürüne adet giriniz.
+                                    </div>
+                                )}
+                            </div>
+                        )
                     )}
                 </div>
 
                 {/* Footer */}
                 <div className="p-5 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
-                    {orderStep === 'INPUT' ? (
-                        <button 
-                            onClick={() => {
-                                if(suppliersToProcess.length === 0) {
-                                    alert("Lütfen en az bir ürün için adet giriniz.");
-                                    return;
-                                }
-                                setOrderStep('SENDING');
-                            }}
-                            className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl font-bold text-sm shadow-xl flex items-center justify-center gap-2 transition-all active:scale-95"
-                        >
-                            Gönderimi Başlat <ArrowRight size={18} />
-                        </button>
+                    {orderMode === 'SINGLE' ? (
+                        selectedSupplierForOrder && (
+                            <button 
+                                onClick={sendSingleOrder}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-green-600/20 flex items-center justify-center gap-2 transition-all active:scale-95"
+                            >
+                                <Send size={18} />
+                                WhatsApp İle Siparişi Gönder
+                            </button>
+                        )
                     ) : (
-                         <button 
-                            onClick={handleCloseOrderModal}
-                            className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
-                        >
-                            İşlemi Tamamla ve Kapat
-                        </button>
+                        // TOPLU MOD FOOTER
+                        orderStep === 'INPUT' ? (
+                            <button 
+                                onClick={() => {
+                                    if(suppliersToProcess.length === 0) {
+                                        alert("Lütfen en az bir ürün için adet giriniz.");
+                                        return;
+                                    }
+                                    setOrderStep('SENDING');
+                                }}
+                                className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl font-bold text-sm shadow-xl flex items-center justify-center gap-2 transition-all active:scale-95"
+                            >
+                                Gönderimi Başlat <ArrowRight size={18} />
+                            </button>
+                        ) : (
+                             <button 
+                                onClick={handleCloseOrderModal}
+                                className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+                            >
+                                İşlemi Tamamla ve Kapat
+                            </button>
+                        )
                     )}
                 </div>
               </motion.div>
