@@ -29,7 +29,6 @@ export default function PatronDashboard() {
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
   
-  // HATA DÜZELTİLDİ: <any> kaldırıldı. Artık tarayıcıda hata vermez.
   const [data, setData] = useState(null); 
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -112,26 +111,26 @@ export default function PatronDashboard() {
     setMessageInput(''); fetchMessages();
   };
 
-  // --- EKSİK BİLGİ KONTROLÜ (DÜZELTİLDİ) ---
+  // --- EKSİK BİLGİ KONTROLÜ (GÜNCELLENDİ: Tüm kutular denetleniyor) ---
   const isCompanyDataIncomplete = useMemo(() => {
     if (!data) return false;
     
-    // Veriye güvenli erişim (Optional chaining ile)
-    // TypeScript/JavaScript çakışmasını önlemek için 'any' tip zorlaması yerine doğrudan erişim
     const d = data || {};
 
     const name = d.name?.trim().toLowerCase() || '';
     const owner = d.ownerName?.trim().toLowerCase() || '';
     const phone = d.phone?.trim() || '';
+    const emergencyPhone = d.emergencyPhone?.trim() || '';
     const address = d.address?.trim() || '';
     const taxInfo = d.taxInfo?.trim() || '';
+    const sector = d.sector?.trim() || '';
 
     // Varsayılan veya boş değer kontrolü
     const isDefaultName = name === 'işletme' || name === '';
     const isDefaultOwner = owner === 'kullanıcı' || owner === 'yönetici' || owner === '';
     
     return (
-      isDefaultName || isDefaultOwner || !phone || !address || !taxInfo
+      isDefaultName || isDefaultOwner || !phone || !emergencyPhone || !address || !taxInfo || !sector
     );
   }, [data]);
 
@@ -211,7 +210,7 @@ export default function PatronDashboard() {
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-slate-900">Kurulumu Tamamla</h2>
-                  <p className="text-sm text-slate-600 mt-1">Sistemi kullanmaya başlamadan önce lütfen firma bilgilerinizi eksiksiz doldurun.</p>
+                  <p className="text-sm text-slate-600 mt-1">Lütfen işlemlerinize devam edebilmek için eksik bilgileri doldurunuz.</p>
                 </div>
               </div>
 
@@ -219,10 +218,11 @@ export default function PatronDashboard() {
                 <div className="text-xs text-slate-500 bg-slate-50 p-4 rounded-lg border border-slate-100">
                   <p className="font-bold text-slate-700 mb-2">Eksik Olan Bilgiler:</p>
                   <ul className="list-disc list-inside space-y-1">
-                    {/* Hata veren (data as any) kısımları temizlendi */}
                     {(data?.name?.trim().toLowerCase() === 'işletme' || !data?.name?.trim()) && <li>Firma Ünvanı</li>}
                     {(data?.ownerName?.trim().toLowerCase() === 'kullanıcı' || data?.ownerName?.trim().toLowerCase() === 'yönetici' || !data?.ownerName?.trim()) && <li>Yetkili Ad Soyad</li>}
+                    {!data?.sector?.trim() && <li>Faaliyet Sektörü</li>}
                     {!data?.phone?.trim() && <li>İşletme Telefonu</li>}
+                    {!data?.emergencyPhone?.trim() && <li>Acil Durum Hattı (7/24)</li>}
                     {!data?.address?.trim() && <li>Adres Bilgisi</li>}
                     {!data?.taxInfo?.trim() && <li>Vergi Numarası</li>}
                   </ul>

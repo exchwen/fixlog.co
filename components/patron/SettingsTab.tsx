@@ -12,7 +12,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
   const [localDistrict, setLocalDistrict] = useState('');
   const [localDetail, setLocalDetail] = useState('');
 
-  // Veri geldiğinde parçala (Dependency güncellendi)
+  // Veri geldiğinde parçala
   useEffect(() => {
     if (settingsForm.address) {
       const parts = settingsForm.address.split(' / ');
@@ -29,7 +29,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
       }
       setLocalDetail(settingsForm.address);
     }
-  }, [settingsForm.address]); // settingsForm.address değişirse tekrar çalışsın
+  }, [settingsForm.address]);
 
   const updateAddress = (newDetail: string, newCity: string, newDistrict: string) => {
     setLocalDetail(newDetail);
@@ -43,11 +43,13 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
     setSettingsForm({ ...settingsForm, address: fullAddress });
   };
 
+  // GÜNCELLENDİ: Acil durum telefonu dahil tüm kutular doğrulama sürecine dahil edildi.
   const isFormValid = 
     settingsForm.companyName?.trim() &&
     settingsForm.ownerName?.trim() &&
     settingsForm.sector?.trim() &&
     settingsForm.phone?.trim() &&
+    settingsForm.emergencyPhone?.trim() &&
     settingsForm.address?.trim() &&
     settingsForm.taxInfo?.trim();
 
