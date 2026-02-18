@@ -1,19 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Box, MapPin, Users, Search, QrCode } from 'lucide-react';
+import { Plus, Box, MapPin, Users, Search, QrCode, ExternalLink } from 'lucide-react';
 
 export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail, setShowQRModal, setSelectedQRAsset }: any) {
   const [searchTerm, setSearchTerm] = useState('');
-  // Logo arka plan rengi için state. Varsayılan: slate-50 (#f8fafc)
   const [logoBgColor, setLogoBgColor] = useState<string>('#f8fafc');
 
-  // --- RENK ANALİZ MOTORU BAŞLANGICI ---
-  // Firma logosu (data.logo) değiştiğinde çalışır.
-  // Logonun ortalama rengini bulur ve ona en zıt düşen arka plan rengini (Beyaz, Siyah, Mavi) seçer.
   useEffect(() => {
     const companyLogo = data?.logo;
-    // Logo yoksa varsayılan açık gri rengi kullan
     if (!companyLogo) {
       setLogoBgColor('#f8fafc');
       return;
@@ -25,70 +20,57 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
-      
       canvas.width = img.width;
       canvas.height = img.height;
       ctx.drawImage(img, 0, 0);
-      
       try {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const dataPixels = imageData.data;
         let r = 0, g = 0, b = 0, count = 0;
-        
-        // Pikselleri tara (her 4. pikseli alarak performansı artır, şeffaf pikselleri atla)
         for (let i = 0; i < dataPixels.length; i += 4) {
-          if (dataPixels[i + 3] < 128) continue; // Şeffaflık kontrolü
-          r += dataPixels[i];
-          g += dataPixels[i + 1];
-          b += dataPixels[i + 2];
+          if (dataPixels[i + 3] < 128) continue;
+          r += dataPixels[i]; g += dataPixels[i + 1]; b += dataPixels[i + 2];
           count++;
         }
-        
         if (count > 0) {
-          // Ortalama RGB rengini bul
-          r = Math.floor(r / count);
-          g = Math.floor(g / count);
-          b = Math.floor(b / count);
-
-          // Kullanılabilecek arka plan paleti
+          r = Math.floor(r / count); g = Math.floor(g / count); b = Math.floor(b / count);
           const palette = [
             { name: 'white', rgb: [255, 255, 255], hex: '#ffffff' },
-            { name: 'black', rgb: [15, 23, 42], hex: '#0f172a' }, // slate-900
-            { name: 'blue', rgb: [37, 99, 235], hex: '#2563eb' }  // blue-600
+            { name: 'black', rgb: [15, 23, 42], hex: '#0f172a' },
+            { name: 'blue', rgb: [37, 99, 235], hex: '#2563eb' }
           ];
-
           let maxDist = -1;
           let selectedColor = '#ffffff';
-
-          // Logodaki ortalama renge EN UZAK (en zıt) olan rengi bul
           for (const color of palette) {
             const dist = Math.sqrt(Math.pow(r - color.rgb[0], 2) + Math.pow(g - color.rgb[1], 2) + Math.pow(b - color.rgb[2], 2));
-            if (dist > maxDist) {
-              maxDist = dist;
-              selectedColor = color.hex;
-            }
+            if (dist > maxDist) { maxDist = dist; selectedColor = color.hex; }
           }
           setLogoBgColor(selectedColor);
         }
-      } catch (e) {
-        console.error("Renk analizi yapılamadı:", e);
-        setLogoBgColor('#f8fafc'); // Hata durumunda varsayılan renk
-      }
+      } catch (e) { setLogoBgColor('#f8fafc'); }
     };
-    img.onerror = () => setLogoBgColor('#f8fafc'); // Resim yüklenemezse varsayılan renk
     img.src = companyLogo;
   }, [data?.logo]);
-  // --- RENK ANALİZ MOTORU BİTİŞİ ---
 
-  // Arama filtresi mantığı
+  // Harita linki oluşturucu (apartmentName'i linkten temizler)
+  const getMapsUrl = (location: string, apartmentName: string) => {
+    if (!location) return '#';
+    let mapQuery = location;
+    if (apartmentName && mapQuery.includes(apartmentName)) {
+      mapQuery = mapQuery.replace(apartmentName, '').trim();
+      if (mapQuery.startsWith('-') || mapQuery.startsWith('/')) {
+        mapQuery = mapQuery.substring(1).trim();
+      }
+    }
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
+  };
+
   const filteredAssets = data?.assets?.filter((a: any) => {
     const term = searchTerm.toLowerCase();
     const customerName = data?.customers?.find((c: any) => c.id === a.customer_id)?.name || '';
-    
     return (
       a.name?.toLowerCase().includes(term) ||
       a.location?.toLowerCase().includes(term) ||
-      a.device_details?.toLowerCase().includes(term) ||
       customerName.toLowerCase().includes(term)
     );
   }) || [];
@@ -97,20 +79,17 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <h3 className="text-lg font-bold text-slate-900">Kayıtlı Varlıklar & QR</h3>
-        
         <div className="flex w-full sm:w-auto gap-2">
-          {/* ARAMA KUTUSU */}
           <div className="relative flex-1 sm:w-64">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
             <input 
               type="text" 
               placeholder="Cihaz, konum veya müşteri ara..." 
-              className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-500 bg-white placeholder:text-slate-400"
+              className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-500 bg-white"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-
           <button onClick={() => setShowAssetModal(true)} className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-blue-700 whitespace-nowrap">
             <Plus size={14} /> Yeni Varlık
           </button>
@@ -122,53 +101,71 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
           <div 
             key={a.id} 
             onClick={() => setShowAssetDetail && setShowAssetDetail(a)}
-            // Ana kart rengi bg-white olarak sabit
-            className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-blue-400 cursor-pointer transition-colors flex flex-col group"
+            className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer flex flex-col group overflow-hidden"
           >
-            {/* DİNAMİK LOGO KUTUSU - Sadece burası renk değiştirir */}
-            <div 
-              className="w-10 h-10 rounded-lg flex items-center justify-center mb-3 border border-slate-100 overflow-hidden shadow-sm transition-all duration-500 group-hover:scale-105"
-              // DİKKAT: Arka plan rengi sadece bu kutuya uygulanıyor
-              style={{ backgroundColor: data?.logo ? logoBgColor : '#f8fafc' }}
-            >
-              {data?.logo ? (
-                <img 
-                  src={data.logo} 
-                  alt="Firma Logosu" 
-                  // Logo koyu bir zemine denk gelirse kenarlara yapışmasın diye biraz padding ekledim
-                  className="w-full h-full object-contain p-1.5 drop-shadow-sm" 
-                />
-              ) : (
-                // Logo yoksa varsayılan ikon
-                <Box size={18} className="text-slate-400" />
-              )}
+            {/* Kart Başlık Alanı */}
+            <div className="p-5 flex-1">
+              <div className="flex items-start justify-between mb-4">
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center border border-slate-100 shadow-sm overflow-hidden"
+                  style={{ backgroundColor: data?.logo ? logoBgColor : '#f8fafc' }}
+                >
+                  {data?.logo ? (
+                    <img src={data.logo} alt="Logo" className="w-full h-full object-contain p-2" />
+                  ) : (
+                    <Box size={20} className="text-slate-400" />
+                  )}
+                </div>
+                <div className="bg-blue-50 text-blue-600 px-2 py-1 rounded-md text-[10px] font-bold flex items-center gap-1">
+                  <Users size={12}/> {data?.customers?.find((c: any) => c.id === a.customer_id)?.name || 'Genel'}
+                </div>
+              </div>
+
+              <div className="font-bold text-slate-900 text-base mb-2 group-hover:text-blue-600 transition-colors truncate">
+                {a.name}
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-start gap-2">
+                  <MapPin size={14} className="text-slate-400 shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-1.5">
+                    <div className="text-[11px] text-slate-600 leading-relaxed line-clamp-2">
+                      {a.location}
+                    </div>
+                    {/* Haritada Görüntüle Butonu */}
+                    <a 
+                      href={getMapsUrl(a.location, a.apartmentName)} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 w-fit px-2 py-1 rounded-md transition-colors"
+                    >
+                      <ExternalLink size={10} /> Haritada Görüntüle
+                    </a>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="font-semibold text-slate-800 text-sm mb-1 truncate">{a.name}</div>
-            
-            <div className="text-[11px] font-medium text-blue-600 mb-1 flex items-center gap-1">
-              <Users size={10}/> {data?.customers?.find((c: any) => c.id === a.customer_id)?.name || 'Müşteri Atanmamış'}
+            {/* Alt Buton Alanı */}
+            <div className="p-3 bg-slate-50 border-t border-slate-100">
+              <button 
+                onClick={(e) => { 
+                  e.stopPropagation();
+                  if (setSelectedQRAsset && setShowQRModal) {
+                      setSelectedQRAsset(a);
+                      setShowQRModal(true);
+                  }
+                }} 
+                className="w-full bg-slate-900 text-white py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all active:scale-95 shadow-sm"
+              >
+                <QrCode size={14} /> QR Kod / Etiket
+              </button>
             </div>
-
-            <div className="text-[11px] text-slate-500 mb-2 flex items-center gap-1"><MapPin size={10}/> {a.location}</div>
-            <div className="text-[10px] text-slate-400 bg-slate-50 p-2 rounded border border-slate-100 mb-4 flex-1 line-clamp-2">{a.device_details || 'Detay yok'}</div>
-            
-            <button 
-              onClick={(e) => { 
-                e.stopPropagation();
-                if (setSelectedQRAsset && setShowQRModal) {
-                    setSelectedQRAsset(a);
-                    setShowQRModal(true);
-                }
-              }} 
-              className="w-full bg-slate-900 text-white py-2 rounded-md text-[10px] font-bold mt-auto flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors shadow-sm"
-            >
-              <QrCode size={12} /> QR Kod / Etiket
-            </button>
           </div>
         )) : (
-          <div className="col-span-4 p-16 text-center border border-dashed border-slate-300 rounded-xl text-slate-400 text-xs">
-            {searchTerm ? 'Aradığınız kriterlere uygun varlık bulunamadı.' : 'Varlık kaydı bulunmuyor.'}
+          <div className="col-span-full p-20 text-center border-2 border-dashed border-slate-200 rounded-3xl text-slate-400">
+             Varlık kaydı bulunmuyor.
           </div>
         )}
       </div>
