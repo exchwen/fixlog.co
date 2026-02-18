@@ -4,6 +4,16 @@ import React from 'react';
 import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, ShieldCheck, CheckSquare, Bell } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab }: any) {
+  
+  // Çıkış yapma fonksiyonu EKLENDİ
+  const handleLogout = () => {
+    // Tarayıcıdaki oturum geçmişini/çerezleri temizle
+    localStorage.clear();
+    sessionStorage.clear();
+    // Kullanıcıyı giriş ekranına yönlendir
+    window.location.href = '/'; 
+  };
+
   return (
     <aside className="hidden lg:flex w-56 bg-slate-900 text-slate-400 flex-col sticky top-0 h-screen z-50 border-r border-slate-800">
       <div className="p-5 flex items-center gap-3 border-b border-slate-800 bg-slate-900/50">
@@ -38,7 +48,10 @@ export default function Sidebar({ activeTab, setActiveTab }: any) {
         ))}
       </nav>
       <div className="p-4 border-t border-slate-800">
-        <button className="w-full flex items-center justify-center gap-2 px-3 py-2 text-rose-400 font-medium hover:bg-rose-500/10 rounded-lg transition-all text-xs">
+        <button 
+          onClick={handleLogout} 
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 text-rose-400 font-medium hover:bg-rose-500/10 rounded-lg transition-all text-xs"
+        >
           <LogOut size={14} /> Çıkış Yap
         </button>
       </div>
