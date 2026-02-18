@@ -71,7 +71,7 @@ export default function PatronDashboard() {
   const [customerForm, setCustomerForm] = useState({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', assetMode: 'NONE', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } });
   const [stockForm, setStockForm] = useState({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', category: '', supplierId: '', supplierMode: 'NONE', newSupplier: { name: '', phone: '' } });
   const [supplierForm, setSupplierForm] = useState({ name: '', phone: '' });
-  const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', emergencyPhone: '', whatsappPhone: '' });
+  const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', emergencyPhone: '', whatsappPhone: '', logo: '' });
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '' });
 
   const fetchData = async () => {
@@ -89,7 +89,8 @@ export default function PatronDashboard() {
             taxInfo: result.taxInfo || '', 
             phone: result.phone || '',
             emergencyPhone: result.emergencyPhone || '',
-            whatsappPhone: result.whatsappPhone || ''
+            whatsappPhone: result.whatsappPhone || '',
+            logo: result.logo || ''
         });
       }
     } catch (err) { console.error("Veri çekilemedi:", err); } finally { setLoading(false); }
@@ -139,7 +140,6 @@ export default function PatronDashboard() {
     );
   }, [data]);
 
-  // Stok sekmesi için filtrelenmiş veriyi hazırlayan Memoized obje
   const filteredDataForTabs = useMemo(() => {
     if (!data) return null;
     if (activeTab !== 'stock' || stockCategory === 'Tümü') return data;
@@ -233,7 +233,7 @@ export default function PatronDashboard() {
         selectedJob={selectedJob} setSelectedJob={setSelectedJob}
       />
       
-      <AssetQRModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} asset={selectedQRAsset} />
+      <AssetQRModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} asset={selectedQRAsset} companyName={data?.name} companyLogo={data?.logo} />
 
       <AnimatePresence>
         {isCompanyDataIncomplete && activeTab !== 'settings' && (

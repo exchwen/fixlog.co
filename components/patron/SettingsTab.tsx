@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Save, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle, MessageCircle } from 'lucide-react';
+import { Save, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle, MessageCircle, ImagePlus } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
 
 const CITY_DATA: any = trCitiesData;
@@ -12,7 +12,6 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
   const [localDistrict, setLocalDistrict] = useState('');
   const [localDetail, setLocalDetail] = useState('');
 
-  // Veri geldiğinde parçala
   useEffect(() => {
     if (settingsForm.address) {
       const parts = settingsForm.address.split(' / ');
@@ -43,7 +42,45 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
     setSettingsForm({ ...settingsForm, address: fullAddress });
   };
 
-  // GÜNCELLENDİ: Acil durum telefonu dahil tüm kutular doğrulama sürecine dahil edildi.
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = 250; 
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if(ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL('image/png');
+            setSettingsForm({ ...settingsForm, logo: dataUrl });
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const isFormValid = 
     settingsForm.companyName?.trim() &&
     settingsForm.ownerName?.trim() &&
@@ -72,6 +109,32 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
         
+        {/* Logo Yükleme Alanı */}
+        <div className="flex flex-col sm:flex-row gap-5 items-center bg-slate-50 p-4 border border-slate-200 rounded-xl">
+          <div className="w-20 h-20 bg-white border border-slate-200 rounded-lg flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+            {settingsForm.logo ? (
+              <img src={settingsForm.logo} alt="Logo" className="max-w-full max-h-full object-contain p-2" />
+            ) : (
+              <ImagePlus className="text-slate-300" size={32} />
+            )}
+          </div>
+          <div className="flex-1">
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Firma Logosu</label>
+            <p className="text-xs text-slate-500 mb-3">Lütfen şeffaf arka plana sahip bir PNG dosyası yükleyin. Sistem, veritabanını şişirmemek adına görseli anında optimize edecektir.</p>
+            <div className="flex gap-2">
+              <label className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-xs font-bold cursor-pointer hover:bg-slate-50 transition-colors shadow-sm inline-block">
+                <input type="file" accept="image/png" className="hidden" onChange={handleLogoUpload} />
+                Logo Seç
+              </label>
+              {settingsForm.logo && (
+                <button onClick={() => setSettingsForm({...settingsForm, logo: ''})} className="bg-rose-50 border border-rose-100 text-rose-600 px-4 py-2 rounded-lg text-xs font-bold hover:bg-rose-100 transition-colors shadow-sm">
+                  Kaldır
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Firma Adı & Yetkili */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
@@ -232,7 +295,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
         {!isFormValid && (
            <div className="bg-amber-50 text-amber-600 px-4 py-3 rounded-lg text-xs font-medium border border-amber-100 flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
-              Kaydetmek için lütfen tüm alanları eksiksiz doldurunuz.
+              Kaydetmek için lütfen tüm alanları (WhatsApp hariç) eksiksiz doldurunuz.
            </div>
         )}
 

@@ -10,28 +10,30 @@ interface AssetQRModalProps {
   isOpen: boolean;
   onClose: () => void;
   asset: any;
+  companyName?: string;
+  companyLogo?: string;
 }
 
-export default function AssetQRModal({ isOpen, onClose, asset }: AssetQRModalProps) {
+export default function AssetQRModal({ isOpen, onClose, asset, companyName, companyLogo }: AssetQRModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = React.useState(false);
 
-  // GÜNCELLEME BURADA: 'content' yerine 'contentRef' kullanıyoruz
   const handlePrint = useReactToPrint({
-    contentRef: printRef, // v3.x uyumlu kullanım
+    contentRef: printRef, 
     documentTitle: `QR-${asset?.name || 'Varlik'}`,
     onAfterPrint: () => console.log('Yazdırma işlemi tamamlandı'),
     pageStyle: `
-      @page { size: auto; margin: 0mm; }
-      @media print { body { -webkit-print-color-adjust: exact; } }
+      @page { size: auto; margin: 0; }
+      @media print { 
+        body { -webkit-print-color-adjust: exact; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; } 
+        .print-container { width: 100vw !important; height: 100vh !important; border: none !important; box-shadow: none !important; border-radius: 0 !important; padding: 2mm !important; }
+      }
     `
   });
 
   if (!isOpen || !asset) return null;
 
-  // UUID varsa onu, yoksa ID'yi kullan (Eski kayıtlar için güvenlik ağı)
   const uniqueId = asset.uuid || asset.id;
-  // Domain adresini otomatik al
   const qrUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/q/${uniqueId}`;
 
   return (
@@ -53,39 +55,43 @@ export default function AssetQRModal({ isOpen, onClose, asset }: AssetQRModalPro
           </div>
 
           {/* YAZDIRILACAK ALAN */}
-          <div className="flex-1 p-8 flex items-center justify-center bg-slate-100 print:bg-white print:p-0 print:m-0 print:h-screen print:flex print:items-center print:justify-center">
+          <div className="flex-1 p-8 flex items-center justify-center bg-slate-100 print:bg-white print:p-0 print:m-0 print:h-screen print:w-screen print:flex print:items-center print:justify-center">
             
             <div 
               ref={printRef} 
-              className="w-[300px] h-[450px] bg-white border-4 border-slate-900 rounded-xl flex flex-col items-center justify-between p-6 text-center shadow-lg print:shadow-none print:border-4 print:border-black box-border"
+              className="print-container w-[280px] bg-white border-2 border-slate-900 rounded-xl flex flex-col items-center justify-between p-5 text-center shadow-lg box-border"
             >
-              {/* Logo Alanı */}
-              <div className="w-full border-b-2 border-slate-100 pb-4 mb-2">
-                <div className="text-2xl font-black text-slate-900 tracking-tighter uppercase">İŞ DÖKÜMÜ</div>
-                <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Teknik Servis Takip</div>
+              {/* Logo ve Firma Adı */}
+              <div className="w-full flex flex-col items-center justify-center mb-3 border-b-2 border-slate-100 pb-3 print:pb-2 print:mb-2">
+                {companyLogo ? (
+                  <img src={companyLogo} alt="Logo" className="h-10 object-contain mb-2 print:h-8 print:mb-1" />
+                ) : null}
+                <div className="text-xl font-black text-slate-900 tracking-tighter uppercase print:text-sm print:leading-tight">
+                  {companyName || 'İşletme Adı'}
+                </div>
               </div>
 
               {/* QR Kod */}
-              <div className="flex-1 flex items-center justify-center py-2">
+              <div className="flex-1 flex items-center justify-center py-2 print:py-0">
                 <QRCodeSVG 
                   value={qrUrl} 
-                  size={180} 
-                  level="Q" // Yüksek hata düzeltme
+                  size={150} 
+                  level="Q"
                   includeMargin={false}
                 />
               </div>
 
               {/* Alt Bilgiler */}
-              <div className="w-full pt-4 border-t-2 border-slate-100">
-                <h2 className="text-xl font-bold text-slate-900 leading-tight mb-1 break-words">
+              <div className="w-full pt-3 mt-2 border-t border-slate-200 print:pt-1 print:mt-1">
+                <h2 className="text-lg font-bold text-slate-900 leading-tight mb-0.5 break-words print:text-xs">
                   {asset.name}
                 </h2>
-                <p className="text-sm font-medium text-slate-600 mb-2 line-clamp-2">
-                  {asset.apartmentName ? asset.apartmentName : asset.location}
-                </p>
-                <div className="inline-block bg-slate-100 px-2 py-1 rounded text-[10px] font-mono text-slate-500 border border-slate-200">
-                  ID: {uniqueId.toString().slice(0, 8)}...
-                </div>
+                <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold print:text-[8px]">Teknik Servis Takip</div>
+              </div>
+
+              {/* Powered By */}
+              <div className="mt-4 text-[9px] text-slate-400 font-medium uppercase print:text-[6px] print:mt-2">
+                 isdokumu.com • Powered by İş Dökümü
               </div>
             </div>
           

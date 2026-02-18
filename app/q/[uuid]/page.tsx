@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, Phone, ShieldCheck, Box, MapPin, History, X, ShieldAlert, ChevronRight } from 'lucide-react';
+import { AlertTriangle, Phone, ShieldCheck, Box, MapPin, History, X, ShieldAlert, ChevronRight, User } from 'lucide-react';
 import { useParams } from 'next/navigation';
 
 export default function AssetScanPage() {
@@ -64,9 +64,15 @@ export default function AssetScanPage() {
           <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-500 via-slate-900 to-slate-900"></div>
           
           <div className="relative z-10">
-            <div className="w-20 h-20 bg-white/10 ring-4 ring-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md shadow-lg">
-                <Box size={36} className="text-blue-400" />
-            </div>
+            {asset.logo ? (
+               <div className="bg-white/10 p-3 rounded-2xl inline-block mb-4 backdrop-blur-md ring-4 ring-white/5 shadow-lg">
+                 <img src={asset.logo} alt="Logo" className="max-h-16 object-contain" />
+               </div>
+            ) : (
+               <div className="w-20 h-20 bg-white/10 ring-4 ring-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md shadow-lg">
+                 <Box size={36} className="text-blue-400" />
+               </div>
+            )}
             <h1 className="text-2xl font-bold mb-1 tracking-tight">{asset.name}</h1>
             <p className="text-blue-200/80 text-xs font-medium uppercase tracking-wider">{asset.company_name}</p>
           </div>
@@ -75,6 +81,11 @@ export default function AssetScanPage() {
         {/* İçerik Alanı */}
         <div className="p-6">
           
+          {/* Personel Girişi Butonu */}
+          <a href="/login" className="w-full flex items-center justify-center gap-2 bg-slate-800 text-white text-xs font-bold py-3.5 rounded-xl hover:bg-slate-700 transition-colors shadow-sm mb-5">
+             <User size={16} /> Personel Girişi
+          </a>
+
           {/* Konum Bilgisi ve Harita */}
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-6 flex flex-col gap-3">
              <div className="flex items-start gap-3">
@@ -87,9 +98,9 @@ export default function AssetScanPage() {
                 </div>
              </div>
              
-             {/* Haritada Görüntüle Butonu */}
+             {/* Haritada Görüntüle Butonu DÜZELTİLDİ */}
              <a 
-               href={`http://googleusercontent.com/maps.google.com/?q=${encodeURIComponent(asset.location)}`} 
+               href={`https://maps.google.com/?q=${encodeURIComponent(asset.location)}`} 
                target="_blank" 
                rel="noopener noreferrer"
                className="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 text-xs font-bold py-2.5 rounded-lg hover:bg-slate-100 transition-colors shadow-sm"
@@ -98,7 +109,7 @@ export default function AssetScanPage() {
              </a>
           </div>
 
-          {/* Geçmiş İş Kayıtları Butonu (Teknik Detay Yerine) */}
+          {/* Geçmiş İş Kayıtları Butonu */}
           <button 
             onClick={() => setShowHistory(true)}
             className="w-full mb-6 flex items-center justify-between bg-blue-50 hover:bg-blue-100 text-blue-700 p-4 rounded-xl border border-blue-100 transition-all group"
@@ -149,8 +160,12 @@ export default function AssetScanPage() {
         </div>
       </div>
       
-      <div className="mt-6 text-center opacity-50">
-        <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">Powered by İş Dökümü</p>
+      {/* FOOTER */}
+      <div className="mt-8 mb-4 text-center opacity-70 hover:opacity-100 transition-opacity">
+        <a href="https://isdokumu.com" target="_blank" rel="noopener noreferrer" className="text-[11px] text-slate-500 font-bold uppercase tracking-widest block hover:text-slate-800 transition-colors">
+            isdokumu.com
+        </a>
+        <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-1.5">Powered by İş Dökümü</p>
       </div>
 
       {/* İŞ GEÇMİŞİ MODALI */}
