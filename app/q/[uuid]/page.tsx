@@ -40,7 +40,7 @@ export default function AssetScanPage() {
     if (uuid) fetchAsset();
   }, [uuid]);
 
-  // LOGODAN ZIT RENK SEÇİMİ
+  // LOGODAN ZIT RENK SEÇİMİ (Mavi, Siyah veya Beyaz)
   useEffect(() => {
     if (!asset?.logo) {
       setLogoBgColor('#ffffff');
@@ -110,7 +110,7 @@ export default function AssetScanPage() {
         body: JSON.stringify({ uuid: asset.uuid || uuid, company_slug: asset.company_slug })
       });
     } catch (err) {
-      console.error("Acil durum bildirilemedi.", err);
+      console.error("Acil durum bildirilemedi, ancak yine de aramaya yönlendirilecek.", err);
     } finally {
       setIsSubmitting(false);
       setShowEmergencyConfirm(false);
@@ -135,11 +135,11 @@ export default function AssetScanPage() {
         })
       });
       if (res.ok) {
-        alert("Arıza kaydınız başarıyla iletildi.");
+        alert("Arıza kaydınız başarıyla iletildi. En kısa sürede sizinle iletişime geçilecektir.");
         setShowFaultModal(false);
         setFaultForm({ name: '', phone: '', description: '' });
       } else {
-        alert("Bir sorun oluştu.");
+        alert("Bir sorun oluştu. Lütfen doğrudan arama butonunu kullanınız.");
       }
     } catch (err) {
       alert("Bağlantı kurulamadı.");
@@ -148,10 +148,10 @@ export default function AssetScanPage() {
     }
   };
 
-  // Harita URL'sini oluşturan yardımcı fonksiyon
+  // Harita URL'sini oluşturan yardımcı fonksiyon (Sadece net lokasyon bilgisini kullanır)
   const getMapsUrl = () => {
       if (!asset?.location) return '#';
-      // Sadece temiz adresi gönder
+      // Kesinlikle bina adı eklenmez, sadece net adres (location) gönderilir.
       return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(asset.location)}`;
   };
 
@@ -205,7 +205,6 @@ export default function AssetScanPage() {
              <User size={16} /> Personel Girişi
           </a>
 
-          {/* KONUM KARTI - Sadece lokasyon bilgisi var */}
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-6 flex flex-col gap-3">
              <div className="flex items-start gap-3">
                 <div className="bg-white p-2 rounded-full border border-slate-200 text-slate-400 mt-1">
@@ -213,6 +212,7 @@ export default function AssetScanPage() {
                 </div>
                 <div>
                     <div className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Cihaz Konumu</div>
+                    {/* UI'da bina adı/site adı tamamen kaldırıldı */}
                     <div className="text-sm text-slate-700 font-semibold leading-snug">{asset.location}</div>
                 </div>
              </div>
