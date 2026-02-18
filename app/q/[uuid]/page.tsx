@@ -148,22 +148,33 @@ export default function AssetScanPage() {
     }
   };
 
-  // Harita URL'sini oluşturan yardımcı fonksiyon
+  // Harita URL'sini oluşturan yardımcı fonksiyon (Bina adını kesin temizler)
   const getMapsUrl = () => {
     if (!asset?.location) return '#';
     
-    // Harita linki için bina adını arınmış temiz bir adres oluştur
     let mapQuery = asset.location;
     
-    // Eğer asset.location bina adını (c1 Blok vb.) içeriyorsa, onu linkten kesin olarak çıkarıyoruz
-    if (asset.apartmentName && mapQuery.includes(asset.apartmentName)) {
-      mapQuery = mapQuery.replace(asset.apartmentName, '').trim();
-      // Başındaki " - " ayırıcıyı temizle (Örn: "- Ambarlı Mahallesi" -> "Ambarlı Mahallesi")
-      if (mapQuery.startsWith('-')) {
-        mapQuery = mapQuery.substring(1).trim();
-      }
+    // 1. Regex ile büyük/küçük harf duyarsız temizlik
+    if (asset.apartmentName) {
+      // Özel karakterleri escape et (regex hata vermesin diye)
+      const escapedName = asset.apartmentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escapedName, 'gi');
+      mapQuery = mapQuery.replace(regex, '').trim();
     }
+
+    // 2. Eğer adres "C1 Blok - Ambarlı Mah..." şeklindeyse baştaki tireyi ve öncesini temizle
+    if (mapQuery.includes(' - ')) {
+      const parts = mapQuery.split(' - ');
+      // İlk parça genellikle bina bilgisidir, geri kalan asıl adrestir
+      mapQuery = parts.slice(1).join(' ').trim();
+    } else if (mapQuery.startsWith('-')) {
+      mapQuery = mapQuery.substring(1).trim();
+    }
+
+    // 3. Başta veya sonda kalabilecek noktalama işaretlerini temizle
+    mapQuery = mapQuery.replace(/^[^a-zA-Z0-9çğıöşüÇĞİÖŞÜ]+|[^a-zA-Z0-9çğıöşüÇĞİÖŞÜ]+$/g, '').trim();
     
+    // En sağlam link yapısı: Resmi Google Maps Search API
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
   };
 
@@ -224,14 +235,14 @@ export default function AssetScanPage() {
                 </div>
                 <div>
                     <div className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Cihaz Konumu</div>
-                    {/* BİNA/SİTE ADI SADECE EKRANDA GÖRÜNSÜN DİYE BURAYA EKLEDİK */}
+                    {/* BİNA/SİTE ADI EKRANDA GÖRÜNSÜN */}
                     {asset.apartmentName && (
                         <div className="text-xs text-blue-600 font-bold mb-0.5">{asset.apartmentName}</div>
                     )}
                     <div className="text-sm text-slate-700 font-semibold leading-snug">{asset.location}</div>
                 </div>
              </div>
-             {/* GETMAPSURL ARTIK SADECE TEMİZ ADRESİ GÖNDERİYOR */}
+             {/* HARİTA BUTONU */}
              <a href={getMapsUrl()} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 text-xs font-bold py-2.5 rounded-lg hover:bg-slate-100 transition-colors shadow-sm">
                 <MapPin size={14} /> Haritada Görüntüle
              </a>
