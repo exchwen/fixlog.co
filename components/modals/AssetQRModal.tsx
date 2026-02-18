@@ -84,7 +84,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
 
   const handlePrint = useReactToPrint({
     contentRef: printRef, 
-    documentTitle: `QR-${asset?.name || 'Varlik'}`,
+    documentTitle: `QR-${asset?.apartmentName || asset?.name || 'Varlik'}`,
     onAfterPrint: () => console.log('Yazdırma işlemi tamamlandı'),
     pageStyle: `
       @page { size: auto; margin: 0; }
@@ -99,6 +99,13 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
 
   const uniqueId = asset.uuid || asset.id;
   const qrUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/q/${uniqueId}`;
+
+  // Mantık: Apartman adı varsa Ana Başlık o olur, yoksa Cihaz adı olur.
+  const aptName = asset.apartmentName || asset.apartment_name;
+  const mainTitle = aptName || asset.name;
+  
+  // Alt başlık sadece Apartman adı VARSA Cihaz adı olarak görünür.
+  const subTitle = aptName ? asset.name : null;
 
   return (
     <AnimatePresence>
@@ -156,11 +163,20 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
               </div>
 
               {/* Alt Bilgiler */}
-              <div className="w-full pt-3 mt-2 border-t border-slate-200 print:pt-1 print:mt-1">
-                <h2 className="text-lg font-bold text-slate-900 leading-tight mb-0.5 break-words print:text-xs">
-                  {asset.name}
+              <div className="w-full pt-3 mt-2 border-t border-slate-200 print:pt-1 print:mt-1 flex flex-col items-center">
+                {/* Ana Başlık: Apartman Adı (Yoksa Cihaz Adı) */}
+                <h2 className="text-lg font-bold text-slate-900 leading-tight mb-1 break-words print:text-xs">
+                  {mainTitle}
                 </h2>
-                <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold print:text-[8px]">Teknik Servis Takip</div>
+                
+                {/* Alt Başlık: Cihaz Adı (Eğer Apartman Adı varsa) - BURADA GÖRÜNECEK */}
+                {subTitle && (
+                  <div className="text-sm font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded print:text-[9px] print:bg-transparent print:p-0 print:text-slate-700 mb-1">
+                    {subTitle}
+                  </div>
+                )}
+
+                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-bold print:text-[6px] mt-1">Teknik Servis Takip</div>
               </div>
 
               {/* Powered By */}

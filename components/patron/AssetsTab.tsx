@@ -77,7 +77,8 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
   const filteredAssets = data?.assets?.filter((a: any) => {
     const term = searchTerm.toLowerCase();
     const customerName = data?.customers?.find((c: any) => c.id === a.customer_id)?.name || '';
-    const aptName = a.apartmentName || a.apartmentName || '';
+    // DÜZELTME: Hem camelCase hem snake_case kontrolü
+    const aptName = a.apartmentName || a.apartment_name || '';
 
     return (
       a.name?.toLowerCase().includes(term) ||
@@ -113,8 +114,8 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {filteredAssets.length > 0 ? filteredAssets.map((a: any) => {
-            // Veri tabanı snake_case veya camelCase olabilir, her ikisini de kontrol et
-            const aptName = a.apartmentName || a.apartmentName;
+            // DÜZELTME: Veri tabanı snake_case veya camelCase olabilir, her ikisini de kontrol et
+            const aptName = a.apartmentName || a.apartment_name;
             
             return (
               <div 

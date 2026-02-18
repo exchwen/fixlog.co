@@ -148,16 +148,16 @@ export default function AssetScanPage() {
     }
   };
 
-  // Harita URL'sini oluşturan yardımcı fonksiyon (Bina adını kesin temizler)
+  // Harita URL'sini oluşturan yardımcı fonksiyon
   const getMapsUrl = () => {
     if (!asset?.location) return '#';
     
     let mapQuery = asset.location;
+    const aptName = asset.apartmentName || asset.apartment_name;
     
     // 1. Regex ile büyük/küçük harf duyarsız temizlik
-    if (asset.apartmentName) {
-      // Özel karakterleri escape et (regex hata vermesin diye)
-      const escapedName = asset.apartmentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (aptName) {
+      const escapedName = aptName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(escapedName, 'gi');
       mapQuery = mapQuery.replace(regex, '').trim();
     }
@@ -165,16 +165,13 @@ export default function AssetScanPage() {
     // 2. Eğer adres "C1 Blok - Ambarlı Mah..." şeklindeyse baştaki tireyi ve öncesini temizle
     if (mapQuery.includes(' - ')) {
       const parts = mapQuery.split(' - ');
-      // İlk parça genellikle bina bilgisidir, geri kalan asıl adrestir
       mapQuery = parts.slice(1).join(' ').trim();
     } else if (mapQuery.startsWith('-')) {
       mapQuery = mapQuery.substring(1).trim();
     }
 
-    // 3. Başta veya sonda kalabilecek noktalama işaretlerini temizle
     mapQuery = mapQuery.replace(/^[^a-zA-Z0-9çğıöşüÇĞİÖŞÜ]+|[^a-zA-Z0-9çğıöşüÇĞİÖŞÜ]+$/g, '').trim();
     
-    // En sağlam link yapısı: Resmi Google Maps Search API
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
   };
 
@@ -191,6 +188,11 @@ export default function AssetScanPage() {
       {error}
     </div>
   );
+
+  // İsimlendirme Mantığı
+  const aptName = asset.apartmentName || asset.apartment_name;
+  const mainTitle = aptName || asset.name;
+  const subTitle = aptName ? asset.name : null;
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 font-sans">
@@ -216,8 +218,15 @@ export default function AssetScanPage() {
                  <Box size={36} className="text-blue-400" />
                </div>
             )}
-            <h1 className="text-2xl font-bold mb-1 tracking-tight">{asset.name}</h1>
-            <p className="text-blue-200/80 text-xs font-medium uppercase tracking-wider">{asset.company_name}</p>
+            
+            {/* BAŞLIK HİYERARŞİSİ DEĞİŞİKLİĞİ BURADA YAPILDI */}
+            <h1 className="text-2xl font-bold mb-1 tracking-tight">{mainTitle}</h1>
+            
+            {subTitle && (
+                <div className="text-blue-200 font-semibold text-sm mb-1 bg-white/10 inline-block px-3 py-0.5 rounded-lg border border-white/10">{subTitle}</div>
+            )}
+
+            <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mt-1">{asset.company_name}</p>
           </div>
         </div>
 
@@ -235,11 +244,16 @@ export default function AssetScanPage() {
                 </div>
                 <div>
                     <div className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Cihaz Konumu</div>
-                    {/* BİNA/SİTE ADI EKRANDA GÖRÜNSÜN */}
-                    {asset.apartmentName && (
-                        <div className="text-xs text-blue-600 font-bold mb-0.5">{asset.apartmentName}</div>
+                    
+                    {/* EĞER HEADERDA APARTMAN ADI YAZIYORSA BURADA TEKRAR ETMESİNE GEREK YOK AMA KONUM NETLİĞİ İÇİN KALSIN */}
+                    {aptName && (
+                        <div className="text-xs text-blue-600 font-bold mb-0.5">{aptName}</div>
                     )}
-                    <div className="text-sm text-slate-700 font-semibold leading-snug">{asset.location}</div>
+                    
+                    <div className="text-sm text-slate-700 font-semibold leading-snug">
+                        {/* Konum içinden apartman adını temizleyerek gösterelim ki tekrar olmasın */}
+                        {asset.location ? asset.location.replace(aptName || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : '-'}
+                    </div>
                 </div>
              </div>
              {/* HARİTA BUTONU */}
@@ -269,7 +283,7 @@ export default function AssetScanPage() {
             </button>
             
             <a 
-                href={asset.whatsapp_phone ? `https://wa.me/${asset.whatsapp_phone.replace(/\D/g, '').length >= 10 ? '90' + asset.whatsapp_phone.replace(/\D/g, '').slice(-10) : asset.whatsapp_phone.replace(/\D/g, '')}?text=${encodeURIComponent('Merhaba, ' + asset.name + ' cihazı için destek almak istiyorum.')}` : '#'} 
+                href={asset.whatsapp_phone ? `https://wa.me/${asset.whatsapp_phone.replace(/\D/g, '').length >= 10 ? '90' + asset.whatsapp_phone.replace(/\D/g, '').slice(-10) : asset.whatsapp_phone.replace(/\D/g, '')}?text=${encodeURIComponent('Merhaba, ' + (aptName || asset.name) + ' (' + (aptName ? asset.name : '') + ') cihazı için destek almak istiyorum.')}` : '#'} 
                 target={asset.whatsapp_phone ? "_blank" : undefined} rel={asset.whatsapp_phone ? "noopener noreferrer" : undefined} onClick={(e) => !asset.whatsapp_phone && e.preventDefault()}
                 className={`w-full flex items-center justify-center gap-3 py-4 rounded-xl font-bold text-lg shadow-lg transition-all active:scale-98 text-white
                     ${asset.whatsapp_phone ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200/50 cursor-pointer' : 'bg-slate-300 cursor-not-allowed'}

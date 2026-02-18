@@ -669,8 +669,9 @@ export default function DashboardModals({
                                   <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
                                       <div className="text-[10px] font-semibold text-slate-500 uppercase">Tam Konum</div>
                                       <div className="flex flex-col mt-0.5 space-y-1">
-                                          {showAssetDetail.apartmentName && (
-                                              <div className="text-xs font-bold text-slate-800">{showAssetDetail.apartmentName}</div>
+                                          {/* APARTMAN ADI EKLENDİ - VARSA GÖSTERİR */}
+                                          {(showAssetDetail.apartmentName || showAssetDetail.apartment_name) && (
+                                              <div className="text-xs font-bold text-slate-800">{showAssetDetail.apartmentName || showAssetDetail.apartment_name}</div>
                                           )}
                                           <div className="text-xs font-medium text-slate-800">{showAssetDetail.location || '-'}</div>
                                           {showAssetDetail.location && (
@@ -685,7 +686,8 @@ export default function DashboardModals({
                               </div>
                               <div className="pt-4 border-t border-slate-100">
                                   <div className="flex gap-2 w-full">
-                                      <button onClick={() => { setIsEditingAsset(true); setEditAssetForm({ id: showAssetDetail.id, name: showAssetDetail.name, location: parseAddressToState(showAssetDetail.location || ''), apartmentName: showAssetDetail.apartmentName || showAssetDetail.apartmentName || '', deviceDetails: showAssetDetail.asset_details || '' }); }} className="flex-[2] bg-slate-100 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5"><Settings size={14} /> Düzenle</button>
+                                      {/* EDİT BUTONU GÜNCELLENDİ: APARTMAN ADINI FORM'A AKTARIR */}
+                                      <button onClick={() => { setIsEditingAsset(true); setEditAssetForm({ id: showAssetDetail.id, name: showAssetDetail.name, location: parseAddressToState(showAssetDetail.location || ''), apartmentName: showAssetDetail.apartmentName || showAssetDetail.apartment_name || '', deviceDetails: showAssetDetail.asset_details || '' }); }} className="flex-[2] bg-slate-100 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5"><Settings size={14} /> Düzenle</button>
                                       <button onClick={async () => { if(confirm(`${showAssetDetail.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-asset', { id: showAssetDetail.id }, () => handleCloseDetail('asset'), () => {}); } }} className="flex-1 bg-rose-50 text-rose-600 py-2 rounded-md text-xs font-semibold hover:bg-rose-100 transition-colors flex items-center justify-center gap-1.5"><Trash2 size={14} /> Sil</button>
                                   </div>
                               </div>
