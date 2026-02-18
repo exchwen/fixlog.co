@@ -7,6 +7,7 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
   const [searchTerm, setSearchTerm] = useState('');
   const [logoBgColor, setLogoBgColor] = useState<string>('#f8fafc');
 
+  // --- RENK ANALİZ MOTORU ---
   useEffect(() => {
     const companyLogo = data?.logo;
     if (!companyLogo) {
@@ -20,24 +21,28 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
+      
       canvas.width = img.width;
       canvas.height = img.height;
       ctx.drawImage(img, 0, 0);
+      
       try {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const dataPixels = imageData.data;
         let r = 0, g = 0, b = 0, count = 0;
+        
         for (let i = 0; i < dataPixels.length; i += 4) {
-          if (dataPixels[i + 3] < 128) continue;
+          if (dataPixels[i + 3] < 128) continue; 
           r += dataPixels[i]; g += dataPixels[i + 1]; b += dataPixels[i + 2];
           count++;
         }
+        
         if (count > 0) {
           r = Math.floor(r / count); g = Math.floor(g / count); b = Math.floor(b / count);
           const palette = [
             { name: 'white', rgb: [255, 255, 255], hex: '#ffffff' },
-            { name: 'black', rgb: [15, 23, 42], hex: '#0f172a' },
-            { name: 'blue', rgb: [37, 99, 235], hex: '#2563eb' }
+            { name: 'black', rgb: [15, 23, 42], hex: '#0f172a' }, 
+            { name: 'blue', rgb: [37, 99, 235], hex: '#2563eb' }  
           ];
           let maxDist = -1;
           let selectedColor = '#ffffff';
@@ -47,10 +52,13 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
           }
           setLogoBgColor(selectedColor);
         }
-      } catch (e) { setLogoBgColor('#f8fafc'); }
+      } catch (e) {
+        setLogoBgColor('#f8fafc'); 
+      }
     };
     img.src = companyLogo;
   }, [data?.logo]);
+  // --- RENK ANALİZ BİTİŞ ---
 
   // Harita linki oluşturucu (apartmentName'i linkten temizler)
   const getMapsUrl = (location: string, apartmentName: string) => {
@@ -58,16 +66,20 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
     let mapQuery = location;
     if (apartmentName && mapQuery.includes(apartmentName)) {
       mapQuery = mapQuery.replace(apartmentName, '').trim();
+      // Başındaki tire veya taksim işaretlerini temizle
       if (mapQuery.startsWith('-') || mapQuery.startsWith('/')) {
         mapQuery = mapQuery.substring(1).trim();
       }
     }
+    // Resmi Google Maps Search API
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
   };
 
+  // Arama filtresi mantığı
   const filteredAssets = data?.assets?.filter((a: any) => {
     const term = searchTerm.toLowerCase();
     const customerName = data?.customers?.find((c: any) => c.id === a.customer_id)?.name || '';
+    
     return (
       a.name?.toLowerCase().includes(term) ||
       a.location?.toLowerCase().includes(term) ||
@@ -79,17 +91,20 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <h3 className="text-lg font-bold text-slate-900">Kayıtlı Varlıklar & QR</h3>
+        
         <div className="flex w-full sm:w-auto gap-2">
+          {/* ARAMA KUTUSU */}
           <div className="relative flex-1 sm:w-64">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
             <input 
               type="text" 
               placeholder="Cihaz, konum veya müşteri ara..." 
-              className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-500 bg-white"
+              className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-500 bg-white placeholder:text-slate-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+
           <button onClick={() => setShowAssetModal(true)} className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-blue-700 whitespace-nowrap">
             <Plus size={14} /> Yeni Varlık
           </button>
@@ -103,51 +118,62 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
             onClick={() => setShowAssetDetail && setShowAssetDetail(a)}
             className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer flex flex-col group overflow-hidden"
           >
-            {/* Kart Başlık Alanı */}
+            {/* KART BAŞLIK VE LOGO ALANI */}
             <div className="p-5 flex-1">
-              <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start justify-between mb-4 gap-3">
+                {/* DİNAMİK LOGO KUTUSU - BOYUT BÜYÜTÜLDÜ (w-16 h-16) */}
                 <div 
-                  className="w-12 h-12 rounded-xl flex items-center justify-center border border-slate-100 shadow-sm overflow-hidden"
+                  className="w-16 h-16 rounded-xl flex items-center justify-center border border-slate-100 shadow-sm overflow-hidden shrink-0 transition-all duration-500 group-hover:scale-105"
                   style={{ backgroundColor: data?.logo ? logoBgColor : '#f8fafc' }}
                 >
                   {data?.logo ? (
-                    <img src={data.logo} alt="Logo" className="w-full h-full object-contain p-2" />
+                    <img 
+                      src={data.logo} 
+                      alt="Firma Logosu" 
+                      className="w-full h-full object-contain p-2 drop-shadow-sm" 
+                    />
                   ) : (
-                    <Box size={20} className="text-slate-400" />
+                    // Logo yoksa varsayılan ikon boyutu da büyütüldü
+                    <Box size={28} className="text-slate-400" />
                   )}
                 </div>
-                <div className="bg-blue-50 text-blue-600 px-2 py-1 rounded-md text-[10px] font-bold flex items-center gap-1">
+
+                {/* Müşteri Rozeti */}
+                <div className="bg-blue-50 text-blue-600 px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 shrink-0">
                   <Users size={12}/> {data?.customers?.find((c: any) => c.id === a.customer_id)?.name || 'Genel'}
                 </div>
               </div>
 
-              <div className="font-bold text-slate-900 text-base mb-2 group-hover:text-blue-600 transition-colors truncate">
+              {/* Varlık Adı */}
+              <div className="font-bold text-slate-900 text-base mb-3 group-hover:text-blue-600 transition-colors truncate">
                 {a.name}
               </div>
               
-              <div className="space-y-2">
-                <div className="flex items-start gap-2">
-                  <MapPin size={14} className="text-slate-400 shrink-0 mt-0.5" />
-                  <div className="flex flex-col gap-1.5">
-                    <div className="text-[11px] text-slate-600 leading-relaxed line-clamp-2">
+              {/* Konum ve Harita Linki */}
+              <div className="space-y-2.5">
+                <div className="flex items-start gap-2.5">
+                  <MapPin size={16} className="text-slate-400 shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-2">
+                    <div className="text-[11px] text-slate-600 leading-relaxed line-clamp-2 font-medium">
                       {a.location}
                     </div>
+                    
                     {/* Haritada Görüntüle Butonu */}
                     <a 
-                      href={getMapsUrl(a.location, a.apartmentName)} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 w-fit px-2 py-1 rounded-md transition-colors"
+                        href={getMapsUrl(a.location, a.apartmentName)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()} // Kartın tıklanmasını engelle
+                        className="inline-flex items-center gap-1.5 text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100/80 w-fit px-2.5 py-1.5 rounded-lg transition-colors"
                     >
-                      <ExternalLink size={10} /> Haritada Görüntüle
+                        <ExternalLink size={11} /> Haritada Görüntüle
                     </a>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Alt Buton Alanı */}
+            {/* ALT BUTON ALANI (QR) */}
             <div className="p-3 bg-slate-50 border-t border-slate-100">
               <button 
                 onClick={(e) => { 
@@ -165,7 +191,7 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
           </div>
         )) : (
           <div className="col-span-full p-20 text-center border-2 border-dashed border-slate-200 rounded-3xl text-slate-400">
-             Varlık kaydı bulunmuyor.
+            {searchTerm ? 'Aradığınız kriterlere uygun varlık bulunamadı.' : 'Varlık kaydı bulunmuyor.'}
           </div>
         )}
       </div>
