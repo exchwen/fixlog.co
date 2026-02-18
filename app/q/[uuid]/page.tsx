@@ -135,11 +135,11 @@ export default function AssetScanPage() {
         })
       });
       if (res.ok) {
-        alert("Arıza kaydınız başarıyla iletildi.");
+        alert("Arıza kaydınız başarıyla iletildi. En kısa sürede sizinle iletişime geçilecektir.");
         setShowFaultModal(false);
         setFaultForm({ name: '', phone: '', description: '' });
       } else {
-        alert("Bir sorun oluştu.");
+        alert("Bir sorun oluştu. Lütfen doğrudan arama butonunu kullanınız.");
       }
     } catch (err) {
       alert("Bağlantı kurulamadı.");
@@ -148,12 +148,23 @@ export default function AssetScanPage() {
     }
   };
 
-  // Harita URL'sini oluşturan fonksiyon
+  // Harita URL'sini oluşturan yardımcı fonksiyon
   const getMapsUrl = () => {
-      if (!asset?.location) return '#';
-      // SADECE LOKASYON BİLGİSİNİ GÖNDER (Bina adı dahil edilmez, %100 doğruluk sağlar)
-      const cleanLocation = asset.location;
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleanLocation)}`;
+    if (!asset?.location) return '#';
+    
+    // Harita linki için bina adını arınmış temiz bir adres oluştur
+    let mapQuery = asset.location;
+    
+    // Eğer asset.location bina adını (c1 Blok vb.) içeriyorsa, onu linkten kesin olarak çıkarıyoruz
+    if (asset.apartment_name && mapQuery.includes(asset.apartment_name)) {
+      mapQuery = mapQuery.replace(asset.apartment_name, '').trim();
+      // Başındaki " - " ayırıcıyı temizle (Örn: "- Ambarlı Mahallesi" -> "Ambarlı Mahallesi")
+      if (mapQuery.startsWith('-')) {
+        mapQuery = mapQuery.substring(1).trim();
+      }
+    }
+    
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
   };
 
   if (loading) return (
@@ -213,14 +224,14 @@ export default function AssetScanPage() {
                 </div>
                 <div>
                     <div className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Cihaz Konumu</div>
-                    {/* BİNA/SİTE ADI SADECE BURADA GÖRÜNÜR */}
+                    {/* BİNA/SİTE ADI SADECE EKRANDA GÖRÜNSÜN DİYE BURAYA EKLEDİK */}
                     {asset.apartment_name && (
                         <div className="text-xs text-blue-600 font-bold mb-0.5">{asset.apartment_name}</div>
                     )}
                     <div className="text-sm text-slate-700 font-semibold leading-snug">{asset.location}</div>
                 </div>
              </div>
-             {/* HARİTA LİNKİ SADECE asset.location BİLGİSİNİ ÇEKER */}
+             {/* GETMAPSURL ARTIK SADECE TEMİZ ADRESİ GÖNDERİYOR */}
              <a href={getMapsUrl()} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 text-xs font-bold py-2.5 rounded-lg hover:bg-slate-100 transition-colors shadow-sm">
                 <MapPin size={14} /> Haritada Görüntüle
              </a>
