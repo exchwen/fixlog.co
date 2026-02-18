@@ -64,7 +64,12 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
   const getMapsUrl = (location: string, apartmentName: string) => {
     if (!location) return '#';
     let mapQuery = location;
-    // Harita araması yaparken bina adını tekrar eklemeye gerek yok, adres yeterli
+    if (apartmentName && mapQuery.includes(apartmentName)) {
+      mapQuery = mapQuery.replace(apartmentName, '').trim();
+      if (mapQuery.startsWith('-') || mapQuery.startsWith('/')) {
+        mapQuery = mapQuery.substring(1).trim();
+      }
+    }
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
   };
 
@@ -72,12 +77,13 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
   const filteredAssets = data?.assets?.filter((a: any) => {
     const term = searchTerm.toLowerCase();
     const customerName = data?.customers?.find((c: any) => c.id === a.customer_id)?.name || '';
-    
+    const aptName = a.apartmentName || a.apartmentName || '';
+
     return (
       a.name?.toLowerCase().includes(term) ||
       a.location?.toLowerCase().includes(term) ||
       customerName.toLowerCase().includes(term) ||
-      (a.apartmentName && a.apartmentName.toLowerCase().includes(term))
+      aptName.toLowerCase().includes(term)
     );
   }) || [];
 
@@ -106,91 +112,97 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {filteredAssets.length > 0 ? filteredAssets.map((a: any) => (
-          <div 
-            key={a.id} 
-            onClick={() => setShowAssetDetail && setShowAssetDetail(a)}
-            className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer flex flex-col group overflow-hidden"
-          >
-            {/* KART BAŞLIK VE LOGO ALANI */}
-            <div className="p-5 flex-1">
-              <div className="flex items-start justify-between mb-4 gap-3">
-                {/* DİNAMİK LOGO KUTUSU */}
-                <div 
-                  className="w-16 h-16 rounded-xl flex items-center justify-center border border-slate-100 shadow-sm overflow-hidden shrink-0 transition-all duration-500 group-hover:scale-105"
-                  style={{ backgroundColor: data?.logo ? logoBgColor : '#f8fafc' }}
-                >
-                  {data?.logo ? (
-                    <img 
-                      src={data.logo} 
-                      alt="Firma Logosu" 
-                      className="w-full h-full object-contain p-2 drop-shadow-sm" 
-                    />
-                  ) : (
-                    <Box size={28} className="text-slate-400" />
-                  )}
-                </div>
-
-                {/* Müşteri Rozeti */}
-                <div className="bg-blue-50 text-blue-600 px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 shrink-0">
-                  <Users size={12}/> {data?.customers?.find((c: any) => c.id === a.customer_id)?.name || 'Genel'}
-                </div>
-              </div>
-
-              {/* ANA BAŞLIK: APARTMAN ADI (Eğer varsa) */}
-              <div className="font-bold text-slate-900 text-base mb-1 group-hover:text-blue-600 transition-colors truncate">
-                {a.apartmentName ? a.apartmentName : a.name}
-              </div>
-
-              {/* ALT BAŞLIK: CİHAZ ADI (Eğer apartman adı varsa cihaz adı altına gelir, yoksa boş) */}
-              {a.apartmentName && (
-                <div className="text-xs font-semibold text-slate-500 mb-3 truncate">
-                    {a.name}
-                </div>
-              )}
-              
-              {/* Konum ve Harita Linki */}
-              <div className="space-y-2.5 mt-2">
-                <div className="flex items-start gap-2.5">
-                  <MapPin size={16} className="text-slate-400 shrink-0 mt-0.5" />
-                  <div className="flex flex-col gap-2">
-                    {/* Bina adı konumda tekrarlanıyorsa görsel olarak temizle */}
-                    <div className="text-[11px] text-slate-600 leading-relaxed line-clamp-2 font-medium">
-                      {a.location ? a.location : '-'}
-                    </div>
-                    
-                    {/* Haritada Görüntüle Butonu */}
-                    <a 
-                        href={getMapsUrl(a.location, a.apartmentName)} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()} 
-                        className="inline-flex items-center gap-1.5 text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100/80 w-fit px-2.5 py-1.5 rounded-lg transition-colors"
+        {filteredAssets.length > 0 ? filteredAssets.map((a: any) => {
+            // Veri tabanı snake_case veya camelCase olabilir, her ikisini de kontrol et
+            const aptName = a.apartmentName || a.apartmentName;
+            
+            return (
+              <div 
+                key={a.id} 
+                onClick={() => setShowAssetDetail && setShowAssetDetail(a)}
+                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer flex flex-col group overflow-hidden"
+              >
+                {/* KART BAŞLIK VE LOGO ALANI */}
+                <div className="p-5 flex-1">
+                  <div className="flex items-start justify-between mb-4 gap-3">
+                    {/* DİNAMİK LOGO KUTUSU */}
+                    <div 
+                      className="w-16 h-16 rounded-xl flex items-center justify-center border border-slate-100 shadow-sm overflow-hidden shrink-0 transition-all duration-500 group-hover:scale-105"
+                      style={{ backgroundColor: data?.logo ? logoBgColor : '#f8fafc' }}
                     >
-                        <ExternalLink size={11} /> Haritada Görüntüle
-                    </a>
+                      {data?.logo ? (
+                        <img 
+                          src={data.logo} 
+                          alt="Firma Logosu" 
+                          className="w-full h-full object-contain p-2 drop-shadow-sm" 
+                        />
+                      ) : (
+                        <Box size={28} className="text-slate-400" />
+                      )}
+                    </div>
+
+                    {/* Müşteri Rozeti */}
+                    <div className="bg-blue-50 text-blue-600 px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 shrink-0">
+                      <Users size={12}/> {data?.customers?.find((c: any) => c.id === a.customer_id)?.name || 'Genel'}
+                    </div>
+                  </div>
+
+                  {/* BAŞLIK HİYERARŞİSİ */}
+                  {/* Eğer Apartman Adı varsa, ANA BAŞLIK Apartman adı olur */}
+                  <div className="font-bold text-slate-900 text-base mb-1 group-hover:text-blue-600 transition-colors truncate">
+                    {aptName || a.name}
+                  </div>
+
+                  {/* Eğer Apartman Adı varsa, Cihaz adı alt başlığa iner */}
+                  {aptName && (
+                    <div className="text-xs font-semibold text-slate-500 mb-3 truncate">
+                        {a.name}
+                    </div>
+                  )}
+                  
+                  {/* Konum ve Harita Linki */}
+                  <div className="space-y-2.5 mt-2">
+                    <div className="flex items-start gap-2.5">
+                      <MapPin size={16} className="text-slate-400 shrink-0 mt-0.5" />
+                      <div className="flex flex-col gap-2">
+                        {/* Bina adı konumda tekrarlanıyorsa görsel olarak temizle */}
+                        <div className="text-[11px] text-slate-600 leading-relaxed line-clamp-2 font-medium">
+                          {a.location ? a.location.replace(aptName || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : '-'}
+                        </div>
+                        
+                        {/* Haritada Görüntüle Butonu */}
+                        <a 
+                            href={getMapsUrl(a.location, aptName)} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()} 
+                            className="inline-flex items-center gap-1.5 text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100/80 w-fit px-2.5 py-1.5 rounded-lg transition-colors"
+                        >
+                            <ExternalLink size={11} /> Haritada Görüntüle
+                        </a>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* ALT BUTON ALANI (QR) */}
-            <div className="p-3 bg-slate-50 border-t border-slate-100">
-              <button 
-                onClick={(e) => { 
-                  e.stopPropagation();
-                  if (setSelectedQRAsset && setShowQRModal) {
-                      setSelectedQRAsset(a);
-                      setShowQRModal(true);
-                  }
-                }} 
-                className="w-full bg-slate-900 text-white py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all active:scale-95 shadow-sm"
-              >
-                <QrCode size={14} /> QR Kod / Etiket
-              </button>
-            </div>
-          </div>
-        )) : (
+                {/* ALT BUTON ALANI (QR) */}
+                <div className="p-3 bg-slate-50 border-t border-slate-100">
+                  <button 
+                    onClick={(e) => { 
+                      e.stopPropagation();
+                      if (setSelectedQRAsset && setShowQRModal) {
+                          setSelectedQRAsset(a);
+                          setShowQRModal(true);
+                      }
+                    }} 
+                    className="w-full bg-slate-900 text-white py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all active:scale-95 shadow-sm"
+                  >
+                    <QrCode size={14} /> QR Kod / Etiket
+                  </button>
+                </div>
+              </div>
+            );
+        }) : (
           <div className="col-span-full p-20 text-center border-2 border-dashed border-slate-200 rounded-3xl text-slate-400">
             {searchTerm ? 'Aradığınız kriterlere uygun varlık bulunamadı.' : 'Varlık kaydı bulunmuyor.'}
           </div>

@@ -43,7 +43,7 @@ export default function DashboardModals({
 
   const [isEditingJobDetail, setIsEditingJobDetail] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-   
+  
   const [editJobDetailForm, setEditJobDetailForm] = useState({ 
     workCategory: 'Normal İş Atama',
     jobType: 'Anlık',
@@ -107,20 +107,23 @@ export default function DashboardModals({
       return full;
   };
 
-  // --- MODAL KAPATMA YÖNETİCİSİ ---
+  // Tüm modalları kapatma fonksiyonu (Reset)
   const closeAllModals = () => {
-      setShowJobModal(false); setShowAssetModal(false); setShowStaffModal(false); 
-      setShowCustomerModal(false); setShowStockModal(false); setShowSupplierModal(false);
-      if (setShowCategoryModal) setShowCategoryModal(false);
-      if (setShowSupplierListModal) setShowSupplierListModal(false);
-      
-      // Detay modallarını kapat
-      setShowStaffDetail(null);
-      handleCloseDetail('customer'); 
-      handleCloseDetail('asset');
-      if (selectedJob) handleCloseDetail('job');
-      
-      setSelectedCity(''); setSelectedDistrict(''); setBuildingNo('');
+    if (showStaffDetail) setShowStaffDetail(null);
+    if (showCustomerDetail) { setShowCustomerDetail(null); setIsEditingCustomer(false); }
+    if (showAssetDetail) { setShowAssetDetail(null); setIsEditingAsset(false); setAssetDetailTab('info'); }
+    if (selectedJob) { setSelectedJob(null); setIsEditingJobDetail(false); setShowCancelConfirm(false); }
+    
+    setShowJobModal(false); 
+    setShowAssetModal(false); 
+    setShowStaffModal(false); 
+    setShowCustomerModal(false); 
+    setShowStockModal(false); 
+    setShowSupplierModal(false);
+    if (setShowCategoryModal) setShowCategoryModal(false);
+    if (setShowSupplierListModal) setShowSupplierListModal(false);
+    
+    setSelectedCity(''); setSelectedDistrict(''); setBuildingNo('');
   };
 
   const handleCloseDetail = (type: string) => {
@@ -142,37 +145,33 @@ export default function DashboardModals({
     }
   };
 
-  // --- ESC TUŞU VE MOBİL GERİ TUŞU YÖNETİMİ ---
+  // --- MOBİL GERİ TUŞU VE ESC MANTIĞI ---
+  const isAnyModalOpen = showStaffDetail || showCustomerDetail || showAssetDetail || showJobModal || showAssetModal || showStaffModal || showCustomerModal || showStockModal || showSupplierModal || showSupplierListModal || showCategoryModal || selectedJob;
+
   useEffect(() => {
-    const isAnyModalOpen = showJobModal || showAssetModal || showStaffModal || showCustomerModal || showStockModal || showSupplierModal || showCategoryModal || showSupplierListModal || showStaffDetail || showCustomerDetail || showAssetDetail || selectedJob;
-
     if (isAnyModalOpen) {
-        // Modal açıldığında history'e push yap (Mobil geri tuşu için)
-        window.history.pushState({ modalOpen: true }, '', window.location.href);
+      // Modal açıldığında history'ye push yap
+      window.history.pushState({ modalOpen: true }, '', window.location.href);
 
-        const handlePopState = () => {
-            closeAllModals();
-        };
+      const handlePopState = () => {
+        closeAllModals(); // Geri tuşuna basılınca hepsini kapat
+      };
 
-        const handleEsc = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                closeAllModals();
-                // Elle kapatıldığında history'i geri al ki çift back olmasın
-                if (window.history.state?.modalOpen) {
-                    window.history.back();
-                }
-            }
-        };
+      const handleEsc = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          closeAllModals();
+        }
+      };
 
-        window.addEventListener('popstate', handlePopState);
-        window.addEventListener('keydown', handleEsc);
+      window.addEventListener('popstate', handlePopState);
+      window.addEventListener('keydown', handleEsc);
 
-        return () => {
-            window.removeEventListener('popstate', handlePopState);
-            window.removeEventListener('keydown', handleEsc);
-        };
+      return () => {
+        window.removeEventListener('popstate', handlePopState);
+        window.removeEventListener('keydown', handleEsc);
+      };
     }
-  }, [showJobModal, showAssetModal, showStaffModal, showCustomerModal, showStockModal, showSupplierModal, showCategoryModal, showSupplierListModal, showStaffDetail, showCustomerDetail, showAssetDetail, selectedJob]);
+  }, [isAnyModalOpen]);
 
 
   const handleEditClick = () => {
@@ -241,7 +240,6 @@ export default function DashboardModals({
                 animate={{ opacity: 1, scale: 1, x: isAnyProfileDetailOpen ? 280 : 0 }} 
                 exit={{ opacity: 0, scale: 0.95, x: isAnyProfileDetailOpen ? 280 : 0 }} 
                 className="bg-white w-full max-w-lg rounded-xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 pointer-events-auto transition-transform duration-300"
-                onClick={(e) => e.stopPropagation()}
             >
               
               <div className="flex justify-between items-start p-6 pb-4 border-b border-slate-100 bg-white z-10 rounded-t-xl">
@@ -269,11 +267,11 @@ export default function DashboardModals({
                            <div className="flex gap-2 w-full">
                                <button 
                                   onClick={async () => {
-                                     await handleAction('update-job', { 
+                                      await handleAction('update-job', { 
                                           id: selectedJob.id, 
                                           status: 'İptal',
                                           lastEditedBy: data?.ownerName || 'Yönetici' 
-                                     }, () => setSelectedJob(null), () => {});
+                                      }, () => setSelectedJob(null), () => {});
                                   }}
                                   className="flex-1 bg-rose-600 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-rose-700 shadow-sm shadow-rose-200"
                                >
@@ -369,16 +367,16 @@ export default function DashboardModals({
                     <div>
                       <label className="text-[11px] font-semibold text-slate-600 block mb-1.5">İş Türü</label>
                       <div className="grid grid-cols-2 gap-2">
-                         <button onClick={() => setEditJobDetailForm({...editJobDetailForm, workCategory: 'Normal İş Atama'})} className={`py-2 text-xs font-semibold rounded-md border transition-colors ${editJobDetailForm.workCategory !== 'Genel İş Atama' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Normal İş Atama</button>
-                         <button onClick={() => setEditJobDetailForm({...editJobDetailForm, workCategory: 'Genel İş Atama', customerName: '', assetId: ''})} className={`py-2 text-xs font-semibold rounded-md border transition-colors ${editJobDetailForm.workCategory === 'Genel İş Atama' ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Genel İş Atama</button>
+                          <button onClick={() => setEditJobDetailForm({...editJobDetailForm, workCategory: 'Normal İş Atama'})} className={`py-2 text-xs font-semibold rounded-md border transition-colors ${editJobDetailForm.workCategory !== 'Genel İş Atama' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Normal İş Atama</button>
+                          <button onClick={() => setEditJobDetailForm({...editJobDetailForm, workCategory: 'Genel İş Atama', customerName: '', assetId: ''})} className={`py-2 text-xs font-semibold rounded-md border transition-colors ${editJobDetailForm.workCategory === 'Genel İş Atama' ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Genel İş Atama</button>
                       </div>
                     </div>
 
                     <div>
                       <label className="text-[11px] font-semibold text-slate-600 block mb-1.5">Tarih / Zamanlama</label>
                       <div className="grid grid-cols-2 gap-2">
-                         <button onClick={() => setEditJobDetailForm({...editJobDetailForm, jobType: 'Anlık', scheduledDate: ''})} className={`py-1.5 text-xs font-semibold rounded-md border ${editJobDetailForm.jobType === 'Anlık' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>Anlık Görev</button>
-                         <button onClick={() => setEditJobDetailForm({...editJobDetailForm, jobType: 'Planlı'})} className={`py-1.5 text-xs font-semibold rounded-md border ${editJobDetailForm.jobType === 'Planlı' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>Tarih Planla</button>
+                          <button onClick={() => setEditJobDetailForm({...editJobDetailForm, jobType: 'Anlık', scheduledDate: ''})} className={`py-1.5 text-xs font-semibold rounded-md border ${editJobDetailForm.jobType === 'Anlık' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>Anlık Görev</button>
+                          <button onClick={() => setEditJobDetailForm({...editJobDetailForm, jobType: 'Planlı'})} className={`py-1.5 text-xs font-semibold rounded-md border ${editJobDetailForm.jobType === 'Planlı' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>Tarih Planla</button>
                       </div>
                       {editJobDetailForm.jobType === 'Planlı' && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-2">
@@ -469,13 +467,13 @@ export default function DashboardModals({
 
       <AnimatePresence>
         {showStaffDetail && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[120] flex items-center justify-center p-4" onClick={() => setShowStaffDetail(null)}>
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
+            <div className="absolute inset-0" onClick={() => setShowStaffDetail(null)}></div>
             <motion.div 
                 initial={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} 
                 animate={{ opacity: 1, scale: 1, x: selectedJob ? -280 : 0 }} 
                 exit={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} 
-                className="bg-white w-full max-w-lg rounded-xl p-6 shadow-xl relative flex flex-col max-h-[85vh] transition-transform duration-300"
-                onClick={(e) => e.stopPropagation()}
+                className="bg-white w-full max-w-lg rounded-xl p-6 shadow-xl relative flex flex-col max-h-[85vh] transition-transform duration-300 pointer-events-auto"
             >
               <div className="flex justify-between items-start mb-6">
                 <div><h2 className="text-xl font-bold text-slate-900">{showStaffDetail.name}</h2><div className="text-xs text-slate-500 mt-0.5">Personel Dosyası</div></div>
@@ -559,8 +557,9 @@ export default function DashboardModals({
 
       <AnimatePresence>
         {showCustomerDetail && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[120] flex items-center justify-center p-4" onClick={() => handleCloseDetail('customer')}>
-            <motion.div initial={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} animate={{ opacity: 1, scale: 1, x: selectedJob ? -280 : 0 }} exit={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} className="bg-white w-full max-w-lg rounded-xl p-6 shadow-xl relative flex flex-col max-h-[85vh] transition-transform duration-300 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
+            <div className="absolute inset-0" onClick={() => handleCloseDetail('customer')}></div>
+            <motion.div initial={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} animate={{ opacity: 1, scale: 1, x: selectedJob ? -280 : 0 }} exit={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} className="bg-white w-full max-w-lg rounded-xl p-6 shadow-xl relative flex flex-col max-h-[85vh] transition-transform duration-300 pointer-events-auto">
               <div className="flex justify-between items-start mb-6">
                 <div><h2 className="text-xl font-bold text-slate-900">{showCustomerDetail.name}</h2><div className="text-xs text-slate-500 mt-0.5">Müşteri Profili</div></div>
                 <button onClick={() => handleCloseDetail('customer')} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md"><X size={18} /></button>
@@ -632,10 +631,11 @@ export default function DashboardModals({
 
       <AnimatePresence>
         {showAssetDetail && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[120] flex items-center justify-center p-4" onClick={() => handleCloseDetail('asset')}>
-            <motion.div initial={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} animate={{ opacity: 1, scale: 1, x: selectedJob ? -280 : 0 }} exit={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} className="bg-white w-full max-w-lg rounded-xl shadow-xl relative flex flex-col max-h-[85vh] transition-transform duration-300 pointer-events-auto overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
+            <div className="absolute inset-0" onClick={() => handleCloseDetail('asset')}></div>
+            <motion.div initial={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} animate={{ opacity: 1, scale: 1, x: selectedJob ? -280 : 0 }} exit={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} className="bg-white w-full max-w-lg rounded-xl shadow-xl relative flex flex-col max-h-[85vh] transition-transform duration-300 pointer-events-auto overflow-hidden">
               <div className="flex justify-between items-start p-6 pb-4 border-b border-slate-100">
-                <div><h2 className="text-xl font-bold text-slate-900">{showAssetDetail.apartmentName || showAssetDetail.name}</h2><div className="text-xs text-slate-500 mt-0.5">{showAssetDetail.apartmentName ? showAssetDetail.name : 'Cihaz Profili'}</div></div>
+                <div><h2 className="text-xl font-bold text-slate-900">{showAssetDetail.name}</h2><div className="text-xs text-slate-500 mt-0.5">Cihaz / Varlık Profili</div></div>
                 <button onClick={() => handleCloseDetail('asset')} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md"><X size={18} /></button>
               </div>
 
@@ -669,6 +669,9 @@ export default function DashboardModals({
                                   <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
                                       <div className="text-[10px] font-semibold text-slate-500 uppercase">Tam Konum</div>
                                       <div className="flex flex-col mt-0.5 space-y-1">
+                                          {showAssetDetail.apartmentName && (
+                                              <div className="text-xs font-bold text-slate-800">{showAssetDetail.apartmentName}</div>
+                                          )}
                                           <div className="text-xs font-medium text-slate-800">{showAssetDetail.location || '-'}</div>
                                           {showAssetDetail.location && (
                                               <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(showAssetDetail.location || '')}`} target="_blank" rel="noopener noreferrer" className="self-start inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-100/50 hover:bg-blue-100 px-2 py-1 rounded transition-colors"><MapPin size={12} /> Haritada Gör</a>
@@ -682,7 +685,7 @@ export default function DashboardModals({
                               </div>
                               <div className="pt-4 border-t border-slate-100">
                                   <div className="flex gap-2 w-full">
-                                      <button onClick={() => { setIsEditingAsset(true); setEditAssetForm({ id: showAssetDetail.id, name: showAssetDetail.name, location: parseAddressToState(showAssetDetail.location || ''), apartmentName: showAssetDetail.apartmentName || '', deviceDetails: showAssetDetail.asset_details || '' }); }} className="flex-[2] bg-slate-100 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5"><Settings size={14} /> Düzenle</button>
+                                      <button onClick={() => { setIsEditingAsset(true); setEditAssetForm({ id: showAssetDetail.id, name: showAssetDetail.name, location: parseAddressToState(showAssetDetail.location || ''), apartmentName: showAssetDetail.apartmentName || showAssetDetail.apartmentName || '', deviceDetails: showAssetDetail.asset_details || '' }); }} className="flex-[2] bg-slate-100 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5"><Settings size={14} /> Düzenle</button>
                                       <button onClick={async () => { if(confirm(`${showAssetDetail.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-asset', { id: showAssetDetail.id }, () => handleCloseDetail('asset'), () => {}); } }} className="flex-1 bg-rose-50 text-rose-600 py-2 rounded-md text-xs font-semibold hover:bg-rose-100 transition-colors flex items-center justify-center gap-1.5"><Trash2 size={14} /> Sil</button>
                                   </div>
                               </div>
@@ -739,8 +742,8 @@ export default function DashboardModals({
                   ) : (
                         <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200 mt-2">
                           <div className="space-y-2">
-                            {/* DÜZENLEME EKRANI - APARTMAN ADI VE CİHAZ ADI */}
-                            <input className="w-full px-3 py-2 rounded-md border border-slate-200 text-xs outline-none focus:border-blue-400 bg-white" value={editAssetForm.apartmentName} onChange={(e) => setEditAssetForm({...editAssetForm, apartmentName: e.target.value})} placeholder="Apartman/Bina İsmi" />
+                            {/* DÜZENLEME EKRANI: Apartman Adı ve Cihaz Adı alanları */}
+                            <input className="w-full px-3 py-2 rounded-md border border-slate-200 text-xs outline-none focus:border-blue-400 bg-white" value={editAssetForm.apartmentName} onChange={(e) => setEditAssetForm({...editAssetForm, apartmentName: e.target.value})} placeholder="Bina / Site Adı" />
                             <input className="w-full px-3 py-2 rounded-md border border-slate-200 text-xs outline-none focus:border-blue-400 bg-white" value={editAssetForm.name} onChange={(e) => setEditAssetForm({...editAssetForm, name: e.target.value})} placeholder="Cihaz Adı" />
                             
                             <div className="p-2 bg-slate-100/50 border border-slate-100 rounded-md space-y-2">
@@ -768,6 +771,7 @@ export default function DashboardModals({
                             <button 
                                 onClick={() => {
                                     const combined = getFullAddress(editAssetForm.location, buildingNo, selectedCity, selectedDistrict);
+                                    // Apartman adını location içine eklemiyoruz, ayrı gönderiyoruz
                                     handleAction('update-asset', { ...editAssetForm, location: combined }, () => handleCloseDetail('asset'), () => setIsEditingAsset(false))
                                 }} 
                                 className="flex-1 bg-blue-600 text-white py-2 rounded-md text-xs font-semibold hover:bg-blue-700"
@@ -786,8 +790,9 @@ export default function DashboardModals({
 
       <AnimatePresence>
         {showJobModal && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4" onClick={() => setShowJobModal(false)}>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative overflow-y-auto max-h-[90vh] custom-scrollbar" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+            <div className="absolute inset-0" onClick={() => setShowJobModal(false)}></div>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative overflow-y-auto max-h-[90vh] custom-scrollbar pointer-events-auto">
               <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">İş Emri Ata</h2><button onClick={() => setShowJobModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button></div>
               <div className="space-y-4">
                 
@@ -876,8 +881,9 @@ export default function DashboardModals({
 
       <AnimatePresence>
         {showAssetModal && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4" onClick={() => setShowAssetModal(false)}>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+            <div className="absolute inset-0" onClick={() => setShowAssetModal(false)}></div>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative max-h-[90vh] overflow-y-auto custom-scrollbar pointer-events-auto">
               <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">Varlık/Cihaz Ekle</h2><button onClick={() => setShowAssetModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button></div>
               <div className="space-y-4">
                 <div className="mb-4">
@@ -934,7 +940,7 @@ export default function DashboardModals({
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">VARLIK/CİHAZ DETAYLARI</label>
                   <div className="space-y-2">
-                    {/* VARLIK EKLEME FORMU GÜNCELLENDİ: APARTMAN ADI VE CİHAZ ADI SIRALAMASI */}
+                    {/* INPUT SIRALAMASI: Önce Bina Adı, Sonra Cihaz Adı */}
                     <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Bina / Site Adı" value={assetForm.apartmentName} onChange={e => setAssetForm({...assetForm, apartmentName: e.target.value})} />
                     <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Varlık/Cihaz Adı (Örn: Yolcu Asansörü)" value={assetForm.name} onChange={e => setAssetForm({...assetForm, name: e.target.value})} />
                     
@@ -949,15 +955,17 @@ export default function DashboardModals({
                 </div>
                 <button disabled={isSaving} className="w-full bg-slate-900 text-white py-2.5 rounded-md font-semibold text-sm mt-4 hover:bg-slate-800 flex justify-center items-center" onClick={() => { 
     const newUUID = self.crypto.randomUUID();
-    // KONUM BİRLEŞTİRME MANTIĞI DÜZELTİLDİ: APARTMAN ADI EKLENMİYOR
     if (assetCustMode === 'NEW') { 
         const combinedAddress = getFullAddress(assetForm.newCustomer.address, buildingNo, selectedCity, selectedDistrict); 
+        const combinedLocation = getFullAddress(assetForm.location, buildingNo, selectedCity, selectedDistrict);
         const updatedNewCust = { ...assetForm.newCustomer, address: combinedAddress }; 
-        handleAction('add-asset', { ...assetForm, newCustomer: updatedNewCust, uuid: newUUID }, setShowAssetModal, () => { 
+        // Konumda birleştirme yapmıyoruz, apartmentName ayrı gidiyor
+        handleAction('add-asset', { ...assetForm, location: combinedLocation, newCustomer: updatedNewCust, uuid: newUUID }, setShowAssetModal, () => { 
             setAssetForm({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', customerMode: 'NONE', newCustomer: { name: '', contact: '', address: '', taxInfo: '', assetAction: '', assetMode: 'NONE', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } } }); setSelectedCity(''); setSelectedDistrict(''); setBuildingNo(''); 
         }); 
     } else { 
         const combinedLocation = getFullAddress(assetForm.location, buildingNo, selectedCity, selectedDistrict); 
+        // Konumda birleştirme yapmıyoruz, apartmentName ayrı gidiyor
         handleAction('add-asset', { ...assetForm, location: combinedLocation, uuid: newUUID }, setShowAssetModal, () => { 
             setAssetForm({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', customerMode: 'NONE', newCustomer: { name: '', contact: '', address: '', taxInfo: '', assetAction: '', assetMode: 'NONE', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } } }); setSelectedCity(''); setSelectedDistrict(''); setBuildingNo(''); 
         }); 
@@ -971,8 +979,9 @@ export default function DashboardModals({
 
       <AnimatePresence>
         {showCustomerModal && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4" onClick={() => setShowCustomerModal(false)}>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+            <div className="absolute inset-0" onClick={() => setShowCustomerModal(false)}></div>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative max-h-[90vh] overflow-y-auto custom-scrollbar pointer-events-auto">
               <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">Müşteri Ekle</h2><button onClick={() => setShowCustomerModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button></div>
               <div className="space-y-4">
                 <div>
@@ -990,6 +999,7 @@ export default function DashboardModals({
                 </div>
                 <div className="mt-4"><label className="text-[10px] font-bold text-blue-700 uppercase tracking-wider block mb-2">CİHAZ/VARLIK BAĞLANTISI (Opsiyonel)</label><div className="grid grid-cols-1 gap-2"><label className={`flex items-center p-2.5 border rounded-lg cursor-pointer transition-colors ${custAssetMode === 'NONE' ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}><input type="radio" name="assetMode" className="hidden" checked={custAssetMode === 'NONE'} onChange={() => setCustomerForm({...customerForm, assetMode: 'NONE', assetAction: ''})} /><div className={`w-4 h-4 rounded-full border flex items-center justify-center mr-3 ${custAssetMode === 'NONE' ? 'border-blue-600 bg-blue-100' : 'border-slate-300'}`}>{custAssetMode === 'NONE' && <div className="w-2 h-2 bg-blue-600 rounded-full"></div>}</div><span className={`text-xs font-semibold ${custAssetMode === 'NONE' ? 'text-blue-800' : 'text-slate-700'}`}>Bağlantı Yapma (Bağımsız Müşteri)</span></label><div className={`border rounded-lg transition-colors ${custAssetMode === 'SELECT' ? 'border-blue-500 bg-blue-50/30' : 'border-slate-200 hover:bg-slate-50'}`}><label className="flex items-center p-2.5 cursor-pointer"><input type="radio" name="assetMode" className="hidden" checked={custAssetMode === 'SELECT'} onChange={() => setCustomerForm({...customerForm, assetMode: 'SELECT', assetAction: ''})} /><div className={`w-4 h-4 rounded-full border flex items-center justify-center mr-3 ${custAssetMode === 'SELECT' ? 'border-blue-600 bg-blue-100' : 'border-slate-300'}`}>{custAssetMode === 'SELECT' && <div className="w-2 h-2 bg-blue-600 rounded-full"></div>}</div><span className={`text-xs font-semibold ${custAssetMode === 'SELECT' ? 'text-blue-800' : 'text-slate-700'}`}>Mevcut Cihazlardan Birini Üzerine Al</span></label>{custAssetMode === 'SELECT' && (<motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="px-3 pb-3 pt-1 flex flex-col gap-2"><div className="relative"><Search className="absolute left-2.5 top-2 text-blue-400" size={14} /><input type="text" placeholder="Cihaz Adı veya Konum Ara..." className="w-full pl-8 pr-3 py-1.5 border border-blue-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" value={searchAsset} onChange={e => setSearchAsset(e.target.value)} /></div><select className="w-full px-3 py-2 border border-blue-300 rounded-md text-xs outline-none bg-blue-50 focus:border-blue-500 custom-scrollbar" size={4} value={customerForm.assetAction !== 'NEW' ? customerForm.assetAction : ''} onChange={e => setCustomerForm({...customerForm, assetAction: e.target.value})}><option value="" disabled className="font-semibold text-slate-500 border-b border-blue-100 pb-1 mb-1">-- Listeden Tıklayıp Seçin --</option>{(data?.assets || []).filter((a:any) => a.name?.toLowerCase().includes(searchAsset.toLowerCase()) || a.location?.toLowerCase().includes(searchAsset.toLowerCase())).map((a: any) => <option key={a.id} value={a.id} className="py-1">{a.name} {a.customer_id ? '(Başka Müşteride)' : '(Boşta)'}</option>)}</select></motion.div>)}</div><div className={`border rounded-lg transition-colors ${custAssetMode === 'NEW' ? 'border-blue-500 bg-blue-50/30' : 'border-slate-200 hover:bg-slate-50'}`}><label className="flex items-center p-2.5 cursor-pointer"><input type="radio" name="assetMode" className="hidden" checked={custAssetMode === 'NEW'} onChange={() => setCustomerForm({...customerForm, assetMode: 'NEW', assetAction: 'NEW'})} /><div className={`w-4 h-4 rounded-full border flex items-center justify-center mr-3 ${custAssetMode === 'NEW' ? 'border-blue-600 bg-blue-100' : 'border-slate-300'}`}>{custAssetMode === 'NEW' && <div className="w-2 h-2 bg-blue-600 rounded-full"></div>}</div><span className={`text-xs font-semibold ${custAssetMode === 'NEW' ? 'text-blue-800' : 'text-slate-700'}`}>Sıfırdan Yeni Cihaz Tanımla</span></label>{custAssetMode === 'NEW' && (
   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="px-3 pb-3 pt-1 space-y-2">
+     {/* YENİ VARLIK EKLEME - APARTMAN ADI VE CİHAZ ADI AYRI */}
      <input className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Bina / Site Adı" value={customerForm.newAsset?.apartmentName || ''} onChange={e => setCustomerForm({...customerForm, newAsset: {...customerForm.newAsset, apartmentName: e.target.value}})} />
      <input className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Cihaz Adı" value={customerForm.newAsset?.name || ''} onChange={e => setCustomerForm({...customerForm, newAsset: {...customerForm.newAsset, name: e.target.value}})} />
      
@@ -1019,8 +1029,9 @@ export default function DashboardModals({
 
       <AnimatePresence>
         {showStaffModal && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4" onClick={() => setShowStaffModal(false)}>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-xs rounded-xl p-6 shadow-xl relative" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+            <div className="absolute inset-0" onClick={() => setShowStaffModal(false)}></div>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-xs rounded-xl p-6 shadow-xl relative pointer-events-auto">
               <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">Personel Ekle</h2><button onClick={() => setShowStaffModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button></div>
               <div className="space-y-3"><input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Ad Soyad" onChange={e => setStaffForm({...staffForm, name: e.target.value})} /><input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Telefon" onChange={e => setStaffForm({...staffForm, phone: e.target.value})} /><select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" onChange={e => setStaffForm({...staffForm, branch: e.target.value})}><option value="">Branş / Uzmanlık Seçin</option>{branchList.map((subType: any) => (<option key={subType} value={subType}>{subType}</option>))}<option value="Genel Usta">Genel Usta</option></select><select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" onChange={e => setStaffForm({...staffForm, role: e.target.value})}><option value="Usta">Saha Ustası</option><option value="Yönetici">Yönetici</option></select><button className="w-full bg-slate-900 text-white py-2 rounded-md font-semibold text-sm mt-2 hover:bg-slate-800" onClick={() => handleAction('add-staff', staffForm, setShowStaffModal, () => setStaffForm({ name: '', phone: '', role: 'Usta', branch: '' }))}>Kaydet</button></div>
             </motion.div>
@@ -1030,8 +1041,9 @@ export default function DashboardModals({
 
       <AnimatePresence>
         {showCategoryModal && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4" onClick={() => setShowCategoryModal(false)}>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-sm rounded-xl p-6 shadow-xl relative" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+            <div className="absolute inset-0" onClick={() => setShowCategoryModal(false)}></div>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-sm rounded-xl p-6 shadow-xl relative pointer-events-auto">
               <div className="flex justify-between items-center mb-5">
                 <h2 className="text-lg font-bold text-slate-800">Kategorileri Yönet</h2>
                 <button onClick={() => setShowCategoryModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
@@ -1057,8 +1069,9 @@ export default function DashboardModals({
 
       <AnimatePresence>
         {showStockModal && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4" onClick={() => setShowStockModal(false)}>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+            <div className="absolute inset-0" onClick={() => setShowStockModal(false)}></div>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative max-h-[90vh] overflow-y-auto custom-scrollbar pointer-events-auto">
               <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">Parça Girişi</h2><button onClick={() => setShowStockModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button></div>
               
               <div className="space-y-4">
@@ -1147,8 +1160,9 @@ export default function DashboardModals({
 
       <AnimatePresence>
         {showSupplierListModal && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4" onClick={() => setShowSupplierListModal(false)}>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+            <div className="absolute inset-0" onClick={() => setShowSupplierListModal(false)}></div>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative max-h-[85vh] flex flex-col pointer-events-auto">
               <div className="flex justify-between items-center mb-5">
                 <h2 className="text-lg font-bold text-slate-800">Tedarikçileri Yönet</h2>
                 <button onClick={() => setShowSupplierListModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
@@ -1194,8 +1208,9 @@ export default function DashboardModals({
 
       <AnimatePresence>
         {showSupplierModal && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4" onClick={() => setShowSupplierModal(false)}>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-xs rounded-xl p-6 shadow-xl relative" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+            <div className="absolute inset-0" onClick={() => setShowSupplierModal(false)}></div>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-xs rounded-xl p-6 shadow-xl relative pointer-events-auto">
               <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">Tedarikçi Ekle</h2><button onClick={() => setShowSupplierModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button></div>
               <div className="space-y-3">
                  <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Tedarikçi Firma Adı" value={supplierForm.name} onChange={e => setSupplierForm({...supplierForm, name: e.target.value})} />
