@@ -1,10 +1,84 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Box, MapPin, Users, Search, QrCode } from 'lucide-react';
 
 export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail, setShowQRModal, setSelectedQRAsset }: any) {
   const [searchTerm, setSearchTerm] = useState('');
+  // Logo arka plan rengi için state. Varsayılan: slate-50 (#f8fafc)
+  const [logoBgColor, setLogoBgColor] = useState<string>('#f8fafc');
+
+  // --- RENK ANALİZ MOTORU BAŞLANGICI ---
+  // Firma logosu (data.logo) değiştiğinde çalışır.
+  // Logonun ortalama rengini bulur ve ona en zıt düşen arka plan rengini (Beyaz, Siyah, Mavi) seçer.
+  useEffect(() => {
+    const companyLogo = data?.logo;
+    // Logo yoksa varsayılan açık gri rengi kullan
+    if (!companyLogo) {
+      setLogoBgColor('#f8fafc');
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      
+      try {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const dataPixels = imageData.data;
+        let r = 0, g = 0, b = 0, count = 0;
+        
+        // Pikselleri tara (her 4. pikseli alarak performansı artır, şeffaf pikselleri atla)
+        for (let i = 0; i < dataPixels.length; i += 4) {
+          if (dataPixels[i + 3] < 128) continue; // Şeffaflık kontrolü
+          r += dataPixels[i];
+          g += dataPixels[i + 1];
+          b += dataPixels[i + 2];
+          count++;
+        }
+        
+        if (count > 0) {
+          // Ortalama RGB rengini bul
+          r = Math.floor(r / count);
+          g = Math.floor(g / count);
+          b = Math.floor(b / count);
+
+          // Kullanılabilecek arka plan paleti
+          const palette = [
+            { name: 'white', rgb: [255, 255, 255], hex: '#ffffff' },
+            { name: 'black', rgb: [15, 23, 42], hex: '#0f172a' }, // slate-900
+            { name: 'blue', rgb: [37, 99, 235], hex: '#2563eb' }  // blue-600
+          ];
+
+          let maxDist = -1;
+          let selectedColor = '#ffffff';
+
+          // Logodaki ortalama renge EN UZAK (en zıt) olan rengi bul
+          for (const color of palette) {
+            const dist = Math.sqrt(Math.pow(r - color.rgb[0], 2) + Math.pow(g - color.rgb[1], 2) + Math.pow(b - color.rgb[2], 2));
+            if (dist > maxDist) {
+              maxDist = dist;
+              selectedColor = color.hex;
+            }
+          }
+          setLogoBgColor(selectedColor);
+        }
+      } catch (e) {
+        console.error("Renk analizi yapılamadı:", e);
+        setLogoBgColor('#f8fafc'); // Hata durumunda varsayılan renk
+      }
+    };
+    img.onerror = () => setLogoBgColor('#f8fafc'); // Resim yüklenemezse varsayılan renk
+    img.src = companyLogo;
+  }, [data?.logo]);
+  // --- RENK ANALİZ MOTORU BİTİŞİ ---
 
   // Arama filtresi mantığı
   const filteredAssets = data?.assets?.filter((a: any) => {
@@ -48,9 +122,28 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
           <div 
             key={a.id} 
             onClick={() => setShowAssetDetail && setShowAssetDetail(a)}
-            className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-blue-400 cursor-pointer transition-colors flex flex-col"
+            // Ana kart rengi bg-white olarak sabit
+            className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-blue-400 cursor-pointer transition-colors flex flex-col group"
           >
-            <div className="w-8 h-8 bg-slate-50 rounded-md flex items-center justify-center text-slate-400 mb-3 border border-slate-100"><Box size={16} /></div>
+            {/* DİNAMİK LOGO KUTUSU - Sadece burası renk değiştirir */}
+            <div 
+              className="w-10 h-10 rounded-lg flex items-center justify-center mb-3 border border-slate-100 overflow-hidden shadow-sm transition-all duration-500 group-hover:scale-105"
+              // DİKKAT: Arka plan rengi sadece bu kutuya uygulanıyor
+              style={{ backgroundColor: data?.logo ? logoBgColor : '#f8fafc' }}
+            >
+              {data?.logo ? (
+                <img 
+                  src={data.logo} 
+                  alt="Firma Logosu" 
+                  // Logo koyu bir zemine denk gelirse kenarlara yapışmasın diye biraz padding ekledim
+                  className="w-full h-full object-contain p-1.5 drop-shadow-sm" 
+                />
+              ) : (
+                // Logo yoksa varsayılan ikon
+                <Box size={18} className="text-slate-400" />
+              )}
+            </div>
+
             <div className="font-semibold text-slate-800 text-sm mb-1 truncate">{a.name}</div>
             
             <div className="text-[11px] font-medium text-blue-600 mb-1 flex items-center gap-1">
