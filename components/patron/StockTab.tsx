@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Loader2, AlertTriangle, Package, Phone, Tag, Truck, Tags } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Plus, Search, Edit2, Trash2, X, Loader2, AlertTriangle, Package, Phone, Tag, Truck, Tags, ShoppingCart, Send, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function StockTab({ data, handleAction, setShowStockModal, setShowSupplierModal, setShowSupplierListModal, setShowCategoryModal }: any) {
@@ -11,12 +11,20 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
   const [editingStock, setEditingStock] = useState<any>(null);
   const [isSavingLocal, setIsSavingLocal] = useState(false);
 
+  // SİPARİŞ MODALI STATE'LERİ
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [selectedSupplierForOrder, setSelectedSupplierForOrder] = useState<any>(null);
+  const [orderQuantities, setOrderQuantities] = useState<{[key: string]: string}>({});
+
   const rawStock = data?.stock || [];
   const suppliers = data?.suppliers || [];
   const categories = data?.categories || [];
+  const companyName = data?.name || 'Firmamız'; // Mesaj şablonu için firma adı
 
   // Kritik Stokları (Miktarı 5 ve altı olanları) bul
-  const criticalStocks = rawStock.filter((item: any) => Number(item.quantity) <= 5);
+  const criticalStocks = useMemo(() => {
+    return rawStock.filter((item: any) => Number(item.quantity) <= 5);
+  }, [rawStock]);
 
   const filteredStock = rawStock.filter((item: any) => {
     const supplier = suppliers.find((s:any) => s.id === item.supplier_id);
@@ -27,6 +35,24 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
       item.category?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
+
+  // Kritik stoğu olan tedarikçileri grupla
+  const suppliersWithCriticalStock = useMemo(() => {
+    const supplierMap = new Map();
+    
+    criticalStocks.forEach((item: any) => {
+        if (item.supplier_id) {
+            const supplier = suppliers.find((s:any) => s.id === item.supplier_id);
+            if (supplier && !supplierMap.has(supplier.id)) {
+                supplierMap.set(supplier.id, { ...supplier, items: [] });
+            }
+            if (supplierMap.has(supplier.id)) {
+                supplierMap.get(supplier.id).items.push(item);
+            }
+        }
+    });
+    return Array.from(supplierMap.values());
+  }, [criticalStocks, suppliers]);
 
   const handleUpdate = async () => {
     setIsSavingLocal(true);
@@ -48,6 +74,41 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
     }
   };
 
+  // WHATSAPP SİPARİŞ GÖNDERME FONKSİYONU
+  const sendWhatsappOrder = () => {
+    if (!selectedSupplierForOrder) return;
+
+    const itemsToOrder = selectedSupplierForOrder.items.filter((item:any) => orderQuantities[item.id] && Number(orderQuantities[item.id]) > 0);
+
+    if (itemsToOrder.length === 0) {
+        alert("Lütfen en az bir ürün için adet giriniz.");
+        return;
+    }
+
+    let message = `Merhaba, ${companyName} firmasından sipariş geçmek istiyoruz. Aşağıdaki ürünlerin temini rica olunur:%0A%0A`;
+    
+    itemsToOrder.forEach((item: any) => {
+        const qty = orderQuantities[item.id];
+        message += `▪ ${item.item_name}: *${qty} ${item.unit_name}*%0A`;
+    });
+
+    message += `%0Aİyi çalışmalar.`;
+
+    // Telefon numarasını temizle (boşlukları ve karakterleri kaldır)
+    let phone = selectedSupplierForOrder.phone.replace(/[^0-9]/g, '');
+    // Eğer başında 90 yoksa ve 5 ile başlıyorsa 90 ekle (Türkiye varsayımı)
+    if (phone.length === 10 && phone.startsWith('5')) {
+        phone = '90' + phone;
+    }
+
+    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+    
+    // Temizlik
+    setOrderQuantities({});
+    setShowOrderModal(false);
+    setSelectedSupplierForOrder(null);
+  };
+
   return (
     <div className="space-y-6 relative">
       
@@ -59,6 +120,17 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
               animate={{ opacity: 1, y: 0 }} 
               className="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm relative overflow-hidden"
            >
+              {/* SİPARİŞ VER BUTONU - SAĞ ÜST */}
+              <div className="absolute top-4 right-4 z-20">
+                <button 
+                    onClick={() => setShowOrderModal(true)}
+                    className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg shadow-amber-600/20 flex items-center gap-2 transition-transform active:scale-95"
+                >
+                    <ShoppingCart size={16} />
+                    Sipariş Oluştur
+                </button>
+              </div>
+
               <div className="absolute right-0 top-0 opacity-5 pointer-events-none">
                 <AlertTriangle size={120} className="text-amber-500 translate-x-4 -translate-y-4" />
               </div>
@@ -220,7 +292,116 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
          </div>
        </div>
 
-       {/* 4. SATIR İÇİ DÜZENLEME MODALI */}
+       {/* 4. SİPARİŞ OLUŞTURMA MODALI */}
+       <AnimatePresence>
+         {showOrderModal && (
+           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative border border-slate-200 flex flex-col max-h-[90vh]">
+                
+                {/* Header */}
+                <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+                    <div className="flex items-center gap-3">
+                        {selectedSupplierForOrder ? (
+                            <button onClick={() => setSelectedSupplierForOrder(null)} className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-100"><ArrowLeft size={16} /></button>
+                        ) : (
+                            <div className="w-10 h-10 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center">
+                                <ShoppingCart size={20} />
+                            </div>
+                        )}
+                        <div>
+                            <h2 className="text-lg font-black text-slate-800 leading-none">
+                                {selectedSupplierForOrder ? selectedSupplierForOrder.name : 'Sipariş Oluştur'}
+                            </h2>
+                            <p className="text-[11px] text-slate-500 font-medium mt-1">
+                                {selectedSupplierForOrder ? 'Tedarik edilecek ürünlerin adetlerini girin.' : 'Kritik stoktaki ürünler için tedarikçi seçin.'}
+                            </p>
+                        </div>
+                    </div>
+                    <button onClick={() => { setShowOrderModal(false); setSelectedSupplierForOrder(null); setOrderQuantities({}); }} className="text-slate-400 hover:bg-slate-200 p-2 rounded-full transition-colors"><X size={20} /></button>
+                </div>
+
+                {/* Content */}
+                <div className="p-5 overflow-y-auto custom-scrollbar">
+                    
+                    {!selectedSupplierForOrder ? (
+                        // ADIM 1: TEDARİKÇİ SEÇİMİ
+                        <div className="grid grid-cols-1 gap-3">
+                            {suppliersWithCriticalStock.length > 0 ? suppliersWithCriticalStock.map((supplier: any) => (
+                                <button 
+                                    key={supplier.id}
+                                    onClick={() => setSelectedSupplierForOrder(supplier)}
+                                    className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-400 hover:shadow-md transition-all group text-left"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold text-sm group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                            {supplier.name.substring(0, 2).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-slate-800">{supplier.name}</div>
+                                            <div className="text-xs text-slate-500 font-medium flex items-center gap-2">
+                                                <span className="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[10px] font-bold">{supplier.items.length} Kritik Ürün</span>
+                                                {supplier.phone && <span className="flex items-center gap-1"><Phone size={10}/> {supplier.phone}</span>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <ArrowRightWrapper />
+                                </button>
+                            )) : (
+                                <div className="text-center py-10">
+                                    <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-300">
+                                        <CheckCircle2 size={32} />
+                                    </div>
+                                    <p className="text-slate-500 font-medium">Kayıtlı tedarikçisi olan kritik stok bulunamadı.</p>
+                                    <p className="text-[11px] text-slate-400 mt-1">Stok kartlarına tedarikçi atadığınızdan emin olun.</p>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        // ADIM 2: ÜRÜN SEÇİMİ VE ADET GİRİŞİ
+                        <div className="space-y-3">
+                            {selectedSupplierForOrder.items.map((item: any) => (
+                                <div key={item.id} className="flex items-center gap-3 p-3 border border-slate-100 rounded-xl bg-slate-50/50">
+                                    <div className="w-10 h-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0">
+                                        <Package size={18} className="text-slate-400" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-bold text-slate-700 truncate">{item.item_name}</div>
+                                        <div className="text-[10px] font-semibold text-amber-600">Mevcut: {item.quantity} {item.unit_name}</div>
+                                    </div>
+                                    <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg p-1 shadow-sm">
+                                        <input 
+                                            type="number" 
+                                            placeholder="0"
+                                            className="w-16 text-center outline-none text-sm font-bold text-slate-800"
+                                            value={orderQuantities[item.id] || ''}
+                                            onChange={(e) => setOrderQuantities({...orderQuantities, [item.id]: e.target.value})}
+                                        />
+                                        <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-1 rounded-md uppercase">{item.unit_name}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer */}
+                {selectedSupplierForOrder && (
+                    <div className="p-5 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
+                        <button 
+                            onClick={sendWhatsappOrder}
+                            className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-green-600/20 flex items-center justify-center gap-2 transition-all active:scale-95"
+                        >
+                            <Send size={18} />
+                            WhatsApp İle Siparişi Gönder
+                        </button>
+                    </div>
+                )}
+              </motion.div>
+           </div>
+         )}
+       </AnimatePresence>
+
+       {/* 5. SATIR İÇİ DÜZENLEME MODALI (Mevcut kod) */}
        <AnimatePresence>
          {editingStock && (
            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
@@ -297,4 +478,13 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
        </AnimatePresence>
     </div>
   );
+}
+
+// Yardımcı komponent (Ok ikonu için)
+function ArrowRightWrapper() {
+    return (
+        <div className="text-slate-300">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+    )
 }
