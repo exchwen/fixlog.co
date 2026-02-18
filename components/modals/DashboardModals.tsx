@@ -241,11 +241,11 @@ export default function DashboardModals({
                            <div className="flex gap-2 w-full">
                                <button 
                                   onClick={async () => {
-                                      await handleAction('update-job', { 
-                                          id: selectedJob.id, 
-                                          status: 'İptal',
-                                          lastEditedBy: data?.ownerName || 'Yönetici' 
-                                      }, () => setSelectedJob(null), () => {});
+                                     await handleAction('update-job', { 
+                                         id: selectedJob.id, 
+                                         status: 'İptal',
+                                         lastEditedBy: data?.ownerName || 'Yönetici' 
+                                     }, () => setSelectedJob(null), () => {});
                                   }}
                                   className="flex-1 bg-rose-600 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-rose-700 shadow-sm shadow-rose-200"
                                >
@@ -477,12 +477,12 @@ export default function DashboardModals({
                  <div className="overflow-y-auto custom-scrollbar space-y-2 flex-1 pr-1">
                      {filteredStaffJobs.length > 0 ? filteredStaffJobs.map((j: any) => (
                        <div 
-                            key={j.id} 
-                            onClick={(e) => { 
-                                e.stopPropagation(); 
-                                setSelectedJob(j); 
-                            }} 
-                            className={`p-3 border rounded-lg flex items-center justify-between text-xs cursor-pointer transition-all group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-300' : 'bg-white border-slate-100 hover:bg-slate-50'}`}
+                           key={j.id} 
+                           onClick={(e) => { 
+                               e.stopPropagation(); 
+                               setSelectedJob(j); 
+                           }} 
+                           className={`p-3 border rounded-lg flex items-center justify-between text-xs cursor-pointer transition-all group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-300' : 'bg-white border-slate-100 hover:bg-slate-50'}`}
                        >
                           <div>
                               <div className="font-semibold text-slate-800 group-hover:text-blue-700 transition-colors">{j.customer_name}</div>
@@ -559,12 +559,12 @@ export default function DashboardModals({
                   <div className="pt-4 border-t border-slate-100"><div className="flex gap-2 w-full"><button onClick={() => { setIsEditingCustomer(true); setEditCustomerForm({ id: showCustomerDetail.id, name: showCustomerDetail.name, contact: showCustomerDetail.contact || '', address: parseAddressToState(showCustomerDetail.address || ''), taxInfo: showCustomerDetail.tax_info || '' }); }} className="flex-[2] bg-slate-100 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5"><Settings size={14} /> Düzenle</button><button onClick={async () => { if(confirm(`${showCustomerDetail.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-customer', { id: showCustomerDetail.id }, () => handleCloseDetail('customer'), () => {}); } }} className="flex-1 bg-rose-50 text-rose-600 py-2 rounded-md text-xs font-semibold hover:bg-rose-100 transition-colors flex items-center justify-center gap-1.5"><Trash2 size={14} /> Sil</button></div></div>
                   </>
               ) : (
-                   <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
-                     <div className="grid grid-cols-2 gap-3">
-                       <input className="px-3 py-2 rounded-md border border-slate-200 text-xs w-full outline-none focus:border-blue-400" value={editCustomerForm.name} onChange={(e) => setEditCustomerForm({...editCustomerForm, name: e.target.value})} placeholder="Ad / Firma" />
-                       <input className="px-3 py-2 rounded-md border border-slate-200 text-xs w-full outline-none focus:border-blue-400" value={editCustomerForm.contact} onChange={(e) => setEditCustomerForm({...editCustomerForm, contact: e.target.value})} placeholder="Telefon" />
-                       
-                       <div className="col-span-2 grid grid-cols-2 gap-2">
+                    <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                      <div className="grid grid-cols-2 gap-3">
+                        <input className="px-3 py-2 rounded-md border border-slate-200 text-xs w-full outline-none focus:border-blue-400" value={editCustomerForm.name} onChange={(e) => setEditCustomerForm({...editCustomerForm, name: e.target.value})} placeholder="Ad / Firma" />
+                        <input className="px-3 py-2 rounded-md border border-slate-200 text-xs w-full outline-none focus:border-blue-400" value={editCustomerForm.contact} onChange={(e) => setEditCustomerForm({...editCustomerForm, contact: e.target.value})} placeholder="Telefon" />
+                        
+                        <div className="col-span-2 grid grid-cols-2 gap-2">
                             <select className="px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white" value={selectedCity} onChange={(e) => { setSelectedCity(e.target.value); setSelectedDistrict(''); }}>
                                 <option value="">İl Seçin</option>
                                 {Object.keys(CITY_DATA).map(c => <option key={c} value={c}>{c}</option>)}
@@ -574,16 +574,16 @@ export default function DashboardModals({
                                 {selectedCity && CITY_DATA[selectedCity]?.map((d:string) => <option key={d} value={d}>{d}</option>)}
                             </select>
                        </div>
-                       
-                       <div className="col-span-2 flex gap-2">
+                        
+                        <div className="col-span-2 flex gap-2">
                           <input className="w-1/4 px-3 py-2 rounded-md border border-slate-200 text-xs w-full outline-none focus:border-blue-400" value={buildingNo} onChange={(e) => setBuildingNo(e.target.value)} placeholder="Bina No" />
                           <input className="w-3/4 px-3 py-2 rounded-md border border-slate-200 text-xs w-full outline-none focus:border-blue-400" value={editCustomerForm.address} onChange={(e) => setEditCustomerForm({...editCustomerForm, address: e.target.value})} placeholder="Cadde, Sokak, Mahalle..." />
-                       </div>
-                       
-                       <input className="col-span-2 px-3 py-2 rounded-md border border-slate-200 text-xs w-full outline-none focus:border-blue-400" value={editCustomerForm.taxInfo} onChange={(e) => setEditCustomerForm({...editCustomerForm, taxInfo: e.target.value})} placeholder="Vergi No / T.C." />
-                     </div>
-                     <div className="flex gap-2 pt-2">
-                       <button 
+                        </div>
+                        
+                        <input className="col-span-2 px-3 py-2 rounded-md border border-slate-200 text-xs w-full outline-none focus:border-blue-400" value={editCustomerForm.taxInfo} onChange={(e) => setEditCustomerForm({...editCustomerForm, taxInfo: e.target.value})} placeholder="Vergi No / T.C." />
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <button 
                             onClick={() => {
                                 const combined = getFullAddress(editCustomerForm.address, buildingNo, selectedCity, selectedDistrict);
                                 handleAction('update-customer', { ...editCustomerForm, address: combined }, () => handleCloseDetail('customer'), () => setIsEditingCustomer(false))
@@ -592,9 +592,9 @@ export default function DashboardModals({
                         >
                             {isSaving ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Değişiklikleri Kaydet'}
                         </button>
-                       <button onClick={() => setIsEditingCustomer(false)} className="px-4 bg-slate-200 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-300">İptal</button>
-                     </div>
-                   </div>
+                        <button onClick={() => setIsEditingCustomer(false)} className="px-4 bg-slate-200 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-300">İptal</button>
+                      </div>
+                    </div>
               )}
             </motion.div>
           </div>
@@ -708,11 +708,11 @@ export default function DashboardModals({
                       )}
                       </>
                   ) : (
-                       <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200 mt-2">
-                         <div className="space-y-2">
-                           <input className="w-full px-3 py-2 rounded-md border border-slate-200 text-xs outline-none focus:border-blue-400 bg-white" value={editAssetForm.name} onChange={(e) => setEditAssetForm({...editAssetForm, name: e.target.value})} placeholder="Cihaz Adı" />
-                           
-                           <div className="p-2 bg-slate-100/50 border border-slate-100 rounded-md space-y-2">
+                        <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200 mt-2">
+                          <div className="space-y-2">
+                            <input className="w-full px-3 py-2 rounded-md border border-slate-200 text-xs outline-none focus:border-blue-400 bg-white" value={editAssetForm.name} onChange={(e) => setEditAssetForm({...editAssetForm, name: e.target.value})} placeholder="Cihaz Adı" />
+                            
+                            <div className="p-2 bg-slate-100/50 border border-slate-100 rounded-md space-y-2">
                                 <div className="text-[10px] text-slate-400 font-bold uppercase">Konum / Adres Detayı</div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <select className="px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white" value={selectedCity} onChange={(e) => { setSelectedCity(e.target.value); setSelectedDistrict(''); }}>
@@ -732,9 +732,9 @@ export default function DashboardModals({
                             </div>
 
                            <textarea rows={2} className="w-full px-3 py-2 rounded-md border border-slate-200 text-xs outline-none focus:border-blue-400 bg-white resize-none" value={editAssetForm.deviceDetails} onChange={(e) => setEditAssetForm({...editAssetForm, deviceDetails: e.target.value})} placeholder="Teknik Detaylar" />
-                         </div>
-                         <div className="flex gap-2 pt-2">
-                           <button 
+                          </div>
+                          <div className="flex gap-2 pt-2">
+                            <button 
                                 onClick={() => {
                                     const combined = getFullAddress(editAssetForm.location, buildingNo, selectedCity, selectedDistrict);
                                     handleAction('update-asset', { ...editAssetForm, location: combined }, () => handleCloseDetail('asset'), () => setIsEditingAsset(false))
@@ -744,8 +744,8 @@ export default function DashboardModals({
                                 {isSaving ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Değişiklikleri Kaydet'}
                             </button>
                            <button onClick={() => setIsEditingAsset(false)} className="px-4 bg-slate-200 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-300">İptal</button>
-                         </div>
-                       </div>
+                          </div>
+                        </div>
                   )}
               </div>
             </motion.div>
@@ -763,16 +763,16 @@ export default function DashboardModals({
                 <div>
                   <label className="text-[11px] font-semibold text-slate-600 block mb-1.5">İş Türü</label>
                   <div className="grid grid-cols-2 gap-2">
-                     <button onClick={() => setJobForm({...jobForm, workCategory: 'Normal İş Atama', customerName: '', assetId: ''})} className={`py-2 text-xs font-semibold rounded-md border transition-colors ${jobForm.workCategory !== 'Genel İş Atama' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Normal İş Atama</button>
-                     <button onClick={() => setJobForm({...jobForm, workCategory: 'Genel İş Atama', customerName: '', assetId: ''})} className={`py-2 text-xs font-semibold rounded-md border transition-colors ${jobForm.workCategory === 'Genel İş Atama' ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Genel İş Atama</button>
+                      <button onClick={() => setJobForm({...jobForm, workCategory: 'Normal İş Atama', customerName: '', assetId: ''})} className={`py-2 text-xs font-semibold rounded-md border transition-colors ${jobForm.workCategory !== 'Genel İş Atama' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Normal İş Atama</button>
+                      <button onClick={() => setJobForm({...jobForm, workCategory: 'Genel İş Atama', customerName: '', assetId: ''})} className={`py-2 text-xs font-semibold rounded-md border transition-colors ${jobForm.workCategory === 'Genel İş Atama' ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Genel İş Atama</button>
                   </div>
                 </div>
 
                 <div>
                   <label className="text-[11px] font-semibold text-slate-600 block mb-1.5">Tarih / Zamanlama</label>
                   <div className="grid grid-cols-2 gap-2">
-                     <button onClick={() => setJobForm({...jobForm, jobType: 'Anlık', scheduledDate: ''})} className={`py-1.5 text-xs font-semibold rounded-md border ${jobForm.jobType === 'Anlık' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>Anlık Görev</button>
-                     <button onClick={() => setJobForm({...jobForm, jobType: 'Planlı'})} className={`py-1.5 text-xs font-semibold rounded-md border ${jobForm.jobType === 'Planlı' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>Tarih Planla</button>
+                      <button onClick={() => setJobForm({...jobForm, jobType: 'Anlık', scheduledDate: ''})} className={`py-1.5 text-xs font-semibold rounded-md border ${jobForm.jobType === 'Anlık' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>Anlık Görev</button>
+                      <button onClick={() => setJobForm({...jobForm, jobType: 'Planlı'})} className={`py-1.5 text-xs font-semibold rounded-md border ${jobForm.jobType === 'Planlı' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>Tarih Planla</button>
                   </div>
                   {jobForm.jobType === 'Planlı' && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-2">
@@ -903,13 +903,15 @@ export default function DashboardModals({
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">VARLIK/CİHAZ DETAYLARI</label>
                   <div className="space-y-2">
-                    <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Varlık/Cihaz Adı (Örn: Yolcu Asansörü)" value={assetForm.name} onChange={e => setAssetForm({...assetForm, name: e.target.value})} />
+                    {/* INPUT SIRALAMASI DEĞİŞTİRİLDİ: BİNA ADI ÖNCE, VARLIK ADI SONRA */}
                     <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Bina / Site Adı" value={assetForm.apartmentName} onChange={e => setAssetForm({...assetForm, apartmentName: e.target.value})} />
+                    <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Varlık/Cihaz Adı (Örn: Yolcu Asansörü)" value={assetForm.name} onChange={e => setAssetForm({...assetForm, name: e.target.value})} />
+                    
                     <div className="p-2 bg-slate-50 border border-slate-100 rounded-md space-y-2"><div className="text-[10px] text-slate-400 font-bold uppercase">Konum / Adres Detayı</div><div className="grid grid-cols-2 gap-2"><select className="px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white" value={selectedCity} onChange={(e) => { setSelectedCity(e.target.value); setSelectedDistrict(''); }}><option value="">İl Seçin</option>{Object.keys(CITY_DATA).map(c => <option key={c} value={c}>{c}</option>)}</select><select className="px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white" value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} disabled={!selectedCity}><option value="">İlçe Seçin</option>{selectedCity && CITY_DATA[selectedCity]?.map((d:string) => <option key={d} value={d}>{d}</option>)}</select></div>
-                       <div className="flex gap-2">
+                        <div className="flex gap-2">
                           <input className="w-1/4 px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" value={buildingNo} onChange={(e) => setBuildingNo(e.target.value)} placeholder="Bina No" />
                           <input className="w-3/4 px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Mahalle/Cadde" value={assetForm.location} onChange={e => setAssetForm({...assetForm, location: e.target.value})} />
-                       </div>
+                        </div>
                     </div>
                     <textarea rows={3} className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none resize-none focus:border-blue-400" placeholder="Teknik Detaylar (Seri No, Model vs.)" value={assetForm.deviceDetails} onChange={e => setAssetForm({...assetForm, deviceDetails: e.target.value})} />
                   </div>
@@ -947,19 +949,21 @@ export default function DashboardModals({
                     <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Firma / İsim" value={customerForm.name} onChange={e => setCustomerForm({...customerForm, name: e.target.value})} />
                     <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Telefon / E-posta" value={customerForm.contact} onChange={e => setCustomerForm({...customerForm, contact: e.target.value})} />
                     <div className="grid grid-cols-2 gap-2"><select className="px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white" value={selectedCity} onChange={(e) => { setSelectedCity(e.target.value); setSelectedDistrict(''); }}><option value="">İl Seçin</option>{Object.keys(CITY_DATA).map(c => <option key={c} value={c}>{c}</option>)}</select><select className="px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white" value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} disabled={!selectedCity}><option value="">İlçe Seçin</option>{selectedCity && CITY_DATA[selectedCity]?.map((d:string) => <option key={d} value={d}>{d}</option>)}</select></div>
-                       <div className="flex gap-2">
+                        <div className="flex gap-2">
                           <input className="w-1/4 px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" value={buildingNo} onChange={(e) => setBuildingNo(e.target.value)} placeholder="Bina No" />
                           <textarea rows={2} className="w-3/4 px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 resize-none" placeholder="Mahalle, Sokak..." value={customerForm.address} onChange={e => setCustomerForm({...customerForm, address: e.target.value})} />
-                       </div>
+                        </div>
                     <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Vergi No / T.C." value={customerForm.taxInfo} onChange={e => setCustomerForm({...customerForm, taxInfo: e.target.value})} />
                   </div>
                 </div>
                 <div className="mt-4"><label className="text-[10px] font-bold text-blue-700 uppercase tracking-wider block mb-2">CİHAZ/VARLIK BAĞLANTISI (Opsiyonel)</label><div className="grid grid-cols-1 gap-2"><label className={`flex items-center p-2.5 border rounded-lg cursor-pointer transition-colors ${custAssetMode === 'NONE' ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}><input type="radio" name="assetMode" className="hidden" checked={custAssetMode === 'NONE'} onChange={() => setCustomerForm({...customerForm, assetMode: 'NONE', assetAction: ''})} /><div className={`w-4 h-4 rounded-full border flex items-center justify-center mr-3 ${custAssetMode === 'NONE' ? 'border-blue-600 bg-blue-100' : 'border-slate-300'}`}>{custAssetMode === 'NONE' && <div className="w-2 h-2 bg-blue-600 rounded-full"></div>}</div><span className={`text-xs font-semibold ${custAssetMode === 'NONE' ? 'text-blue-800' : 'text-slate-700'}`}>Bağlantı Yapma (Bağımsız Müşteri)</span></label><div className={`border rounded-lg transition-colors ${custAssetMode === 'SELECT' ? 'border-blue-500 bg-blue-50/30' : 'border-slate-200 hover:bg-slate-50'}`}><label className="flex items-center p-2.5 cursor-pointer"><input type="radio" name="assetMode" className="hidden" checked={custAssetMode === 'SELECT'} onChange={() => setCustomerForm({...customerForm, assetMode: 'SELECT', assetAction: ''})} /><div className={`w-4 h-4 rounded-full border flex items-center justify-center mr-3 ${custAssetMode === 'SELECT' ? 'border-blue-600 bg-blue-100' : 'border-slate-300'}`}>{custAssetMode === 'SELECT' && <div className="w-2 h-2 bg-blue-600 rounded-full"></div>}</div><span className={`text-xs font-semibold ${custAssetMode === 'SELECT' ? 'text-blue-800' : 'text-slate-700'}`}>Mevcut Cihazlardan Birini Üzerine Al</span></label>{custAssetMode === 'SELECT' && (<motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="px-3 pb-3 pt-1 flex flex-col gap-2"><div className="relative"><Search className="absolute left-2.5 top-2 text-blue-400" size={14} /><input type="text" placeholder="Cihaz Adı veya Konum Ara..." className="w-full pl-8 pr-3 py-1.5 border border-blue-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" value={searchAsset} onChange={e => setSearchAsset(e.target.value)} /></div><select className="w-full px-3 py-2 border border-blue-300 rounded-md text-xs outline-none bg-blue-50 focus:border-blue-500 custom-scrollbar" size={4} value={customerForm.assetAction !== 'NEW' ? customerForm.assetAction : ''} onChange={e => setCustomerForm({...customerForm, assetAction: e.target.value})}><option value="" disabled className="font-semibold text-slate-500 border-b border-blue-100 pb-1 mb-1">-- Listeden Tıklayıp Seçin --</option>{(data?.assets || []).filter((a:any) => a.name?.toLowerCase().includes(searchAsset.toLowerCase()) || a.location?.toLowerCase().includes(searchAsset.toLowerCase())).map((a: any) => <option key={a.id} value={a.id} className="py-1">{a.name} {a.customer_id ? '(Başka Müşteride)' : '(Boşta)'}</option>)}</select></motion.div>)}</div><div className={`border rounded-lg transition-colors ${custAssetMode === 'NEW' ? 'border-blue-500 bg-blue-50/30' : 'border-slate-200 hover:bg-slate-50'}`}><label className="flex items-center p-2.5 cursor-pointer"><input type="radio" name="assetMode" className="hidden" checked={custAssetMode === 'NEW'} onChange={() => setCustomerForm({...customerForm, assetMode: 'NEW', assetAction: 'NEW'})} /><div className={`w-4 h-4 rounded-full border flex items-center justify-center mr-3 ${custAssetMode === 'NEW' ? 'border-blue-600 bg-blue-100' : 'border-slate-300'}`}>{custAssetMode === 'NEW' && <div className="w-2 h-2 bg-blue-600 rounded-full"></div>}</div><span className={`text-xs font-semibold ${custAssetMode === 'NEW' ? 'text-blue-800' : 'text-slate-700'}`}>Sıfırdan Yeni Cihaz Tanımla</span></label>{custAssetMode === 'NEW' && (
   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="px-3 pb-3 pt-1 space-y-2">
+     {/* INPUT SIRALAMASI DEĞİŞTİRİLDİ: BİNA ADI ÖNCE, CİHAZ ADI SONRA */}
+     <input className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Bina / Site Adı" value={customerForm.newAsset?.apartmentName || ''} onChange={e => setCustomerForm({...customerForm, newAsset: {...customerForm.newAsset, apartmentName: e.target.value}})} />
      <input className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Cihaz Adı" value={customerForm.newAsset?.name || ''} onChange={e => setCustomerForm({...customerForm, newAsset: {...customerForm.newAsset, name: e.target.value}})} />
+     
      <div className="p-2 bg-slate-50 border border-slate-200 rounded-md space-y-2">
         <div className="text-[10px] text-slate-400 font-bold uppercase">Cihaz Konumu</div>
-        <input className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Bina / Site Adı" value={customerForm.newAsset?.apartmentName || ''} onChange={e => setCustomerForm({...customerForm, newAsset: {...customerForm.newAsset, apartmentName: e.target.value}})} />
         <div className="grid grid-cols-2 gap-2">
             <select className="px-3 py-2 border border-slate-300 rounded-md text-xs outline-none bg-white" value={selectedCity} onChange={(e) => { setSelectedCity(e.target.value); setSelectedDistrict(''); }}>
                 <option value="">İl Seçin</option>
@@ -993,7 +997,6 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* KATEGORİ YÖNETİM MODALI */}
       <AnimatePresence>
         {showCategoryModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -1021,7 +1024,6 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* YENİ STOK EKLEME MODALI */}
       <AnimatePresence>
         {showStockModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -1112,7 +1114,6 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* TEDARİKÇİ YÖNETİM MODALI */}
       <AnimatePresence>
         {showSupplierListModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -1160,7 +1161,6 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* SADECE TEDARİKÇİ EKLEME MODALI */}
       <AnimatePresence>
         {showSupplierModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
