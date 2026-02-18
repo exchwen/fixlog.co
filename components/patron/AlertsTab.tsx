@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldAlert, AlertTriangle, MapPin, Phone, User, Info } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, MapPin, Phone, User, Info, MessageCircle } from 'lucide-react';
 
 interface Emergency {
   id: string | number;
@@ -27,6 +27,7 @@ interface Fault {
 
 interface AlertsTabProps {
   data: {
+    whatsappPhone?: string; // Firmanın WP numarası
     allEmergencies?: Emergency[];
     allFaults?: Fault[];
     [key: string]: any;
@@ -38,6 +39,14 @@ export default function AlertsTab({ data }: AlertsTabProps) {
 
   const emergencies = data?.allEmergencies || [];
   const faults = data?.allFaults || [];
+  const companyWhatsapp = data?.whatsappPhone || '';
+
+  // Numarayı WhatsApp URL formatına çevirme
+  const formatPhoneForWA = (phone: string) => {
+    if (!phone) return '';
+    const cleaned = phone.replace(/\D/g, '');
+    return cleaned.length >= 10 ? (cleaned.startsWith('90') ? cleaned : '90' + cleaned.slice(-10)) : cleaned;
+  };
 
   return (
     <div className="space-y-6">
@@ -76,15 +85,18 @@ export default function AlertsTab({ data }: AlertsTabProps) {
               ) : (
                 faults.map((fault, idx) => (
                   <div key={fault.id || idx} className={`p-5 rounded-2xl border flex flex-col md:flex-row gap-5 items-start md:items-center justify-between transition-all hover:shadow-md ${fault.status === 'Aktif' ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200'}`}>
-                    <div className="flex gap-4 items-start w-full md:w-auto">
+                    <div className="flex gap-4 items-start w-full md:w-auto flex-1">
                       <div className={`p-3 rounded-full mt-1 ${fault.status === 'Aktif' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>
                         <AlertTriangle size={24} />
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${fault.status === 'Aktif' ? 'bg-amber-200 text-amber-800' : 'bg-emerald-100 text-emerald-700'}`}>
                             {fault.status === 'Aktif' ? 'Müdahale Bekliyor' : 'Çözüldü'}
                           </span>
+                          {fault.created_at && (
+                             <span className="text-[10px] text-slate-400 font-semibold">{new Date(fault.created_at).toLocaleString('tr-TR')}</span>
+                          )}
                         </div>
                         <h3 className="font-bold text-slate-800 text-lg">{fault.asset_name || 'Bilinmeyen Varlık'}</h3>
                         <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-500 mt-2">
@@ -95,6 +107,25 @@ export default function AlertsTab({ data }: AlertsTabProps) {
                         <p className="mt-3 text-sm text-slate-600 italic border-l-2 border-slate-300 pl-3">"{fault.description}"</p>
                       </div>
                     </div>
+
+                    {/* Hızlı İletişim Butonları */}
+                    {fault.reporter_phone && (
+                        <div className="flex gap-2 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-slate-200/60">
+                            <a 
+                              href={`tel:${fault.reporter_phone}`} 
+                              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl font-bold text-xs transition-colors shadow-sm"
+                            >
+                              <Phone size={16} /> Ara
+                            </a>
+                            <a 
+                              href={`https://wa.me/${formatPhoneForWA(fault.reporter_phone)}?text=${encodeURIComponent(`Merhaba ${fault.reporter_name || ''}, ${fault.asset_name || ''} için arıza kaydınızla ilgili ulaşıyoruz.`)}`}
+                              target="_blank" rel="noopener noreferrer"
+                              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-xs transition-colors shadow-sm shadow-emerald-200"
+                            >
+                              <MessageCircle size={16} /> WhatsApp
+                            </a>
+                        </div>
+                    )}
                   </div>
                 ))
               )}
@@ -121,6 +152,9 @@ export default function AlertsTab({ data }: AlertsTabProps) {
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${em.status === 'Aktif' ? 'bg-rose-200 text-rose-800' : 'bg-emerald-100 text-emerald-700'}`}>
                             {em.status === 'Aktif' ? 'Kırmızı Alarm' : 'Çözüldü / Kapatıldı'}
                           </span>
+                          {em.created_at && (
+                             <span className="text-[10px] text-slate-400 font-semibold">{new Date(em.created_at).toLocaleString('tr-TR')}</span>
+                          )}
                         </div>
                         <h3 className="font-bold text-slate-800 text-lg">{em.asset_name || 'Bilinmeyen Varlık'}</h3>
                         <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-500 mt-2">

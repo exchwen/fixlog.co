@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin, Calendar, AlertTriangle, ArrowRight, Filter, ShieldCheck, Clock, Plus, Tags, Truck, Edit2 } from 'lucide-react';
+import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin, Calendar, AlertTriangle, ArrowRight, Filter, ShieldCheck, Clock, Plus, Tags, Truck, Edit2, ShieldAlert } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 import trCitiesData from '@/lib/data/tr-cities.json';
 
@@ -59,6 +59,9 @@ export default function DashboardModals({
   const [editingSupplierId, setEditingSupplierId] = useState<string | null>(null);
   const [editSupFormLocal, setEditSupFormLocal] = useState({ name: '', phone: '' });
 
+  // Varlık detayındaki alt sekmeler için (BİLGİ, İŞLER, ARIZALAR, ACİL DURUMLAR)
+  const [assetDetailTab, setAssetDetailTab] = useState('info');
+
   const parseAddressToState = (fullAddress: string) => {
     if (!fullAddress) {
         setSelectedCity('');
@@ -113,6 +116,7 @@ export default function DashboardModals({
     if (type === 'asset' && setShowAssetDetail) { 
         setShowAssetDetail(null); 
         setIsEditingAsset(false);
+        setAssetDetailTab('info');
         setSelectedCity(''); setSelectedDistrict(''); setBuildingNo('');
     }
     if (type === 'job' && setSelectedJob) { 
@@ -600,58 +604,150 @@ export default function DashboardModals({
       <AnimatePresence>
         {showAssetDetail && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} animate={{ opacity: 1, scale: 1, x: selectedJob ? -280 : 0 }} exit={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} className="bg-white w-full max-w-lg rounded-xl p-6 shadow-xl relative flex flex-col max-h-[85vh] transition-transform duration-300 pointer-events-auto">
-              <div className="flex justify-between items-start mb-6">
+            <motion.div initial={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} animate={{ opacity: 1, scale: 1, x: selectedJob ? -280 : 0 }} exit={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} className="bg-white w-full max-w-lg rounded-xl shadow-xl relative flex flex-col max-h-[85vh] transition-transform duration-300 pointer-events-auto overflow-hidden">
+              <div className="flex justify-between items-start p-6 pb-4 border-b border-slate-100">
                 <div><h2 className="text-xl font-bold text-slate-900">{showAssetDetail.name}</h2><div className="text-xs text-slate-500 mt-0.5">Cihaz / Varlık Profili</div></div>
                 <button onClick={() => handleCloseDetail('asset')} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md"><X size={18} /></button>
               </div>
-              
-              {!isEditingAsset ? (
-                 <>
-                 <div className="grid grid-cols-2 gap-3 mb-6"><div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Sahibi (Müşteri)</div><div className="text-xs font-medium mt-1">{showAssetDetail.customer_id ? (() => { const cust = (data?.customers || []).find((c: any) => c.id === showAssetDetail.customer_id); return cust ? (<span onClick={() => { setShowAssetDetail(null); setShowCustomerDetail(cust); }} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 font-semibold border border-blue-200 rounded-md hover:bg-blue-100 hover:text-blue-800 transition-colors cursor-pointer"><User size={12} className="opacity-70" />{cust.name}<ExternalLink size={12} className="opacity-50 ml-1" /></span>) : <span className="text-slate-500">Bilinmiyor</span>; })() : <span className="text-slate-500">Bağımsız Cihaz</span>}</div></div><div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Tam Konum</div><div className="flex flex-col mt-0.5 space-y-1"><div className="text-xs font-medium text-slate-800">{showAssetDetail.location || '-'}</div>{showAssetDetail.location && (<a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(showAssetDetail.location || '')}`} target="_blank" rel="noopener noreferrer" className="self-start inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-100/50 hover:bg-blue-100 px-2 py-1 rounded transition-colors"><MapPin size={12} /> Haritada Gör</a>)}</div></div><div className="col-span-2 bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Teknik Detaylar</div><div className="text-xs font-medium text-slate-800 mt-0.5 line-clamp-2">{showAssetDetail.asset_details || '-'}</div></div></div>
-                 <div className="flex-1 overflow-y-auto space-y-2 mb-6 custom-scrollbar"><h4 className="text-[11px] font-semibold text-slate-500 mb-2 uppercase tracking-wider">Cihaza Ait Geçmiş İşler</h4>{(data?.jobs || []).filter((j: any) => j.asset_id === showAssetDetail.id).length > 0 ? (data?.jobs || []).filter((j: any) => j.asset_id === showAssetDetail.id).map((j: any) => (<div key={j.id} onClick={(e) => { e.stopPropagation(); setSelectedJob(j); }} className={`p-3 border rounded-lg flex items-center justify-between text-xs cursor-pointer transition-all group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-300' : 'bg-white border-slate-100 hover:bg-slate-50'}`}><div><div className="font-semibold text-slate-800 group-hover:text-blue-700 transition-colors">{j.work_type || 'Görev'}</div><div className="text-[10px] text-slate-500 mt-0.5">{j.scheduled_date || 'Anlık'}</div></div><div className="flex items-center gap-2"><span className={`px-2 py-1 rounded text-[10px] font-medium border ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span><ArrowRight size={14} className={`transition-all ${selectedJob?.id === j.id ? 'text-blue-600 opacity-100' : 'text-slate-300 opacity-0 group-hover:opacity-100'}`} /></div></div>)) : <div className="text-center p-4 text-slate-400 text-xs bg-slate-50 rounded-lg">Bu cihaz için geçmiş iş kaydı bulunmuyor.</div>}</div>
-                 <div className="pt-4 border-t border-slate-100"><div className="flex gap-2 w-full"><button onClick={() => { setIsEditingAsset(true); setEditAssetForm({ id: showAssetDetail.id, name: showAssetDetail.name, location: parseAddressToState(showAssetDetail.location || ''), apartmentName: '', deviceDetails: showAssetDetail.asset_details || '' }); }} className="flex-[2] bg-slate-100 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5"><Settings size={14} /> Düzenle</button><button onClick={async () => { if(confirm(`${showAssetDetail.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-asset', { id: showAssetDetail.id }, () => handleCloseDetail('asset'), () => {}); } }} className="flex-1 bg-rose-50 text-rose-600 py-2 rounded-md text-xs font-semibold hover:bg-rose-100 transition-colors flex items-center justify-center gap-1.5"><Trash2 size={14} /> Sil</button></div></div>
-                 </>
-              ) : (
-                   <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200 mt-2">
-                     <div className="space-y-2">
-                       <input className="w-full px-3 py-2 rounded-md border border-slate-200 text-xs outline-none focus:border-blue-400 bg-white" value={editAssetForm.name} onChange={(e) => setEditAssetForm({...editAssetForm, name: e.target.value})} placeholder="Cihaz Adı" />
-                       
-                       <div className="p-2 bg-slate-100/50 border border-slate-100 rounded-md space-y-2">
-                            <div className="text-[10px] text-slate-400 font-bold uppercase">Konum / Adres Detayı</div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <select className="px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white" value={selectedCity} onChange={(e) => { setSelectedCity(e.target.value); setSelectedDistrict(''); }}>
-                                    <option value="">İl Seçin</option>
-                                    {Object.keys(CITY_DATA).map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                                <select className="px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white" value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} disabled={!selectedCity}>
-                                    <option value="">İlçe Seçin</option>
-                                    {selectedCity && CITY_DATA[selectedCity]?.map((d:string) => <option key={d} value={d}>{d}</option>)}
-                                </select>
-                            </div>
-                            
-                            <div className="flex gap-2">
-                                <input className="w-1/4 px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" value={buildingNo} onChange={(e) => setBuildingNo(e.target.value)} placeholder="Bina No" />
-                                <input className="w-3/4 px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Mahalle/Cadde" value={editAssetForm.location} onChange={(e) => setEditAssetForm({...editAssetForm, location: e.target.value})} />
-                            </div>
-                        </div>
 
-                       <textarea rows={2} className="w-full px-3 py-2 rounded-md border border-slate-200 text-xs outline-none focus:border-blue-400 bg-white resize-none" value={editAssetForm.deviceDetails} onChange={(e) => setEditAssetForm({...editAssetForm, deviceDetails: e.target.value})} placeholder="Teknik Detaylar" />
-                     </div>
-                     <div className="flex gap-2 pt-2">
-                       <button 
-                            onClick={() => {
-                                const combined = getFullAddress(editAssetForm.location, buildingNo, selectedCity, selectedDistrict);
-                                handleAction('update-asset', { ...editAssetForm, location: combined }, () => handleCloseDetail('asset'), () => setIsEditingAsset(false))
-                            }} 
-                            className="flex-1 bg-blue-600 text-white py-2 rounded-md text-xs font-semibold hover:bg-blue-700"
-                        >
-                            {isSaving ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Değişiklikleri Kaydet'}
-                        </button>
-                       <button onClick={() => setIsEditingAsset(false)} className="px-4 bg-slate-200 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-300">İptal</button>
-                     </div>
-                   </div>
+              {/* SEKME MENÜSÜ */}
+              {!isEditingAsset && (
+                  <div className="flex border-b border-slate-200 bg-slate-50/50 px-4">
+                      <button onClick={() => setAssetDetailTab('info')} className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${assetDetailTab === 'info' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>Bilgiler</button>
+                      <button onClick={() => setAssetDetailTab('jobs')} className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${assetDetailTab === 'jobs' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>İşler</button>
+                      <button onClick={() => setAssetDetailTab('faults')} className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${assetDetailTab === 'faults' ? 'border-amber-500 text-amber-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>Arızalar</button>
+                      <button onClick={() => setAssetDetailTab('emergencies')} className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${assetDetailTab === 'emergencies' ? 'border-rose-500 text-rose-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>Acil Durumlar</button>
+                  </div>
               )}
+              
+              <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                  {!isEditingAsset ? (
+                      <>
+                      {assetDetailTab === 'info' && (
+                          <div className="space-y-6">
+                              <div className="grid grid-cols-2 gap-3">
+                                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                      <div className="text-[10px] font-semibold text-slate-500 uppercase">Sahibi (Müşteri)</div>
+                                      <div className="text-xs font-medium mt-1">
+                                          {showAssetDetail.customer_id ? (() => { 
+                                              const cust = (data?.customers || []).find((c: any) => c.id === showAssetDetail.customer_id); 
+                                              return cust ? (
+                                                  <span onClick={() => { setShowAssetDetail(null); setShowCustomerDetail(cust); }} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 font-semibold border border-blue-200 rounded-md hover:bg-blue-100 hover:text-blue-800 transition-colors cursor-pointer"><User size={12} className="opacity-70" />{cust.name}<ExternalLink size={12} className="opacity-50 ml-1" /></span>
+                                              ) : <span className="text-slate-500">Bilinmiyor</span>; 
+                                          })() : <span className="text-slate-500">Bağımsız Cihaz</span>}
+                                      </div>
+                                  </div>
+                                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                      <div className="text-[10px] font-semibold text-slate-500 uppercase">Tam Konum</div>
+                                      <div className="flex flex-col mt-0.5 space-y-1">
+                                          <div className="text-xs font-medium text-slate-800">{showAssetDetail.location || '-'}</div>
+                                          {showAssetDetail.location && (
+                                              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(showAssetDetail.location || '')}`} target="_blank" rel="noopener noreferrer" className="self-start inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-100/50 hover:bg-blue-100 px-2 py-1 rounded transition-colors"><MapPin size={12} /> Haritada Gör</a>
+                                          )}
+                                      </div>
+                                  </div>
+                                  <div className="col-span-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                      <div className="text-[10px] font-semibold text-slate-500 uppercase">Teknik Detaylar</div>
+                                      <div className="text-xs font-medium text-slate-800 mt-0.5 line-clamp-2">{showAssetDetail.asset_details || '-'}</div>
+                                  </div>
+                              </div>
+                              <div className="pt-4 border-t border-slate-100">
+                                  <div className="flex gap-2 w-full">
+                                      <button onClick={() => { setIsEditingAsset(true); setEditAssetForm({ id: showAssetDetail.id, name: showAssetDetail.name, location: parseAddressToState(showAssetDetail.location || ''), apartmentName: '', deviceDetails: showAssetDetail.asset_details || '' }); }} className="flex-[2] bg-slate-100 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5"><Settings size={14} /> Düzenle</button>
+                                      <button onClick={async () => { if(confirm(`${showAssetDetail.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-asset', { id: showAssetDetail.id }, () => handleCloseDetail('asset'), () => {}); } }} className="flex-1 bg-rose-50 text-rose-600 py-2 rounded-md text-xs font-semibold hover:bg-rose-100 transition-colors flex items-center justify-center gap-1.5"><Trash2 size={14} /> Sil</button>
+                                  </div>
+                              </div>
+                          </div>
+                      )}
+
+                      {assetDetailTab === 'jobs' && (
+                          <div className="space-y-2">
+                              {(data?.jobs || []).filter((j: any) => j.asset_id === showAssetDetail.id).length > 0 ? (data?.jobs || []).filter((j: any) => j.asset_id === showAssetDetail.id).map((j: any) => (
+                                  <div key={j.id} onClick={(e) => { e.stopPropagation(); setSelectedJob(j); }} className={`p-3 border rounded-lg flex items-center justify-between text-xs cursor-pointer transition-all group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-300' : 'bg-white border-slate-100 hover:bg-slate-50'}`}>
+                                      <div>
+                                          <div className="font-semibold text-slate-800 group-hover:text-blue-700 transition-colors">{j.work_type || 'Görev'}</div>
+                                          <div className="text-[10px] text-slate-500 mt-0.5">{j.scheduled_date || 'Anlık'}</div>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                          <span className={`px-2 py-1 rounded text-[10px] font-medium border ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span>
+                                          <ArrowRight size={14} className={`transition-all ${selectedJob?.id === j.id ? 'text-blue-600 opacity-100' : 'text-slate-300 opacity-0 group-hover:opacity-100'}`} />
+                                      </div>
+                                  </div>
+                              )) : <div className="text-center p-4 text-slate-400 text-xs bg-slate-50 rounded-lg">Bu cihaz için geçmiş iş kaydı bulunmuyor.</div>}
+                          </div>
+                      )}
+
+                      {assetDetailTab === 'faults' && (
+                          <div className="space-y-2">
+                              {(data?.allFaults || []).filter((f: any) => f.asset_id === showAssetDetail.uuid).length > 0 ? (data?.allFaults || []).filter((f: any) => f.asset_id === showAssetDetail.uuid).map((fault: any, idx: number) => (
+                                  <div key={idx} className="p-3 border border-amber-200 bg-amber-50 rounded-xl">
+                                      <div className="flex justify-between items-start mb-2">
+                                          <div className="font-bold text-amber-900 flex items-center gap-1.5 text-xs"><AlertTriangle size={14}/> Arıza Bildirimi</div>
+                                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${fault.status === 'Aktif' ? 'bg-amber-200 text-amber-800' : 'bg-emerald-100 text-emerald-700'}`}>{fault.status}</span>
+                                      </div>
+                                      <div className="text-[10px] text-amber-700 mb-1">{fault.created_at ? new Date(fault.created_at).toLocaleString('tr-TR') : ''}</div>
+                                      <div className="text-xs text-amber-800 font-medium">Bildiren: {fault.reporter_name} ({fault.reporter_phone})</div>
+                                      <div className="text-xs text-slate-700 bg-white p-2 rounded border border-amber-100 mt-2">"{fault.description}"</div>
+                                  </div>
+                              )) : <div className="text-center p-4 text-slate-400 text-xs bg-slate-50 rounded-lg">Bu cihaz için arıza kaydı bulunmuyor.</div>}
+                          </div>
+                      )}
+
+                      {assetDetailTab === 'emergencies' && (
+                          <div className="space-y-2">
+                              {(data?.allEmergencies || []).filter((e: any) => e.asset_id === showAssetDetail.uuid).length > 0 ? (data?.allEmergencies || []).filter((e: any) => e.asset_id === showAssetDetail.uuid).map((em: any, idx: number) => (
+                                  <div key={idx} className="p-3 border border-rose-200 bg-rose-50 rounded-xl flex justify-between items-center">
+                                      <div>
+                                          <div className="font-bold text-rose-900 flex items-center gap-1.5 text-xs mb-1"><ShieldAlert size={14}/> Acil Durum Çağrısı</div>
+                                          <div className="text-[10px] text-rose-700">{em.created_at ? new Date(em.created_at).toLocaleString('tr-TR') : ''}</div>
+                                      </div>
+                                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${em.status === 'Aktif' ? 'bg-rose-200 text-rose-800' : 'bg-emerald-100 text-emerald-700'}`}>{em.status}</span>
+                                  </div>
+                              )) : <div className="text-center p-4 text-slate-400 text-xs bg-slate-50 rounded-lg">Bu cihaz için acil durum çağrısı bulunmuyor.</div>}
+                          </div>
+                      )}
+                      </>
+                  ) : (
+                       <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200 mt-2">
+                         <div className="space-y-2">
+                           <input className="w-full px-3 py-2 rounded-md border border-slate-200 text-xs outline-none focus:border-blue-400 bg-white" value={editAssetForm.name} onChange={(e) => setEditAssetForm({...editAssetForm, name: e.target.value})} placeholder="Cihaz Adı" />
+                           
+                           <div className="p-2 bg-slate-100/50 border border-slate-100 rounded-md space-y-2">
+                                <div className="text-[10px] text-slate-400 font-bold uppercase">Konum / Adres Detayı</div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <select className="px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white" value={selectedCity} onChange={(e) => { setSelectedCity(e.target.value); setSelectedDistrict(''); }}>
+                                        <option value="">İl Seçin</option>
+                                        {Object.keys(CITY_DATA).map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                    <select className="px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white" value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} disabled={!selectedCity}>
+                                        <option value="">İlçe Seçin</option>
+                                        {selectedCity && CITY_DATA[selectedCity]?.map((d:string) => <option key={d} value={d}>{d}</option>)}
+                                    </select>
+                                </div>
+                                
+                                <div className="flex gap-2">
+                                    <input className="w-1/4 px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" value={buildingNo} onChange={(e) => setBuildingNo(e.target.value)} placeholder="Bina No" />
+                                    <input className="w-3/4 px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Mahalle/Cadde" value={editAssetForm.location} onChange={(e) => setEditAssetForm({...editAssetForm, location: e.target.value})} />
+                                </div>
+                            </div>
+
+                           <textarea rows={2} className="w-full px-3 py-2 rounded-md border border-slate-200 text-xs outline-none focus:border-blue-400 bg-white resize-none" value={editAssetForm.deviceDetails} onChange={(e) => setEditAssetForm({...editAssetForm, deviceDetails: e.target.value})} placeholder="Teknik Detaylar" />
+                         </div>
+                         <div className="flex gap-2 pt-2">
+                           <button 
+                                onClick={() => {
+                                    const combined = getFullAddress(editAssetForm.location, buildingNo, selectedCity, selectedDistrict);
+                                    handleAction('update-asset', { ...editAssetForm, location: combined }, () => handleCloseDetail('asset'), () => setIsEditingAsset(false))
+                                }} 
+                                className="flex-1 bg-blue-600 text-white py-2 rounded-md text-xs font-semibold hover:bg-blue-700"
+                            >
+                                {isSaving ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Değişiklikleri Kaydet'}
+                            </button>
+                           <button onClick={() => setIsEditingAsset(false)} className="px-4 bg-slate-200 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-300">İptal</button>
+                         </div>
+                       </div>
+                  )}
+              </div>
             </motion.div>
           </div>
         )}
@@ -879,7 +975,7 @@ export default function DashboardModals({
      <textarea className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Teknik Detay" value={customerForm.newAsset?.deviceDetails || ''} onChange={e => setCustomerForm({...customerForm, newAsset: {...customerForm.newAsset, deviceDetails: e.target.value}})} />
   </motion.div>
 )}</div></div></div>
-                <button disabled={isSaving} className="w-full bg-blue-600 text-white py-2.5 rounded-md font-semibold text-sm mt-4 hover:bg-blue-700 flex justify-center items-center" onClick={() => { const combinedAddress = getFullAddress(customerForm.address, buildingNo, selectedCity, selectedDistrict); handleAction('add-customer', { ...customerForm, address: combinedAddress }, setShowCustomerModal, () => { setCustomerForm({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', assetMode: 'NONE', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } }); setSelectedCity(''); setSelectedDistrict(''); setBuildingNo(''); }); }}>{isSaving ? <Loader2 className="animate-spin" size={16} /> : 'Müşteriyi Kaydet'}</button>
+              <button disabled={isSaving} className="w-full bg-blue-600 text-white py-2.5 rounded-md font-semibold text-sm mt-4 hover:bg-blue-700 flex justify-center items-center" onClick={() => { const combinedAddress = getFullAddress(customerForm.address, buildingNo, selectedCity, selectedDistrict); handleAction('add-customer', { ...customerForm, address: combinedAddress }, setShowCustomerModal, () => { setCustomerForm({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', assetMode: 'NONE', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } }); setSelectedCity(''); setSelectedDistrict(''); setBuildingNo(''); }); }}>{isSaving ? <Loader2 className="animate-spin" size={16} /> : 'Müşteriyi Kaydet'}</button>
               </div>
             </motion.div>
           </div>
