@@ -1,21 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Loader2, AlertTriangle, Package, Phone, Tag } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Loader2, AlertTriangle, Package, Phone, Tag, Truck, Tags } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function StockTab({ data, setShowStockModal, setShowSupplierModal }: any) {
+export default function StockTab({ data, handleAction, setShowStockModal, setShowSupplierModal, setShowSupplierListModal, setShowCategoryModal }: any) {
   const [searchTerm, setSearchTerm] = useState('');
   
   // Satır içi düzenleme state'i
   const [editingStock, setEditingStock] = useState<any>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSavingLocal, setIsSavingLocal] = useState(false);
 
   const rawStock = data?.stock || [];
   const suppliers = data?.suppliers || [];
-
-  // Mevcut benzersiz kategorileri bul (datalist için)
-  const existingCategories = Array.from(new Set(rawStock.map((s: any) => s.category).filter(Boolean)));
+  const categories = data?.categories || [];
 
   // Kritik Stokları (Miktarı 5 ve altı olanları) bul
   const criticalStocks = rawStock.filter((item: any) => Number(item.quantity) <= 5);
@@ -31,35 +29,22 @@ export default function StockTab({ data, setShowStockModal, setShowSupplierModal
   });
 
   const handleUpdate = async () => {
-    setIsSaving(true);
-    try {
-      const companySlug = localStorage.getItem('companySlug');
-      await fetch('https://backend.isdokumu.workers.dev/update-stock', {
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug: companySlug, ...editingStock })
-      });
-      window.location.reload();
-    } catch (e) { 
-      alert("Hata oluştu"); 
-    } finally {
-      setIsSaving(false); 
-    }
+    setIsSavingLocal(true);
+    await handleAction('update-stock', { 
+        id: editingStock.id, 
+        itemName: editingStock.itemName, 
+        quantity: editingStock.quantity, 
+        unitName: editingStock.unitName, 
+        unitPrice: editingStock.unitPrice, 
+        category: editingStock.category || '', 
+        supplierId: editingStock.supplierId || null 
+    }, () => setEditingStock(null), null);
+    setIsSavingLocal(false);
   };
 
   const handleDelete = async (id: string) => {
     if(confirm('Bu stok kaydını silmek istediğinize emin misiniz?')) {
-      try {
-        const companySlug = localStorage.getItem('companySlug');
-        await fetch('https://backend.isdokumu.workers.dev/delete-stock', {
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ slug: companySlug, id })
-        });
-        window.location.reload();
-      } catch (e) {
-        alert("Silme işlemi başarısız.");
-      }
+      await handleAction('delete-stock', { id }, null, null);
     }
   };
 
@@ -134,21 +119,25 @@ export default function StockTab({ data, setShowStockModal, setShowSupplierModal
        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
          <h3 className="text-lg font-bold text-slate-900">Tüm Envanter & Parçalar</h3>
          
-         <div className="flex items-center gap-2 w-full sm:w-auto">
-           <div className="relative flex-1 sm:w-64">
-             <Search className="absolute left-2.5 top-2 text-slate-400" size={14} />
+         <div className="flex items-center flex-wrap gap-2 w-full sm:w-auto">
+           <div className="relative flex-1 min-w-[200px]">
+             <Search className="absolute left-2.5 top-2.5 text-slate-400" size={14} />
              <input 
                type="text" 
                placeholder="Parça, Kategori veya Tedarikçi Ara..." 
-               className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white shadow-sm"
+               className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white shadow-sm"
                value={searchTerm}
                onChange={e => setSearchTerm(e.target.value)}
              />
            </div>
-           <button onClick={() => setShowSupplierModal(true)} className="bg-slate-100 text-slate-700 px-4 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-slate-200 whitespace-nowrap transition-colors border border-slate-200">
-             <Plus size={14} /> Tedarikçi Ekle
+           
+           <button onClick={() => setShowCategoryModal(true)} className="bg-slate-100 text-slate-700 px-3 py-2 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-slate-200 whitespace-nowrap transition-colors border border-slate-200">
+             <Tags size={14} /> Kategoriler
            </button>
-           <button onClick={() => setShowStockModal(true)} className="bg-blue-600 text-white px-4 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-blue-700 whitespace-nowrap transition-colors border border-blue-700">
+           <button onClick={() => setShowSupplierListModal(true)} className="bg-slate-100 text-slate-700 px-3 py-2 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-slate-200 whitespace-nowrap transition-colors border border-slate-200">
+             <Truck size={14} /> Tedarikçiler
+           </button>
+           <button onClick={() => setShowStockModal(true)} className="bg-blue-600 text-white px-3 py-2 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-blue-700 whitespace-nowrap transition-colors border border-blue-700">
              <Plus size={14} /> Yeni Parça
            </button>
          </div>
@@ -252,10 +241,10 @@ export default function StockTab({ data, setShowStockModal, setShowSupplierModal
 
                   <div className="col-span-2">
                     <label className="text-[10px] font-black text-slate-500 tracking-wider block mb-1">KATEGORİ (Opsiyonel)</label>
-                    <input list="edit-categories" className="w-full px-3 py-2 border border-slate-200 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-slate-50/50" placeholder="Örn: Rulman, Sarf Malzeme..." value={editingStock.category} onChange={e => setEditingStock({...editingStock, category: e.target.value})} />
-                    <datalist id="edit-categories">
-                       {existingCategories.map((c:any) => <option key={c} value={c} />)}
-                    </datalist>
+                    <select className="w-full px-3 py-2 border border-slate-200 shadow-sm rounded-md text-xs outline-none bg-slate-50/50 focus:border-blue-400" value={editingStock.category} onChange={e => setEditingStock({...editingStock, category: e.target.value})}>
+                      <option value="">Kategori Seçin veya Boş Bırakın</option>
+                      {categories.map((c:any) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                    </select>
                   </div>
                   
                   <div>
@@ -295,8 +284,8 @@ export default function StockTab({ data, setShowStockModal, setShowSupplierModal
                 </div>
 
                 <div className="flex gap-2 mt-6 pt-4 border-t border-slate-100">
-                  <button disabled={isSaving} className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-bold text-xs hover:bg-blue-700 flex justify-center items-center shadow-md shadow-blue-200 transition-colors" onClick={handleUpdate}>
-                    {isSaving ? <Loader2 className="animate-spin" size={16} /> : 'Değişiklikleri Kaydet'}
+                  <button disabled={isSavingLocal} className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-bold text-xs hover:bg-blue-700 flex justify-center items-center shadow-md shadow-blue-200 transition-colors" onClick={handleUpdate}>
+                    {isSavingLocal ? <Loader2 className="animate-spin" size={16} /> : 'Değişiklikleri Kaydet'}
                   </button>
                   <button onClick={() => setEditingStock(null)} className="px-4 bg-slate-100 text-slate-700 py-2.5 rounded-lg font-bold text-xs hover:bg-slate-200 transition-colors">
                     İptal

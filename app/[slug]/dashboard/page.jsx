@@ -42,6 +42,9 @@ export default function PatronDashboard() {
   const [showStockModal, setShowStockModal] = useState(false);
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   
+  const [showSupplierListModal, setShowSupplierListModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+
   const [showStaffDetail, setShowStaffDetail] = useState(null);
   const [showCustomerDetail, setShowCustomerDetail] = useState(null);
   const [showAssetDetail, setShowAssetDetail] = useState(null);
@@ -60,9 +63,9 @@ export default function PatronDashboard() {
 
   // FORMLAR
   const [jobForm, setJobForm] = useState({ customerName: '', assetId: '', staffId: '', workType: 'Genel Görev', jobType: 'Anlık', scheduledDate: '', taskNote: '' });
-  const [assetForm, setAssetForm] = useState({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', newCustomer: { name: '', contact: '', address: '', taxInfo: '' } });
+  const [assetForm, setAssetForm] = useState({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', customerMode: 'NONE', newCustomer: { name: '', contact: '', address: '', taxInfo: '' } });
   const [staffForm, setStaffForm] = useState({ name: '', phone: '', role: 'Usta', branch: '', status: 'Aktif' });
-  const [customerForm, setCustomerForm] = useState({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } });
+  const [customerForm, setCustomerForm] = useState({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', assetMode: 'NONE', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } });
   const [stockForm, setStockForm] = useState({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', category: '', supplierId: '', supplierMode: 'NONE', newSupplier: { name: '', phone: '' } });
   const [supplierForm, setSupplierForm] = useState({ name: '', phone: '' });
   const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', emergencyPhone: '' });
@@ -115,16 +118,15 @@ export default function PatronDashboard() {
 
   const isCompanyDataIncomplete = useMemo(() => {
     if (!data) return false;
-    
-    const d = data || {};
 
-    const name = d.name?.trim().toLowerCase() || '';
-    const owner = d.ownerName?.trim().toLowerCase() || '';
-    const phone = d.phone?.trim() || '';
-    const emergencyPhone = d.emergencyPhone?.trim() || '';
-    const address = d.address?.trim() || '';
-    const taxInfo = d.taxInfo?.trim() || '';
-    const sector = d.sector?.trim() || '';
+    // undefined/null hatalarını önlemek için güvenli string ataması
+    const name = (data.name || '').trim().toLowerCase();
+    const owner = (data.ownerName || '').trim().toLowerCase();
+    const phone = (data.phone || '').trim();
+    const emergencyPhone = (data.emergencyPhone || '').trim();
+    const address = (data.address || '').trim();
+    const taxInfo = (data.taxInfo || '').trim();
+    const sector = (data.sector || '').trim();
 
     const isDefaultName = name === 'işletme' || name === '';
     const isDefaultOwner = owner === 'kullanıcı' || owner === 'yönetici' || owner === '';
@@ -165,7 +167,7 @@ export default function PatronDashboard() {
           {activeTab === 'pending' && <PendingJobsTab data={data} setSelectedJob={setSelectedJob} />}
           {activeTab === 'team' && <TeamTab data={data} setShowStaffModal={setShowStaffModal} setShowJobModal={setShowJobModal} setShowStaffDetail={setShowStaffDetail} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} setSelectedJob={setSelectedJob} />}
           {activeTab === 'customers' && <CustomersTab data={data} setShowCustomerModal={setShowCustomerModal} setShowCustomerDetail={setShowCustomerDetail} />}
-          {activeTab === 'stock' && <StockTab data={data} setShowStockModal={setShowStockModal} setShowSupplierModal={setShowSupplierModal} />}
+          {activeTab === 'stock' && <StockTab data={data} handleAction={handleAction} setShowStockModal={setShowStockModal} setShowSupplierModal={setShowSupplierModal} setShowSupplierListModal={setShowSupplierListModal} setShowCategoryModal={setShowCategoryModal} />}
           {activeTab === 'finance' && <FinanceTab data={data} />}
           {activeTab === 'assets' && <AssetsTab data={data} setShowAssetModal={setShowAssetModal} setShowAssetDetail={setShowAssetDetail} setShowQRModal={setShowQRModal} setSelectedQRAsset={setSelectedQRAsset} />}
           {activeTab === 'settings' && <SettingsTab settingsForm={settingsForm} setSettingsForm={setSettingsForm} handleAction={handleAction} isSaving={isSaving} />}
@@ -184,6 +186,8 @@ export default function PatronDashboard() {
         showCustomerModal={showCustomerModal} setShowCustomerModal={setShowCustomerModal} customerForm={customerForm} setCustomerForm={setCustomerForm}
         showStockModal={showStockModal} setShowStockModal={setShowStockModal} stockForm={stockForm} setStockForm={setStockForm}
         showSupplierModal={showSupplierModal} setShowSupplierModal={setShowSupplierModal} supplierForm={supplierForm} setSupplierForm={setSupplierForm}
+        showSupplierListModal={showSupplierListModal} setShowSupplierListModal={setShowSupplierListModal}
+        showCategoryModal={showCategoryModal} setShowCategoryModal={setShowCategoryModal}
         handleAction={handleAction} isSaving={isSaving} data={data}
         selectedJob={selectedJob} setSelectedJob={setSelectedJob}
       />
@@ -218,13 +222,13 @@ export default function PatronDashboard() {
                 <div className="text-xs text-slate-500 bg-slate-50 p-4 rounded-lg border border-slate-100">
                   <p className="font-bold text-slate-700 mb-2">Eksik Olan Bilgiler:</p>
                   <ul className="list-disc list-inside space-y-1">
-                    {(data?.name?.trim().toLowerCase() === 'işletme' || !data?.name?.trim()) && <li>Firma Ünvanı</li>}
-                    {(data?.ownerName?.trim().toLowerCase() === 'kullanıcı' || data?.ownerName?.trim().toLowerCase() === 'yönetici' || !data?.ownerName?.trim()) && <li>Yetkili Ad Soyad</li>}
-                    {!data?.sector?.trim() && <li>Faaliyet Sektörü</li>}
-                    {!data?.phone?.trim() && <li>İşletme Telefonu</li>}
-                    {!data?.emergencyPhone?.trim() && <li>Acil Durum Hattı (7/24)</li>}
-                    {!data?.address?.trim() && <li>Adres Bilgisi</li>}
-                    {!data?.taxInfo?.trim() && <li>Vergi Numarası</li>}
+                    {(!(data?.name || '').trim() || (data?.name || '').trim().toLowerCase() === 'işletme') && <li>Firma Ünvanı</li>}
+                    {(!(data?.ownerName || '').trim() || ['kullanıcı', 'yönetici'].includes((data?.ownerName || '').trim().toLowerCase())) && <li>Yetkili Ad Soyad</li>}
+                    {!(data?.sector || '').trim() && <li>Faaliyet Sektörü</li>}
+                    {!(data?.phone || '').trim() && <li>İşletme Telefonu</li>}
+                    {!(data?.emergencyPhone || '').trim() && <li>Acil Durum Hattı (7/24)</li>}
+                    {!(data?.address || '').trim() && <li>Adres Bilgisi</li>}
+                    {!(data?.taxInfo || '').trim() && <li>Vergi Numarası</li>}
                   </ul>
                 </div>
               </div>

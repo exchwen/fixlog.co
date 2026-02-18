@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin, Calendar, AlertTriangle, ArrowRight, Filter, ShieldCheck, Clock } from 'lucide-react';
+import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin, Calendar, AlertTriangle, ArrowRight, Filter, ShieldCheck, Clock, Plus, Tags, Truck, Edit2 } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 import trCitiesData from '@/lib/data/tr-cities.json';
 
@@ -18,6 +18,8 @@ export default function DashboardModals({
   showCustomerModal, setShowCustomerModal, customerForm, setCustomerForm,
   showStockModal, setShowStockModal, stockForm, setStockForm,
   showSupplierModal, setShowSupplierModal, supplierForm, setSupplierForm,
+  showSupplierListModal, setShowSupplierListModal,
+  showCategoryModal, setShowCategoryModal,
   selectedJob, setSelectedJob,
   handleAction, isSaving, data
 }: any) {
@@ -51,6 +53,11 @@ export default function DashboardModals({
     customerName: '',
     assetId: ''
   });
+
+  // Yeni Modallar İçin Local Stateler
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [editingSupplierId, setEditingSupplierId] = useState<string | null>(null);
+  const [editSupFormLocal, setEditSupFormLocal] = useState({ name: '', phone: '' });
 
   const parseAddressToState = (fullAddress: string) => {
     if (!fullAddress) {
@@ -127,13 +134,15 @@ export default function DashboardModals({
         } else {
             setShowJobModal(false); setShowAssetModal(false); setShowStaffModal(false); 
             setShowCustomerModal(false); setShowStockModal(false); setShowSupplierModal(false);
+            if (setShowCategoryModal) setShowCategoryModal(false);
+            if (setShowSupplierListModal) setShowSupplierListModal(false);
             setSelectedCity(''); setSelectedDistrict(''); setBuildingNo('');
         }
       }
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [setShowJobModal, setShowAssetModal, setShowStaffModal, setShowCustomerModal, setShowStockModal, setShowSupplierModal, setShowStaffDetail, setShowCustomerDetail, setShowAssetDetail, setSelectedJob, selectedJob]);
+  }, [setShowJobModal, setShowAssetModal, setShowStaffModal, setShowCustomerModal, setShowStockModal, setShowSupplierModal, setShowStaffDetail, setShowCustomerDetail, setShowAssetDetail, setSelectedJob, selectedJob, setShowCategoryModal, setShowSupplierListModal]);
 
   const handleEditClick = () => {
     setIsEditingJobDetail(true);
@@ -183,8 +192,7 @@ export default function DashboardModals({
         )
     : [];
 
-  const existingCategories = Array.from(new Set((data?.stock || []).map((s:any) => s.category).filter(Boolean)));
-
+  const categories = data?.categories || [];
   const isAnyProfileDetailOpen = showStaffDetail || showCustomerDetail || showAssetDetail;
 
   return (
@@ -889,6 +897,34 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
+      {/* KATEGORİ YÖNETİM MODALI */}
+      <AnimatePresence>
+        {showCategoryModal && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-sm rounded-xl p-6 shadow-xl relative">
+              <div className="flex justify-between items-center mb-5">
+                <h2 className="text-lg font-bold text-slate-800">Kategorileri Yönet</h2>
+                <button onClick={() => setShowCategoryModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+              </div>
+              <div className="flex gap-2 mb-4">
+                <input type="text" className="flex-1 px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Yeni Kategori Adı" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} />
+                <button disabled={!newCategoryName || isSaving} onClick={() => handleAction('add-category', { name: newCategoryName }, null, () => setNewCategoryName(''))} className="bg-blue-600 text-white px-4 py-2 rounded-md text-xs font-bold hover:bg-blue-700 transition-colors disabled:opacity-50">
+                  {isSaving ? <Loader2 size={14} className="animate-spin" /> : 'Ekle'}
+                </button>
+              </div>
+              <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
+                {categories.length > 0 ? categories.map((c: any) => (
+                  <div key={c.id} className="flex justify-between items-center p-2.5 bg-slate-50 border border-slate-100 rounded-lg">
+                    <span className="text-xs font-semibold text-slate-700">{c.name}</span>
+                    <button onClick={async () => { if(confirm('Bu kategoriyi silmek istediğinize emin misiniz?')) { await handleAction('delete-category', { id: c.id }, null, null); } }} className="text-rose-500 hover:text-rose-700 p-1"><Trash2 size={14} /></button>
+                  </div>
+                )) : <div className="text-center p-4 text-xs text-slate-400">Henüz kategori eklenmemiş.</div>}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* YENİ STOK EKLEME MODALI */}
       <AnimatePresence>
         {showStockModal && (
@@ -904,10 +940,10 @@ export default function DashboardModals({
                        <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Parça Adı" onChange={e => setStockForm({...stockForm, itemName: e.target.value})} />
                      </div>
                      <div className="col-span-2">
-                        <input list="add-categories" className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Kategori (Örn: Rulman, Sarf Malzeme...)" onChange={e => setStockForm({...stockForm, category: e.target.value})} />
-                        <datalist id="add-categories">
-                           {existingCategories.map((c:any) => <option key={c} value={c} />)}
-                        </datalist>
+                        <select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" value={stockForm.category} onChange={e => setStockForm({...stockForm, category: e.target.value})}>
+                          <option value="">Kategori Seçin veya Boş Bırakın</option>
+                          {categories.map((c:any) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                        </select>
                      </div>
                      <div><input type="number" className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Miktar" onChange={e => setStockForm({...stockForm, quantity: e.target.value})} /></div>
                      <div>
@@ -975,6 +1011,54 @@ export default function DashboardModals({
               <button disabled={isSaving} className="w-full bg-slate-900 text-white py-2 rounded-md font-semibold text-sm mt-5 hover:bg-slate-800 flex justify-center" onClick={() => handleAction('add-stock', stockForm, setShowStockModal, () => setStockForm({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', category: '', supplierId: '', supplierMode: 'NONE', newSupplier: { name: '', phone: '' } }))}>
                  {isSaving ? <Loader2 className="animate-spin" size={16} /> : 'Stok Kaydet'}
               </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* TEDARİKÇİ YÖNETİM MODALI */}
+      <AnimatePresence>
+        {showSupplierListModal && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative max-h-[85vh] flex flex-col">
+              <div className="flex justify-between items-center mb-5">
+                <h2 className="text-lg font-bold text-slate-800">Tedarikçileri Yönet</h2>
+                <button onClick={() => setShowSupplierListModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
+                {(data?.suppliers || []).length > 0 ? (data?.suppliers || []).map((s: any) => (
+                  <div key={s.id} className="p-3 bg-slate-50 border border-slate-100 rounded-lg">
+                    {editingSupplierId === s.id ? (
+                      <div className="space-y-2">
+                        <input className="w-full px-3 py-1.5 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" value={editSupFormLocal.name} onChange={e => setEditSupFormLocal({...editSupFormLocal, name: e.target.value})} placeholder="Firma Adı" />
+                        <input className="w-full px-3 py-1.5 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" value={editSupFormLocal.phone} onChange={e => setEditSupFormLocal({...editSupFormLocal, phone: e.target.value})} placeholder="Telefon" />
+                        <div className="flex gap-2 mt-2">
+                          <button onClick={() => handleAction('update-supplier', { id: s.id, name: editSupFormLocal.name, phone: editSupFormLocal.phone }, null, () => setEditingSupplierId(null))} className="flex-1 bg-blue-600 text-white py-1.5 rounded-md text-[10px] font-bold">Kaydet</button>
+                          <button onClick={() => setEditingSupplierId(null)} className="flex-1 bg-slate-200 text-slate-700 py-1.5 rounded-md text-[10px] font-bold">İptal</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="text-xs font-bold text-slate-800">{s.name}</div>
+                          <div className="text-[10px] text-slate-500 mt-0.5">{s.phone || 'Telefon Yok'}</div>
+                        </div>
+                        <div className="flex gap-1.5">
+                          <button onClick={() => { setEditingSupplierId(s.id); setEditSupFormLocal({ name: s.name, phone: s.phone || '' }); }} className="p-1.5 text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-600 hover:text-white rounded-md transition-colors"><Edit2 size={14} /></button>
+                          <button onClick={async () => { if(confirm('Bu tedarikçiyi silmek istediğinize emin misiniz? (Bağlı stok ürünleri varsa tedarikçi alanı boş kalır)')) { await handleAction('delete-supplier', { id: s.id }, null, null); } }} className="p-1.5 text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-600 hover:text-white rounded-md transition-colors"><Trash2 size={14} /></button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )) : <div className="text-center p-4 text-xs text-slate-400">Henüz tedarikçi eklenmemiş.</div>}
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                 <button onClick={() => { setShowSupplierListModal(false); setShowSupplierModal(true); }} className="w-full bg-slate-100 text-slate-700 py-2.5 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-slate-200 transition-colors">
+                    <Plus size={14} /> Yeni Tedarikçi Ekle
+                 </button>
+              </div>
             </motion.div>
           </div>
         )}
