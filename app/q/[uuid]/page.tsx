@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, Phone, ShieldCheck, Box, MapPin, History, X, ShieldAlert, ChevronRight, User } from 'lucide-react';
+import { AlertTriangle, Phone, ShieldCheck, Box, MapPin, History, X, ShieldAlert, ChevronRight, User, MessageCircle, Info } from 'lucide-react';
 import { useParams } from 'next/navigation';
 
 export default function AssetScanPage() {
@@ -10,10 +10,18 @@ export default function AssetScanPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
-  // İş Kayıtları Modalı için State
+  // Modallar için State'ler
   const [showHistory, setShowHistory] = useState(false);
+  const [showEmergencyConfirm, setShowEmergencyConfirm] = useState(false);
+  const [showFaultModal, setShowFaultModal] = useState(false);
+  
+  // Form ve İstek State'leri
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [faultForm, setFaultForm] = useState({ name: '', phone: '', description: '' });
 
-  // API URL'in (Worker Adresin)
+  // Logo Arka Plan Rengi
+  const [logoBgColor, setLogoBgColor] = useState<string>('rgba(255, 255, 255, 0.1)');
+
   const API_URL = 'https://backend.isdokumu.workers.dev'; 
 
   useEffect(() => {
@@ -29,9 +37,99 @@ export default function AssetScanPage() {
         setLoading(false);
       }
     };
-
     if (uuid) fetchAsset();
   }, [uuid]);
+
+  // LOGODAN RENK ANALİZİ YAPAN KISIM
+  useEffect(() => {
+    if (!asset?.logo) {
+      setLogoBgColor('rgba(255, 255, 255, 0.1)');
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      
+      try {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        let r = 0, g = 0, b = 0, count = 0;
+        
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] < 128) continue; 
+          if (data[i] > 240 && data[i+1] > 240 && data[i+2] > 240) continue;
+          
+          r += data[i]; g += data[i + 1]; b += data[i + 2]; count++;
+        }
+        
+        if (count > 0) {
+          setLogoBgColor(`rgb(${Math.floor(r / count)}, ${Math.floor(g / count)}, ${Math.floor(b / count)})`);
+        }
+      } catch (e) {
+        console.error("Renk analizi yapılamadı:", e);
+      }
+    };
+    img.src = asset.logo;
+  }, [asset?.logo]);
+
+
+  // 🚨 ACİL DURUM ONAYLAMA İŞLEMİ
+  const handleEmergencyConfirm = async () => {
+    setIsSubmitting(true);
+    try {
+      // Önce veritabanına acil durum bildirimi gönder
+      await fetch(`${API_URL}/public/trigger-emergency`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uuid: asset.uuid || uuid, company_slug: asset.company_slug })
+      });
+    } catch (err) {
+      console.error("Acil durum bildirilemedi, ancak yine de aramaya yönlendirilecek.", err);
+    } finally {
+      setIsSubmitting(false);
+      setShowEmergencyConfirm(false);
+      // Aramaya yönlendir
+      if (asset.emergency_phone) {
+        window.location.href = `tel:${asset.emergency_phone}`;
+      }
+    }
+  };
+
+  // ⚠️ ARIZA BİLDİRİM FORMU GÖNDERME İŞLEMİ
+  const handleFaultSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`${API_URL}/public/report-fault`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          uuid: asset.uuid || uuid, 
+          company_slug: asset.company_slug,
+          ...faultForm 
+        })
+      });
+      if (res.ok) {
+        alert("Arıza kaydınız başarıyla iletildi. En kısa sürede sizinle iletişime geçilecektir.");
+        setShowFaultModal(false);
+        setFaultForm({ name: '', phone: '', description: '' });
+      } else {
+        alert("Bir sorun oluştu. Lütfen doğrudan arama butonunu kullanınız.");
+      }
+    } catch (err) {
+      alert("Bağlantı kurulamadı.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-400 text-sm gap-2">
@@ -60,12 +158,10 @@ export default function AssetScanPage() {
 
         {/* Üst Bilgi (Header) */}
         <div className="bg-slate-900 pt-10 pb-8 px-8 text-center text-white relative overflow-hidden">
-          {/* Arka plan dekoru */}
           <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-500 via-slate-900 to-slate-900"></div>
-          
           <div className="relative z-10">
             {asset.logo ? (
-               <div className="bg-white/10 p-3 rounded-2xl inline-block mb-4 backdrop-blur-md ring-4 ring-white/5 shadow-lg">
+               <div className="p-3 rounded-2xl inline-block mb-4 backdrop-blur-md ring-4 ring-white/5 shadow-lg transition-colors duration-500" style={{ backgroundColor: logoBgColor }}>
                  <img src={asset.logo} alt="Logo" className="max-h-16 object-contain" />
                </div>
             ) : (
@@ -81,12 +177,10 @@ export default function AssetScanPage() {
         {/* İçerik Alanı */}
         <div className="p-6">
           
-          {/* Personel Girişi Butonu */}
           <a href="/login" className="w-full flex items-center justify-center gap-2 bg-slate-800 text-white text-xs font-bold py-3.5 rounded-xl hover:bg-slate-700 transition-colors shadow-sm mb-5">
              <User size={16} /> Personel Girişi
           </a>
 
-          {/* Konum Bilgisi ve Harita */}
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-6 flex flex-col gap-3">
              <div className="flex items-start gap-3">
                 <div className="bg-white p-2 rounded-full border border-slate-200 text-slate-400 mt-1">
@@ -97,27 +191,14 @@ export default function AssetScanPage() {
                     <div className="text-sm text-slate-700 font-semibold leading-snug">{asset.location}</div>
                 </div>
              </div>
-             
-             {/* Haritada Görüntüle Butonu DÜZELTİLDİ */}
-             <a 
-               href={`https://maps.google.com/?q=${encodeURIComponent(asset.location)}`} 
-               target="_blank" 
-               rel="noopener noreferrer"
-               className="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 text-xs font-bold py-2.5 rounded-lg hover:bg-slate-100 transition-colors shadow-sm"
-             >
+             <a href={`http://googleusercontent.com/maps.google.com/?q=${encodeURIComponent(asset.location)}`} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 text-xs font-bold py-2.5 rounded-lg hover:bg-slate-100 transition-colors shadow-sm">
                 <MapPin size={14} /> Haritada Görüntüle
              </a>
           </div>
 
-          {/* Geçmiş İş Kayıtları Butonu */}
-          <button 
-            onClick={() => setShowHistory(true)}
-            className="w-full mb-6 flex items-center justify-between bg-blue-50 hover:bg-blue-100 text-blue-700 p-4 rounded-xl border border-blue-100 transition-all group"
-          >
+          <button onClick={() => setShowHistory(true)} className="w-full mb-6 flex items-center justify-between bg-blue-50 hover:bg-blue-100 text-blue-700 p-4 rounded-xl border border-blue-100 transition-all group">
              <div className="flex items-center gap-3">
-                <div className="bg-white p-2 rounded-lg text-blue-600 shadow-sm">
-                    <History size={20} />
-                </div>
+                <div className="bg-white p-2 rounded-lg text-blue-600 shadow-sm"><History size={20} /></div>
                 <div className="text-left">
                     <div className="text-sm font-bold">Servis Geçmişi</div>
                     <div className="text-[10px] opacity-70">Son işlemleri görüntüle</div>
@@ -126,35 +207,40 @@ export default function AssetScanPage() {
              <ChevronRight size={18} className="opacity-50 group-hover:opacity-100 transition-opacity" />
           </button>
 
-          {/* Aksiyon Butonları */}
+          {/* AKSİYON BUTONLARI */}
           <div className="space-y-3">
-            {/* Arıza Bildir - SARI */}
-            <button className="w-full flex items-center justify-center gap-3 bg-amber-400 hover:bg-amber-500 text-amber-950 py-4 rounded-xl font-bold text-lg shadow-lg shadow-amber-200/50 transition-all active:scale-98">
-              <AlertTriangle size={24} />
-              Arıza Bildir
+            {/* Arıza Bildir Butonu (Modalı Açar) */}
+            <button 
+              onClick={() => setShowFaultModal(true)}
+              className="w-full flex items-center justify-center gap-3 bg-amber-400 hover:bg-amber-500 text-amber-950 py-4 rounded-xl font-bold text-lg shadow-lg shadow-amber-200/50 transition-all active:scale-98"
+            >
+              <AlertTriangle size={24} /> Arıza Bildir
             </button>
             
-            {/* Acil Destek Ara - KIRMIZI */}
+            {/* WhatsApp Destek */}
             <a 
-                href={asset.emergency_phone ? `tel:${asset.emergency_phone}` : '#'} 
-                onClick={(e) => !asset.emergency_phone && e.preventDefault()}
+                href={asset.whatsapp_phone ? `https://wa.me/${asset.whatsapp_phone.replace(/\D/g, '').length >= 10 ? '90' + asset.whatsapp_phone.replace(/\D/g, '').slice(-10) : asset.whatsapp_phone.replace(/\D/g, '')}?text=${encodeURIComponent('Merhaba, ' + asset.name + ' cihazı için destek almak istiyorum.')}` : '#'} 
+                target={asset.whatsapp_phone ? "_blank" : undefined} rel={asset.whatsapp_phone ? "noopener noreferrer" : undefined} onClick={(e) => !asset.whatsapp_phone && e.preventDefault()}
+                className={`w-full flex items-center justify-center gap-3 py-4 rounded-xl font-bold text-lg shadow-lg transition-all active:scale-98 text-white
+                    ${asset.whatsapp_phone ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200/50 cursor-pointer' : 'bg-slate-300 cursor-not-allowed'}
+                `}
+            >
+              <MessageCircle size={24} /> {asset.whatsapp_phone ? 'WhatsApp Destek' : 'WhatsApp Tanımlı Değil'}
+            </a>
+
+            {/* Acil Destek Butonu (Modalı Açar) */}
+            <button 
+                onClick={(e) => {
+                  if(!asset.emergency_phone) return;
+                  e.preventDefault();
+                  setShowEmergencyConfirm(true);
+                }}
                 className={`w-full flex items-center justify-center gap-3 py-4 rounded-xl font-bold text-lg shadow-lg transition-all active:scale-98 text-white
                     ${asset.emergency_phone ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-200/50 cursor-pointer' : 'bg-slate-300 cursor-not-allowed'}
                 `}
             >
-              <Phone size={24} />
-              {asset.emergency_phone ? 'Acil Destek Ara' : 'Numara Tanımlı Değil'}
-            </a>
-          </div>
-
-          {/* Yasal Uyarı */}
-          <div className="mt-6 p-3 bg-slate-50 rounded-lg border border-slate-100">
-            <div className="flex gap-2 items-start">
-                <ShieldAlert size={16} className="text-slate-400 min-w-[16px] mt-0.5" />
-                <p className="text-[10px] text-slate-400 leading-relaxed text-justify">
-                    <strong>YASAL UYARI:</strong> "Acil Destek" butonu sadece hayati tehlike veya acil müdahale gerektiren durumlarda kullanılmalıdır. Asılsız ihbarlar, gereksiz aramalar veya sistemi meşgul edici eylemler hakkında 5326 sayılı Kabahatler Kanunu uyarınca yasal işlem başlatılabilir ve IP adresiniz kayıt altına alınır.
-                </p>
-            </div>
+              <Phone size={24} /> {asset.emergency_phone ? 'Acil Destek Ara' : 'Numara Tanımlı Değil'}
+            </button>
           </div>
 
         </div>
@@ -162,18 +248,104 @@ export default function AssetScanPage() {
       
       {/* FOOTER */}
       <div className="mt-8 mb-4 text-center opacity-70 hover:opacity-100 transition-opacity">
-        <a href="https://isdokumu.com" target="_blank" rel="noopener noreferrer" className="text-[11px] text-slate-500 font-bold uppercase tracking-widest block hover:text-slate-800 transition-colors">
-            isdokumu.com
-        </a>
+        <a href="https://isdokumu.com" target="_blank" rel="noopener noreferrer" className="text-[11px] text-slate-500 font-bold uppercase tracking-widest block hover:text-slate-800 transition-colors">isdokumu.com</a>
         <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-1.5">Powered by İş Dökümü</p>
       </div>
+
+      {/* 🚨 ACİL DURUM ONAY MODALI */}
+      {showEmergencyConfirm && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+           <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+              <div className="bg-rose-600 p-6 flex flex-col items-center text-center text-white">
+                 <ShieldAlert size={64} className="mb-4 animate-pulse" />
+                 <h2 className="text-2xl font-black mb-1">Acil Durum Onayı</h2>
+                 <p className="text-rose-100 text-sm">Gerçekten acil bir müdahale mi gerekiyor?</p>
+              </div>
+              <div className="p-6">
+                 <p className="text-sm text-slate-600 text-center mb-6 font-medium">
+                    Bu butona bastığınızda doğrudan yetkili kişiye bağlanacaksınız ve <strong>işletme paneline kırmızı alarm</strong> gönderilecektir. Lütfen sadece hayati/acil durumlarda kullanın.
+                 </p>
+                 <div className="flex flex-col gap-3">
+                    <button 
+                      onClick={handleEmergencyConfirm} 
+                      disabled={isSubmitting}
+                      className="w-full py-4 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-lg flex justify-center items-center gap-2 shadow-lg shadow-rose-200 transition-all disabled:opacity-50"
+                    >
+                      {isSubmitting ? <span className="animate-spin border-2 border-white border-t-transparent w-5 h-5 rounded-full" /> : <Phone size={20} />}
+                      Evet, Acil Durum
+                    </button>
+                    <button 
+                      onClick={() => setShowEmergencyConfirm(false)} 
+                      disabled={isSubmitting}
+                      className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition-colors"
+                    >
+                      İptal Et
+                    </button>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* ⚠️ ARIZA BİLDİRİM MODALI */}
+      {showFaultModal && (
+        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-slate-900/80 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-200">
+           <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300">
+              
+              <div className="flex justify-between items-center p-5 border-b border-slate-100 bg-amber-50">
+                  <div className="flex items-center gap-3 text-amber-900">
+                      <div className="bg-amber-400 p-2 rounded-lg text-amber-950"><AlertTriangle size={20} /></div>
+                      <h3 className="text-lg font-bold">Arıza Bildir</h3>
+                  </div>
+                  <button onClick={() => setShowFaultModal(false)} className="p-2 bg-white/50 hover:bg-white rounded-full text-slate-500 transition-colors">
+                      <X size={20} />
+                  </button>
+              </div>
+
+              <form onSubmit={handleFaultSubmit} className="p-6 space-y-4">
+                 <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Adınız Soyadınız</label>
+                    <input 
+                      required type="text" 
+                      value={faultForm.name} onChange={e => setFaultForm({...faultForm, name: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all" 
+                      placeholder="Ad Soyad"
+                    />
+                 </div>
+                 <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">İletişim Numaranız</label>
+                    <input 
+                      required type="tel" 
+                      value={faultForm.phone} onChange={e => setFaultForm({...faultForm, phone: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all" 
+                      placeholder="05XX XXX XX XX"
+                    />
+                 </div>
+                 <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Arıza Detayı</label>
+                    <textarea 
+                      required rows={3}
+                      value={faultForm.description} onChange={e => setFaultForm({...faultForm, description: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all resize-none" 
+                      placeholder="Sorunu kısaca açıklayın..."
+                    />
+                 </div>
+
+                 <button 
+                   type="submit" disabled={isSubmitting}
+                   className="w-full mt-4 bg-slate-900 hover:bg-slate-800 text-amber-400 py-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg disabled:opacity-70"
+                 >
+                   {isSubmitting ? 'Gönderiliyor...' : 'Talebi Gönder'}
+                 </button>
+              </form>
+           </div>
+        </div>
+      )}
 
       {/* İŞ GEÇMİŞİ MODALI */}
       {showHistory && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-200">
             <div className="bg-white w-full max-w-md h-[80vh] sm:h-auto sm:max-h-[80vh] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300">
-                
-                {/* Modal Header */}
                 <div className="flex justify-between items-center p-5 border-b border-slate-100">
                     <div>
                         <h3 className="text-lg font-bold text-slate-800">Servis Geçmişi</h3>
@@ -183,8 +355,6 @@ export default function AssetScanPage() {
                         <X size={20} />
                     </button>
                 </div>
-
-                {/* Liste */}
                 <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                     {asset.jobs && asset.jobs.length > 0 ? (
                         <div className="space-y-3">
@@ -214,12 +384,8 @@ export default function AssetScanPage() {
                         </div>
                     )}
                 </div>
-
-                {/* Modal Footer */}
                 <div className="p-4 border-t border-slate-100">
-                    <button onClick={() => setShowHistory(false)} className="w-full py-3 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-colors">
-                        Kapat
-                    </button>
+                    <button onClick={() => setShowHistory(false)} className="w-full py-3 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-colors">Kapat</button>
                 </div>
             </div>
         </div>

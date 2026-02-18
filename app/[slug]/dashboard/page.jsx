@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, AlertTriangle, ArrowRight, Settings, Filter } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, ArrowRight, Settings, Filter, ShieldAlert } from 'lucide-react';
 
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
@@ -134,6 +134,26 @@ export default function PatronDashboard() {
     setMessageInput(''); fetchMessages();
   };
 
+  // ACİL DURUM KONTROLÜ VE KAPATMA FONKSİYONU
+  const activeEmergencies = data?.activeEmergencies || [];
+  const hasEmergency = activeEmergencies.length > 0;
+
+  const handleResolveEmergency = async (emergencyId) => {
+    setIsSaving(true);
+    try {
+      await fetch(`${API_URL}/resolve-emergency`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: emergencyId, slug })
+      });
+      await fetchData(); // Veriyi yenile, kırmızı ekran kalksın
+    } catch (err) {
+      alert("İşlem başarısız oldu.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const isCompanyDataIncomplete = useMemo(() => {
     if (!data) return false;
 
@@ -158,7 +178,7 @@ export default function PatronDashboard() {
     if (activeTab !== 'stock' || stockCategory === 'Tümü') return data;
 
     const stockArray = data.stock || data.stocks || [];
-    const filteredStocks = stockArray.filter(item => item?.category === stockCategory);
+    const filteredStocks = stockArray.filter((item) => item?.category === stockCategory);
 
     return {
       ...data,
@@ -183,9 +203,45 @@ export default function PatronDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex font-sans text-slate-900 text-sm overflow-hidden relative selection:bg-blue-100">
-      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400/5 blur-[120px] rounded-full z-0 pointer-events-none"></div>
-      <div className="fixed inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.015] pointer-events-none z-0"></div>
+    <div className={`min-h-screen flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 ${hasEmergency ? 'bg-rose-950' : 'bg-[#F8FAFC] text-slate-900'}`}>
+      
+      {/* NORMAL ARKA PLAN DEKORLARI */}
+      {!hasEmergency && (
+        <>
+          <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400/5 blur-[120px] rounded-full z-0 pointer-events-none"></div>
+          <div className="fixed inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.015] pointer-events-none z-0"></div>
+        </>
+      )}
+
+      {/* ACİL DURUM KIRMIZI EKRAN UYARISI (TAM EKRAN KAPLAMA) */}
+      <AnimatePresence>
+        {hasEmergency && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[99999] bg-rose-600 flex flex-col items-center justify-center text-white p-6"
+          >
+            {/* Arka plan radar / nabız efekti */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+                <div className="w-[800px] h-[800px] bg-rose-500/30 rounded-full animate-ping" style={{ animationDuration: '3s' }}></div>
+            </div>
+
+            <div className="relative z-10 flex flex-col items-center max-w-lg text-center">
+                <ShieldAlert size={100} className="text-white mb-6 animate-pulse" />
+                <h1 className="text-5xl font-black mb-2 tracking-tight uppercase">Acil Durum Bildirildi!</h1>
+                <p className="text-xl text-rose-100 mb-8 font-medium">Sahadan veya bir müşteriden acil durum butonu tetiklendi. Lütfen acil durum hattınızı kontrol edin.</p>
+                
+                <button 
+                  onClick={() => handleResolveEmergency(activeEmergencies[0]?.id)}
+                  disabled={isSaving}
+                  className="bg-white text-rose-600 px-10 py-5 rounded-2xl font-black text-xl shadow-2xl hover:bg-rose-50 hover:scale-105 transition-all active:scale-95 flex items-center gap-3 disabled:opacity-50"
+                >
+                  <ShieldCheck size={28} />
+                  {isSaving ? 'Kapatılıyor...' : 'KONTROL ETTİM, ALARMI KAPAT'}
+                </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
@@ -212,7 +268,7 @@ export default function PatronDashboard() {
                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center' }}
                   >
                     <option value="Tümü">Tüm Kategoriler</option>
-                    {Array.from(new Set((data?.stock || data?.stocks || []).map(s => s?.category).filter(Boolean))).map(cat => (
+                    {Array.from(new Set((data?.stock || data?.stocks || []).map((s) => s?.category).filter(Boolean))).map((cat) => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>

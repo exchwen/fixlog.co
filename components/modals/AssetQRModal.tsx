@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, Printer, Copy, Check } from 'lucide-react';
+import { X, Printer, Copy, Check, Building2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReactToPrint } from 'react-to-print';
 
@@ -16,7 +16,56 @@ interface AssetQRModalProps {
 
 export default function AssetQRModal({ isOpen, onClose, asset, companyName, companyLogo }: AssetQRModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
-  const [copied, setCopied] = React.useState(false);
+  const [copied, setCopied] = useState(false);
+  const [logoBgColor, setLogoBgColor] = useState<string>('#1e293b'); // Varsayılan slate-800
+
+  // Logodan dominant rengi çekme işlemi
+  useEffect(() => {
+    if (!companyLogo) {
+      setLogoBgColor('#1e293b');
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      
+      try {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        let r = 0, g = 0, b = 0, count = 0;
+        
+        for (let i = 0; i < data.length; i += 4) {
+          // Saydam pikselleri atla
+          if (data[i + 3] < 128) continue; 
+          // Beyaz ve beyaza çok yakın arka plan piksellerini atla
+          if (data[i] > 240 && data[i+1] > 240 && data[i+2] > 240) continue;
+          
+          r += data[i];
+          g += data[i + 1];
+          b += data[i + 2];
+          count++;
+        }
+        
+        if (count > 0) {
+          r = Math.floor(r / count);
+          g = Math.floor(g / count);
+          b = Math.floor(b / count);
+          setLogoBgColor(`rgb(${r}, ${g}, ${b})`);
+        }
+      } catch (e) {
+        console.error("Renk analizi yapılamadı:", e);
+      }
+    };
+    img.src = companyLogo;
+  }, [companyLogo]);
 
   const handlePrint = useReactToPrint({
     contentRef: printRef, 
@@ -63,9 +112,19 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
             >
               {/* Logo ve Firma Adı */}
               <div className="w-full flex flex-col items-center justify-center mb-3 border-b-2 border-slate-100 pb-3 print:pb-2 print:mb-2">
-                {companyLogo ? (
-                  <img src={companyLogo} alt="Logo" className="h-10 object-contain mb-2 print:h-8 print:mb-1" />
-                ) : null}
+                
+                {/* Dinamik Arka Planlı Logo Alanı */}
+                <div 
+                  className="w-16 h-16 rounded-full flex items-center justify-center mb-3 overflow-hidden shadow-sm border-2 border-white ring-1 ring-slate-100 print:w-12 print:h-12 print:mb-2"
+                  style={{ backgroundColor: companyLogo ? logoBgColor : '#f8fafc' }}
+                >
+                  {companyLogo ? (
+                    <img src={companyLogo} alt="Logo" className="w-10 h-10 object-contain print:w-8 print:h-8 drop-shadow-md" />
+                  ) : (
+                    <Building2 size={24} className="text-slate-400 print:w-5 print:h-5" />
+                  )}
+                </div>
+
                 <div className="text-xl font-black text-slate-900 tracking-tighter uppercase print:text-sm print:leading-tight">
                   {companyName || 'İşletme Adı'}
                 </div>
