@@ -196,6 +196,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
                   placeholder="05XX XXX XX XX"
                 />
               </div>
+              <p className="text-[9px] text-slate-400 mt-1">İş Dökümü yetkililerinin sizinle iletişime geçebileceği ana irtibat numarasıdır. Lütfen doğrudan firma sahibine ait numarayı giriniz.</p>
             </div>
 
             <div>
