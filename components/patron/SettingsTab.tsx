@@ -232,7 +232,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
         {!isFormValid && (
            <div className="bg-amber-50 text-amber-600 px-4 py-3 rounded-lg text-xs font-medium border border-amber-100 flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
-              Kaydetmek için lütfen tüm alanları (WhatsApp hariç) eksiksiz doldurunuz.
+              Kaydetmek için lütfen tüm alanları eksiksiz doldurunuz.
            </div>
         )}
 
