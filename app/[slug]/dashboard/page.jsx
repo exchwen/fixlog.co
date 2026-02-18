@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, AlertTriangle, ArrowRight, Settings } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, ArrowRight, Settings, Filter } from 'lucide-react';
 
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
@@ -33,6 +33,9 @@ export default function PatronDashboard() {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // STOK KATEGORİ FİLTRESİ
+  const [stockCategory, setStockCategory] = useState('Tümü');
 
   // MODAL STATE'LERİ
   const [showJobModal, setShowJobModal] = useState(false);
@@ -119,7 +122,6 @@ export default function PatronDashboard() {
   const isCompanyDataIncomplete = useMemo(() => {
     if (!data) return false;
 
-    // undefined/null hatalarını önlemek için güvenli string ataması
     const name = (data.name || '').trim().toLowerCase();
     const owner = (data.ownerName || '').trim().toLowerCase();
     const phone = (data.phone || '').trim();
@@ -135,6 +137,21 @@ export default function PatronDashboard() {
       isDefaultName || isDefaultOwner || !phone || !emergencyPhone || !address || !taxInfo || !sector
     );
   }, [data]);
+
+  // Stok sekmesi için filtrelenmiş veriyi hazırlayan Memoized obje
+  const filteredDataForTabs = useMemo(() => {
+    if (!data) return null;
+    if (activeTab !== 'stock' || stockCategory === 'Tümü') return data;
+
+    const stockArray = data.stock || data.stocks || [];
+    const filteredStocks = stockArray.filter(item => item?.category === stockCategory);
+
+    return {
+      ...data,
+      stock: data.stock ? filteredStocks : undefined,
+      stocks: data.stocks ? filteredStocks : undefined,
+    };
+  }, [data, stockCategory, activeTab]);
 
   if (loading) return (
     <div className="h-screen flex flex-col items-center justify-center bg-slate-950">
@@ -167,7 +184,30 @@ export default function PatronDashboard() {
           {activeTab === 'pending' && <PendingJobsTab data={data} setSelectedJob={setSelectedJob} />}
           {activeTab === 'team' && <TeamTab data={data} setShowStaffModal={setShowStaffModal} setShowJobModal={setShowJobModal} setShowStaffDetail={setShowStaffDetail} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} setSelectedJob={setSelectedJob} />}
           {activeTab === 'customers' && <CustomersTab data={data} setShowCustomerModal={setShowCustomerModal} setShowCustomerDetail={setShowCustomerDetail} />}
-          {activeTab === 'stock' && <StockTab data={data} handleAction={handleAction} setShowStockModal={setShowStockModal} setShowSupplierModal={setShowSupplierModal} setShowSupplierListModal={setShowSupplierListModal} setShowCategoryModal={setShowCategoryModal} />}
+          
+          {activeTab === 'stock' && (
+            <div className="flex flex-col space-y-4">
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-end w-full">
+                <div className="bg-white border border-slate-200 rounded-xl p-1.5 shadow-sm flex items-center gap-2 z-20">
+                  <Filter size={16} className="text-slate-400 ml-2" />
+                  <span className="text-xs font-semibold text-slate-500">Kategori:</span>
+                  <select 
+                    value={stockCategory} 
+                    onChange={(e) => setStockCategory(e.target.value)}
+                    className="bg-slate-50 border-none text-sm font-bold text-slate-700 rounded-lg px-4 py-2 outline-none cursor-pointer hover:bg-slate-100 transition-colors appearance-none pr-8"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center' }}
+                  >
+                    <option value="Tümü">Tüm Kategoriler</option>
+                    {Array.from(new Set((data?.stock || data?.stocks || []).map(s => s?.category).filter(Boolean))).map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+              </motion.div>
+              <StockTab data={filteredDataForTabs} handleAction={handleAction} setShowStockModal={setShowStockModal} setShowSupplierModal={setShowSupplierModal} setShowSupplierListModal={setShowSupplierListModal} setShowCategoryModal={setShowCategoryModal} />
+            </div>
+          )}
+
           {activeTab === 'finance' && <FinanceTab data={data} />}
           {activeTab === 'assets' && <AssetsTab data={data} setShowAssetModal={setShowAssetModal} setShowAssetDetail={setShowAssetDetail} setShowQRModal={setShowQRModal} setSelectedQRAsset={setSelectedQRAsset} />}
           {activeTab === 'settings' && <SettingsTab settingsForm={settingsForm} setSettingsForm={setSettingsForm} handleAction={handleAction} isSaving={isSaving} />}
