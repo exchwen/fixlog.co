@@ -2,7 +2,9 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, Printer, Copy, Check, Building2, Phone, MessageCircle, Globe, Palette } from 'lucide-react';
+import { X, Printer, Copy, Check, Building2, Phone, Globe, Palette } from 'lucide-react';
+// YENİ: Orijinal WhatsApp ikonu için react-icons kullanıyoruz
+import { FaWhatsapp } from 'react-icons/fa'; 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReactToPrint } from 'react-to-print';
 
@@ -22,11 +24,9 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
   const [copied, setCopied] = useState(false);
   const [logoBgColor, setLogoBgColor] = useState<string>('#ffffff');
   
-  // YENİ: Baskı modu ve seçim ekranı state'leri
   const [showPrintModeSelection, setShowPrintModeSelection] = useState(false);
   const [printMode, setPrintMode] = useState<'color' | 'bw'>('color');
 
-  // Logodan zıt/farklı rengi çekme işlemi (Mavi, Siyah, Beyaz arasından seçer)
   useEffect(() => {
     if (!companyLogo) {
       setLogoBgColor('#ffffff');
@@ -62,17 +62,15 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           g = Math.floor(g / count);
           b = Math.floor(b / count);
 
-          // Kullanabileceğimiz 3 ana arka plan rengi
           const palette = [
             { name: 'white', rgb: [255, 255, 255], hex: '#ffffff' },
-            { name: 'black', rgb: [15, 23, 42], hex: '#0f172a' }, // slate-900
-            { name: 'blue', rgb: [37, 99, 235], hex: '#2563eb' }  // blue-600
+            { name: 'black', rgb: [15, 23, 42], hex: '#0f172a' }, 
+            { name: 'blue', rgb: [37, 99, 235], hex: '#2563eb' }
           ];
 
           let maxDist = -1;
           let selectedColor = '#ffffff';
 
-          // Logodaki ortalama renge EN UZAK olan (en zıt) rengi bul
           for (const color of palette) {
             const dist = Math.sqrt(Math.pow(r - color.rgb[0], 2) + Math.pow(g - color.rgb[1], 2) + Math.pow(b - color.rgb[2], 2));
             if (dist > maxDist) {
@@ -94,7 +92,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
     documentTitle: `QR_${asset?.apartmentName || asset?.name || 'Etiket'}`,
     onAfterPrint: () => {
         console.log('Yazdırma işlemi tamamlandı');
-        setPrintMode('color'); // Yazdırma bitince görünümü normale döndür
+        setPrintMode('color');
     },
     pageStyle: `
       @page { 
@@ -112,30 +110,35 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           print-color-adjust: exact !important;
         } 
         
-        /* Tüm sığdırma ve hizalama işlemleri burada */
         .print-container { 
           width: 80mm !important; 
           height: 80mm !important; 
           border: none !important; 
           box-shadow: none !important; 
           border-radius: 0 !important; 
-          padding: 4mm !important; 
+          padding: 3mm !important; /* Padding biraz azaltıldı */
           margin: 0 !important;
           display: flex !important;
           flex-direction: column !important;
           align-items: center !important;
-          justify-content: space-between !important;
+          justify-content: space-between !important; /* Dikeyde yay */
           position: relative !important;
           box-sizing: border-box !important;
           page-break-inside: avoid !important;
         }
 
-        /* Baskıda en alt siyah şerit ve beyaz yazısı */
-        .print-footer-banner {
-          background-color: black !important;
+        /* Yeni sade footer için baskı stili */
+        .print-simple-footer {
+            color: #64748b !important; /* slate-500 */
         }
-        .print-footer-banner span {
-          color: white !important;
+        .print-simple-footer-link {
+            color: #94a3b8 !important; /* slate-400 */
+        }
+
+        /* Siyah-beyaz modda ikonları siyah yap */
+        .print-bw-icon {
+            color: black !important;
+            fill: black !important;
         }
         
         ::-webkit-scrollbar { display: none; }
@@ -143,13 +146,12 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
     `
   });
 
-  // Baskı modunu ayarlayıp dom güncellendikten sonra yazıcıyı tetikler
   const executePrint = (mode: 'color' | 'bw') => {
     setPrintMode(mode);
     setShowPrintModeSelection(false);
     setTimeout(() => {
       handlePrint();
-    }, 150); // React'in state'i DOM'a basması için ufak bir bekleme
+    }, 150);
   };
 
   if (!isOpen || !asset) return null;
@@ -161,6 +163,9 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
   const mainTitle = aptName || asset.name;
   const subTitle = aptName ? asset.name : null;
 
+  // İkon boyutu
+  const iconSize = 9;
+
   return (
     <AnimatePresence>
       <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[150] flex items-center justify-center p-4 print:p-0 print:bg-white print:fixed print:inset-0">
@@ -171,7 +176,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           exit={{ opacity: 0, scale: 0.95 }}
           className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col relative print:shadow-none print:w-auto print:max-w-none print:rounded-none"
         >
-          {/* YENİ: BASKI MODU SEÇİM EKRANI (OVERLAY) */}
+          {/* BASKI MODU SEÇİM EKRANI (OVERLAY) */}
           <AnimatePresence>
             {showPrintModeSelection && (
               <motion.div 
@@ -224,20 +229,22 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
             
             <div 
               ref={printRef} 
-              className="print-container w-[302px] h-[302px] bg-white border border-slate-200 shadow-lg rounded-xl flex flex-col items-center justify-between p-3 relative box-border print:border-none print:shadow-none print:rounded-none"
+              // Padding'i 3'ten 2.5'a düşürdük, dikeyde biraz daha yer açtık.
+              className="print-container w-[302px] h-[302px] bg-white border border-slate-200 shadow-lg rounded-xl flex flex-col items-center justify-between p-2.5 relative box-border print:border-none print:shadow-none print:rounded-none"
             >
               
-              {/* 1. LOGO VE FİRMA ADI (ALT ALTA) */}
-              <div className="w-full flex flex-col items-center justify-center mt-1">
+              {/* 1. LOGO VE FİRMA ADI */}
+              <div className="w-full flex flex-col items-center justify-center mt-0.5">
                 <div 
-                  className={`w-12 h-12 rounded-lg flex items-center justify-center mb-1 overflow-hidden shadow-sm border-2 ${printMode === 'bw' ? 'border-black bg-white' : 'border-white ring-1 ring-slate-100'}`}
+                  className={`w-11 h-11 rounded-lg flex items-center justify-center mb-1 overflow-hidden shadow-sm border-2 ${printMode === 'bw' ? 'border-black bg-white' : 'border-white ring-1 ring-slate-100'}`}
                   style={{ backgroundColor: printMode === 'bw' ? '#ffffff' : (companyLogo ? logoBgColor : '#f8fafc') }}
                 >
                   {companyLogo ? (
+                    // YENİ: Siyah-beyaz modda brightness(0%) ile tam siyah siluet yapıyoruz
                     <img 
                       src={companyLogo} 
                       alt="Logo" 
-                      className={`w-9 h-9 object-contain drop-shadow-md print:drop-shadow-none ${printMode === 'bw' ? 'grayscale contrast-125' : ''}`} 
+                      className={`w-8 h-8 object-contain drop-shadow-md print:drop-shadow-none ${printMode === 'bw' ? 'grayscale brightness-0' : ''}`} 
                     />
                   ) : (
                     <Building2 size={20} className={printMode === 'bw' ? 'text-black' : 'text-slate-400'} />
@@ -249,17 +256,17 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
               </div>
 
               {/* 2. QR KOD */}
-              <div className="flex-1 flex flex-col items-center justify-center w-full my-1.5">
+              <div className="flex-1 flex flex-col items-center justify-center w-full my-1">
                 <QRCodeSVG 
                   value={qrUrl} 
-                  size={105} 
+                  size={100} // Boyutu biraz kıstık
                   level="Q"
                   includeMargin={false}
                 />
               </div>
 
               {/* 3. ALT BİLGİLER VE İLETİŞİM */}
-              <div className="w-full flex flex-col items-center pb-5 pt-1">
+              <div className="w-full flex flex-col items-center mb-1">
                 <h2 className={`text-[13px] font-black leading-tight mb-0.5 text-center truncate w-full px-1 ${printMode === 'bw' ? 'text-black' : 'text-slate-900'}`}>
                   {mainTitle}
                 </h2>
@@ -272,30 +279,34 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
 
                 {/* İletişim Bilgileri */}
                 {(landlinePhone || whatsappPhone || companyWebsite) && (
-                  <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 mt-1 w-full px-1">
+                  <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 mt-0.5 w-full px-1">
                     {landlinePhone && (
                       <div className={`flex items-center gap-1 text-[9px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-800'}`}>
-                        <Phone size={9} /> {landlinePhone}
+                        <Phone size={iconSize} className={printMode === 'bw' ? 'print-bw-icon' : ''} /> {landlinePhone}
                       </div>
                     )}
                     {whatsappPhone && (
                       <div className={`flex items-center gap-1 text-[9px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-800'}`}>
-                        <MessageCircle size={9} /> {whatsappPhone}
+                        {/* YENİ: Orijinal WhatsApp İkonu */}
+                        <FaWhatsapp size={iconSize} className={printMode === 'bw' ? 'print-bw-icon' : 'text-[#25D366]'} /> {whatsappPhone}
                       </div>
                     )}
                     {companyWebsite && (
                       <div className={`flex items-center gap-1 text-[9px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-600'}`}>
-                        <Globe size={9} /> {companyWebsite.replace(/^https?:\/\//, '')}
+                        <Globe size={iconSize} className={printMode === 'bw' ? 'print-bw-icon' : ''} /> {companyWebsite.replace(/^https?:\/\//, '')}
                       </div>
                     )}
                   </div>
                 )}
               </div>
 
-              {/* 4. SİYAH ŞERİT FOOTER */}
-              <div className="absolute bottom-0 left-0 right-0 h-[16px] bg-slate-900 flex items-center justify-center print-footer-banner">
-                <span className="text-[6.5px] font-bold tracking-[0.15em] text-white uppercase opacity-90">
-                   ISDOKUMU.COM • TEKNİK SERVİS
+              {/* 4. YENİ SADE FOOTER (Dikkat Çekmeyen) */}
+              <div className="flex flex-col items-center justify-center mt-1">
+                <span className={`text-[8px] font-medium ${printMode === 'bw' ? 'text-black' : 'text-slate-500'} print-simple-footer`}>
+                   Powered by İş Dökümü
+                </span>
+                <span className={`text-[7px] font-medium ${printMode === 'bw' ? 'text-black' : 'text-slate-400'} print-simple-footer-link`}>
+                   www.isdokumu.com
                 </span>
               </div>
 
