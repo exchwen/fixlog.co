@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, ShieldCheck, CheckSquare, Bell } from 'lucide-react';
+import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, ShieldCheck, CheckSquare, Bell, HelpCircle } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab }: any) {
   
@@ -32,6 +32,8 @@ export default function Sidebar({ activeTab, setActiveTab }: any) {
           { id: 'stock', label: 'Stok Takibi', icon: Package },
           { id: 'finance', label: 'Finans', icon: CreditCard },
           { id: 'settings', label: 'Firma Ayarları', icon: Settings },
+          // YENİ EKLENEN SEKME
+          { id: 'support', label: 'Destek & Bildirim', icon: HelpCircle },
         ].map(item => (
           <button 
             key={item.id} 

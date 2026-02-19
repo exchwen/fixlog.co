@@ -20,6 +20,7 @@ import AssetsTab from '@/components/patron/AssetsTab';
 import SettingsTab from '@/components/patron/SettingsTab';
 import PendingJobsTab from '@/components/patron/PendingJobsTab'; 
 import AlertsTab from '@/components/patron/AlertsTab';
+import SupportTab from '@/components/patron/SupportTab'; // YENİ EKLENDİ
 import AssetQRModal from '@/components/modals/AssetQRModal';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
@@ -133,11 +134,11 @@ export default function PatronDashboard() {
         await fetchData(true); 
         return true; 
       } else { 
-        if (endpoint !== 'update-settings') alert("Veritabanı kayıt hatası."); 
+        if (endpoint !== 'update-settings' && endpoint !== 'add-support-ticket') alert("Veritabanı kayıt hatası."); 
         return false; 
       }
     } catch (err) { 
-      if (endpoint !== 'update-settings') alert("Bağlantı kurulamadı."); 
+      if (endpoint !== 'update-settings' && endpoint !== 'add-support-ticket') alert("Bağlantı kurulamadı."); 
       return false; 
     } finally { 
       setIsSaving(false); 
@@ -211,10 +212,10 @@ export default function PatronDashboard() {
 
   // YENİ: Veriler eksikse kullanıcıyı zorla Ayarlar sekmesinde tut
   useEffect(() => {
-    if (isCompanyDataIncomplete && !hasEmergency && !hasFault) {
+    if (isCompanyDataIncomplete && !hasEmergency && !hasFault && activeTab !== 'support') {
       setActiveTab('settings');
     }
-  }, [isCompanyDataIncomplete, hasEmergency, hasFault]);
+  }, [isCompanyDataIncomplete, hasEmergency, hasFault, activeTab]);
 
   const filteredDataForTabs = useMemo(() => {
     if (!data) return null;
@@ -355,19 +356,19 @@ export default function PatronDashboard() {
       </AnimatePresence>
 
       {/* YENİ: Veriler eksikse Sidebar kilitlenir */}
-      <div className={isCompanyDataIncomplete ? "pointer-events-none opacity-50 grayscale transition-all duration-300" : ""}>
+      <div className={isCompanyDataIncomplete && activeTab !== 'support' ? "pointer-events-none opacity-50 grayscale transition-all duration-300" : ""}>
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       </div>
 
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto relative z-10">
-        <div className={isCompanyDataIncomplete ? "pointer-events-none" : ""}>
+        <div className={isCompanyDataIncomplete && activeTab !== 'support' ? "pointer-events-none" : ""}>
           <Header data={data} searchTerm={searchTerm} setSearchTerm={setSearchTerm} setIsMobileMenuOpen={setIsMobileMenuOpen} />
         </div>
 
         <div className="p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">
           
           {/* YENİ: Bilgiler eksikse sadece SettingsTab gösterilir */}
-          {isCompanyDataIncomplete && !hasEmergency && !hasFault && (
+          {isCompanyDataIncomplete && !hasEmergency && !hasFault && activeTab !== 'support' && (
             <div className="bg-rose-50 border border-rose-200 text-rose-700 p-5 rounded-2xl shadow-sm mb-6 flex flex-col items-center text-center">
               <ShieldAlert size={40} className="mb-3 text-rose-500" />
               <h3 className="font-black text-lg mb-1">Sistem Kurulumu Tamamlanmadı!</h3>
@@ -381,6 +382,7 @@ export default function PatronDashboard() {
           {activeTab === 'alerts' && <AlertsTab data={data} />} 
           {activeTab === 'team' && <TeamTab data={data} setShowStaffModal={setShowStaffModal} setShowJobModal={setShowJobModal} setShowStaffDetail={setShowStaffDetail} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} setSelectedJob={setSelectedJob} />}
           {activeTab === 'customers' && <CustomersTab data={data} setShowCustomerModal={setShowCustomerModal} setShowCustomerDetail={setShowCustomerDetail} />}
+          {activeTab === 'support' && <SupportTab handleAction={handleAction} isSaving={isSaving} />} 
           
           {activeTab === 'stock' && (
             <div className="flex flex-col space-y-4">
