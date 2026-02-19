@@ -27,6 +27,24 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
   const [showPrintModeSelection, setShowPrintModeSelection] = useState(false);
   const [printMode, setPrintMode] = useState<'color' | 'bw'>('color');
 
+  // YENİ: Akıllı ESC Tuşu Yönetimi (Sadece Baskı Seçim Ekranını Kapatmak İçin)
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showPrintModeSelection) {
+          setShowPrintModeSelection(false);
+          e.stopImmediatePropagation(); // Ana modalın kapanmasını engeller
+        } else {
+          onClose();
+        }
+      }
+    };
+    // capture: true ile olayı en dıştan önce biz yakalıyoruz
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
+  }, [isOpen, showPrintModeSelection, onClose]);
+
   useEffect(() => {
     if (!companyLogo) {
       setLogoBgColor('#ffffff');
@@ -35,6 +53,12 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
 
     const img = new Image();
     img.crossOrigin = "Anonymous";
+    
+    // YENİ: Çevrimdışı (Offline) Durumda Resim Yüklenemezse Patlamayı Önleme
+    img.onerror = () => {
+      setLogoBgColor('#ffffff');
+    };
+
     img.onload = () => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -168,9 +192,13 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[150] flex items-center justify-center p-4 print:p-0 print:bg-white print:fixed print:inset-0">
+      <div 
+        className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[150] flex items-center justify-center p-4 print:p-0 print:bg-white print:fixed print:inset-0"
+        onClick={onClose} // YENİ: Boşluğa tıklayarak kapatma (Smart Mobile UX)
+      >
         
         <motion.div 
+          onClick={(e) => e.stopPropagation()} // YENİ: İçeriğe tıklayınca modalın kapanmasını engeller
           initial={{ opacity: 0, scale: 0.95 }} 
           animate={{ opacity: 1, scale: 1 }} 
           exit={{ opacity: 0, scale: 0.95 }}

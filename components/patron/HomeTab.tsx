@@ -153,7 +153,8 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                            setShowLowStockModal(false);
                            if (setActiveTab) setActiveTab('stock');
                          }}
-                         className="px-2 py-1.5 bg-white border border-slate-200 text-blue-600 rounded-md text-[10px] font-bold hover:bg-blue-50 hover:border-blue-200 transition-all shadow-sm flex items-center gap-1"
+                         // YENİ: active:scale-95 eklendi (Mobil dokunmatik hissi)
+                         className="px-2 py-1.5 bg-white border border-slate-200 text-blue-600 rounded-md text-[10px] font-bold hover:bg-blue-50 hover:border-blue-200 transition-all active:scale-95 shadow-sm flex items-center gap-1"
                          title="Stok Sayfasına Git"
                        >
                          Stoğa Git <ArrowUpRight size={12} />
@@ -361,25 +362,29 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
       </div>
 
       {/* ALT BÖLÜM: YENİLENMİŞ SON İŞLER TABLOSU */}
+      {/* DÜZELTME: JSX Kapsayıcı Hiyerarşisi Temizlendi */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
         <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <div className="flex items-center gap-2">
             <Activity size={16} className="text-blue-600" />
             <h3 className="font-bold text-slate-800 text-sm">Son İş Emirleri ve Onay Durumu</h3>
           </div>
-          <button onClick={() => setShowJobModal(true)} className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 hover:bg-blue-700 transition-all shadow-sm">
+          {/* YENİ: active:scale-95 eklendi */}
+          <button onClick={() => setShowJobModal(true)} className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 hover:bg-blue-700 transition-all shadow-sm active:scale-95">
             <Plus size={14} /> Yeni İş Ata
           </button>
         </div>
         
-        <div className="overflow-x-auto overflow-y-auto max-h-[400px] custom-scrollbar">
-          <table className="w-full text-left text-xs border-collapse">
+        {/* YENİ: overflow-x-auto eklenerek mobilde tablonun sayfayı taşırması engellendi */}
+        <div className="overflow-x-auto overflow-y-auto max-h-[400px] custom-scrollbar w-full">
+          {/* YENİ: min-w-[700px] eklendi ki dar ekranlarda hücreler ezilmesin */}
+          <table className="w-full text-left text-xs border-collapse min-w-[700px]">
             <thead className="bg-white text-slate-400 font-medium sticky top-0 z-10 shadow-sm">
               <tr>
-                <th className="px-5 py-3 border-b border-slate-100">Müşteri / İş</th>
-                <th className="px-5 py-3 border-b border-slate-100">Personel / Onay Süreci</th>
-                <th className="px-5 py-3 border-b border-slate-100">Planlanan Tarih</th>
-                <th className="px-5 py-3 border-b border-slate-100 text-right">Durum</th>
+                <th className="px-5 py-3 border-b border-slate-100 whitespace-nowrap">Müşteri / İş</th>
+                <th className="px-5 py-3 border-b border-slate-100 whitespace-nowrap">Personel / Onay Süreci</th>
+                <th className="px-5 py-3 border-b border-slate-100 whitespace-nowrap">Planlanan Tarih</th>
+                <th className="px-5 py-3 border-b border-slate-100 text-right whitespace-nowrap">Durum</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -417,7 +422,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                           <div className="flex items-center gap-1.5">
                             <ShieldCheck size={12} className={isApproved ? 'text-emerald-500' : 'text-amber-500'} />
                             <span className="text-[9px] font-bold text-slate-400 uppercase w-[95px]">Atayan & Sorumlu:</span>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${staffColor}`}>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${staffColor} whitespace-nowrap`}>
                               {assignedManager.name}
                             </span>
                           </div>
@@ -427,7 +432,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                             <div className="flex items-center gap-1.5">
                               <ShieldCheck size={12} className={isApproved ? 'text-emerald-500' : 'text-slate-400'} />
                               <span className="text-[9px] font-bold text-slate-400 uppercase w-[52px]">Atayan:</span>
-                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-slate-600 bg-slate-50 border-slate-200'}`}>
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-slate-600 bg-slate-50 border-slate-200'} whitespace-nowrap`}>
                                 {actionBy}
                               </span>
                             </div>
@@ -437,11 +442,11 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                               <User size={12} className={assignedManager ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
                               <span className="text-[9px] font-bold text-slate-400 uppercase w-[52px]">Sorumlu:</span>
                               {assignedManager ? (
-                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${staffColor}`}>
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${staffColor} whitespace-nowrap`}>
                                   {assignedManager.name}
                                 </span>
                               ) : (
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border border-slate-200 bg-slate-100 text-slate-400">
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border border-slate-200 bg-slate-100 text-slate-400 whitespace-nowrap">
                                   Atanmadı
                                 </span>
                               )}
@@ -454,11 +459,11 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                           <Wrench size={12} className={assignedWorker ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
                           <span className="text-[9px] font-bold text-slate-400 uppercase w-[52px]">Usta:</span>
                           {assignedWorker ? (
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${staffColor}`}>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${staffColor} whitespace-nowrap`}>
                               {assignedWorker.name}
                             </span>
                           ) : (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border border-slate-200 bg-slate-100 text-slate-400">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border border-slate-200 bg-slate-100 text-slate-400 whitespace-nowrap">
                               Atanmadı
                             </span>
                           )}
@@ -467,12 +472,12 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                       </div>
                     </td>
 
-                    <td className="px-5 py-3 align-middle font-medium text-slate-600">
+                    <td className="px-5 py-3 align-middle font-medium text-slate-600 whitespace-nowrap">
                       {j.scheduled_date || 'Anlık Kayıt'}
                     </td>
                     <td className="px-5 py-3 align-middle text-right">
                       <div className="flex items-center justify-end gap-3">
-                         <span className={`px-2.5 py-1.5 rounded-md text-[10px] font-bold border ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                         <span className={`px-2.5 py-1.5 rounded-md text-[10px] font-bold border ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'} whitespace-nowrap`}>
                            {j.status}
                          </span>
                          {/* Satırın üstüne gelince beliren detay oku */}

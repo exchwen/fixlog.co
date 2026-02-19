@@ -1,13 +1,34 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+// YENİ: useState eklendi
+import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Send, X, MessageSquare, ArrowLeft } from 'lucide-react';
+// YENİ: WifiOff eklendi
+import { ChevronDown, Send, X, MessageSquare, ArrowLeft, WifiOff } from 'lucide-react';
 
 export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, setActiveChatId, data, messages, messageInput, setMessageInput, sendMessage }: any) {
   const chatEndRef = useRef<HTMLDivElement>(null);
   
+  // YENİ: Sohbet için yerel çevrimdışı kontrolü
+  const [isOffline, setIsOffline] = useState(false);
+  
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  // YENİ: İnternet durumunu anlık dinleyen yapı
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    
+    // İlk yüklemede kontrol et
+    setIsOffline(!navigator.onLine);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Aktif personeli bul
   const activeStaff = activeChatId ? data?.staff?.find((s: any) => s.id === activeChatId) : null;
@@ -143,16 +164,17 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                   <input 
                     value={messageInput} 
                     onChange={e => setMessageInput(e.target.value)} 
-                    onKeyDown={e => e.key === 'Enter' && sendMessage()} 
-                    placeholder="Mesaj yazın..." 
-                    className="flex-1 bg-slate-50 px-4 py-2.5 rounded-xl text-[13px] outline-none border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all placeholder:text-slate-400" 
+                    onKeyDown={e => e.key === 'Enter' && !isOffline && sendMessage()} 
+                    disabled={isOffline}
+                    placeholder={isOffline ? "İnternet bağlantısı yok..." : "Mesaj yazın..."} 
+                    className="flex-1 bg-slate-50 px-4 py-2.5 rounded-xl text-[13px] outline-none border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all placeholder:text-slate-400 disabled:opacity-50 disabled:bg-slate-100" 
                   />
                   <button 
                     onClick={sendMessage} 
-                    disabled={!messageInput.trim()}
+                    disabled={!messageInput.trim() || isOffline}
                     className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center"
                   >
-                    <Send size={18} />
+                    {isOffline ? <WifiOff size={18} /> : <Send size={18} />}
                   </button>
                 </div>
               </>

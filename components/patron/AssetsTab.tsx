@@ -17,6 +17,12 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
 
     const img = new Image();
     img.crossOrigin = "Anonymous";
+    
+    // YENİ: Çevrimdışı (Offline) durumunda resim yüklenemezse patlamayı önleme
+    img.onerror = () => {
+      setLogoBgColor('#f8fafc');
+    };
+
     img.onload = () => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -73,6 +79,15 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
   };
 
+  // YENİ: Akıllı Harita Yönlendirme Kontrolü (Offline ise uyarı verir)
+  const handleMapClick = (e: React.MouseEvent<HTMLAnchorElement>, location: string, apartmentName: string) => {
+    e.stopPropagation();
+    if (!navigator.onLine) {
+      e.preventDefault();
+      alert("Haritayı açabilmek için internet bağlantısına ihtiyacınız var.");
+    }
+  };
+
   // Arama filtresi mantığı
   const filteredAssets = data?.assets?.filter((a: any) => {
     const term = searchTerm.toLowerCase();
@@ -106,7 +121,7 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
             />
           </div>
 
-          <button onClick={() => setShowAssetModal(true)} className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-blue-700 whitespace-nowrap">
+          <button onClick={() => setShowAssetModal(true)} className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-blue-700 active:scale-95 transition-all whitespace-nowrap">
             <Plus size={14} /> Yeni Varlık
           </button>
         </div>
@@ -171,12 +186,12 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
                           {a.location ? a.location.replace(aptName || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : '-'}
                         </div>
                         
-                        {/* Haritada Görüntüle Butonu */}
+                        {/* Haritada Görüntüle Butonu (Akıllı Offline Korumalı) */}
                         <a 
                             href={getMapsUrl(a.location, aptName)} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()} 
+                            onClick={(e) => handleMapClick(e, a.location, aptName)} 
                             className="inline-flex items-center gap-1.5 text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100/80 w-fit px-2.5 py-1.5 rounded-lg transition-colors"
                         >
                             <ExternalLink size={11} /> Haritada Görüntüle

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Loader2, ArrowDownRight, ArrowUpRight, Trash2, Download, Eye, Calendar, Clock, Filter } from 'lucide-react';
+// YENİ: WifiOff eklendi
+import { Plus, X, Loader2, ArrowDownRight, ArrowUpRight, Trash2, Download, Eye, Calendar, Clock, Filter, WifiOff } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
 
@@ -15,6 +16,9 @@ export default function FinanceTab({ data }: any) {
   const [financeItems, setFinanceItems] = useState([{ name: '', qty: '1' }]);
   const [financeAmount, setFinanceAmount] = useState('');
   const [isSavingFinance, setIsSavingFinance] = useState(false);
+
+  // YENİ: Çevrimdışı kontrolü için State
+  const [isOffline, setIsOffline] = useState(false);
 
   // Filtre State'leri (Her tablo için ayrı tutuluyor)
   const [timeFilters, setTimeFilters] = useState<any>({
@@ -42,6 +46,20 @@ export default function FinanceTab({ data }: any) {
     setLocalJobs(data?.jobs || []);
   }, [data]);
 
+  // YENİ: İnternet durumunu dinleyen useEffect
+  useEffect(() => {
+    setIsOffline(!navigator.onLine);
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   const addItemRow = () => setFinanceItems([...financeItems, { name: '', qty: '1' }]);
   const removeItemRow = (idx: number) => setFinanceItems(financeItems.filter((_: any, i: number) => i !== idx));
   const handleItemChange = (idx: number, field: string, val: string) => {
@@ -59,31 +77,45 @@ export default function FinanceTab({ data }: any) {
     if(!description || !financeAmount) return alert("Lütfen kalemleri ve toplam tutarı eksiksiz giriniz.");
     setIsSavingFinance(true);
     
-    const endpoint = financeModal.type === 'Gelir' ? '/add-income' : '/add-expense';
+    const endpoint = financeModal.type === 'Gelir' ? 'add-income' : 'add-expense';
+    const bodyData = { slug: activeSlug, description, amount: parseFloat(financeAmount) };
     
+    // YENİ: Her durumda arayüze (Local State) anında ekle ki kullanıcı beklemesin
+    const newRecord = {
+        id: Date.now().toString(),
+        description,
+        amount: parseFloat(financeAmount),
+        type: financeModal.type,
+        created_at: new Date().toISOString()
+    };
+
     try {
-      const res = await fetch(`https://backend.isdokumu.workers.dev${endpoint}`, {
+      const res = await fetch(`https://backend.isdokumu.workers.dev/${endpoint}`, {
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug: activeSlug, description, amount: parseFloat(financeAmount) })
+        body: JSON.stringify(bodyData)
       });
 
       if (res.ok) {
-        setLocalFinances([{
-            id: Date.now().toString(),
-            description,
-            amount: parseFloat(financeAmount),
-            type: financeModal.type,
-            created_at: new Date().toISOString()
-        }, ...localFinances]);
-
+        setLocalFinances([newRecord, ...localFinances]);
         closeFinanceModal();
         router.refresh(); 
       } else {
         alert("Kayıt Başarısız! Lütfen Cloudflare bağlantınızı kontrol edin.");
       }
     } catch (e) { 
-      alert("Bağlantı hatası oluştu!"); 
+      // YENİ: VERİTABANI HATASI VEYA BAĞLANTI SORUNU İÇİN CACHE SİSTEMİ (OFFLINE QUEUE)
+      console.warn("İnternet bağlantısı yok veya sunucuya ulaşılamadı. Finans işlemi kuyruğa alındı.");
+      
+      const pending = JSON.parse(localStorage.getItem(`offline_actions_${activeSlug}`) || '[]');
+      pending.push({ endpoint, body: bodyData, timestamp: new Date().toISOString() });
+      localStorage.setItem(`offline_actions_${activeSlug}`, JSON.stringify(pending));
+      
+      // Local state'e ekleyip modalı kapat, kullanıcıyı mağdur etme
+      setLocalFinances([newRecord, ...localFinances]);
+      closeFinanceModal();
+      
+      alert("İnternet bağlantınız yok. İşlem cihazınıza kaydedildi, bağlantı geldiğinde otomatik olarak sisteme aktarılacaktır.");
     } finally {
       setIsSavingFinance(false); 
     }
@@ -202,7 +234,8 @@ export default function FinanceTab({ data }: any) {
             {/* EXCEL BUTONU */}
             <button 
               onClick={() => exportToExcel(filteredData, title)} 
-              className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-100 transition-colors shadow-sm"
+              // YENİ: active:scale-95 eklendi
+              className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-100 transition-all active:scale-95 shadow-sm"
             >
               <Download size={14} /> Excel İndir
             </button>
@@ -212,13 +245,13 @@ export default function FinanceTab({ data }: any) {
         {/* DİKEY ÇİZGİLİ VE ZEBRA DESENLİ TABLO */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
           <div className="overflow-x-auto overflow-y-auto max-h-[400px] custom-scrollbar">
-            <table className="w-full text-left text-xs relative border-collapse">
+            <table className="w-full text-left text-xs relative border-collapse min-w-[600px]">
               <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 sticky top-0 z-10 shadow-sm">
                 <tr>
-                  <th className="px-5 py-4 w-1/2 border-r border-slate-200 last:border-r-0">Açıklama (Kalemler)</th>
-                  <th className="px-5 py-4 border-r border-slate-200 last:border-r-0">Tarih ve Saat</th>
-                  <th className="px-5 py-4 border-r border-slate-200 last:border-r-0">Miktar (₺)</th>
-                  <th className="px-5 py-4 text-right border-r border-slate-200 last:border-r-0">Tip</th>
+                  <th className="px-5 py-4 w-1/2 border-r border-slate-200 last:border-r-0 whitespace-nowrap">Açıklama (Kalemler)</th>
+                  <th className="px-5 py-4 border-r border-slate-200 last:border-r-0 whitespace-nowrap">Tarih ve Saat</th>
+                  <th className="px-5 py-4 border-r border-slate-200 last:border-r-0 whitespace-nowrap">Miktar (₺)</th>
+                  <th className="px-5 py-4 text-right border-r border-slate-200 last:border-r-0 whitespace-nowrap">Tip</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -282,10 +315,12 @@ export default function FinanceTab({ data }: any) {
            <p className="text-xs font-medium text-slate-500 mt-1">İşletmenizin tüm gelir ve gider hareketlerini buradan takip edebilirsiniz.</p>
          </div>
          <div className="flex gap-2">
-           <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gelir' })} className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-emerald-100 transition-colors">
+           {/* YENİ: active:scale-95 eklendi */}
+           <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gelir' })} className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-emerald-100 transition-all active:scale-95">
              <Plus size={14} strokeWidth={3} /> Manuel Gelir İşle
            </button>
-           <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gider' })} className="bg-rose-50 text-rose-600 border border-rose-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-rose-100 transition-colors">
+           {/* YENİ: active:scale-95 eklendi */}
+           <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gider' })} className="bg-rose-50 text-rose-600 border border-rose-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-rose-100 transition-all active:scale-95">
              <Plus size={14} strokeWidth={3} /> Gider / Fiş İşle
            </button>
          </div>
@@ -301,8 +336,16 @@ export default function FinanceTab({ data }: any) {
          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
             <div className="bg-white w-full max-w-sm rounded-xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
               <div className="flex justify-between items-center mb-6">
-                <h2 className={`text-lg font-extrabold ${financeModal.type === 'Gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                <h2 className={`text-lg font-extrabold flex items-center gap-2 ${financeModal.type === 'Gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {financeModal.type === 'Gelir' ? 'Yeni Gelir Ekle' : 'Gider / Fiş İşle'}
+                  
+                  {/* DÜZELTİLEN KISIM: İkon span içerisine alındı */}
+                  {isOffline && (
+                    <span title="Çevrimdışı Mod" className="flex items-center">
+                      <WifiOff size={16} className="text-amber-500" />
+                    </span>
+                  )}
+                  
                 </h2>
                 <button onClick={closeFinanceModal} className="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-md transition-colors"><X size={18} /></button>
               </div>
@@ -351,8 +394,14 @@ export default function FinanceTab({ data }: any) {
                 </div>
               </div>
               
-              <button disabled={isSavingFinance} className={`w-full text-white py-3 rounded-md font-bold text-sm mt-6 flex justify-center items-center transition-all shadow-md ${financeModal.type === 'Gelir' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'}`} onClick={handleAddFinanceRecord}>
-                {isSavingFinance ? <Loader2 className="animate-spin" size={16} /> : (financeModal.type === 'Gelir' ? 'Geliri Kasaya İşle' : 'Gideri Kasadan Düş')}
+              <button 
+                disabled={isSavingFinance} 
+                className={`w-full text-white py-3 rounded-md font-bold text-sm mt-6 flex justify-center items-center transition-all shadow-md active:scale-95 ${financeModal.type === 'Gelir' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'}`} 
+                onClick={handleAddFinanceRecord}
+              >
+                {isSavingFinance ? <Loader2 className="animate-spin" size={16} /> : (
+                  isOffline ? 'Kuyruğa Al ve Kaydet' : (financeModal.type === 'Gelir' ? 'Geliri Kasaya İşle' : 'Gideri Kasadan Düş')
+                )}
               </button>
             </div>
          </div>

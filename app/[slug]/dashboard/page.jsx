@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, AlertTriangle, ArrowRight, Settings, Filter, ShieldAlert, Info, MapPin, Check } from 'lucide-react';
+// YENİ: WifiOff eklendi
+import { ShieldCheck, AlertTriangle, ArrowRight, Settings, Filter, ShieldAlert, Info, MapPin, Check, WifiOff } from 'lucide-react';
 
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
@@ -35,6 +36,10 @@ export default function PatronDashboard() {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // YENİ: ÇEVRİMDIŞI, CACHE VE SMART STATE KONTROLLERİ
+  const [isOffline, setIsOffline] = useState(false);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
   // STOK KATEGORİ FİLTRESİ
   const [stockCategory, setStockCategory] = useState('Tümü');
@@ -84,6 +89,10 @@ export default function PatronDashboard() {
       const res = await fetch(`${API_URL}/dashboard-data?slug=${slug}`);
       if (!res.ok) throw new Error("Ağ hatası");
       const result = await res.json();
+      
+      // YENİ: Başarılı veri çekişinde cache'i güncelle
+      localStorage.setItem(`dashboard_cache_${slug}`, JSON.stringify(result));
+      setIsOffline(false);
       setData(result);
       
       // Sadece sayfa ilk yüklendiğinde veya ayarlar kaydedildiğinde formu doldur
@@ -102,7 +111,17 @@ export default function PatronDashboard() {
             logo: result.logo || ''
         });
       }
-    } catch (err) { console.error("Veri çekilemedi:", err); } finally { setLoading(false); }
+    } catch (err) { 
+      console.error("Veri çekilemedi:", err); 
+      // YENİ: Veri çekilemezse cache'den yükle
+      setIsOffline(true);
+      const cachedData = localStorage.getItem(`dashboard_cache_${slug}`);
+      if (cachedData) {
+        setData(JSON.parse(cachedData));
+      }
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const fetchMessages = async () => {
@@ -112,6 +131,102 @@ export default function PatronDashboard() {
       setMessages(await res.json() || []);
     } catch (err) {}
   };
+
+  // YENİ: Bekleyen (offline) işlemleri senkronize etme fonksiyonu
+  const syncOfflineActions = async () => {
+    const pending = JSON.parse(localStorage.getItem(`offline_actions_${slug}`) || '[]');
+    if (pending.length === 0) {
+      setPendingSyncCount(0);
+      return;
+    }
+    
+    const remaining = [];
+    for (const item of pending) {
+      try {
+        const res = await fetch(`${API_URL}/${item.endpoint}`, { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ ...item.body, slug }) 
+        });
+        if (!res.ok) remaining.push(item);
+      } catch (e) {
+        remaining.push(item);
+      }
+    }
+    localStorage.setItem(`offline_actions_${slug}`, JSON.stringify(remaining));
+    setPendingSyncCount(remaining.length);
+    if (remaining.length < pending.length) fetchData(true); // Bazıları başarıyla senkronize olduysa veriyi yenile
+  };
+
+  // YENİ: Çevrimiçi/Çevrimdışı durum dinleyicileri ve ilk senkronizasyon kontrolü
+  useEffect(() => {
+    const handleOnline = () => { setIsOffline(false); syncOfflineActions(); };
+    const handleOffline = () => setIsOffline(true);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    const pending = JSON.parse(localStorage.getItem(`offline_actions_${slug}`) || '[]');
+    setPendingSyncCount(pending.length);
+    if (navigator.onLine) syncOfflineActions();
+
+    return () => { 
+      window.removeEventListener('online', handleOnline); 
+      window.removeEventListener('offline', handleOffline); 
+    };
+  }, [slug]);
+
+  // YENİ: Masaüstü ESC tuşu ve Mobil Geri Tuşu (Smart State PWA) Yönetimi
+  useEffect(() => {
+    const closeAnyOpenModal = () => {
+      if (showQRModal) { setShowQRModal(false); return true; }
+      if (showJobModal) { setShowJobModal(false); return true; }
+      if (showAssetModal) { setShowAssetModal(false); return true; }
+      if (showStaffModal) { setShowStaffModal(false); return true; }
+      if (showCustomerModal) { setShowCustomerModal(false); return true; }
+      if (showStockModal) { setShowStockModal(false); return true; }
+      if (showSupplierModal) { setShowSupplierModal(false); return true; }
+      if (showSupplierListModal) { setShowSupplierListModal(false); return true; }
+      if (showCategoryModal) { setShowCategoryModal(false); return true; }
+      if (showStaffDetail) { setShowStaffDetail(null); return true; }
+      if (showCustomerDetail) { setShowCustomerDetail(null); return true; }
+      if (showAssetDetail) { setShowAssetDetail(null); return true; }
+      if (isChatOpen) { setIsChatOpen(false); return true; }
+      if (isMobileMenuOpen) { setIsMobileMenuOpen(false); return true; }
+      return false; // Hiçbir şey açık değilse false döner
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        closeAnyOpenModal();
+      }
+    };
+
+    const handlePopState = (e) => {
+      const closedSomething = closeAnyOpenModal();
+      if (closedSomething) {
+        // Modalı kapattıysak, kullanıcının uygulamadan tamamen çıkmasını engellemek için mevcut state'i tekrar pushluyoruz
+        window.history.pushState({ modalOpen: true }, '');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('popstate', handlePopState);
+
+    // Geri tuşunu manipüle edebilmek için sayfaya girildiğinde history eklenir
+    if (!window.history.state?.modalOpen) {
+       window.history.pushState({ modalOpen: true }, '');
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [
+      showQRModal, showJobModal, showAssetModal, showStaffModal, showCustomerModal, 
+      showStockModal, showSupplierModal, showSupplierListModal, showCategoryModal, 
+      showStaffDetail, showCustomerDetail, showAssetDetail, isChatOpen, isMobileMenuOpen
+  ]);
 
   // YENİ: setInterval içinde isInitial false olarak çağrılıyor
   useEffect(() => { 
@@ -138,8 +253,22 @@ export default function PatronDashboard() {
         return false; 
       }
     } catch (err) { 
-      if (endpoint !== 'update-settings' && endpoint !== 'add-support-ticket') alert("Bağlantı kurulamadı."); 
-      return false; 
+      // YENİ: VERİTABANI HATASI VEYA BAĞLANTI SORUNU İÇİN CACHE SİSTEMİ
+      const pending = JSON.parse(localStorage.getItem(`offline_actions_${slug}`) || '[]');
+      pending.push({ endpoint, body, timestamp: new Date().toISOString() });
+      localStorage.setItem(`offline_actions_${slug}`, JSON.stringify(pending));
+      
+      setPendingSyncCount(pending.length);
+      setIsOffline(true);
+
+      if(closeFn) closeFn(false); 
+      if(resetFn) resetFn(); 
+      
+      if (endpoint !== 'update-settings' && endpoint !== 'add-support-ticket') {
+         // Kullanıcıya akıcı deneyim sunmak için işlem kuyruğa alınır, uygulamanın donması engellenir
+         console.warn("İnternet bağlantısı yok veya sunucuya ulaşılamadı. İşlem kuyruğa alındı.");
+      }
+      return true; 
     } finally { 
       setIsSaving(false); 
     }
@@ -355,12 +484,33 @@ export default function PatronDashboard() {
         )}
       </AnimatePresence>
 
-      {/* YENİ: Veriler eksikse Sidebar kilitlenir */}
-      <div className={isCompanyDataIncomplete && activeTab !== 'support' ? "pointer-events-none opacity-50 grayscale transition-all duration-300" : ""}>
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      {/* YENİ: DÜZELTME - Veriler eksikse Sidebar kilitlenir, ancak z-index ile mobilde sorun yaratmaz */}
+      <div className={`flex z-50 ${isCompanyDataIncomplete && activeTab !== 'support' ? "pointer-events-none opacity-50 grayscale transition-all duration-300" : ""}`}>
+        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
       </div>
 
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto relative z-10">
+        
+        {/* YENİ: ÇEVRİMDIŞI VE SENKRONİZASYON UYARISI BANNER'I */}
+        <AnimatePresence>
+            {(isOffline || pendingSyncCount > 0) && !hasEmergency && (
+              <motion.div 
+                initial={{ height: 0, opacity: 0 }} 
+                animate={{ height: 'auto', opacity: 1 }} 
+                exit={{ height: 0, opacity: 0 }} 
+                className="bg-amber-500 text-amber-950 px-4 py-2.5 text-xs font-bold flex flex-wrap items-center justify-center gap-2 z-40 border-b border-amber-600/20"
+              >
+                <WifiOff size={16} />
+                {isOffline ? 'Bağlantı koptu. Veriler önbellekten okunuyor.' : 'İnternet bağlantısı sağlandı.'}
+                {pendingSyncCount > 0 && (
+                  <span className="bg-amber-950 text-amber-400 px-2.5 py-1 rounded-full ml-2 animate-pulse flex items-center gap-1">
+                     Kuyrukta bekleyen {pendingSyncCount} işlem var...
+                  </span>
+                )}
+              </motion.div>
+            )}
+        </AnimatePresence>
+
         <div className={isCompanyDataIncomplete && activeTab !== 'support' ? "pointer-events-none" : ""}>
           <Header data={data} searchTerm={searchTerm} setSearchTerm={setSearchTerm} setIsMobileMenuOpen={setIsMobileMenuOpen} />
         </div>

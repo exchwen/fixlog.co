@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, Phone, ShieldCheck, Box, MapPin, History, X, ShieldAlert, ChevronRight, User, MessageCircle, Info } from 'lucide-react';
+// YENİ: WifiOff eklendi
+import { AlertTriangle, Phone, ShieldCheck, Box, MapPin, History, X, ShieldAlert, ChevronRight, User, MessageCircle, Info, WifiOff } from 'lucide-react';
 import { useParams } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AssetScanPage() {
   const { uuid } = useParams();
@@ -22,23 +24,120 @@ export default function AssetScanPage() {
   // Logo Arka Plan Rengi
   const [logoBgColor, setLogoBgColor] = useState<string>('#ffffff');
 
+  // YENİ: ÇEVRİMDIŞI, CACHE VE SMART STATE KONTROLLERİ
+  const [isOffline, setIsOffline] = useState(false);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
+
   const API_URL = 'https://backend.isdokumu.workers.dev'; 
 
+  // YENİ: Ağ (Online First) ve Cache Stratejisi
   useEffect(() => {
     const fetchAsset = async () => {
       try {
         const res = await fetch(`${API_URL}/public/get-asset?uuid=${uuid}`);
         if (!res.ok) throw new Error('Varlık bulunamadı');
         const data = await res.json();
+        
+        // Başarılı olduğunda veriyi önbelleğe al
+        localStorage.setItem(`asset_cache_${uuid}`, JSON.stringify(data));
+        setIsOffline(false);
         setAsset(data);
+        setError('');
       } catch (err) {
-        setError('Geçersiz QR Kod veya Varlık Bulunamadı.');
+        // Hata veya internetsizlik durumunda önbellekten oku
+        setIsOffline(true);
+        const cachedData = localStorage.getItem(`asset_cache_${uuid}`);
+        if (cachedData) {
+          setAsset(JSON.parse(cachedData));
+          setError('');
+        } else {
+          setError('Geçersiz QR Kod veya İnternet Bağlantısı Yok.');
+        }
       } finally {
         setLoading(false);
       }
     };
     if (uuid) fetchAsset();
   }, [uuid]);
+
+  // YENİ: Bekleyen (offline) işlemleri senkronize etme fonksiyonu
+  const syncOfflineActions = async () => {
+    const pending = JSON.parse(localStorage.getItem(`offline_public_actions`) || '[]');
+    if (pending.length === 0) {
+      setPendingSyncCount(0);
+      return;
+    }
+    
+    const remaining = [];
+    for (const item of pending) {
+      try {
+        const res = await fetch(`${API_URL}/${item.endpoint}`, { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify(item.body) 
+        });
+        if (!res.ok) remaining.push(item);
+      } catch (e) {
+        remaining.push(item);
+      }
+    }
+    localStorage.setItem(`offline_public_actions`, JSON.stringify(remaining));
+    setPendingSyncCount(remaining.length);
+  };
+
+  // YENİ: Çevrimiçi/Çevrimdışı durum dinleyicileri
+  useEffect(() => {
+    const handleOnline = () => { setIsOffline(false); syncOfflineActions(); };
+    const handleOffline = () => setIsOffline(true);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    const pending = JSON.parse(localStorage.getItem(`offline_public_actions`) || '[]');
+    setPendingSyncCount(pending.length);
+    if (navigator.onLine) syncOfflineActions();
+
+    return () => { 
+      window.removeEventListener('online', handleOnline); 
+      window.removeEventListener('offline', handleOffline); 
+    };
+  }, []);
+
+  // YENİ: Masaüstü ESC tuşu ve Mobil Geri Tuşu (Smart State PWA) Yönetimi
+  useEffect(() => {
+    const closeAnyOpenModal = () => {
+      if (showHistory) { setShowHistory(false); return true; }
+      if (showEmergencyConfirm) { setShowEmergencyConfirm(false); return true; }
+      if (showFaultModal) { setShowFaultModal(false); return true; }
+      return false; 
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeAnyOpenModal();
+      }
+    };
+
+    const handlePopState = (e: PopStateEvent) => {
+      const closedSomething = closeAnyOpenModal();
+      if (closedSomething) {
+        window.history.pushState({ modalOpen: true }, '');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown as EventListener);
+    window.addEventListener('popstate', handlePopState as EventListener);
+
+    if (!window.history.state?.modalOpen) {
+       window.history.pushState({ modalOpen: true }, '');
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown as EventListener);
+      window.removeEventListener('popstate', handlePopState as EventListener);
+    };
+  }, [showHistory, showEmergencyConfirm, showFaultModal]);
+
 
   // LOGODAN ZIT RENK SEÇİMİ (Mavi, Siyah veya Beyaz)
   useEffect(() => {
@@ -100,17 +199,23 @@ export default function AssetScanPage() {
   }, [asset?.logo]);
 
 
-  // 🚨 ACİL DURUM ONAYLAMA İŞLEMİ
+  // 🚨 ACİL DURUM ONAYLAMA İŞLEMİ (GÜNCELLENDİ: Offline Kuyruk Desteği)
   const handleEmergencyConfirm = async () => {
     setIsSubmitting(true);
+    const body = { uuid: asset.uuid || uuid, company_slug: asset.company_slug };
     try {
       await fetch(`${API_URL}/public/trigger-emergency`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uuid: asset.uuid || uuid, company_slug: asset.company_slug })
+        body: JSON.stringify(body)
       });
     } catch (err) {
-      console.error("Acil durum bildirilemedi.", err);
+      console.warn("İnternet bağlantısı yok. Acil durum bildirimi kuyruğa alındı.");
+      const pending = JSON.parse(localStorage.getItem(`offline_public_actions`) || '[]');
+      pending.push({ endpoint: 'public/trigger-emergency', body, timestamp: new Date().toISOString() });
+      localStorage.setItem(`offline_public_actions`, JSON.stringify(pending));
+      setPendingSyncCount(pending.length);
+      setIsOffline(true);
     } finally {
       setIsSubmitting(false);
       setShowEmergencyConfirm(false);
@@ -120,19 +225,20 @@ export default function AssetScanPage() {
     }
   };
 
-  // ⚠️ ARIZA BİLDİRİM FORMU GÖNDERME İŞLEMİ
+  // ⚠️ ARIZA BİLDİRİM FORMU GÖNDERME İŞLEMİ (GÜNCELLENDİ: Offline Kuyruk Desteği)
   const handleFaultSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    const body = { 
+      uuid: asset.uuid || uuid, 
+      company_slug: asset.company_slug,
+      ...faultForm 
+    };
     try {
       const res = await fetch(`${API_URL}/public/report-fault`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          uuid: asset.uuid || uuid, 
-          company_slug: asset.company_slug,
-          ...faultForm 
-        })
+        body: JSON.stringify(body)
       });
       if (res.ok) {
         alert("Arıza kaydınız başarıyla iletildi. En kısa sürede sizinle iletişime geçilecektir.");
@@ -142,7 +248,16 @@ export default function AssetScanPage() {
         alert("Bir sorun oluştu. Lütfen doğrudan arama butonunu kullanınız.");
       }
     } catch (err) {
-      alert("Bağlantı kurulamadı.");
+      console.warn("İnternet bağlantısı yok. Arıza bildirimi kuyruğa alındı.");
+      const pending = JSON.parse(localStorage.getItem(`offline_public_actions`) || '[]');
+      pending.push({ endpoint: 'public/report-fault', body, timestamp: new Date().toISOString() });
+      localStorage.setItem(`offline_public_actions`, JSON.stringify(pending));
+      setPendingSyncCount(pending.length);
+      setIsOffline(true);
+      
+      alert("İnternet bağlantınız yok. Talebiniz sıraya alındı, bağlantı geldiğinde iletilecektir.");
+      setShowFaultModal(false);
+      setFaultForm({ name: '', phone: '', description: '' });
     } finally {
       setIsSubmitting(false);
     }
@@ -197,6 +312,26 @@ export default function AssetScanPage() {
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 font-sans">
       
+      {/* YENİ: ÇEVRİMDIŞI VE SENKRONİZASYON UYARISI BANNER'I */}
+      <AnimatePresence>
+          {(isOffline || pendingSyncCount > 0) && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0, marginBottom: 0 }} 
+              animate={{ height: 'auto', opacity: 1, marginBottom: 16 }} 
+              exit={{ height: 0, opacity: 0, marginBottom: 0 }} 
+              className="w-full max-w-md bg-amber-500 text-amber-950 px-4 py-3 rounded-2xl text-xs font-bold flex flex-wrap items-center justify-center gap-2 shadow-lg z-40 border border-amber-600/20"
+            >
+              <WifiOff size={16} />
+              {isOffline ? 'Bağlantı koptu. Veriler önbellekten okunuyor.' : 'İnternet bağlantısı sağlandı.'}
+              {pendingSyncCount > 0 && (
+                <span className="bg-amber-950 text-amber-400 px-2.5 py-1 rounded-full ml-1 animate-pulse flex items-center gap-1">
+                   Kuyrukta {pendingSyncCount} işlem var...
+                </span>
+              )}
+            </motion.div>
+          )}
+      </AnimatePresence>
+
       {/* ANA KART */}
       <div className="bg-white shadow-2xl rounded-3xl w-full max-w-md overflow-hidden border border-slate-200 relative">
         
