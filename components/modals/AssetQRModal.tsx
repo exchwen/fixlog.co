@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, Printer, Copy, Check, Building2, Phone, MessageCircle, Globe } from 'lucide-react';
+import { X, Printer, Copy, Check, Building2, Phone, MessageCircle, Globe, Palette } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReactToPrint } from 'react-to-print';
 
@@ -21,6 +21,10 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
   const printRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const [logoBgColor, setLogoBgColor] = useState<string>('#ffffff');
+  
+  // YENİ: Baskı modu ve seçim ekranı state'leri
+  const [showPrintModeSelection, setShowPrintModeSelection] = useState(false);
+  const [printMode, setPrintMode] = useState<'color' | 'bw'>('color');
 
   // Logodan zıt/farklı rengi çekme işlemi (Mavi, Siyah, Beyaz arasından seçer)
   useEffect(() => {
@@ -87,155 +91,223 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
 
   const handlePrint = useReactToPrint({
     contentRef: printRef, 
-    documentTitle: `QR-${asset?.apartmentName || asset?.name || 'Varlik'}`,
-    onAfterPrint: () => console.log('Yazdırma işlemi tamamlandı'),
+    documentTitle: `QR_${asset?.apartmentName || asset?.name || 'Etiket'}`,
+    onAfterPrint: () => {
+        console.log('Yazdırma işlemi tamamlandı');
+        setPrintMode('color'); // Yazdırma bitince görünümü normale döndür
+    },
     pageStyle: `
-      @page { size: 80mm 80mm; margin: 0; }
+      @page { 
+        size: 80mm 80mm; 
+        margin: 0; 
+      }
       @media print { 
-        body { 
-          -webkit-print-color-adjust: exact; 
-          margin: 0; 
-          padding: 0; 
-          width: 80mm;
-          height: 80mm;
-          display: flex; 
-          justify-content: center; 
-          align-items: center; 
+        html, body { 
+          width: 80mm !important; 
+          height: 80mm !important; 
+          margin: 0 !important; 
+          padding: 0 !important; 
+          background-color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         } 
+        
+        /* Tüm sığdırma ve hizalama işlemleri burada */
         .print-container { 
           width: 80mm !important; 
           height: 80mm !important; 
           border: none !important; 
           box-shadow: none !important; 
           border-radius: 0 !important; 
-          padding: 3mm !important; 
+          padding: 4mm !important; 
           margin: 0 !important;
           display: flex !important;
           flex-direction: column !important;
+          align-items: center !important;
           justify-content: space-between !important;
+          position: relative !important;
+          box-sizing: border-box !important;
+          page-break-inside: avoid !important;
         }
-        .print-container * {
-          color: black !important;
+
+        /* Baskıda en alt siyah şerit ve beyaz yazısı */
+        .print-footer-banner {
+          background-color: black !important;
         }
+        .print-footer-banner span {
+          color: white !important;
+        }
+        
+        ::-webkit-scrollbar { display: none; }
       }
     `
   });
 
+  // Baskı modunu ayarlayıp dom güncellendikten sonra yazıcıyı tetikler
+  const executePrint = (mode: 'color' | 'bw') => {
+    setPrintMode(mode);
+    setShowPrintModeSelection(false);
+    setTimeout(() => {
+      handlePrint();
+    }, 150); // React'in state'i DOM'a basması için ufak bir bekleme
+  };
+
   if (!isOpen || !asset) return null;
 
   const uniqueId = asset.uuid || asset.id;
-  // QR her zaman İş Dökümü varlık sayfasına gidecek. Asla şirket web sitesine yönlendirmeyecek.
   const qrUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/q/${uniqueId}`;
 
-  // Mantık: Apartman adı varsa Ana Başlık o olur, yoksa Cihaz adı olur.
   const aptName = asset.apartmentName || asset.apartment_name;
   const mainTitle = aptName || asset.name;
-  
-  // Alt başlık sadece Apartman adı VARSA Cihaz adı olarak görünür.
   const subTitle = aptName ? asset.name : null;
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4 print:p-0 print:bg-white print:fixed print:inset-0">
+      <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[150] flex items-center justify-center p-4 print:p-0 print:bg-white print:fixed print:inset-0">
         
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }} 
           animate={{ opacity: 1, scale: 1 }} 
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col print:shadow-none print:w-auto print:max-w-none"
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col relative print:shadow-none print:w-auto print:max-w-none print:rounded-none"
         >
+          {/* YENİ: BASKI MODU SEÇİM EKRANI (OVERLAY) */}
+          <AnimatePresence>
+            {showPrintModeSelection && (
+              <motion.div 
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 z-50 bg-white/95 backdrop-blur-md flex flex-col items-center justify-center p-8 print:hidden"
+              >
+                <h3 className="text-2xl font-black text-slate-800 mb-2">Baskı Türü</h3>
+                <p className="text-[13px] font-medium text-slate-500 mb-8 text-center px-4">
+                  Etiketinizi yazıcınıza uygun olan formatta yazdırın.
+                </p>
+                
+                <div className="w-full space-y-3">
+                    <button 
+                      onClick={() => executePrint('color')} 
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-3 py-4 rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+                    >
+                      <Palette size={20} /> Renkli Baskı
+                    </button>
+                    
+                    <button 
+                      onClick={() => executePrint('bw')} 
+                      className="w-full bg-slate-900 hover:bg-slate-800 text-white flex items-center justify-center gap-3 py-4 rounded-xl font-bold transition-all shadow-lg shadow-slate-900/20 active:scale-95"
+                    >
+                      <Printer size={20} /> Siyah Beyaz (Barkod) Baskı
+                    </button>
+                </div>
+
+                <button 
+                  onClick={() => setShowPrintModeSelection(false)} 
+                  className="mt-6 px-6 py-2 text-slate-400 font-bold text-sm hover:text-slate-800 transition-colors"
+                >
+                  İptal Et
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Header */}
           <div className="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50 print:hidden">
-            <h3 className="font-bold text-slate-800">Varlık Etiketi</h3>
-            <button onClick={onClose} className="p-1 hover:bg-slate-200 rounded-full text-slate-500 transition-colors">
+            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+               <Printer size={18} className="text-blue-600"/> Etiket Önizleme
+            </h3>
+            <button onClick={onClose} className="p-1.5 hover:bg-slate-200 rounded-full text-slate-500 transition-colors">
               <X size={20} />
             </button>
           </div>
 
-          {/* YAZDIRILACAK ALAN */}
-          <div className="flex-1 p-8 flex items-center justify-center bg-slate-100 print:bg-white print:p-0 print:m-0 print:h-screen print:w-screen print:flex print:items-center print:justify-center">
+          {/* YAZDIRILACAK ALAN (80x80mm'ye eşdeğer piksel) */}
+          <div className="flex-1 py-8 flex items-center justify-center bg-slate-100 print:bg-white print:p-0 print:m-0 print:block">
             
             <div 
               ref={printRef} 
-              className="print-container w-[280px] h-auto min-h-[280px] bg-white border-2 border-slate-900 rounded-xl flex flex-col items-center justify-between p-5 text-center shadow-lg box-border"
+              className="print-container w-[302px] h-[302px] bg-white border border-slate-200 shadow-lg rounded-xl flex flex-col items-center justify-between p-3 relative box-border print:border-none print:shadow-none print:rounded-none"
             >
-              {/* Logo ve Firma Adı */}
-              <div className="w-full flex flex-col items-center justify-center mb-3 border-b-2 border-slate-100 pb-3 print:pb-2 print:mb-2 print:border-black">
-                
-                {/* Dinamik Arka Planlı Logo Alanı */}
+              
+              {/* 1. LOGO VE FİRMA ADI (ALT ALTA) */}
+              <div className="w-full flex flex-col items-center justify-center mt-1">
                 <div 
-                  className="w-16 h-16 rounded-full flex items-center justify-center mb-2 overflow-hidden shadow-sm border-2 border-white ring-1 ring-slate-100 print:w-12 print:h-12 print:mb-1 print:border-black print:ring-0"
-                  style={{ backgroundColor: companyLogo ? logoBgColor : '#f8fafc' }}
+                  className={`w-12 h-12 rounded-lg flex items-center justify-center mb-1 overflow-hidden shadow-sm border-2 ${printMode === 'bw' ? 'border-black bg-white' : 'border-white ring-1 ring-slate-100'}`}
+                  style={{ backgroundColor: printMode === 'bw' ? '#ffffff' : (companyLogo ? logoBgColor : '#f8fafc') }}
                 >
                   {companyLogo ? (
-                    <img src={companyLogo} alt="Logo" className="w-10 h-10 object-contain print:w-8 print:h-8 drop-shadow-md print:drop-shadow-none" />
+                    <img 
+                      src={companyLogo} 
+                      alt="Logo" 
+                      className={`w-9 h-9 object-contain drop-shadow-md print:drop-shadow-none ${printMode === 'bw' ? 'grayscale contrast-125' : ''}`} 
+                    />
                   ) : (
-                    <Building2 size={24} className="text-slate-400 print:w-5 print:h-5 print:text-black" />
+                    <Building2 size={20} className={printMode === 'bw' ? 'text-black' : 'text-slate-400'} />
                   )}
                 </div>
-
-                <div className="text-lg font-black text-slate-900 tracking-tighter uppercase print:text-xs print:leading-none">
+                <div className={`text-sm font-black tracking-tight uppercase leading-none text-center truncate w-full px-2 ${printMode === 'bw' ? 'text-black' : 'text-slate-900'}`}>
                   {companyName || 'İşletme Adı'}
                 </div>
               </div>
 
-              {/* QR Kod */}
-              <div className="flex-1 flex items-center justify-center py-2 print:py-0">
+              {/* 2. QR KOD */}
+              <div className="flex-1 flex flex-col items-center justify-center w-full my-1.5">
                 <QRCodeSVG 
                   value={qrUrl} 
-                  size={120} 
+                  size={105} 
                   level="Q"
                   includeMargin={false}
                 />
               </div>
 
-              {/* Alt Bilgiler */}
-              <div className="w-full pt-3 mt-2 border-t border-slate-200 print:pt-1 print:mt-1 print:border-black flex flex-col items-center">
-                {/* Ana Başlık: Apartman Adı (Yoksa Cihaz Adı) */}
-                <h2 className="text-base font-bold text-slate-900 leading-tight mb-1 break-words print:text-[10px]">
+              {/* 3. ALT BİLGİLER VE İLETİŞİM */}
+              <div className="w-full flex flex-col items-center pb-5 pt-1">
+                <h2 className={`text-[13px] font-black leading-tight mb-0.5 text-center truncate w-full px-1 ${printMode === 'bw' ? 'text-black' : 'text-slate-900'}`}>
                   {mainTitle}
                 </h2>
                 
-                {/* Alt Başlık: Cihaz Adı (Eğer Apartman Adı varsa) */}
                 {subTitle && (
-                  <div className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded print:text-[8px] print:bg-transparent print:p-0 print:text-black mb-1">
+                  <div className={`text-[9px] font-bold px-2 py-[1px] rounded mb-1 max-w-full truncate ${printMode === 'bw' ? 'bg-transparent border border-black text-black' : 'bg-slate-100 text-slate-600'}`}>
                     {subTitle}
                   </div>
                 )}
 
-                {/* İLETİŞİM BİLGİLERİ (SABİT HAT & WHATSAPP & WEBSITE) */}
+                {/* İletişim Bilgileri */}
                 {(landlinePhone || whatsappPhone || companyWebsite) && (
-                  <div className="flex flex-col items-center gap-1 w-full mt-2 border-t border-slate-100 pt-2 print:border-black print:mt-1 print:pt-1">
+                  <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 mt-1 w-full px-1">
                     {landlinePhone && (
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 print:text-[8px] print:text-black">
-                        <Phone size={12} className="print:w-2.5 print:h-2.5 print:text-black" /> {landlinePhone}
+                      <div className={`flex items-center gap-1 text-[9px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-800'}`}>
+                        <Phone size={9} /> {landlinePhone}
                       </div>
                     )}
                     {whatsappPhone && (
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 print:text-[8px] print:text-black">
-                        <MessageCircle size={12} className="print:w-2.5 print:h-2.5 print:text-black" /> {whatsappPhone}
+                      <div className={`flex items-center gap-1 text-[9px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-800'}`}>
+                        <MessageCircle size={9} /> {whatsappPhone}
                       </div>
                     )}
                     {companyWebsite && (
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 print:text-[8px] print:text-black">
-                        <Globe size={12} className="print:w-2.5 print:h-2.5 print:text-black" /> {companyWebsite.replace(/^https?:\/\//, '')}
+                      <div className={`flex items-center gap-1 text-[9px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-600'}`}>
+                        <Globe size={9} /> {companyWebsite.replace(/^https?:\/\//, '')}
                       </div>
                     )}
                   </div>
                 )}
               </div>
 
-              {/* Powered By */}
-              <div className="mt-4 text-[9px] text-slate-400 font-medium uppercase print:text-[6px] print:mt-1 print:text-black">
-                 isdokumu.com • Teknik Servis Takip
+              {/* 4. SİYAH ŞERİT FOOTER */}
+              <div className="absolute bottom-0 left-0 right-0 h-[16px] bg-slate-900 flex items-center justify-center print-footer-banner">
+                <span className="text-[6.5px] font-bold tracking-[0.15em] text-white uppercase opacity-90">
+                   ISDOKUMU.COM • TEKNİK SERVİS
+                </span>
               </div>
+
             </div>
-          
           </div>
 
           {/* Footer Butonları */}
           <div className="p-4 border-t border-slate-100 bg-white grid grid-cols-2 gap-3 print:hidden">
-            <button onClick={() => handlePrint()} className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-lg text-sm font-bold transition-colors shadow-lg shadow-slate-200">
+            <button 
+              onClick={() => setShowPrintModeSelection(true)} 
+              className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-slate-900/20 active:scale-95"
+            >
               <Printer size={18} /> Yazdır
             </button>
             <button 
@@ -244,7 +316,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
               }} 
-              className="flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 py-3 rounded-lg text-sm font-bold transition-colors"
+              className="flex items-center justify-center gap-2 bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95"
             >
               {copied ? <Check size={18} className="text-emerald-500"/> : <Copy size={18} />} 
               {copied ? 'Kopyalandı' : 'Linki Kopyala'}
