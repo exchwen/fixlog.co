@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { UserPlus, Activity, MapPin, CheckCircle, Plus } from 'lucide-react';
+import { UserPlus, Activity, MapPin, CheckCircle, Plus, ChevronRight } from 'lucide-react';
 
 // --- TİP TANIMLAMALARI (INTERFACES) ---
 
@@ -86,7 +86,7 @@ export default function TeamTab({
         color: 'bg-emerald-500', 
         bg: 'bg-emerald-50', 
         textCol: 'text-emerald-700', 
-        icon: <CheckCircle size={12} /> 
+        icon: <CheckCircle size={14} /> 
       };
     }
 
@@ -105,7 +105,7 @@ export default function TeamTab({
         color: 'bg-blue-500', 
         bg: 'bg-blue-50', 
         textCol: 'text-blue-700', 
-        icon: <Activity size={12} /> 
+        icon: <Activity size={14} /> 
       };
     }
     
@@ -114,7 +114,7 @@ export default function TeamTab({
     
     if (pendingJobs.length > 0) {
       const detailsArray: DetailItem[] = pendingJobs.map((j: Job) => ({
-        text: `İş Bilgisi: ${j.customer_name || j.title || 'İsimsiz Görev'}`,
+        text: `${j.customer_name || j.title || 'İsimsiz Görev'}`,
         jobData: j
       }));
 
@@ -124,62 +124,73 @@ export default function TeamTab({
         color: 'bg-amber-500', 
         bg: 'bg-amber-50', 
         textCol: 'text-amber-700', 
-        icon: <MapPin size={12} /> 
+        icon: <MapPin size={14} /> 
       };
     }
 
     // 3. Müsait
     return { 
       text: 'Müsait', 
-      details: [{ text: 'Şu an boşta', jobData: null }], 
+      details: [{ text: 'Şu an atanmış bir görevi yok.', jobData: null }], 
       color: 'bg-emerald-500', 
       bg: 'bg-emerald-50', 
       textCol: 'text-emerald-700', 
-      icon: <CheckCircle size={12} /> 
+      icon: <CheckCircle size={14} /> 
     };
   };
 
   return (
-    <div className="space-y-4">
-      {/* YENİ: Mobilde başlık ve butonların sıkışmasını engellemek için flex-col sm:flex-row ve gap-4 eklendi */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-           <h3 className="text-lg font-bold text-slate-900">Saha Operasyon Ekibi</h3>
-           <p className="text-slate-500 text-xs">Personel durumları iş emirlerine göre otomatik güncellenir.</p>
+    <div className="space-y-4 sm:space-y-6">
+      
+      {/* BAŞLIK VE KONTROLLER */}
+      {/* Mobilde başlık ve butonların sıkışmasını engellemek için flex-col sm:flex-row ve esnek yapı */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="w-full sm:w-auto">
+           <h3 className="text-lg font-black text-slate-800 tracking-tight">Saha Operasyon Ekibi</h3>
+           <p className="text-xs text-slate-500 font-medium mt-0.5">Personel durumları iş emirlerine göre otomatik güncellenir.</p>
         </div>
-        <div className="flex items-center flex-wrap gap-2 w-full sm:w-auto">
-          {/* YENİ: active:scale-95 eklendi */}
-          <button onClick={() => setShowJobModal(true)} className="flex-1 sm:flex-none justify-center bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-blue-700 transition-all active:scale-95">
-            <Plus size={14} /> İş Ata
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+          <button 
+            onClick={() => setShowJobModal(true)} 
+            className="w-full sm:w-auto justify-center bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm sm:text-xs font-bold flex items-center gap-2 shadow-sm shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
+          >
+            <Plus size={16} strokeWidth={3} /> İş Ata
           </button>
-          {/* YENİ: active:scale-95 eklendi */}
-          <button onClick={() => setShowStaffModal(true)} className="flex-1 sm:flex-none justify-center bg-slate-900 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-slate-800 transition-all active:scale-95">
-            <UserPlus size={14} /> Personel Ekle
+          <button 
+            onClick={() => setShowStaffModal(true)} 
+            className="w-full sm:w-auto justify-center bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm sm:text-xs font-bold flex items-center gap-2 shadow-sm hover:bg-slate-800 transition-all active:scale-95"
+          >
+            <UserPlus size={16} /> Yeni Personel
           </button>
         </div>
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* PERSONEL KARTLARI */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {data?.staff?.map((s: Staff) => {
           const status = getAutoStatus(s.id);
           
           return (
-            <div key={s.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all relative flex flex-col items-center text-center overflow-hidden">
+            <div key={s.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300 relative flex flex-col items-center text-center overflow-hidden group">
               {/* Dinamik Durum Çizgisi */}
               <div className={`absolute top-0 left-0 w-full h-1.5 ${status.color}`}></div>
               
-              <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 mb-3 font-bold text-lg mt-2">{s.name.charAt(0)}</div>
-              <div className="font-semibold text-slate-800 text-sm mb-0.5">{s.name}</div>
+              <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 mb-3 font-black text-xl mt-2 border border-slate-200 shadow-sm group-hover:scale-105 transition-transform">
+                {s.name.charAt(0)}
+              </div>
+              <div className="font-black text-slate-800 text-base leading-tight mb-0.5">{s.name}</div>
               
-              <div className="text-[11px] font-bold text-slate-700 uppercase tracking-wider mt-1">{s.role}</div>
-              <div className="text-[9px] text-slate-500 uppercase tracking-wider mb-3 mt-0.5">{s.branch ? s.branch : 'Genel Görev'}</div>
+              <div className="text-xs font-bold text-slate-600 uppercase tracking-wider mt-1">{s.role}</div>
+              <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-4 mt-1 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">{s.branch ? s.branch : 'Genel Görev'}</div>
               
               {/* Otomatik Durum Rozeti */}
-              <div className={`w-full flex flex-col items-center justify-center py-2 px-2 rounded-lg mb-4 ${status.bg} ${status.textCol} border border-white/20`}>
-                <div className="flex items-center gap-1.5 font-bold text-[11px] mb-1">{status.icon} {status.text}</div>
+              <div className={`w-full flex flex-col items-center justify-center py-2.5 px-3 rounded-xl mb-5 ${status.bg} ${status.textCol} border border-white/50 shadow-sm`}>
+                <div className="flex items-center justify-center gap-1.5 font-black text-xs mb-1.5 uppercase tracking-wide w-full border-b border-black/5 pb-1.5">
+                  {status.icon} {status.text}
+                </div>
                 
                 {/* İŞ LİSTESİ ALANI */}
-                <div className="w-full flex flex-col gap-1 max-h-24 overflow-y-auto pr-1 custom-scrollbar">
+                <div className="w-full flex flex-col gap-1 max-h-28 overflow-y-auto pr-1 custom-scrollbar">
                   {status.details && status.details.map((detailItem: DetailItem, idx: number) => (
                     <div 
                       key={idx} 
@@ -190,26 +201,48 @@ export default function TeamTab({
                           setSelectedJob(detailItem.jobData);
                         }
                       }}
-                      className={`text-[9px] font-medium truncate w-full shrink-0 text-left pl-2 py-1 rounded transition-colors 
-                        ${detailItem.jobData ? 'cursor-pointer hover:bg-white/40 hover:text-slate-900 underline decoration-dotted underline-offset-2' : 'opacity-80 cursor-default'}`}
+                      className={`text-[10px] font-bold truncate w-full shrink-0 text-left px-2 py-1.5 rounded transition-all flex items-center gap-1.5
+                        ${detailItem.jobData ? 'cursor-pointer hover:bg-black/5 active:scale-95 group/item' : 'opacity-80 cursor-default'}`}
                       title={detailItem.text}
                     >
-                      {detailItem.jobData && <span className="inline-block w-1 h-1 rounded-full bg-current mr-1.5 mb-0.5"></span>}
-                      {detailItem.text}
+                      {detailItem.jobData ? (
+                        <>
+                          <ChevronRight size={10} className="shrink-0 opacity-50 group-hover/item:opacity-100 transition-opacity group-hover/item:translate-x-0.5" />
+                          <span className="truncate group-hover/item:text-slate-900">{detailItem.text}</span>
+                        </>
+                      ) : (
+                        <span className="truncate mx-auto opacity-70 italic font-medium">{detailItem.text}</span>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 w-full pt-3 border-t border-slate-100">
-                 {/* YENİ: active:scale-95 eklendi */}
-                 <button onClick={() => { setShowStaffDetail(s); setEditStaffForm(s); setIsEditingStaff(false); }} className="flex items-center justify-center gap-1 bg-white border border-slate-200 text-slate-600 py-1.5 rounded-md text-xs font-medium hover:bg-slate-50 transition-all active:scale-95">Dosya</button>
-                 {/* YENİ: active:scale-95 eklendi */}
-                 <button onClick={() => { setActiveChatId(s.id); setIsChatOpen(true); }} className="flex items-center justify-center gap-1 bg-blue-50 text-blue-600 py-1.5 rounded-md text-xs font-medium hover:bg-blue-100 transition-all active:scale-95">Mesaj</button>
+              {/* AKSİYON BUTONLARI */}
+              <div className="grid grid-cols-2 gap-2 w-full pt-4 border-t border-slate-100 mt-auto">
+                 <button 
+                   onClick={() => { setShowStaffDetail(s); setEditStaffForm(s); setIsEditingStaff(false); }} 
+                   className="flex items-center justify-center gap-1.5 bg-white border border-slate-200 text-slate-700 py-2.5 rounded-xl text-[11px] sm:text-xs font-bold hover:bg-slate-50 hover:text-slate-900 transition-all active:scale-95 shadow-sm"
+                 >
+                   Dosya
+                 </button>
+                 <button 
+                   onClick={() => { setActiveChatId(s.id); setIsChatOpen(true); }} 
+                   className="flex items-center justify-center gap-1.5 bg-blue-50 border border-blue-100 text-blue-700 py-2.5 rounded-xl text-[11px] sm:text-xs font-bold hover:bg-blue-100 hover:text-blue-800 transition-all active:scale-95 shadow-sm"
+                 >
+                   Mesaj
+                 </button>
               </div>
             </div>
           )
         })}
+        
+        {(!data?.staff || data?.staff.length === 0) && (
+          <div className="col-span-full p-16 text-center border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50 flex flex-col items-center justify-center gap-3">
+             <UserPlus size={40} className="text-slate-300" />
+             <span className="text-slate-500 font-medium text-sm">Henüz personel eklenmemiş.</span>
+          </div>
+        )}
       </div>
     </div>
   );

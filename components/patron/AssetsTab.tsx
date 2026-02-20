@@ -10,7 +10,8 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
   // --- RENK ANALİZ MOTORU ---
   useEffect(() => {
     const companyLogo = data?.logo;
-    if (!companyLogo) {
+    // YENİ: Offline (çevrimdışı) kontrolü en başa alındı. İnternet yoksa boşuna indirmeye çalışmaz.
+    if (!companyLogo || typeof window !== 'undefined' && !navigator.onLine) {
       setLogoBgColor('#f8fafc');
       return;
     }
@@ -18,7 +19,7 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
     const img = new Image();
     img.crossOrigin = "Anonymous";
     
-    // YENİ: Çevrimdışı (Offline) durumunda resim yüklenemezse patlamayı önleme
+    // Çevrimdışı (Offline) durumunda resim yüklenemezse patlamayı önleme
     img.onerror = () => {
       setLogoBgColor('#f8fafc');
     };
@@ -79,10 +80,10 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
   };
 
-  // YENİ: Akıllı Harita Yönlendirme Kontrolü (Offline ise uyarı verir)
+  // Akıllı Harita Yönlendirme Kontrolü (Offline ise uyarı verir)
   const handleMapClick = (e: React.MouseEvent<HTMLAnchorElement>, location: string, apartmentName: string) => {
     e.stopPropagation();
-    if (!navigator.onLine) {
+    if (typeof window !== 'undefined' && !navigator.onLine) {
       e.preventDefault();
       alert("Haritayı açabilmek için internet bağlantısına ihtiyacınız var.");
     }
@@ -92,7 +93,7 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
   const filteredAssets = data?.assets?.filter((a: any) => {
     const term = searchTerm.toLowerCase();
     const customerName = data?.customers?.find((c: any) => c.id === a.customer_id)?.name || '';
-    // DÜZELTME: Hem camelCase hem snake_case kontrolü
+    // Hem camelCase hem snake_case kontrolü
     const aptName = a.apartmentName || a.apartment_name || '';
 
     return (
@@ -105,45 +106,52 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <h3 className="text-lg font-bold text-slate-900">Kayıtlı Varlıklar & QR</h3>
+      {/* BAŞLIK VE ARAMA KONTROLLERİ */}
+      {/* MOBİL HİYERARŞİ: flex-col ve w-full yapısı esnetildi */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="w-full sm:w-auto">
+          <h3 className="text-lg font-black text-slate-800 tracking-tight">Kayıtlı Varlıklar & QR</h3>
+          <p className="text-xs text-slate-500 font-medium mt-0.5 hidden sm:block">Tüm cihazları yönetin ve etiketleyin.</p>
+        </div>
         
-        <div className="flex w-full sm:w-auto gap-2">
+        <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2.5">
           {/* ARAMA KUTUSU */}
-          <div className="relative flex-1 sm:w-64">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input 
               type="text" 
               placeholder="Cihaz, konum veya müşteri ara..." 
-              className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-500 bg-white placeholder:text-slate-400"
+              className="w-full pl-9 pr-4 py-2.5 sm:py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-slate-50 hover:bg-white transition-all placeholder:text-slate-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
-          <button onClick={() => setShowAssetModal(true)} className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-blue-700 active:scale-95 transition-all whitespace-nowrap">
-            <Plus size={14} /> Yeni Varlık
+          <button onClick={() => setShowAssetModal(true)} className="bg-blue-600 text-white w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all whitespace-nowrap">
+            <Plus size={16} /> Yeni Varlık Ekle
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* VARLIK KARTLARI GRİD ALANI */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredAssets.length > 0 ? filteredAssets.map((a: any) => {
-            // DÜZELTME: Veri tabanı snake_case veya camelCase olabilir, her ikisini de kontrol et
+            // Veri tabanı snake_case veya camelCase olabilir, her ikisini de kontrol et
             const aptName = a.apartmentName || a.apartment_name;
             
             return (
               <div 
                 key={a.id} 
                 onClick={() => setShowAssetDetail && setShowAssetDetail(a)}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer flex flex-col group overflow-hidden"
+                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer flex flex-col group overflow-hidden"
               >
                 {/* KART BAŞLIK VE LOGO ALANI */}
-                <div className="p-5 flex-1">
-                  <div className="flex items-start justify-between mb-4 gap-3">
+                <div className="p-5 flex-1 flex flex-col">
+                  {/* MOBİL HİYERARŞİ: flex-wrap eklendi, dar ekranda rozet alta düşsün diye */}
+                  <div className="flex items-start justify-between mb-4 gap-3 flex-wrap sm:flex-nowrap">
                     {/* DİNAMİK LOGO KUTUSU */}
                     <div 
-                      className="w-16 h-16 rounded-xl flex items-center justify-center border border-slate-100 shadow-sm overflow-hidden shrink-0 transition-all duration-500 group-hover:scale-105"
+                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center border border-slate-100 shadow-sm overflow-hidden shrink-0 transition-transform duration-500 group-hover:scale-105"
                       style={{ backgroundColor: data?.logo ? logoBgColor : '#f8fafc' }}
                     >
                       {data?.logo ? (
@@ -153,37 +161,41 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
                           className="w-full h-full object-contain p-2 drop-shadow-sm" 
                         />
                       ) : (
-                        <Box size={28} className="text-slate-400" />
+                        <Box size={24} className="text-slate-400 sm:w-[28px] sm:h-[28px]" />
                       )}
                     </div>
 
                     {/* Müşteri Rozeti */}
-                    <div className="bg-blue-50 text-blue-600 px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 shrink-0">
-                      <Users size={12}/> {data?.customers?.find((c: any) => c.id === a.customer_id)?.name || 'Genel'}
+                    <div className="bg-blue-50 border border-blue-100 text-blue-700 px-2.5 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 shrink-0 shadow-sm">
+                      <Users size={12}/> <span className="truncate max-w-[100px] sm:max-w-[120px]">{data?.customers?.find((c: any) => c.id === a.customer_id)?.name || 'Genel Müşteri'}</span>
                     </div>
                   </div>
 
                   {/* BAŞLIK HİYERARŞİSİ */}
-                  {/* Eğer Apartman Adı varsa, ANA BAŞLIK Apartman adı olur */}
-                  <div className="font-bold text-slate-900 text-base mb-1 group-hover:text-blue-600 transition-colors truncate">
-                    {aptName || a.name}
-                  </div>
-
-                  {/* Eğer Apartman Adı varsa, Cihaz adı alt başlığa iner */}
-                  {aptName && (
-                    <div className="text-xs font-semibold text-slate-500 mb-3 truncate">
-                        {a.name}
+                  <div className="flex-1">
+                    {/* Eğer Apartman Adı varsa, ANA BAŞLIK Apartman adı olur */}
+                    <div className="font-bold text-slate-800 text-lg sm:text-base leading-tight mb-1 group-hover:text-blue-600 transition-colors line-clamp-2">
+                      {aptName || a.name}
                     </div>
-                  )}
+
+                    {/* Eğer Apartman Adı varsa, Cihaz adı alt başlığa iner */}
+                    {aptName && (
+                      <div className="text-xs sm:text-[11px] font-bold text-slate-400 mb-3 uppercase tracking-wide truncate">
+                          {a.name}
+                      </div>
+                    )}
+                  </div>
                   
                   {/* Konum ve Harita Linki */}
-                  <div className="space-y-2.5 mt-2">
+                  <div className="mt-4 pt-4 border-t border-slate-100/80">
                     <div className="flex items-start gap-2.5">
-                      <MapPin size={16} className="text-slate-400 shrink-0 mt-0.5" />
-                      <div className="flex flex-col gap-2">
+                      <div className="bg-slate-50 p-1.5 rounded-md border border-slate-100 shrink-0 mt-0.5">
+                        <MapPin size={14} className="text-slate-500" />
+                      </div>
+                      <div className="flex flex-col gap-2.5 w-full min-w-0">
                         {/* Bina adı konumda tekrarlanıyorsa görsel olarak temizle */}
-                        <div className="text-[11px] text-slate-600 leading-relaxed line-clamp-2 font-medium">
-                          {a.location ? a.location.replace(aptName || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : '-'}
+                        <div className="text-[11px] sm:text-xs text-slate-600 leading-relaxed line-clamp-2 font-medium">
+                          {a.location ? a.location.replace(aptName || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : 'Konum bilgisi eklenmemiş'}
                         </div>
                         
                         {/* Haritada Görüntüle Butonu (Akıllı Offline Korumalı) */}
@@ -192,9 +204,10 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
                             target="_blank" 
                             rel="noopener noreferrer"
                             onClick={(e) => handleMapClick(e, a.location, aptName)} 
-                            className="inline-flex items-center gap-1.5 text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100/80 w-fit px-2.5 py-1.5 rounded-lg transition-colors"
+                            // YENİ: Mobilde daha kolay tıklansın diye py-2 yapıldı
+                            className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 border border-blue-100 hover:bg-blue-100 w-fit px-3 py-2 sm:py-1.5 rounded-lg transition-all active:scale-95"
                         >
-                            <ExternalLink size={11} /> Haritada Görüntüle
+                            <ExternalLink size={12} /> Haritada Gör
                         </a>
                       </div>
                     </div>
@@ -202,7 +215,7 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
                 </div>
 
                 {/* ALT BUTON ALANI (QR) */}
-                <div className="p-3 bg-slate-50 border-t border-slate-100">
+                <div className="p-3 sm:p-4 bg-slate-50 border-t border-slate-100 mt-auto">
                   <button 
                     onClick={(e) => { 
                       e.stopPropagation();
@@ -211,16 +224,23 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
                           setShowQRModal(true);
                       }
                     }} 
-                    className="w-full bg-slate-900 text-white py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all active:scale-95 shadow-sm"
+                    className="w-full bg-slate-900 text-white py-3 sm:py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all active:scale-95 shadow-md shadow-slate-200"
                   >
-                    <QrCode size={14} /> QR Kod / Etiket
+                    <QrCode size={16} /> QR Etiketini Aç
                   </button>
                 </div>
               </div>
             );
         }) : (
-          <div className="col-span-full p-20 text-center border-2 border-dashed border-slate-200 rounded-3xl text-slate-400">
-            {searchTerm ? 'Aradığınız kriterlere uygun varlık bulunamadı.' : 'Varlık kaydı bulunmuyor.'}
+          <div className="col-span-full p-16 sm:p-24 text-center border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50 flex flex-col items-center justify-center gap-4">
+            <Box size={48} className="text-slate-300" />
+            <div className="text-slate-500 font-medium text-sm">
+                {searchTerm ? (
+                   <span>"<span className="font-bold text-slate-700">{searchTerm}</span>" aramasına uygun varlık bulunamadı.</span>
+                ) : (
+                   'Henüz sisteme kayıtlı bir varlık bulunmuyor.'
+                )}
+            </div>
           </div>
         )}
       </div>

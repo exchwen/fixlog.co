@@ -88,34 +88,34 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   // EĞER PROFİL EKSİKSE KİLİT EKRANI GÖSTER
   if (!isProfileComplete) {
     return (
-      <div className="relative h-[80vh] flex flex-col items-center justify-center bg-white rounded-2xl border border-rose-100 shadow-sm overflow-hidden">
+      <div className="relative h-[80vh] flex flex-col items-center justify-center bg-white rounded-2xl border border-rose-100 shadow-sm overflow-hidden p-4">
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none"></div>
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-rose-500 to-orange-400"></div>
         
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="z-10 flex flex-col items-center text-center p-8 max-w-md">
-          <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mb-6 border border-rose-100 shadow-inner">
-            <Lock size={32} className="text-rose-500" />
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="z-10 flex flex-col items-center text-center p-6 sm:p-8 max-w-md w-full">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-rose-50 rounded-full flex items-center justify-center mb-6 border border-rose-100 shadow-inner">
+            <Lock size={28} className="text-rose-500 sm:w-8 sm:h-8" />
           </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-3">Sistem Kilitli</h2>
-          <p className="text-sm text-slate-600 mb-8 font-medium leading-relaxed">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-3">Sistem Kilitli</h2>
+          <p className="text-xs sm:text-sm text-slate-600 mb-6 sm:mb-8 font-medium leading-relaxed">
             İşletme hesabınızı kullanmaya başlamadan önce firma ünvanı, iletişim ve adres gibi temel ayarlarınızı eksiksiz doldurmanız gerekmektedir.
           </p>
-          <div className="w-full bg-slate-50 p-4 rounded-xl border border-slate-200 mb-8 text-left space-y-2">
-             <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-               <span className={`w-2 h-2 rounded-full ${data?.name ? 'bg-emerald-500' : 'bg-rose-500'}`}></span> Firma Ünvanı ve Yetkili
+          <div className="w-full bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 sm:mb-8 text-left space-y-2.5">
+             <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-700">
+               <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${data?.name ? 'bg-emerald-500' : 'bg-rose-500'}`}></span> Firma Ünvanı ve Yetkili
              </div>
-             <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-               <span className={`w-2 h-2 rounded-full ${data?.phone ? 'bg-emerald-500' : 'bg-rose-500'}`}></span> İletişim Numarası
+             <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-700">
+               <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${data?.phone ? 'bg-emerald-500' : 'bg-rose-500'}`}></span> İletişim Numarası
              </div>
-             <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-               <span className={`w-2 h-2 rounded-full ${data?.address ? 'bg-emerald-500' : 'bg-rose-500'}`}></span> Açık Adres Bilgisi
+             <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-700">
+               <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${data?.address ? 'bg-emerald-500' : 'bg-rose-500'}`}></span> Açık Adres Bilgisi
              </div>
-             <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-               <span className={`w-2 h-2 rounded-full ${data?.taxInfo ? 'bg-emerald-500' : 'bg-rose-500'}`}></span> Vergi Bilgileri
+             <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-700">
+               <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${data?.taxInfo ? 'bg-emerald-500' : 'bg-rose-500'}`}></span> Vergi Bilgileri
              </div>
           </div>
-          <div className="text-xs font-bold text-blue-600 flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg border border-blue-100">
-            <Settings size={16} /> Lütfen sol menüden "Ayarlar" sekmesine gidin.
+          <div className="text-[11px] sm:text-xs font-bold text-blue-600 flex items-center justify-center gap-2 bg-blue-50 px-4 py-3 rounded-lg border border-blue-100 w-full">
+            <Settings size={16} className="shrink-0" /> <span className="text-center">Lütfen sol menüden "Ayarlar" sekmesine gidin.</span>
           </div>
         </motion.div>
       </div>
@@ -130,22 +130,22 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
       <AnimatePresence>
         {showLowStockModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative">
-              <div className="flex justify-between items-center mb-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-2xl p-6 shadow-xl relative">
+              <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-100">
                 <h3 className="font-bold text-slate-900 flex items-center gap-2">
                    <AlertTriangle size={18} className="text-amber-500" /> Kritik Stoklar
                 </h3>
                 <button onClick={() => setShowLowStockModal(false)} className="text-slate-400 hover:bg-slate-100 p-1.5 rounded-md transition-colors"><X size={18} /></button>
               </div>
-              <div className="max-h-[350px] overflow-y-auto custom-scrollbar space-y-2 pr-1">
+              <div className="max-h-[350px] overflow-y-auto custom-scrollbar space-y-2.5 pr-1">
                 {lowStockItems.map((item: any) => (
-                  <div key={item.id} className="flex justify-between items-center p-3 bg-amber-50/50 border border-amber-100 rounded-lg group">
+                  <div key={item.id} className="flex flex-col sm:flex-row justify-between sm:items-center p-3.5 bg-amber-50/50 border border-amber-100 rounded-xl group gap-3">
                     <div>
                       <div className="text-xs font-bold text-slate-800">{item.item_name}</div>
                       <div className="text-[10px] text-slate-500 mt-0.5">{item.supplier_name || 'Tedarikçi Kaydı Yok'}</div>
                     </div>
                     <div className="flex items-center gap-3">
-                       <div className="text-sm font-black text-amber-600 bg-amber-100 px-2 py-1 rounded-md">
+                       <div className="text-sm font-black text-amber-600 bg-amber-100 px-2.5 py-1 rounded-md">
                          {item.quantity} <span className="text-[10px] uppercase">{item.unit_name}</span>
                        </div>
                        <button 
@@ -153,8 +153,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                            setShowLowStockModal(false);
                            if (setActiveTab) setActiveTab('stock');
                          }}
-                         // YENİ: active:scale-95 eklendi (Mobil dokunmatik hissi)
-                         className="px-2 py-1.5 bg-white border border-slate-200 text-blue-600 rounded-md text-[10px] font-bold hover:bg-blue-50 hover:border-blue-200 transition-all active:scale-95 shadow-sm flex items-center gap-1"
+                         className="px-2.5 py-1.5 bg-white border border-slate-200 text-blue-600 rounded-md text-[10px] font-bold hover:bg-blue-50 hover:border-blue-200 transition-all active:scale-95 shadow-sm flex items-center gap-1"
                          title="Stok Sayfasına Git"
                        >
                          Stoğa Git <ArrowUpRight size={12} />
@@ -163,7 +162,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                   </div>
                 ))}
               </div>
-              <button onClick={() => setShowLowStockModal(false)} className="w-full mt-4 bg-slate-100 text-slate-700 py-2 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors">
+              <button onClick={() => setShowLowStockModal(false)} className="w-full mt-5 bg-slate-100 text-slate-700 py-3 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors active:scale-95">
                 Kapat
               </button>
             </motion.div>
@@ -172,15 +171,15 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
       </AnimatePresence>
 
       {/* BAŞLIK VE SİSTEM DURUMU */}
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             Hoş Geldin, {data?.ownerName?.split(' ')[0] || 'Yönetici'} 👋
           </h2>
           <p className="text-slate-500 text-xs mt-1">Sistem üzerindeki anlık özetin aşağıdadır.</p>
         </div>
-        <div className="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-md border border-emerald-100 flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wide shadow-sm">
-          <span className="relative flex h-2 w-2 mr-1">
+        <div className="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100 flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wide shadow-sm w-fit">
+          <span className="relative flex h-2 w-2 mr-1 shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
@@ -189,53 +188,53 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
       </div>
 
       {/* 4'LÜ İSTATİSTİK KARTLARI */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-center gap-4 hover:border-blue-300 transition-colors group">
-          <div className="w-10 h-10 bg-blue-50/80 rounded-lg flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-blue-300 transition-colors group">
+          <div className="w-10 h-10 bg-blue-50/80 rounded-xl flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform shrink-0">
             <ClipboardList size={18} />
           </div>
           <div>
-            <div className="text-xl font-bold text-slate-900 leading-none mb-1">{totalJobs}</div>
-            <div className="text-[10px] text-slate-500 uppercase font-bold tracking-wide">Toplam İş</div>
+            <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none mb-1">{totalJobs}</div>
+            <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Toplam İş</div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-center gap-4 hover:border-emerald-300 transition-colors group">
-          <div className="w-10 h-10 bg-emerald-50/80 rounded-lg flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
+        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-emerald-300 transition-colors group">
+          <div className="w-10 h-10 bg-emerald-50/80 rounded-xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform shrink-0">
             <CheckCircle size={18} />
           </div>
           <div>
-            <div className="text-xl font-bold text-slate-900 leading-none mb-1">{completedJobs}</div>
-            <div className="text-[10px] text-slate-500 uppercase font-bold tracking-wide">Tamamlanan</div>
+            <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none mb-1">{completedJobs}</div>
+            <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Tamamlanan</div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-center gap-4 hover:border-amber-300 transition-colors group">
-          <div className="w-10 h-10 bg-amber-50/80 rounded-lg flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
+        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-amber-300 transition-colors group">
+          <div className="w-10 h-10 bg-amber-50/80 rounded-xl flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform shrink-0">
             <Clock size={18} />
           </div>
           <div>
-            <div className="text-xl font-bold text-slate-900 leading-none mb-1">{pendingJobs}</div>
-            <div className="text-[10px] text-slate-500 uppercase font-bold tracking-wide">Bekleyen İşler</div>
+            <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none mb-1">{pendingJobs}</div>
+            <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Bekleyen İşler</div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-center gap-4 hover:border-purple-300 transition-colors group">
-          <div className="w-10 h-10 bg-purple-50/80 rounded-lg flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
+        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-purple-300 transition-colors group">
+          <div className="w-10 h-10 bg-purple-50/80 rounded-xl flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform shrink-0">
             <Calendar size={18} />
           </div>
           <div>
-            <div className="text-xl font-bold text-slate-900 leading-none mb-1">{plannedJobs}</div>
-            <div className="text-[10px] text-slate-500 uppercase font-bold tracking-wide">Planlanan</div>
+            <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none mb-1">{plannedJobs}</div>
+            <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Planlanan</div>
           </div>
         </div>
       </div>
 
       {/* ORTA BÖLÜM: FİNANS, BÜYÜME VE STOK */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         
         {/* SOL: YENİ NESİL NET KASA TASARIMI */}
-        <div className="lg:col-span-2 bg-slate-900 rounded-xl p-6 shadow-lg border border-slate-800 flex flex-col relative overflow-hidden">
+        <div className="lg:col-span-2 bg-slate-900 rounded-2xl p-5 sm:p-6 shadow-lg border border-slate-800 flex flex-col relative overflow-hidden">
            <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 blur-3xl rounded-full pointer-events-none"></div>
            
            <div className="flex justify-between items-start mb-6 z-10 relative">
@@ -244,12 +243,12 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                  <Wallet size={16} className="text-blue-400" />
                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Kasa Özeti</span>
                </div>
-               <div className="text-[10px] text-slate-500 mb-1">Net Bakiye</div>
-               <div className="text-3xl font-black text-white tracking-tight">₺{netCash.toLocaleString('tr-TR')}</div>
+               <div className="text-[10px] text-slate-500 mb-1 font-semibold">Net Bakiye</div>
+               <div className="text-2xl sm:text-3xl font-black text-white tracking-tight break-all">₺{netCash.toLocaleString('tr-TR')}</div>
              </div>
              
-             {/* YENİ SVG TREND GRAFİĞİ (Sıfır Hata) */}
-             <div className="h-12 w-24 sm:w-32 opacity-80 flex items-center justify-end">
+             {/* YENİ SVG TREND GRAFİĞİ */}
+             <div className="h-10 sm:h-12 w-20 sm:w-32 opacity-80 flex items-center justify-end shrink-0">
                {miniChartPoints ? (
                  <svg viewBox="-5 -5 110 50" className="w-full h-full overflow-visible">
                    <polyline
@@ -262,38 +261,38 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                    />
                  </svg>
                ) : (
-                 <div className="text-slate-600 text-[10px]">Veri Yok</div>
+                 <div className="text-slate-600 text-[10px] font-bold">Veri Yok</div>
                )}
              </div>
            </div>
 
            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-auto z-10">
              <div className="space-y-3">
-               <div className="p-3 bg-white/5 rounded-lg flex items-center justify-between border border-white/5">
-                 <div className="flex items-center gap-2"><ArrowUpRight size={14} className="text-emerald-400" /><span className="text-xs text-slate-300 font-medium">Toplam Gelir</span></div>
-                 <span className="text-sm font-bold text-emerald-400">₺{totalIncome.toLocaleString('tr-TR')}</span>
+               <div className="p-3 bg-white/5 rounded-xl flex items-center justify-between border border-white/5 shadow-sm">
+                 <div className="flex items-center gap-2"><ArrowUpRight size={14} className="text-emerald-400" /><span className="text-xs text-slate-300 font-bold">Toplam Gelir</span></div>
+                 <span className="text-sm font-black text-emerald-400">₺{totalIncome.toLocaleString('tr-TR')}</span>
                </div>
-               <div className="p-3 bg-white/5 rounded-lg flex items-center justify-between border border-white/5">
-                 <div className="flex items-center gap-2"><ArrowUpRight size={14} className="text-rose-400 rotate-90" /><span className="text-xs text-slate-300 font-medium">Toplam Gider</span></div>
-                 <span className="text-sm font-bold text-rose-400">₺{totalExpense.toLocaleString('tr-TR')}</span>
+               <div className="p-3 bg-white/5 rounded-xl flex items-center justify-between border border-white/5 shadow-sm">
+                 <div className="flex items-center gap-2"><ArrowUpRight size={14} className="text-rose-400 rotate-90" /><span className="text-xs text-slate-300 font-bold">Toplam Gider</span></div>
+                 <span className="text-sm font-black text-rose-400">₺{totalExpense.toLocaleString('tr-TR')}</span>
                </div>
              </div>
 
-             <div className="bg-slate-800/50 rounded-lg border border-slate-700/50 p-3 flex flex-col">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-2">Son İşlemler</h4>
-                <div className="space-y-2.5 flex-1">
+             <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 flex flex-col shadow-sm">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Son İşlemler</h4>
+                <div className="space-y-3 flex-1">
                   {recentFinances.length > 0 ? recentFinances.map((f: any) => (
-                    <div key={f.id} className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-1.5 h-1.5 rounded-full ${f.type === 'Gelir' ? 'bg-emerald-400' : 'bg-rose-400'}`}></div>
-                        <div className="text-xs font-medium text-slate-200 line-clamp-1">{f.description.split('\n')[0]}</div>
+                    <div key={f.id} className="flex justify-between items-center gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${f.type === 'Gelir' ? 'bg-emerald-400' : 'bg-rose-400'}`}></div>
+                        <div className="text-xs font-semibold text-slate-200 truncate">{f.description.split('\n')[0]}</div>
                       </div>
-                      <div className={`text-[11px] font-bold ${f.type === 'Gelir' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      <div className={`text-[11px] font-black shrink-0 ${f.type === 'Gelir' ? 'text-emerald-400' : 'text-rose-400'}`}>
                         {f.type === 'Gelir' ? '+' : '-'}₺{Number(f.amount).toLocaleString('tr-TR')}
                       </div>
                     </div>
                   )) : (
-                    <div className="text-center text-slate-500 text-[10px] py-4">Henüz işlem yok.</div>
+                    <div className="text-center text-slate-500 text-[10px] py-4 font-semibold">Henüz işlem yok.</div>
                   )}
                 </div>
              </div>
@@ -303,9 +302,9 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         {/* SAĞ: PERFORMANS VE STOK */}
         <div className="space-y-4">
           
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden h-full sm:h-[192px] flex flex-col justify-center">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden h-full sm:h-[192px] flex flex-col justify-center group hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                  <div className={`p-2 rounded-lg ${isGrowthPositive ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
                     {isGrowthPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                  </div>
@@ -315,19 +314,19 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
             <div>
                <div className="flex items-baseline gap-2">
                  <span className="text-3xl font-black text-slate-900">%{growthPercent}</span>
-                 <span className={`text-xs font-bold ${isGrowthPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                 <span className={`text-xs font-bold uppercase tracking-wider ${isGrowthPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
                    {isGrowthPositive ? 'Artış' : 'Düşüş'}
                  </span>
                </div>
-               <p className="text-[11px] text-slate-500 mt-2 font-medium">
-                 Geçen ay <b>{lastMonthJobs} iş</b> yapmıştınız. Bu ay şu ana kadar <b>{currentMonthJobs} iş</b> kaydı açıldı.
+               <p className="text-[11px] text-slate-500 mt-2.5 font-medium leading-relaxed">
+                 Geçen ay <b className="text-slate-700">{lastMonthJobs} iş</b> yapmıştınız. Bu ay şu ana kadar <b className="text-slate-700">{currentMonthJobs} iş</b> kaydı açıldı.
                </p>
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden h-full sm:h-[192px] flex flex-col justify-center">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden h-full sm:h-[192px] flex flex-col justify-center group hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                  <div className={`p-2 rounded-lg ${lowStockItems.length > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-600'}`}>
                     <Package size={16} />
                  </div>
@@ -337,20 +336,20 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
             <div>
                {lowStockItems.length > 0 ? (
                  <>
-                   <div className="text-2xl font-black text-slate-900">{lowStockItems.length} Parça</div>
-                   <div className="flex items-center justify-between mt-2">
-                     <p className="text-[11px] text-amber-600 font-bold flex items-center gap-1">
-                       <AlertTriangle size={12} /> Kritik seviyenin altında.
+                   <div className="text-3xl font-black text-slate-900">{lowStockItems.length} Parça</div>
+                   <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-2.5 gap-2">
+                     <p className="text-[11px] text-amber-600 font-bold flex items-center gap-1.5">
+                       <AlertTriangle size={14} className="shrink-0" /> Kritik seviyenin altında.
                      </p>
-                     <button onClick={() => setShowLowStockModal(true)} className="bg-amber-100 hover:bg-amber-200 text-amber-700 px-3 py-1.5 rounded-md text-[10px] font-bold transition-colors">
+                     <button onClick={() => setShowLowStockModal(true)} className="bg-amber-100 hover:bg-amber-200 text-amber-700 px-3 py-2 sm:py-1.5 rounded-lg text-[10px] font-bold transition-all active:scale-95 text-center w-full sm:w-auto">
                        Detayları Gör
                      </button>
                    </div>
                  </>
                ) : (
                  <>
-                   <div className="text-xl font-black text-emerald-600">Sorun Yok</div>
-                   <p className="text-[11px] text-slate-500 mt-2 font-medium">
+                   <div className="text-2xl font-black text-emerald-600">Sorun Yok</div>
+                   <p className="text-[11px] text-slate-500 mt-2.5 font-medium leading-relaxed">
                      Stoğu azalan (5 adetin altında) kritik parçanız yok.
                    </p>
                  </>
@@ -361,36 +360,32 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         </div>
       </div>
 
-      {/* ALT BÖLÜM: YENİLENMİŞ SON İŞLER TABLOSU */}
-      {/* DÜZELTME: JSX Kapsayıcı Hiyerarşisi Temizlendi */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+      {/* ALT BÖLÜM: YENİLENMİŞ SON İŞLER TABLOSU VE MOBİL KARTLARI */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-50/50">
           <div className="flex items-center gap-2">
-            <Activity size={16} className="text-blue-600" />
-            <h3 className="font-bold text-slate-800 text-sm">Son İş Emirleri ve Onay Durumu</h3>
+            <Activity size={18} className="text-blue-600" />
+            <h3 className="font-bold text-slate-800 text-sm sm:text-base tracking-tight">Son İş Emirleri ve Onay Durumu</h3>
           </div>
-          {/* YENİ: active:scale-95 eklendi */}
-          <button onClick={() => setShowJobModal(true)} className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 hover:bg-blue-700 transition-all shadow-sm active:scale-95">
-            <Plus size={14} /> Yeni İş Ata
+          <button onClick={() => setShowJobModal(true)} className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-sm active:scale-95">
+            <Plus size={16} strokeWidth={3} /> Yeni İş Ata
           </button>
         </div>
         
-        {/* YENİ: overflow-x-auto eklenerek mobilde tablonun sayfayı taşırması engellendi */}
-        <div className="overflow-x-auto overflow-y-auto max-h-[400px] custom-scrollbar w-full">
-          {/* YENİ: min-w-[700px] eklendi ki dar ekranlarda hücreler ezilmesin */}
+        {/* MASAÜSTÜ TABLO GÖRÜNÜMÜ */}
+        <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[400px] custom-scrollbar w-full">
           <table className="w-full text-left text-xs border-collapse min-w-[700px]">
-            <thead className="bg-white text-slate-400 font-medium sticky top-0 z-10 shadow-sm">
+            <thead className="bg-white text-slate-500 font-bold sticky top-0 z-10 shadow-sm uppercase tracking-wider text-[10px]">
               <tr>
-                <th className="px-5 py-3 border-b border-slate-100 whitespace-nowrap">Müşteri / İş</th>
-                <th className="px-5 py-3 border-b border-slate-100 whitespace-nowrap">Personel / Onay Süreci</th>
-                <th className="px-5 py-3 border-b border-slate-100 whitespace-nowrap">Planlanan Tarih</th>
-                <th className="px-5 py-3 border-b border-slate-100 text-right whitespace-nowrap">Durum</th>
+                <th className="px-5 py-4 border-b border-slate-100 whitespace-nowrap">Müşteri / İş</th>
+                <th className="px-5 py-4 border-b border-slate-100 whitespace-nowrap">Personel / Onay Süreci</th>
+                <th className="px-5 py-4 border-b border-slate-100 whitespace-nowrap">Planlanan Tarih</th>
+                <th className="px-5 py-4 border-b border-slate-100 text-right whitespace-nowrap">Durum</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {jobs.slice(0, 10).map((j: any) => {
                 
-                // Zeka: Değişkenleri İleriye Dönük Olarak Tanımladık
                 const assignedManager = j.staff_id ? staff.find((s:any) => s.id === j.staff_id) : null;
                 const assignedWorker = j.details?.worker_id ? staff.find((s:any) => s.id === j.details?.worker_id) : null;
                 const actionBy = j.details?.lastEditedBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
@@ -398,7 +393,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                 const isApproved = j.status === 'Tamamlandı';
                 const staffColor = isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200';
                 
-                // YENİ EKLENEN KONTROL: Atayan ve Sorumlu aynı kişi mi?
                 const isSamePerson = assignedManager && assignedManager.name === actionBy;
                 
                 return (
@@ -407,46 +401,43 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                     onClick={() => setSelectedJob && setSelectedJob(j)}
                     className="hover:bg-blue-50/50 transition-colors group cursor-pointer relative"
                   >
-                    <td className="px-5 py-3 align-middle">
-                      <div className="font-bold text-slate-800 group-hover:text-blue-700 transition-colors">{j.customer_name}</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5 font-medium flex items-center gap-1">
-                        <span className="w-1 h-1 rounded-full bg-slate-300"></span> {j.work_type}
+                    <td className="px-5 py-4 align-middle">
+                      <div className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">{j.customer_name}</div>
+                      <div className="text-[10px] text-slate-500 mt-1 font-semibold flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span> {j.work_type}
                       </div>
                     </td>
                     
-                    <td className="px-5 py-3 align-middle">
-                      <div className="flex flex-col gap-1.5">
+                    <td className="px-5 py-4 align-middle">
+                      <div className="flex flex-col gap-2">
                         
                         {isSamePerson ? (
-                          /* 1 VE 2. SEVİYE BİRLEŞİK: ATAYAN VE SORUMLU AYNI KİŞİ */
                           <div className="flex items-center gap-1.5">
-                            <ShieldCheck size={12} className={isApproved ? 'text-emerald-500' : 'text-amber-500'} />
-                            <span className="text-[9px] font-bold text-slate-400 uppercase w-[95px]">Atayan & Sorumlu:</span>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${staffColor} whitespace-nowrap`}>
+                            <ShieldCheck size={14} className={isApproved ? 'text-emerald-500' : 'text-amber-500'} />
+                            <span className="text-[9px] font-black text-slate-400 uppercase w-[100px] tracking-wider">Atayan & Sorumlu:</span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
                               {assignedManager.name}
                             </span>
                           </div>
                         ) : (
                           <>
-                            {/* 1. SEVİYE: İŞİ OLUŞTURAN / ATAYAN */}
                             <div className="flex items-center gap-1.5">
-                              <ShieldCheck size={12} className={isApproved ? 'text-emerald-500' : 'text-slate-400'} />
-                              <span className="text-[9px] font-bold text-slate-400 uppercase w-[52px]">Atayan:</span>
-                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-slate-600 bg-slate-50 border-slate-200'} whitespace-nowrap`}>
+                              <ShieldCheck size={14} className={isApproved ? 'text-emerald-500' : 'text-slate-400'} />
+                              <span className="text-[9px] font-black text-slate-400 uppercase w-[56px] tracking-wider">Atayan:</span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200 shadow-sm' : 'text-slate-600 bg-slate-50 border-slate-200 shadow-sm'} whitespace-nowrap`}>
                                 {actionBy}
                               </span>
                             </div>
 
-                            {/* 2. SEVİYE: SORUMLU YÖNETİCİ */}
                             <div className="flex items-center gap-1.5">
-                              <User size={12} className={assignedManager ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
-                              <span className="text-[9px] font-bold text-slate-400 uppercase w-[52px]">Sorumlu:</span>
+                              <User size={14} className={assignedManager ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
+                              <span className="text-[9px] font-black text-slate-400 uppercase w-[56px] tracking-wider">Sorumlu:</span>
                               {assignedManager ? (
-                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${staffColor} whitespace-nowrap`}>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
                                   {assignedManager.name}
                                 </span>
                               ) : (
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border border-slate-200 bg-slate-100 text-slate-400 whitespace-nowrap">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-100 text-slate-400 whitespace-nowrap">
                                   Atanmadı
                                 </span>
                               )}
@@ -454,16 +445,15 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                           </>
                         )}
 
-                        {/* 3. SEVİYE: SAHA USTASI (İlerisi İçin Hazırlandı) */}
                         <div className="flex items-center gap-1.5">
-                          <Wrench size={12} className={assignedWorker ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
-                          <span className="text-[9px] font-bold text-slate-400 uppercase w-[52px]">Usta:</span>
+                          <Wrench size={14} className={assignedWorker ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
+                          <span className="text-[9px] font-black text-slate-400 uppercase w-[56px] tracking-wider">Usta:</span>
                           {assignedWorker ? (
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${staffColor} whitespace-nowrap`}>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
                               {assignedWorker.name}
                             </span>
                           ) : (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border border-slate-200 bg-slate-100 text-slate-400 whitespace-nowrap">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-100 text-slate-400 whitespace-nowrap">
                               Atanmadı
                             </span>
                           )}
@@ -472,17 +462,16 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                       </div>
                     </td>
 
-                    <td className="px-5 py-3 align-middle font-medium text-slate-600 whitespace-nowrap">
+                    <td className="px-5 py-4 align-middle font-semibold text-slate-600 whitespace-nowrap">
                       {j.scheduled_date || 'Anlık Kayıt'}
                     </td>
-                    <td className="px-5 py-3 align-middle text-right">
+                    <td className="px-5 py-4 align-middle text-right">
                       <div className="flex items-center justify-end gap-3">
-                         <span className={`px-2.5 py-1.5 rounded-md text-[10px] font-bold border ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'} whitespace-nowrap`}>
+                         <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black tracking-wide border shadow-sm ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'} whitespace-nowrap uppercase`}>
                            {j.status}
                          </span>
-                         {/* Satırın üstüne gelince beliren detay oku */}
                          <div className="w-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <ArrowUpRight size={14} className="text-blue-500" />
+                            <ArrowUpRight size={16} className="text-blue-500" />
                          </div>
                       </div>
                     </td>
@@ -491,13 +480,109 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
               })}
               {jobs.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="p-10 text-center text-slate-400 text-xs font-medium">
+                  <td colSpan={4} className="p-16 text-center text-slate-400 text-sm font-medium bg-slate-50">
                     Henüz iş emri bulunmuyor.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* MOBİL İÇİN DİKEY KART GÖRÜNÜMÜ */}
+        <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50/50 max-h-[500px] overflow-y-auto custom-scrollbar">
+          {jobs.slice(0, 10).map((j: any) => {
+             const assignedManager = j.staff_id ? staff.find((s:any) => s.id === j.staff_id) : null;
+             const assignedWorker = j.details?.worker_id ? staff.find((s:any) => s.id === j.details?.worker_id) : null;
+             const actionBy = j.details?.lastEditedBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
+             
+             const isApproved = j.status === 'Tamamlandı';
+             const staffColor = isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200';
+             
+             const isSamePerson = assignedManager && assignedManager.name === actionBy;
+
+             return (
+               <div 
+                 key={j.id} 
+                 onClick={() => setSelectedJob && setSelectedJob(j)}
+                 className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col gap-4 active:scale-95 transition-all cursor-pointer"
+               >
+                 {/* Müşteri ve Durum */}
+                 <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
+                    <div className="min-w-0">
+                      <div className="font-black text-slate-800 text-sm truncate">{j.customer_name}</div>
+                      <div className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-wider truncate bg-slate-50 w-fit px-2 py-0.5 rounded border border-slate-100">{j.work_type}</div>
+                    </div>
+                    <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border shrink-0 shadow-sm ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                      {j.status}
+                    </span>
+                 </div>
+
+                 {/* Personel Atama Durumu */}
+                 <div className="flex flex-col gap-2.5">
+                    {isSamePerson ? (
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck size={14} className={isApproved ? 'text-emerald-500 shrink-0' : 'text-amber-500 shrink-0'} />
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0 w-[105px]">Atayan & Sorumlu:</span>
+                        <span className={`text-[10px] font-bold px-2 py-1 rounded-md border truncate ${staffColor}`}>
+                          {assignedManager.name}
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck size={14} className={isApproved ? 'text-emerald-500 shrink-0' : 'text-slate-400 shrink-0'} />
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0 w-[55px]">Atayan:</span>
+                          <span className={`text-[10px] font-bold px-2 py-1 rounded-md border truncate ${isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-slate-600 bg-slate-50 border-slate-200'}`}>
+                            {actionBy}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <User size={14} className={assignedManager ? (isApproved ? 'text-emerald-500 shrink-0' : 'text-amber-500 shrink-0') : 'text-slate-300 shrink-0'} />
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0 w-[55px]">Sorumlu:</span>
+                          {assignedManager ? (
+                            <span className={`text-[10px] font-bold px-2 py-1 rounded-md border truncate ${staffColor}`}>
+                              {assignedManager.name}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold px-2 py-1 rounded-md border border-slate-200 bg-slate-100 text-slate-400 truncate">
+                              Atanmadı
+                            </span>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                      <Wrench size={14} className={assignedWorker ? (isApproved ? 'text-emerald-500 shrink-0' : 'text-amber-500 shrink-0') : 'text-slate-300 shrink-0'} />
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0 w-[55px]">Usta:</span>
+                      {assignedWorker ? (
+                        <span className={`text-[10px] font-bold px-2 py-1 rounded-md border truncate ${staffColor}`}>
+                          {assignedWorker.name}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold px-2 py-1 rounded-md border border-slate-200 bg-slate-100 text-slate-400 truncate">
+                          Atanmadı
+                        </span>
+                      )}
+                    </div>
+                 </div>
+
+                 {/* Tarih ve Oku */}
+                 <div className="flex justify-between items-center pt-2 border-t border-slate-50">
+                   <div className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-md border border-slate-100 flex items-center gap-1.5 w-fit">
+                      <Calendar size={12} className="text-slate-400" /> {j.scheduled_date || 'Tarih Planlanmadı'}
+                   </div>
+                   <ArrowUpRight size={16} className="text-blue-500" />
+                 </div>
+               </div>
+             );
+          })}
+          {jobs.length === 0 && (
+            <div className="p-8 text-center text-slate-400 text-sm font-medium bg-white rounded-xl border border-slate-200">
+              Henüz iş emri bulunmuyor.
+            </div>
+          )}
         </div>
       </div>
 

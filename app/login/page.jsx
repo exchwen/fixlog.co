@@ -80,10 +80,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 sm:p-6 relative">
+    // YENİ: min-h-screen yerine min-h-[100dvh] (Klavye açıldığında bozulmayı önler)
+    <div className="min-h-[100dvh] bg-[#F8FAFC] flex items-center justify-center p-4 sm:p-6 relative font-sans">
       <button
         onClick={() => router.push('/')}
-        className="absolute top-6 left-6 flex items-center gap-2 text-[11px] font-bold text-gray-400 hover:text-blue-600 transition-all uppercase tracking-widest bg-white px-4 py-2.5 rounded-2xl shadow-sm border border-gray-100"
+        // YENİ: active:scale-95 eklendi
+        className="absolute top-4 sm:top-6 left-4 sm:left-6 flex items-center gap-2 text-[11px] font-bold text-gray-500 hover:text-blue-600 transition-all uppercase tracking-widest bg-white hover:bg-gray-50 px-4 py-2.5 rounded-xl shadow-sm border border-gray-100 active:scale-95"
       >
         <ArrowLeft className="w-3.5 h-3.5" /> Ana Sayfa
       </button>
@@ -91,16 +93,16 @@ export default function LoginPage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-[400px] w-full bg-white rounded-[2.5rem] shadow-2xl shadow-blue-900/5 p-8 sm:p-10 border border-gray-100"
+        className="max-w-[400px] w-full bg-white rounded-[2.5rem] shadow-2xl shadow-blue-900/5 p-6 sm:p-10 border border-gray-100"
       >
-        <div className="flex flex-col items-center mb-10">
+        <div className="flex flex-col items-center mb-8 sm:mb-10 mt-6 sm:mt-0">
           <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-200 mb-4">
             <ShieldCheck className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-black text-gray-900 leading-tight text-center">
+          <h1 className="text-2xl font-black text-gray-900 leading-tight text-center tracking-tight">
             Tekrar Hoş Geldiniz
           </h1>
-          <p className="text-gray-400 text-sm font-medium mt-1 text-center">
+          <p className="text-gray-400 text-sm font-medium mt-1.5 text-center">
             İşletmenizi yönetmeye devam edin.
           </p>
         </div>
@@ -109,27 +111,27 @@ export default function LoginPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3 text-red-600"
+            className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600 shadow-sm"
           >
-            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
             <span className="text-xs font-bold leading-relaxed">{error}</span>
           </motion.div>
         )}
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-gray-400 uppercase ml-1 tracking-widest">
+            <label className="text-[11px] font-black text-gray-400 uppercase ml-1 tracking-widest">
               E-Posta Adresi
             </label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-300" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
               <input
                 required
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-2xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium"
+                className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-2xl text-sm font-bold focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-gray-400 placeholder:font-medium"
                 placeholder="isim@sirket.com"
               />
             </div>
@@ -137,22 +139,22 @@ export default function LoginPage() {
 
           <div className="space-y-1.5">
             <div className="flex justify-between items-center ml-1">
-              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+              <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">
                 Şifre
               </label>
-              <span className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer">
+              <span className="text-[11px] font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer transition-colors active:scale-95">
                 Unuttum?
               </span>
             </div>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-300" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
               <input
                 required
                 type="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-2xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium"
+                className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-2xl text-sm font-bold focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-gray-400 placeholder:font-medium"
                 placeholder="••••••••"
               />
             </div>
@@ -161,7 +163,8 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-bold text-sm shadow-xl shadow-blue-100 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-70 mt-4"
+            // YENİ: active:scale-95 eklendi
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-bold text-sm shadow-xl shadow-blue-600/20 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-70 mt-6"
           >
             {isLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -177,7 +180,7 @@ export default function LoginPage() {
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-100"></div>
           </div>
-          <div className="relative flex justify-center text-[10px] uppercase font-black text-gray-400 tracking-widest">
+          <div className="relative flex justify-center text-[10px] uppercase font-black text-gray-300 tracking-widest">
             <span className="bg-white px-4">VEYA</span>
           </div>
         </div>
@@ -185,7 +188,9 @@ export default function LoginPage() {
         <button
           onClick={handleGoogleLogin}
           type="button"
-          className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 rounded-2xl px-4 py-4 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all active:scale-[0.98] shadow-sm"
+          disabled={isLoading}
+          // YENİ: active:scale-95 eklendi
+          className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-100 rounded-2xl px-4 py-4 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-200 transition-all active:scale-95 shadow-sm disabled:opacity-70"
         >
           <img
             src="https://www.svgrepo.com/show/475656/google-color.svg"
@@ -195,13 +200,13 @@ export default function LoginPage() {
           Google ile Giriş
         </button>
 
-        <p className="mt-8 text-center text-[13px] font-medium text-gray-500">
+        <p className="mt-8 text-center text-xs font-medium text-gray-500">
           Hesabınız yok mu?{' '}
           <span
             onClick={() => router.push('/register')}
-            className="text-blue-600 font-bold cursor-pointer hover:underline"
+            className="text-blue-600 font-bold cursor-pointer hover:text-blue-700 transition-colors active:scale-95 inline-block"
           >
-            Kaydolun
+            Hemen Kaydolun
           </span>
         </p>
       </motion.div>

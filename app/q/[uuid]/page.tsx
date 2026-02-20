@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-// YENİ: WifiOff eklendi
-import { AlertTriangle, Phone, ShieldCheck, Box, MapPin, History, X, ShieldAlert, ChevronRight, User, MessageCircle, Info, WifiOff } from 'lucide-react';
+// YENİ: Download (PWA için) eklendi
+import { AlertTriangle, Phone, ShieldCheck, Box, MapPin, History, X, ShieldAlert, ChevronRight, User, MessageCircle, Info, WifiOff, Download } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -17,6 +17,10 @@ export default function AssetScanPage() {
   const [showEmergencyConfirm, setShowEmergencyConfirm] = useState(false);
   const [showFaultModal, setShowFaultModal] = useState(false);
   
+  // PWA ANA EKRANA EKLE STATE'LERİ
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showPwaPrompt, setShowPwaPrompt] = useState(false);
+
   // Form ve İstek State'leri
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [faultForm, setFaultForm] = useState({ name: '', phone: '', description: '' });
@@ -29,6 +33,28 @@ export default function AssetScanPage() {
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
   const API_URL = 'https://backend.isdokumu.workers.dev'; 
+
+  // PWA Kurulum Dinleyicisi
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowPwaPrompt(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallPwa = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        setShowPwaPrompt(false);
+      }
+    }
+  };
 
   // YENİ: Ağ (Online First) ve Cache Stratejisi
   useEffect(() => {
@@ -311,6 +337,32 @@ export default function AssetScanPage() {
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 font-sans">
+
+      {/* PWA ANA EKRANA EKLE MODALI */}
+      <AnimatePresence>
+        {showPwaPrompt && (
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }} 
+            exit={{ y: 100, opacity: 0 }} 
+            className="fixed bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[420px] bg-slate-900 text-white p-4 rounded-2xl shadow-2xl z-[9999] flex flex-row items-center justify-between border border-slate-700"
+          >
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-500 p-2.5 rounded-xl">
+                <Download size={20} className="text-white" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-bold text-sm">Uygulamayı Yükle</span>
+                <span className="text-xs text-slate-400">Daha hızlı ve kolay erişim</span>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setShowPwaPrompt(false)} className="px-3 py-2 text-xs font-bold text-slate-300 hover:text-white transition-colors">Geç</button>
+              <button onClick={handleInstallPwa} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95">Yükle</button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* YENİ: ÇEVRİMDIŞI VE SENKRONİZASYON UYARISI BANNER'I */}
       <AnimatePresence>

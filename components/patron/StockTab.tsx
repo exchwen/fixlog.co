@@ -86,8 +86,8 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
 
   // TEKİL SİPARİŞ GÖNDERME (TEK BUTON)
   const sendSingleOrder = () => {
-    // YENİ: Çevrimdışı Koruması
-    if (!navigator.onLine) {
+    // Çevrimdışı Koruması
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
        alert("WhatsApp üzerinden sipariş geçebilmek için internet bağlantısına ihtiyacınız var.");
        return;
     }
@@ -127,8 +127,8 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
 
   // TOPLU SİPARİŞ İÇİN WHATSAPP LİNKİ OLUŞTURMA VE AÇMA
   const openWhatsappForSupplier = (supplier: any) => {
-    // YENİ: Çevrimdışı Koruması
-    if (!navigator.onLine) {
+    // Çevrimdışı Koruması
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
        alert("WhatsApp üzerinden sipariş geçebilmek için internet bağlantısına ihtiyacınız var.");
        return;
     }
@@ -169,7 +169,7 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
   };
 
   return (
-    <div className="space-y-6 relative">
+    <div className="space-y-6 relative pb-10 sm:pb-0">
       
        {/* 1. KRİTİK STOK UYARI KUTUSU */}
        <AnimatePresence>
@@ -177,13 +177,12 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
            <motion.div 
               initial={{ opacity: 0, y: -10 }} 
               animate={{ opacity: 1, y: 0 }} 
-              className="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm relative overflow-hidden"
+              className="bg-amber-50 border border-amber-200 rounded-2xl p-4 sm:p-5 shadow-sm relative overflow-hidden"
            >
-              {/* SİPARİŞ VER BUTONLARI - SAĞ ÜST */}
-              <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+              {/* SİPARİŞ VER BUTONLARI - SAĞ ÜST (Masaüstünde sağ üstte, mobilde başlığın altında) */}
+              <div className="hidden sm:flex absolute top-5 right-5 z-20 items-center gap-2">
                 <button 
                     onClick={() => { setOrderMode('SINGLE'); setShowOrderModal(true); }}
-                    // YENİ: active:scale-95 ve transition-all eklendi
                     className="bg-white text-amber-600 border border-amber-200 hover:bg-amber-100 px-3 py-2 rounded-lg text-xs font-bold shadow-sm flex items-center gap-2 transition-all active:scale-95"
                 >
                     <Package size={16} />
@@ -192,7 +191,6 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
 
                 <button 
                     onClick={() => { setOrderMode('BULK'); setShowOrderModal(true); }}
-                    // YENİ: active:scale-95 ve transition-all eklendi
                     className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg text-xs font-bold shadow-lg shadow-amber-600/20 flex items-center gap-2 transition-all active:scale-95"
                 >
                     <ShoppingCart size={16} />
@@ -201,17 +199,36 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
               </div>
 
               <div className="absolute right-0 top-0 opacity-5 pointer-events-none">
-                <AlertTriangle size={120} className="text-amber-500 translate-x-4 -translate-y-4" />
+                <AlertTriangle size={150} className="text-amber-500 translate-x-4 -translate-y-4" />
               </div>
 
               <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-8 h-8 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center shadow-sm border border-amber-200">
-                    <AlertTriangle size={18} />
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 sm:mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 sm:w-8 sm:h-8 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center shadow-sm border border-amber-200 shrink-0">
+                      <AlertTriangle size={20} className="sm:w-[18px] sm:h-[18px]" />
+                    </div>
+                    <div>
+                      <h3 className="text-base sm:text-sm font-black text-amber-900 tracking-tight">Kritik Stok Uyarısı</h3>
+                      <p className="text-[11px] font-medium text-amber-700">Tükenmek üzere olan <span className="font-bold underline">{criticalStocks.length} parça</span> tespit edildi. Acil sipariş geçmeniz önerilir.</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-amber-900 tracking-tight">Kritik Stok Uyarısı</h3>
-                    <p className="text-[11px] font-medium text-amber-700">Tükenmek üzere olan <span className="font-bold underline">{criticalStocks.length} parça</span> tespit edildi. Acil sipariş geçmeniz önerilir.</p>
+                  
+                  {/* MOBİL İÇİN SİPARİŞ BUTONLARI (Mobilde başlığın hemen altında gösterilir) */}
+                  <div className="flex sm:hidden items-center gap-2 mt-2">
+                    <button 
+                        onClick={() => { setOrderMode('SINGLE'); setShowOrderModal(true); }}
+                        className="flex-1 bg-white text-amber-600 border border-amber-200 px-3 py-2.5 rounded-lg text-xs font-bold shadow-sm flex items-center justify-center gap-2 active:scale-95"
+                    >
+                        <Package size={14} /> Sipariş
+                    </button>
+
+                    <button 
+                        onClick={() => { setOrderMode('BULK'); setShowOrderModal(true); }}
+                        className="flex-[2] bg-amber-600 text-white px-3 py-2.5 rounded-lg text-xs font-bold shadow-md shadow-amber-600/20 flex items-center justify-center gap-2 active:scale-95"
+                    >
+                        <ShoppingCart size={14} /> Toplu Sipariş
+                    </button>
                   </div>
                 </div>
 
@@ -219,10 +236,9 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                   {criticalStocks.map((item: any) => {
                     const supplier = suppliers.find((s:any) => s.id === item.supplier_id);
                     const supName = supplier ? supplier.name : (item.supplier_name || 'Tedarikçi Yok');
-                    const supPhone = supplier ? supplier.phone : item.supplier_phone;
 
                     return (
-                      <div key={item.id} className="bg-white/90 backdrop-blur-sm border border-amber-200/60 rounded-lg p-3 flex flex-col justify-between shadow-sm relative group hover:border-amber-300 transition-colors">
+                      <div key={item.id} className="bg-white/90 backdrop-blur-sm border border-amber-200/60 rounded-xl p-3 sm:p-3 flex flex-col justify-between shadow-sm relative group hover:border-amber-300 transition-colors">
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex items-start gap-2 overflow-hidden pr-2">
                             <Package size={14} className="text-amber-500 shrink-0 mt-0.5" />
@@ -230,13 +246,13 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                               {item.item_name}
                             </div>
                           </div>
-                          <div className="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs font-black shrink-0 border border-amber-200/50">
+                          <div className="bg-amber-100 text-amber-800 px-2 py-1 rounded-lg text-xs font-black shrink-0 border border-amber-200/50 shadow-sm">
                             {item.quantity} <span className="text-[9px] font-bold uppercase">{item.unit_name}</span>
                           </div>
                         </div>
 
                         <div className="mt-auto pt-2 border-t border-amber-100/50">
-                          <div className="text-[10px] text-slate-500 font-bold uppercase truncate mb-1">
+                          <div className="text-[10px] text-slate-500 font-bold uppercase truncate">
                             {supName}
                           </div>
                         </div>
@@ -250,113 +266,179 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
        </AnimatePresence>
 
        {/* 2. ANA LİSTE BAŞLIĞI VE ARAMA KUTUSU */}
-       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-         <h3 className="text-lg font-bold text-slate-900">Tüm Envanter & Parçalar</h3>
-         <div className="flex items-center flex-wrap gap-2 w-full sm:w-auto">
+       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
+         <div className="w-full sm:w-auto">
+           <h3 className="text-lg font-black text-slate-900 tracking-tight">Tüm Envanter & Parçalar</h3>
+           <p className="text-xs text-slate-500 font-medium mt-0.5 hidden sm:block">Stoktaki tüm malzemelerinizi yönetin ve kategorize edin.</p>
+         </div>
+         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
            <div className="relative flex-1 min-w-[200px]">
-             <Search className="absolute left-2.5 top-2.5 text-slate-400" size={14} />
+             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
              <input 
                type="text" 
                placeholder="Parça, Kategori veya Tedarikçi Ara..." 
-               className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white shadow-sm"
+               className="w-full pl-9 pr-4 py-2.5 sm:py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-slate-50 hover:bg-white transition-all placeholder:text-slate-400"
                value={searchTerm}
                onChange={e => setSearchTerm(e.target.value)}
              />
            </div>
            
-           {/* YENİ: Butonlara active:scale-95 eklendi */}
-           <button onClick={() => setShowCategoryModal(true)} className="bg-slate-100 text-slate-700 px-3 py-2 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-slate-200 whitespace-nowrap transition-all active:scale-95 border border-slate-200">
-             <Tags size={14} /> Kategoriler
-           </button>
-           <button onClick={() => setShowSupplierListModal(true)} className="bg-slate-100 text-slate-700 px-3 py-2 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-slate-200 whitespace-nowrap transition-all active:scale-95 border border-slate-200">
-             <Truck size={14} /> Tedarikçiler
-           </button>
-           <button onClick={() => setShowStockModal(true)} className="bg-blue-600 text-white px-3 py-2 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-blue-700 whitespace-nowrap transition-all active:scale-95 border border-blue-700">
-             <Plus size={14} /> Yeni Parça
-           </button>
+           <div className="grid grid-cols-2 sm:flex sm:flex-nowrap gap-2">
+             <button onClick={() => setShowCategoryModal(true)} className="bg-slate-100 text-slate-700 px-3 sm:px-4 py-2.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm hover:bg-slate-200 whitespace-nowrap transition-all active:scale-95 border border-slate-200">
+               <Tags size={14} /> Kategoriler
+             </button>
+             <button onClick={() => setShowSupplierListModal(true)} className="bg-slate-100 text-slate-700 px-3 sm:px-4 py-2.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm hover:bg-slate-200 whitespace-nowrap transition-all active:scale-95 border border-slate-200">
+               <Truck size={14} /> Tedarikçiler
+             </button>
+             {/* YENİ: Mobilde "Yeni Parça" butonu tam genişlikte en alta düşer */}
+             <button onClick={() => setShowStockModal(true)} className="col-span-2 bg-blue-600 text-white px-4 py-3 sm:py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm shadow-blue-200 hover:bg-blue-700 whitespace-nowrap transition-all active:scale-95 border border-blue-700">
+               <Plus size={16} /> Yeni Parça
+             </button>
+           </div>
          </div>
        </div>
 
-       {/* 3. STOK TABLOSU */}
-       {/* YENİ: overflow-x-auto kapsayıcısı */}
-       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden overflow-x-auto custom-scrollbar">
-         <div>
-           {/* YENİ: min-w-[700px] hücre ezilmesini önler */}
-           <table className="w-full text-left text-xs min-w-[700px]">
-             <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 uppercase tracking-wider text-[10px]">
-                <tr>
-                  <th className="px-5 py-4 whitespace-nowrap">Parça Adı</th>
-                  <th className="px-5 py-4 whitespace-nowrap">Kategori</th>
-                  <th className="px-5 py-4 whitespace-nowrap">Miktar / Birim</th>
-                  <th className="px-5 py-4 whitespace-nowrap">Birim Fiyatı</th>
-                  <th className="px-5 py-4 whitespace-nowrap">Tedarikçi Firma</th>
-                  <th className="px-5 py-4 text-right whitespace-nowrap">İşlemler</th>
-                </tr>
-             </thead>
-             <tbody className="divide-y divide-slate-100">
-                {filteredStock.length > 0 ? filteredStock.map((item: any) => {
-                  const isCritical = Number(item.quantity) <= 5;
-                  const supplier = suppliers.find((s:any) => s.id === item.supplier_id);
-                  const supName = supplier ? supplier.name : (item.supplier_name || 'Tedarikçi Yok');
-                  const supPhone = supplier ? supplier.phone : item.supplier_phone;
-                  
-                  return (
-                    <tr key={item.id} className={`transition-colors ${isCritical ? 'bg-amber-50/20 hover:bg-amber-50/50' : 'hover:bg-slate-50'}`}>
-                      <td className="px-5 py-3">
-                        <div className="font-bold text-slate-800 flex items-center gap-2">
-                          {isCritical && <AlertTriangle size={12} className="text-amber-500" />}
-                          {item.item_name}
-                        </div>
-                      </td>
-                      <td className="px-5 py-3">
-                        {item.category ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-600 rounded text-[10px] font-semibold border border-slate-200 whitespace-nowrap">
-                            <Tag size={10} /> {item.category}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 text-[10px] italic whitespace-nowrap">Kategorisiz</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3 whitespace-nowrap">
-                         <span className={`font-black text-sm ${isCritical ? 'text-amber-600' : 'text-blue-600'}`}>
-                           {item.quantity}
-                         </span> 
-                         <span className="text-slate-500 ml-1 font-semibold text-[10px] uppercase">
-                           {item.unit_name}
-                         </span>
-                      </td>
-                      <td className="px-5 py-3 text-emerald-600 font-bold whitespace-nowrap">₺{item.unit_price || '0'}</td>
-                      <td className="px-5 py-3">
-                         <div className="font-bold text-slate-700 whitespace-nowrap">{supName}</div>
-                         <div className="text-[10px] text-slate-400 font-medium mt-0.5 whitespace-nowrap">{supPhone || 'Telefon Kaydı Yok'}</div>
-                      </td>
-                      <td className="px-5 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                           <button 
-                              onClick={() => setEditingStock({ id: item.id, itemName: item.item_name, quantity: item.quantity, unitName: item.unit_name, unitPrice: item.unit_price, category: item.category || '', supplierId: item.supplier_id || '' })} 
-                              // YENİ: active:scale-95 eklendi
-                              className="p-1.5 text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-600 hover:text-white rounded-md transition-all active:scale-95 shadow-sm"
-                              title="Düzenle"
-                           >
-                             <Edit2 size={14} />
-                           </button>
-                           <button 
-                              onClick={() => handleDelete(item.id)} 
-                              // YENİ: active:scale-95 eklendi
-                              className="p-1.5 text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-600 hover:text-white rounded-md transition-all active:scale-95 shadow-sm"
-                              title="Sil"
-                           >
-                             <Trash2 size={14} />
-                           </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                }) : <tr><td colSpan={6} className="p-10 text-center text-slate-400 font-medium bg-slate-50/50">Aradığınız kriterde stok bulunamadı.</td></tr>}
-             </tbody>
-           </table>
-         </div>
+       {/* 3. MASAÜSTÜ TABLO GÖRÜNÜMÜ */}
+       <div className="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden overflow-x-auto custom-scrollbar">
+         <table className="w-full text-left text-xs min-w-[700px]">
+           <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 uppercase tracking-wider text-[10px]">
+              <tr>
+                <th className="px-5 py-4 whitespace-nowrap">Parça Adı</th>
+                <th className="px-5 py-4 whitespace-nowrap">Kategori</th>
+                <th className="px-5 py-4 whitespace-nowrap">Miktar / Birim</th>
+                <th className="px-5 py-4 whitespace-nowrap">Birim Fiyatı</th>
+                <th className="px-5 py-4 whitespace-nowrap">Tedarikçi Firma</th>
+                <th className="px-5 py-4 text-right whitespace-nowrap">İşlemler</th>
+              </tr>
+           </thead>
+           <tbody className="divide-y divide-slate-100">
+              {filteredStock.length > 0 ? filteredStock.map((item: any) => {
+                const isCritical = Number(item.quantity) <= 5;
+                const supplier = suppliers.find((s:any) => s.id === item.supplier_id);
+                const supName = supplier ? supplier.name : (item.supplier_name || 'Tedarikçi Yok');
+                const supPhone = supplier ? supplier.phone : item.supplier_phone;
+                
+                return (
+                  <tr key={item.id} className={`transition-colors ${isCritical ? 'bg-amber-50/30 hover:bg-amber-50' : 'hover:bg-slate-50'}`}>
+                    <td className="px-5 py-4 align-middle">
+                      <div className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        {isCritical && <AlertTriangle size={14} className="text-amber-500" />}
+                        {item.item_name}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 align-middle">
+                      {item.category ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold border border-slate-200 whitespace-nowrap">
+                          <Tag size={12} /> {item.category}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-[10px] italic font-medium whitespace-nowrap">Kategorisiz</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 align-middle whitespace-nowrap">
+                       <span className={`font-black text-base ${isCritical ? 'text-amber-600' : 'text-blue-600'}`}>
+                         {item.quantity}
+                       </span> 
+                       <span className="text-slate-500 ml-1 font-bold text-[10px] uppercase">
+                         {item.unit_name}
+                       </span>
+                    </td>
+                    <td className="px-5 py-4 align-middle text-emerald-600 font-black whitespace-nowrap">₺{item.unit_price || '0'}</td>
+                    <td className="px-5 py-4 align-middle">
+                       <div className="font-bold text-slate-700 whitespace-nowrap">{supName}</div>
+                       <div className="text-[10px] text-slate-400 font-semibold mt-0.5 whitespace-nowrap">{supPhone || 'Telefon Kaydı Yok'}</div>
+                    </td>
+                    <td className="px-5 py-4 align-middle text-right">
+                      <div className="flex items-center justify-end gap-2">
+                         <button 
+                            onClick={() => setEditingStock({ id: item.id, itemName: item.item_name, quantity: item.quantity, unitName: item.unit_name, unitPrice: item.unit_price, category: item.category || '', supplierId: item.supplier_id || '' })} 
+                            className="p-2 text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-600 hover:text-white rounded-lg transition-all active:scale-95 shadow-sm"
+                            title="Düzenle"
+                         >
+                           <Edit2 size={16} />
+                         </button>
+                         <button 
+                            onClick={() => handleDelete(item.id)} 
+                            className="p-2 text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-600 hover:text-white rounded-lg transition-all active:scale-95 shadow-sm"
+                            title="Sil"
+                         >
+                           <Trash2 size={16} />
+                         </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              }) : <tr><td colSpan={6} className="p-16 text-center text-slate-400 font-medium bg-slate-50/50">Aradığınız kriterde stok bulunamadı.</td></tr>}
+           </tbody>
+         </table>
        </div>
+
+       {/* 3.1 MOBİL GÖRÜNÜM: DİKEY STOK KARTLARI */}
+       <div className="md:hidden flex flex-col gap-3">
+         {filteredStock.length > 0 ? filteredStock.map((item: any) => {
+            const isCritical = Number(item.quantity) <= 5;
+            const supplier = suppliers.find((s:any) => s.id === item.supplier_id);
+            const supName = supplier ? supplier.name : (item.supplier_name || 'Tedarikçi Yok');
+
+            return (
+              <div key={item.id} className={`bg-white rounded-2xl border p-4 shadow-sm flex flex-col gap-3 ${isCritical ? 'border-amber-200 bg-amber-50/10' : 'border-slate-200'}`}>
+                
+                {/* Başlık ve Miktar */}
+                <div className="flex justify-between items-start gap-2">
+                  <div className="font-black text-slate-800 text-sm flex items-start gap-2 line-clamp-2">
+                    {isCritical ? <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" /> : <Package size={16} className="text-blue-500 shrink-0 mt-0.5" />}
+                    <span>{item.item_name}</span>
+                  </div>
+                  <div className={`shrink-0 px-2.5 py-1.5 rounded-lg border font-black text-sm flex flex-col items-center leading-none ${isCritical ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-50 text-blue-700 border-slate-200'}`}>
+                    {item.quantity}
+                    <span className="text-[8px] font-bold uppercase mt-0.5">{item.unit_name}</span>
+                  </div>
+                </div>
+
+                {/* Kategori ve Fiyat */}
+                <div className="flex items-center gap-2">
+                  {item.category ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold border border-slate-200">
+                      <Tag size={10} /> {item.category}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 text-[10px] italic font-medium">Kategorisiz</span>
+                  )}
+                  <span className="text-emerald-600 font-black text-xs px-2 py-1 bg-emerald-50 rounded-md border border-emerald-100">₺{item.unit_price || '0'}</span>
+                </div>
+
+                {/* Tedarikçi ve Aksiyonlar (Alt Kısım) */}
+                <div className="flex justify-between items-center pt-3 border-t border-slate-100 mt-1">
+                  <div className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5 truncate pr-2">
+                    <Truck size={12} className="text-slate-400 shrink-0" />
+                    <span className="truncate">{supName}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                     <button 
+                        onClick={() => setEditingStock({ id: item.id, itemName: item.item_name, quantity: item.quantity, unitName: item.unit_name, unitPrice: item.unit_price, category: item.category || '', supplierId: item.supplier_id || '' })} 
+                        className="p-2 text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-600 hover:text-white rounded-lg transition-all active:scale-95"
+                     >
+                       <Edit2 size={14} />
+                     </button>
+                     <button 
+                        onClick={() => handleDelete(item.id)} 
+                        className="p-2 text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-600 hover:text-white rounded-lg transition-all active:scale-95"
+                     >
+                       <Trash2 size={14} />
+                     </button>
+                  </div>
+                </div>
+
+              </div>
+            );
+         }) : (
+           <div className="p-10 text-center bg-white rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3">
+              <Package size={32} className="text-slate-300" />
+              <span className="text-slate-500 font-medium text-sm">Aradığınız kriterde stok bulunamadı.</span>
+           </div>
+         )}
+       </div>
+
 
        {/* 4. SİPARİŞ MODALI (TEKİL VE TOPLU MODLARI) */}
        <AnimatePresence>
@@ -365,20 +447,20 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl relative border border-slate-200 flex flex-col max-h-[90vh]">
                 
                 {/* Header */}
-                <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
-                    <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${orderStep === 'INPUT' ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'}`}>
+                <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl shrink-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${orderStep === 'INPUT' ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'}`}>
                             {orderStep === 'INPUT' ? <ShoppingCart size={20} /> : <CheckCircle2 size={20} />}
                         </div>
-                        <div>
+                        <div className="min-w-0 pr-2">
                             {/* DİNAMİK BAŞLIK: TEKİL SİPARİŞTE TEDARİKÇİ ADI, TOPLUDA GENEL BAŞLIK */}
-                            <h2 className="text-lg font-black text-slate-800 leading-none">
+                            <h2 className="text-base sm:text-lg font-black text-slate-800 leading-tight truncate">
                                 {orderMode === 'SINGLE' 
                                     ? (selectedSupplierForOrder ? selectedSupplierForOrder.name : 'Tedarikçi Seçimi') 
                                     : (orderStep === 'INPUT' ? 'Toplu Sipariş Oluştur' : 'Siparişler Gönderiliyor')
                                 }
                             </h2>
-                            <p className="text-[11px] text-slate-500 font-medium mt-1">
+                            <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium mt-0.5 truncate">
                                 {orderMode === 'SINGLE' 
                                     ? (selectedSupplierForOrder ? 'Tedarik edilecek ürünlerin adetlerini girin.' : 'Sipariş verilecek tedarikçiyi seçin.')
                                     : (orderStep === 'INPUT' ? 'Tedarikçilere göre kritik stok ürünleri listelenmiştir.' : 'Siparişleri sırasıyla WhatsApp üzerinden gönderin.')
@@ -386,17 +468,17 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                             </p>
                         </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 shrink-0">
                         {/* TEKİL SİPARİŞTE GERİ BUTONU */}
                         {orderMode === 'SINGLE' && selectedSupplierForOrder && (
-                            <button onClick={() => { setSelectedSupplierForOrder(null); setOrderQuantities({}); }} className="text-slate-400 hover:bg-slate-200 p-2 rounded-full transition-colors"><ArrowLeft size={20} /></button>
+                            <button onClick={() => { setSelectedSupplierForOrder(null); setOrderQuantities({}); }} className="text-slate-400 hover:bg-slate-200 p-2 rounded-full transition-colors active:scale-95"><ArrowLeft size={20} /></button>
                         )}
-                        <button onClick={handleCloseOrderModal} className="text-slate-400 hover:bg-slate-200 p-2 rounded-full transition-colors"><X size={20} /></button>
+                        <button onClick={handleCloseOrderModal} className="text-slate-400 hover:bg-slate-200 p-2 rounded-full transition-colors active:scale-95"><X size={20} /></button>
                     </div>
                 </div>
 
                 {/* Content */}
-                <div className="p-5 overflow-y-auto custom-scrollbar flex-1">
+                <div className="p-4 sm:p-5 overflow-y-auto custom-scrollbar flex-1">
                     
                     {/* --- TEKİL SİPARİŞ MODU --- */}
                     {orderMode === 'SINGLE' && (
@@ -407,27 +489,27 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                                     <button 
                                         key={supplier.id}
                                         onClick={() => setSelectedSupplierForOrder(supplier)}
-                                        className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-400 hover:shadow-md transition-all group text-left"
+                                        className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-400 hover:shadow-md transition-all active:scale-95 group text-left"
                                     >
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold text-sm group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                                            <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold text-sm shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                                 {supplier.name.substring(0, 2).toUpperCase()}
                                             </div>
-                                            <div>
-                                                <div className="font-bold text-slate-800">{supplier.name}</div>
-                                                <div className="text-xs text-slate-500 font-medium flex items-center gap-2">
-                                                    <span className="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[10px] font-bold">{supplier.items.length} Kritik Ürün</span>
+                                            <div className="min-w-0 pr-2">
+                                                <div className="font-bold text-slate-800 truncate">{supplier.name}</div>
+                                                <div className="text-[10px] sm:text-xs text-slate-500 font-medium flex flex-wrap items-center gap-2 mt-1">
+                                                    <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold">{supplier.items.length} Kritik Ürün</span>
                                                     {supplier.phone && <span className="flex items-center gap-1"><Phone size={10}/> {supplier.phone}</span>}
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="text-slate-300">
-                                            <ArrowRight size={20} />
+                                        <div className="text-slate-300 group-hover:text-blue-500 transition-colors shrink-0">
+                                            <ArrowRight size={18} />
                                         </div>
                                     </button>
                                 )) : (
                                     <div className="text-center py-10">
-                                        <p className="text-slate-500 font-medium">Kayıtlı tedarikçisi olan kritik stok bulunamadı.</p>
+                                        <p className="text-slate-500 font-medium text-sm">Kayıtlı tedarikçisi olan kritik stok bulunamadı.</p>
                                     </div>
                                 )}
                             </div>
@@ -435,23 +517,23 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                             // ADIM 2: SEÇİLEN TEDARİKÇİ İÇİN ÜRÜN LİSTESİ
                             <div className="space-y-3">
                                 {selectedSupplierForOrder.items.map((item: any) => (
-                                    <div key={item.id} className="flex items-center gap-3 p-3 border border-slate-100 rounded-xl bg-slate-50/50">
-                                        <div className="w-10 h-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0">
+                                    <div key={item.id} className="flex items-center gap-3 p-3 border border-slate-200 rounded-xl bg-slate-50/50">
+                                        <div className="w-10 h-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0 shadow-sm hidden sm:flex">
                                             <Package size={18} className="text-slate-400" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="text-sm font-bold text-slate-700 truncate">{item.item_name}</div>
-                                            <div className="text-[10px] font-semibold text-amber-600">Mevcut: {item.quantity} {item.unit_name}</div>
+                                            <div className="text-xs sm:text-sm font-bold text-slate-800 line-clamp-2">{item.item_name}</div>
+                                            <div className="text-[10px] font-bold text-amber-600 mt-0.5">Mevcut: {item.quantity} {item.unit_name}</div>
                                         </div>
-                                        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg p-1 shadow-sm">
+                                        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg p-1 shadow-sm shrink-0">
                                             <input 
                                                 type="number" 
                                                 placeholder="0"
-                                                className="w-16 text-center outline-none text-sm font-bold text-slate-800"
+                                                className="w-12 sm:w-16 py-1 text-center outline-none text-sm font-bold text-slate-800 bg-transparent"
                                                 value={orderQuantities[item.id] || ''}
                                                 onChange={(e) => setOrderQuantities({...orderQuantities, [item.id]: e.target.value})}
                                             />
-                                            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-1 rounded-md uppercase">{item.unit_name}</span>
+                                            <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-1 rounded-md uppercase">{item.unit_name}</span>
                                         </div>
                                     </div>
                                 ))}
@@ -463,37 +545,37 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                     {orderMode === 'BULK' && (
                          orderStep === 'INPUT' ? (
                             // ADIM 1: TÜM TEDARİKÇİLER VE ÜRÜNLER (ADET GİRİŞİ)
-                            <div className="space-y-6">
+                            <div className="space-y-5">
                                 {suppliersWithCriticalStock.length > 0 ? suppliersWithCriticalStock.map((supplier: any) => (
                                     <div key={supplier.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                                         <div className="bg-slate-50/80 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold text-xs">
+                                            <div className="flex items-center gap-2 min-w-0 pr-2">
+                                                <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold text-xs shrink-0">
                                                     {supplier.name.substring(0, 2).toUpperCase()}
                                                 </div>
-                                                <div className="font-bold text-slate-700 text-sm">{supplier.name}</div>
+                                                <div className="font-bold text-slate-800 text-sm truncate">{supplier.name}</div>
                                             </div>
-                                            <div className="text-[10px] bg-white border border-slate-200 px-2 py-1 rounded-md text-slate-500 font-medium flex items-center gap-1">
+                                            <div className="text-[10px] bg-white border border-slate-200 px-2 py-1.5 rounded-md text-slate-500 font-bold flex items-center gap-1 shrink-0 shadow-sm">
                                                 <Phone size={10} /> {supplier.phone || 'Tel Yok'}
                                             </div>
                                         </div>
                                         
-                                        <div className="divide-y divide-slate-50">
+                                        <div className="divide-y divide-slate-100">
                                             {supplier.items.map((item: any) => (
-                                                <div key={item.id} className="p-3 flex items-center gap-3 hover:bg-slate-50 transition-colors">
-                                                    <div className="flex-1">
-                                                        <div className="text-xs font-bold text-slate-800">{item.item_name}</div>
-                                                        <div className="text-[10px] text-amber-600 font-medium">Kalan: {item.quantity} {item.unit_name}</div>
+                                                <div key={item.id} className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors">
+                                                    <div className="flex-1 min-w-0 pr-2">
+                                                        <div className="text-xs sm:text-sm font-bold text-slate-800 line-clamp-2">{item.item_name}</div>
+                                                        <div className="text-[10px] text-amber-600 font-bold mt-0.5">Kalan: {item.quantity} {item.unit_name}</div>
                                                     </div>
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-1 sm:gap-2 shrink-0 bg-slate-50 border border-slate-200 p-1 rounded-lg">
                                                         <input 
                                                             type="number" 
                                                             placeholder="0"
-                                                            className="w-16 h-8 text-center border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50"
+                                                            className="w-12 sm:w-16 h-8 text-center bg-white border border-slate-200 rounded-md text-sm font-bold text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all"
                                                             value={orderQuantities[item.id] || ''}
                                                             onChange={(e) => setOrderQuantities({...orderQuantities, [item.id]: e.target.value})}
                                                         />
-                                                        <span className="text-[10px] font-bold text-slate-400 w-10 text-center">{item.unit_name}</span>
+                                                        <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 w-8 sm:w-10 text-center uppercase">{item.unit_name}</span>
                                                     </div>
                                                 </div>
                                             ))}
@@ -501,7 +583,7 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                                     </div>
                                 )) : (
                                     <div className="text-center py-10">
-                                        <p className="text-slate-500 font-medium">Kayıtlı tedarikçisi olan kritik stok bulunamadı.</p>
+                                        <p className="text-slate-500 font-medium text-sm">Kayıtlı tedarikçisi olan kritik stok bulunamadı.</p>
                                     </div>
                                 )}
                             </div>
@@ -511,21 +593,20 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                                 {suppliersToProcess.length > 0 ? suppliersToProcess.map((supplier: any) => {
                                     const isSent = sentSuppliers.includes(supplier.id);
                                     return (
-                                        <div key={supplier.id} className={`flex items-center justify-between p-4 rounded-xl border transition-all ${isSent ? 'bg-green-50 border-green-200 opacity-60' : 'bg-white border-blue-200 shadow-md'}`}>
+                                        <div key={supplier.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border gap-3 sm:gap-0 transition-all ${isSent ? 'bg-green-50 border-green-200 opacity-70' : 'bg-white border-blue-200 shadow-md'}`}>
                                             <div>
-                                                <div className="font-bold text-slate-800 flex items-center gap-2">
+                                                <div className="font-bold text-slate-800 flex items-center gap-2 text-sm">
                                                     {supplier.name}
-                                                    {isSent && <span className="text-[10px] bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><CheckCircle2 size={10} /> GÖNDERİLDİ</span>}
+                                                    {isSent && <span className="text-[10px] bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-black flex items-center gap-1"><CheckCircle2 size={10} /> GÖNDERİLDİ</span>}
                                                 </div>
-                                                <div className="text-xs text-slate-500 mt-1">
+                                                <div className="text-[11px] font-medium text-slate-500 mt-1">
                                                     {supplier.items.filter((i:any) => orderQuantities[i.id] && Number(orderQuantities[i.id]) > 0).length} Kalem Ürün Sipariş Edilecek
                                                 </div>
                                             </div>
                                             
                                             <button 
                                                 onClick={() => openWhatsappForSupplier(supplier)}
-                                                // YENİ: active:scale-95 eklendi
-                                                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-xs transition-all active:scale-95 ${isSent ? 'bg-white border border-green-200 text-green-700' : 'bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-600/20'}`}
+                                                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-bold text-xs transition-all active:scale-95 w-full sm:w-auto ${isSent ? 'bg-white border border-green-200 text-green-700' : 'bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-600/20'}`}
                                             >
                                                 {isSent ? 'Tekrar Gönder' : 'WhatsApp İle Gönder'}
                                                 {!isSent && <ExternalLink size={14} />}
@@ -543,13 +624,12 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                 </div>
 
                 {/* Footer */}
-                <div className="p-5 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
+                <div className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50 rounded-b-2xl shrink-0">
                     {orderMode === 'SINGLE' ? (
                         selectedSupplierForOrder && (
                             <button 
                                 onClick={sendSingleOrder}
-                                // YENİ: active:scale-95 eklendi
-                                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-green-600/20 flex items-center justify-center gap-2 transition-all active:scale-95"
+                                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-green-600/20 flex items-center justify-center gap-2 transition-all active:scale-95"
                             >
                                 <Send size={18} />
                                 WhatsApp İle Siparişi Gönder
@@ -566,16 +646,14 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                                     }
                                     setOrderStep('SENDING');
                                 }}
-                                // YENİ: active:scale-95 eklendi
-                                className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl font-bold text-sm shadow-xl flex items-center justify-center gap-2 transition-all active:scale-95"
+                                className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm shadow-xl flex items-center justify-center gap-2 transition-all active:scale-95"
                             >
                                 Gönderimi Başlat <ArrowRight size={18} />
                             </button>
                         ) : (
                              <button 
                                 onClick={handleCloseOrderModal}
-                                // YENİ: active:scale-95 eklendi
-                                className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+                                className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
                             >
                                 İşlemi Tamamla ve Kapat
                             </button>
@@ -587,41 +665,41 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
          )}
        </AnimatePresence>
 
-       {/* ... (DÜZENLEME MODALI AYNI KALIYOR) ... */}
+       {/* ... (DÜZENLEME MODALI AYNI KALIYOR SADECE MOBİL İÇİN ESNETİLDİ) ... */}
        <AnimatePresence>
          {editingStock && (
-           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative border border-slate-200">
-                <div className="flex justify-between items-center mb-6">
+           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-2xl p-5 sm:p-6 shadow-2xl relative border border-slate-200">
+                <div className="flex justify-between items-center mb-6 pb-3 border-b border-slate-100">
                   <div>
                     <h2 className="text-lg font-black text-slate-800 leading-none">Stok Kaydını Güncelle</h2>
-                    <p className="text-[10px] text-slate-500 font-medium mt-1">Sistemdeki mevcut parça verisini değiştiriyorsunuz.</p>
+                    <p className="text-[10px] text-slate-500 font-medium mt-1.5">Sistemdeki mevcut parça verisini değiştiriyorsunuz.</p>
                   </div>
-                  <button onClick={() => setEditingStock(null)} className="text-slate-400 hover:bg-slate-100 p-1.5 rounded-md transition-colors"><X size={18} /></button>
+                  <button onClick={() => setEditingStock(null)} className="text-slate-400 hover:bg-slate-100 p-2 rounded-xl transition-colors active:scale-95"><X size={18} /></button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
-                    <label className="text-[10px] font-black text-blue-600 tracking-wider block mb-1">PARÇA ADI</label>
-                    <input className="w-full px-3 py-2 border border-slate-200 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-slate-50/50" value={editingStock.itemName} onChange={e => setEditingStock({...editingStock, itemName: e.target.value})} />
+                    <label className="text-[10px] font-black text-blue-600 tracking-wider block mb-1.5">PARÇA ADI</label>
+                    <input className="w-full px-4 py-2.5 border border-slate-200 shadow-sm rounded-xl text-sm font-bold outline-none focus:border-blue-400 focus:bg-white bg-slate-50 transition-all text-slate-800" value={editingStock.itemName} onChange={e => setEditingStock({...editingStock, itemName: e.target.value})} />
                   </div>
 
                   <div className="col-span-2">
-                    <label className="text-[10px] font-black text-slate-500 tracking-wider block mb-1">KATEGORİ (Opsiyonel)</label>
-                    <select className="w-full px-3 py-2 border border-slate-200 shadow-sm rounded-md text-xs outline-none bg-slate-50/50 focus:border-blue-400" value={editingStock.category} onChange={e => setEditingStock({...editingStock, category: e.target.value})}>
+                    <label className="text-[10px] font-black text-slate-500 tracking-wider block mb-1.5">KATEGORİ (Opsiyonel)</label>
+                    <select className="w-full px-4 py-2.5 border border-slate-200 shadow-sm rounded-xl text-sm font-bold outline-none bg-slate-50 focus:bg-white focus:border-blue-400 transition-all text-slate-700" value={editingStock.category} onChange={e => setEditingStock({...editingStock, category: e.target.value})}>
                       <option value="">Kategori Seçin veya Boş Bırakın</option>
                       {categories.map((c:any) => <option key={c.id} value={c.name}>{c.name}</option>)}
                     </select>
                   </div>
                   
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 tracking-wider block mb-1">MİKTAR</label>
-                    <input type="number" className="w-full px-3 py-2 border border-slate-200 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-slate-50/50" value={editingStock.quantity} onChange={e => setEditingStock({...editingStock, quantity: e.target.value})} />
+                    <label className="text-[10px] font-black text-slate-500 tracking-wider block mb-1.5">MİKTAR</label>
+                    <input type="number" className="w-full px-4 py-2.5 border border-slate-200 shadow-sm rounded-xl text-sm font-bold outline-none focus:border-blue-400 focus:bg-white bg-slate-50 transition-all text-slate-800" value={editingStock.quantity} onChange={e => setEditingStock({...editingStock, quantity: e.target.value})} />
                   </div>
                   
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 tracking-wider block mb-1">BİRİM</label>
-                    <select className="w-full px-3 py-2 border border-slate-200 shadow-sm rounded-md text-xs outline-none bg-slate-50/50 focus:border-blue-400" value={editingStock.unitName} onChange={e => setEditingStock({...editingStock, unitName: e.target.value})}>
+                    <label className="text-[10px] font-black text-slate-500 tracking-wider block mb-1.5">BİRİM</label>
+                    <select className="w-full px-4 py-2.5 border border-slate-200 shadow-sm rounded-xl text-sm font-bold outline-none bg-slate-50 focus:bg-white focus:border-blue-400 transition-all text-slate-700" value={editingStock.unitName} onChange={e => setEditingStock({...editingStock, unitName: e.target.value})}>
                       <option value="Adet">Adet</option>
                       <option value="Metre">Metre</option>
                       <option value="Paket">Paket</option>
@@ -632,16 +710,16 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                   </div>
                   
                   <div className="col-span-2">
-                    <label className="text-[10px] font-black text-emerald-600 tracking-wider block mb-1">BİRİM FİYAT (₺)</label>
-                    <input type="number" className="w-full px-3 py-2 border border-slate-200 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-slate-50/50" value={editingStock.unitPrice} onChange={e => setEditingStock({...editingStock, unitPrice: e.target.value})} />
+                    <label className="text-[10px] font-black text-emerald-600 tracking-wider block mb-1.5">BİRİM FİYAT (₺)</label>
+                    <input type="number" className="w-full px-4 py-2.5 border border-slate-200 shadow-sm rounded-xl text-sm font-black outline-none focus:border-emerald-400 focus:bg-white bg-slate-50 transition-all text-slate-800" value={editingStock.unitPrice} onChange={e => setEditingStock({...editingStock, unitPrice: e.target.value})} />
                   </div>
                   
                   <div className="col-span-2 mt-2 pt-4 border-t border-slate-100">
-                     <label className="text-[10px] font-black text-slate-400 tracking-wider block mb-3">TEDARİKÇİ BİLGİSİ</label>
+                     <label className="text-[10px] font-black text-slate-400 tracking-wider block mb-2">TEDARİKÇİ BİLGİSİ</label>
                   </div>
 
                   <div className="col-span-2">
-                    <select className="w-full px-3 py-2 border border-slate-200 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-slate-50/50" value={editingStock.supplierId} onChange={e => setEditingStock({...editingStock, supplierId: e.target.value})}>
+                    <select className="w-full px-4 py-2.5 border border-slate-200 shadow-sm rounded-xl text-sm font-bold outline-none bg-slate-50 focus:bg-white focus:border-blue-400 transition-all text-slate-700" value={editingStock.supplierId} onChange={e => setEditingStock({...editingStock, supplierId: e.target.value})}>
                       <option value="">-- Bağımsız / Tedarikçi Seçilmedi --</option>
                       {suppliers.map((s:any) => (
                         <option key={s.id} value={s.id}>{s.name} {s.phone ? `(${s.phone})` : ''}</option>
@@ -651,10 +729,10 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                 </div>
 
                 <div className="flex gap-2 mt-6 pt-4 border-t border-slate-100">
-                  <button disabled={isSavingLocal} className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-bold text-xs hover:bg-blue-700 flex justify-center items-center shadow-md shadow-blue-200 transition-colors" onClick={handleUpdate}>
-                    {isSavingLocal ? <Loader2 className="animate-spin" size={16} /> : 'Değişiklikleri Kaydet'}
+                  <button disabled={isSavingLocal} className="flex-[2] bg-blue-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-700 flex justify-center items-center shadow-lg shadow-blue-200 transition-all active:scale-95" onClick={handleUpdate}>
+                    {isSavingLocal ? <Loader2 className="animate-spin" size={18} /> : 'Kaydet'}
                   </button>
-                  <button onClick={() => setEditingStock(null)} className="px-4 bg-slate-100 text-slate-700 py-2.5 rounded-lg font-bold text-xs hover:bg-slate-200 transition-colors">
+                  <button onClick={() => setEditingStock(null)} className="flex-1 px-4 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all active:scale-95">
                     İptal
                   </button>
                 </div>

@@ -16,10 +16,10 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
   
   const [modalState, setModalState] = useState<'idle' | 'success' | 'error'>('idle');
   
-  // YENİ: Çevrimdışı kontrolü için State
+  // Çevrimdışı kontrolü için State
   const [isOffline, setIsOffline] = useState(false);
 
-  // YENİ: İnternet durumunu dinleyen useEffect
+  // İnternet durumunu dinleyen useEffect
   useEffect(() => {
     if (typeof navigator !== 'undefined') {
       setIsOffline(!navigator.onLine);
@@ -105,7 +105,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
   };
 
   const handleSave = async () => {
-    // YENİ: Çevrimdışı/Offline Kuyruk Koruması Entegrasyonu
+    // Çevrimdışı/Offline Kuyruk Koruması Entegrasyonu
     if (isOffline) {
        console.warn("İnternet bağlantısı yok. Ayarlarınız kuyruğa alındı.");
        const activeSlug = localStorage.getItem('companySlug') || ''; // Eğer parametreyle gelmiyorsa lokalden çek
@@ -137,7 +137,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
     settingsForm?.taxInfo?.trim();
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6 relative pb-20 sm:pb-6">
       
       {/* Modal - Onay veya Hata */}
       <AnimatePresence>
@@ -152,31 +152,31 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
               initial={{ scale: 0.9, opacity: 0 }} 
               animate={{ scale: 1, opacity: 1 }} 
               exit={{ scale: 0.9, opacity: 0 }} 
-              className="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center max-w-sm w-full"
+              className="bg-white p-6 rounded-3xl shadow-2xl flex flex-col items-center max-w-sm w-full"
             >
               {modalState === 'success' ? (
                 <>
-                  <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4">
+                  <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 shadow-inner">
                     <CheckCircle size={32} />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-800 mb-2">Başarılı!</h3>
-                  <p className="text-slate-500 text-center text-sm mb-6">
-                    {/* YENİ: Offline ise başarılı mesajı değişir */}
+                  <h3 className="text-xl font-black text-slate-800 mb-2">Başarılı!</h3>
+                  <p className="text-slate-500 text-center text-sm mb-6 font-medium leading-relaxed">
+                    {/* Offline ise başarılı mesajı değişir */}
                     {isOffline ? 'İnternet bağlantınız yok. Ayarlarınız cihaza kaydedildi, bağlantı sağlandığında sisteme aktarılacaktır.' : 'İşletme ayarlarınız başarıyla güncellendi ve sisteme kaydedildi.'}
                   </p>
                 </>
               ) : (
                 <>
-                  <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-4">
+                  <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-4 shadow-inner">
                     <AlertTriangle size={32} />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-800 mb-2">Hata Oluştu!</h3>
-                  <p className="text-slate-500 text-center text-sm mb-6">Ayarlar kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.</p>
+                  <h3 className="text-xl font-black text-slate-800 mb-2">Hata Oluştu!</h3>
+                  <p className="text-slate-500 text-center text-sm mb-6 font-medium leading-relaxed">Ayarlar kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.</p>
                 </>
               )}
               <button 
                 onClick={() => setModalState('idle')} 
-                className="w-full py-2.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-colors"
+                className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-colors active:scale-95 shadow-md"
               >
                 Kapat
               </button>
@@ -185,47 +185,52 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
         )}
       </AnimatePresence>
 
-      <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+      {/* YENİ: Mobilde Dikey Hiyerarşi, Esnek Başlık Yapısı */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 pb-4 gap-4">
         <div>
-          <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 tracking-tight">
              İşletme Ayarları
-             {/* YENİ: Offline durumu için küçük ikon. Span içine alındı. */}
-             {isOffline && <span title="Çevrimdışı Mod"><WifiOff size={14} className="text-amber-500" /></span>}
+             {/* Offline durumu için küçük ikon. Span içine alındı. */}
+             {isOffline && <span title="Çevrimdışı Mod"><WifiOff size={16} className="text-amber-500" /></span>}
           </h3>
-          <p className="text-xs text-slate-500 mt-1">Firma bilgilerinizi buradan güncelleyebilirsiniz.</p>
+          <p className="text-xs font-medium text-slate-500 mt-1">Firma bilgilerinizi buradan güncelleyebilirsiniz.</p>
         </div>
-        <button 
-          disabled={isSaving || !isFormValid} 
-          onClick={handleSave} 
-          // YENİ: active:scale-95 eklendi (Mobil dokunmatik hissi)
-          className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isSaving ? <Loader2 className="animate-spin" size={16} /> : (isOffline ? <WifiOff size={16} /> : <Save size={16} />)}
-          {isOffline ? 'Kuyruğa Al' : 'Ayarları Kaydet'}
-        </button>
+        
+        {/* YENİ: Mobilde buton her zaman altta (Sticky) görünecek şekilde kurgulandı, masaüstünde normal yerinde. */}
+        <div className="fixed bottom-4 left-4 right-4 sm:static sm:bottom-auto sm:left-auto sm:right-auto z-50 flex sm:block justify-center pointer-events-none sm:pointer-events-auto">
+          <button 
+            disabled={isSaving || !isFormValid} 
+            onClick={handleSave} 
+            className="w-[calc(100vw-32px)] sm:w-auto bg-blue-600 text-white px-6 py-3.5 sm:py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-xl sm:shadow-sm hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed pointer-events-auto"
+          >
+            {isSaving ? <Loader2 className="animate-spin" size={18} /> : (isOffline ? <WifiOff size={18} /> : <Save size={18} />)}
+            {isOffline ? 'Kuyruğa Al' : 'Ayarları Kaydet'}
+          </button>
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 space-y-6">
         
         {/* Logo Yükleme Alanı */}
-        <div className="flex flex-col sm:flex-row gap-5 items-center bg-slate-50 p-4 border border-slate-200 rounded-xl">
-          <div className="w-20 h-20 bg-white border border-slate-200 rounded-lg flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+        {/* YENİ: Mobilde daralmayı önlemek için flex-col yapısı iyileştirildi */}
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-center sm:items-start bg-slate-50 p-4 border border-slate-200 rounded-xl">
+          <div className="w-20 h-20 bg-white border border-slate-200 rounded-xl flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
             {settingsForm?.logo ? (
               <img src={settingsForm.logo} alt="Logo" className="max-w-full max-h-full object-contain p-2" />
             ) : (
               <ImagePlus className="text-slate-300" size={32} />
             )}
           </div>
-          <div className="flex-1">
-            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Firma Logosu</label>
-            <p className="text-xs text-slate-500 mb-3">Şeffaf arka plana sahip bir PNG dosyası yüklemeniz önerilir. Sistemimiz görseli anında optimize edecektir.</p>
-            <div className="flex gap-2">
-              <label className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-xs font-bold cursor-pointer hover:bg-slate-50 transition-all active:scale-95 shadow-sm inline-block">
+          <div className="flex-1 text-center sm:text-left">
+            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block">Firma Logosu</label>
+            <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-3 leading-relaxed">Şeffaf arka plana sahip bir PNG dosyası yüklemeniz önerilir. Sistemimiz görseli anında optimize edecektir.</p>
+            <div className="flex justify-center sm:justify-start gap-2">
+              <label className="bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-lg text-xs font-bold cursor-pointer hover:bg-slate-100 transition-all active:scale-95 shadow-sm inline-flex items-center justify-center">
                 <input type="file" accept="image/png" className="hidden" onChange={handleLogoUpload} />
                 Logo Seç
               </label>
               {settingsForm?.logo && (
-                <button onClick={() => setSettingsForm({...settingsForm, logo: ''})} className="bg-rose-50 border border-rose-100 text-rose-600 px-4 py-2 rounded-lg text-xs font-bold hover:bg-rose-100 transition-all active:scale-95 shadow-sm">
+                <button onClick={() => setSettingsForm({...settingsForm, logo: ''})} className="bg-rose-50 border border-rose-200 text-rose-600 px-4 py-2.5 rounded-lg text-xs font-bold hover:bg-rose-100 transition-all active:scale-95 shadow-sm">
                   Kaldır
                 </button>
               )}
@@ -234,13 +239,13 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
         </div>
 
         {/* Firma Adı & Yetkili */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
           <div>
-            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Firma Ünvanı</label>
+            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block">Firma Ünvanı</label>
             <div className="relative">
-              <Building2 className="absolute left-3 top-2.5 text-slate-400" size={16} />
+              <Building2 className="absolute left-3 top-3 sm:top-2.5 text-slate-400" size={16} />
               <input 
-                className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800 font-medium"
+                className="w-full pl-10 pr-3 py-3 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-800 font-bold"
                 value={settingsForm?.companyName || ''}
                 onChange={(e) => setSettingsForm({ ...settingsForm, companyName: e.target.value })}
                 placeholder="Örn: Kaya Asansör Ltd. Şti."
@@ -249,11 +254,11 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
           </div>
 
           <div>
-            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Yetkili Ad Soyad</label>
+            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block">Yetkili Ad Soyad</label>
             <div className="relative">
-              <User className="absolute left-3 top-2.5 text-slate-400" size={16} />
+              <User className="absolute left-3 top-3 sm:top-2.5 text-slate-400" size={16} />
               <input 
-                className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800"
+                className="w-full pl-10 pr-3 py-3 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-800 font-semibold"
                 value={settingsForm?.ownerName || ''}
                 onChange={(e) => setSettingsForm({ ...settingsForm, ownerName: e.target.value })}
                 placeholder="Ad Soyad"
@@ -263,15 +268,15 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
         </div>
 
         {/* Sektör (KİLİTLİ) & Web Sitesi */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
           <div>
-            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-              Faaliyet Sektörü <span className="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-400 font-normal">(Değiştirilemez)</span>
+            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center justify-between sm:justify-start sm:gap-2">
+              Faaliyet Sektörü <span className="text-[9px] bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-md text-slate-400 font-bold">Değiştirilemez</span>
             </label>
             <div className="relative">
-              <Briefcase className="absolute left-3 top-2.5 text-slate-400" size={16} />
+              <Briefcase className="absolute left-3 top-3 sm:top-2.5 text-slate-400" size={16} />
               <input 
-                className="w-full pl-10 pr-3 py-2.5 border border-slate-200 bg-slate-50 text-slate-500 rounded-lg text-sm outline-none cursor-not-allowed font-medium"
+                className="w-full pl-10 pr-3 py-3 sm:py-2.5 border border-slate-200 bg-slate-50/50 text-slate-500 rounded-xl text-sm outline-none cursor-not-allowed font-bold"
                 value={settingsForm?.sector || ''}
                 readOnly
                 placeholder="Sektör"
@@ -280,12 +285,12 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
           </div>
 
           <div>
-            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Web Sitesi</label>
+            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block">Web Sitesi</label>
             <div className="relative">
-              <Globe className="absolute left-3 top-2.5 text-slate-400" size={16} />
+              <Globe className="absolute left-3 top-3 sm:top-2.5 text-slate-400" size={16} />
               <input 
                 type="url"
-                className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800"
+                className="w-full pl-10 pr-3 py-3 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-800 font-semibold"
                 value={settingsForm?.website || ''}
                 onChange={(e) => setSettingsForm({ ...settingsForm, website: e.target.value })}
                 placeholder="www.firmaniz.com"
@@ -295,95 +300,97 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
         </div>
 
         {/* İLETİŞİM BİLGİLERİ (4'LÜ GRID) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 border-t border-slate-100 pt-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 border-t border-slate-100 pt-6">
             <div>
-              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">İşletme Telefonu (Cep)</label>
+              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block">İşletme Telefonu (Cep)</label>
               <div className="relative">
-                <Phone className="absolute left-3 top-2.5 text-slate-400" size={16} />
+                <Phone className="absolute left-3 top-3 sm:top-2.5 text-slate-400" size={16} />
                 <input 
                   type="tel"
-                  className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800"
+                  className="w-full pl-10 pr-3 py-3 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-800 font-bold tracking-wide"
                   value={settingsForm?.phone || ''}
                   onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
                   placeholder="05XX XXX XX XX"
                 />
               </div>
-              <p className="text-[9px] text-slate-400 mt-1">İş Dökümü yetkililerinin sizinle iletişime geçebileceği ana irtibat numarasıdır.</p>
+              <p className="text-[10px] font-medium text-slate-400 mt-1.5 leading-snug">İş Dökümü yetkililerinin sizinle iletişime geçebileceği ana irtibat numarasıdır.</p>
             </div>
 
             <div>
-              <label className="text-[11px] font-bold text-blue-600 uppercase tracking-wider mb-1.5 block">Sabit Hat Numarası</label>
+              <label className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-1.5 block">Sabit Hat Numarası</label>
               <div className="relative">
-                <Building2 className="absolute left-3 top-2.5 text-blue-400" size={16} />
+                <Building2 className="absolute left-3 top-3 sm:top-2.5 text-blue-400" size={16} />
                 <input 
                   type="tel"
-                  className="w-full pl-10 pr-3 py-2.5 border border-blue-200 bg-blue-50/30 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800 placeholder:text-blue-300"
+                  className="w-full pl-10 pr-3 py-3 sm:py-2.5 bg-blue-50/50 border border-blue-200 rounded-xl text-sm outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-800 font-bold tracking-wide placeholder:text-blue-300"
                   value={settingsForm?.landlinePhone || ''}
                   onChange={(e) => setSettingsForm({ ...settingsForm, landlinePhone: e.target.value })}
                   placeholder="02XX XXX XX XX"
                 />
               </div>
-              <p className="text-[9px] text-slate-400 mt-1">İşletmenizin sabit hattı. (Cihaz QR etiketlerinde görünür)</p>
+              <p className="text-[10px] font-medium text-slate-400 mt-1.5 leading-snug">İşletmenizin sabit hattı. (Cihaz QR etiketlerinde görünür)</p>
             </div>
 
             <div>
-              <label className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider mb-1.5 block">WhatsApp Numarası</label>
+              <label className="text-[11px] font-black text-emerald-600 uppercase tracking-widest mb-1.5 block">WhatsApp Numarası</label>
               <div className="relative">
-                <MessageCircle className="absolute left-3 top-2.5 text-emerald-500" size={16} />
+                <MessageCircle className="absolute left-3 top-3 sm:top-2.5 text-emerald-500" size={16} />
                 <input 
                   type="tel"
-                  className="w-full pl-10 pr-3 py-2.5 border border-emerald-200 bg-emerald-50/30 rounded-lg text-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-slate-800 placeholder:text-emerald-300"
+                  className="w-full pl-10 pr-3 py-3 sm:py-2.5 bg-emerald-50/50 border border-emerald-200 rounded-xl text-sm outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all text-slate-800 font-bold tracking-wide placeholder:text-emerald-300"
                   value={settingsForm?.whatsappPhone || ''}
                   onChange={(e) => setSettingsForm({ ...settingsForm, whatsappPhone: e.target.value })}
                   placeholder="05XX XXX XX XX"
                 />
               </div>
-              <p className="text-[9px] text-slate-400 mt-1">Müşterilere mesaj atabileceğiniz hat. (QR etiketinde görünür)</p>
+              <p className="text-[10px] font-medium text-slate-400 mt-1.5 leading-snug">Müşterilere mesaj atabileceğiniz hat. (QR etiketinde görünür)</p>
             </div>
 
             <div>
-              <label className="text-[11px] font-bold text-rose-600 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                  <AlertTriangle size={12} /> Acil Durum Hattı
+              <label className="text-[11px] font-black text-rose-600 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                  <AlertTriangle size={14} /> Acil Durum Hattı
               </label>
               <div className="relative">
-                <Phone className="absolute left-3 top-2.5 text-rose-400" size={16} />
+                <Phone className="absolute left-3 top-3 sm:top-2.5 text-rose-400" size={16} />
                 <input 
                   type="tel"
-                  className="w-full pl-10 pr-3 py-2.5 border border-rose-200 bg-rose-50 rounded-lg text-sm outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all text-slate-800 placeholder:text-rose-300"
+                  className="w-full pl-10 pr-3 py-3 sm:py-2.5 bg-rose-50/80 border border-rose-200 rounded-xl text-sm outline-none focus:bg-white focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 transition-all text-slate-800 font-bold tracking-wide placeholder:text-rose-300"
                   value={settingsForm?.emergencyPhone || ''}
                   onChange={(e) => setSettingsForm({ ...settingsForm, emergencyPhone: e.target.value })}
                   placeholder="05XX XXX XX XX"
                 />
               </div>
-              <p className="text-[9px] text-slate-400 mt-1">QR kod sayfasındaki "Acil Destek" butonunda bu numara aranır.</p>
+              <p className="text-[10px] font-medium text-slate-400 mt-1.5 leading-snug">QR kod sayfasındaki "Acil Destek" butonunda bu numara aranır.</p>
             </div>
         </div>
 
         {/* Adres Yönetimi */}
-        <div className="border-t border-slate-100 pt-5">
-          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Konum ve Adres</label>
-          <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
-             <div className="grid grid-cols-2 gap-4">
+        <div className="border-t border-slate-100 pt-6">
+          <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Konum ve Adres Bilgisi</label>
+          <div className="space-y-4 p-4 sm:p-5 bg-slate-50 border border-slate-200 rounded-2xl">
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                   <label className="text-[10px] text-slate-400 font-bold uppercase mb-1 block">İl</label>
+                   <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider mb-1.5 block">İl</label>
                    <select 
-                      className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none bg-white focus:border-blue-500"
+                      className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 appearance-none pr-8 cursor-pointer transition-all"
                       value={localCity}
                       onChange={(e) => updateAddress(localDetail, e.target.value, '')}
+                      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center' }}
                    >
-                      <option value="">Seçiniz</option>
+                      <option value="">İl Seçiniz</option>
                       {Object.keys(CITY_DATA).map(c => <option key={c} value={c}>{c}</option>)}
                    </select>
                 </div>
                 <div>
-                   <label className="text-[10px] text-slate-400 font-bold uppercase mb-1 block">İlçe</label>
+                   <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider mb-1.5 block">İlçe</label>
                    <select 
-                      className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none bg-white focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-400"
+                      className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed appearance-none pr-8 cursor-pointer transition-all"
                       value={localDistrict}
                       onChange={(e) => updateAddress(localDetail, localCity, e.target.value)}
                       disabled={!localCity}
+                      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center' }}
                    >
-                      <option value="">Seçiniz</option>
+                      <option value="">İlçe Seçiniz</option>
                       {localCity && CITY_DATA[localCity]?.map((d: string) => (
                         <option key={d} value={d}>{d}</option>
                       ))}
@@ -391,12 +398,12 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
                 </div>
              </div>
              <div>
-                <label className="text-[10px] text-slate-400 font-bold uppercase mb-1 block">Adres Detayı (Mahalle, Cadde, Sokak, No...)</label>
+                <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider mb-1.5 block">Adres Detayı (Mahalle, Cadde, Sokak, No...)</label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-3 text-slate-400" size={16} />
+                  <MapPin className="absolute left-3 top-3 sm:top-3.5 text-slate-400" size={16} />
                   <textarea 
                     rows={2}
-                    className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800 resize-none bg-white"
+                    className="w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-800 resize-none bg-white"
                     value={localDetail}
                     onChange={(e) => updateAddress(e.target.value, localCity, localDistrict)}
                     placeholder="Mahalle, Sokak, Bina No..."
@@ -407,12 +414,12 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
         </div>
 
         {/* Vergi Bilgileri */}
-        <div>
-          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Vergi Dairesi / VKN / T.C.</label>
+        <div className="border-t border-slate-100 pt-6 pb-2">
+          <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block">Vergi Dairesi / VKN / T.C.</label>
           <div className="relative">
-            <FileText className="absolute left-3 top-2.5 text-slate-400" size={16} />
+            <FileText className="absolute left-3 top-3 sm:top-2.5 text-slate-400" size={16} />
             <input 
-              className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800"
+              className="w-full pl-10 pr-3 py-3 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-800"
               value={settingsForm?.taxInfo || ''}
               onChange={(e) => setSettingsForm({ ...settingsForm, taxInfo: e.target.value })}
               placeholder="Vergi Dairesi ve Numarası"
@@ -421,9 +428,9 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
         </div>
 
         {!isFormValid && (
-           <div className="bg-amber-50 text-amber-600 px-4 py-3 rounded-lg text-xs font-medium border border-amber-100 flex items-center gap-2 mt-4">
-              <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
-              Sistemi kullanmaya devam edebilmek için lütfen tüm zorunlu alanları eksiksiz doldurup kaydedin.
+           <div className="bg-amber-50 text-amber-700 p-4 rounded-xl text-[11px] sm:text-xs font-bold border border-amber-200 flex items-start sm:items-center gap-3 mt-4 shadow-sm">
+              <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse shrink-0 mt-1 sm:mt-0"></span>
+              <span>Sistemi kullanmaya devam edebilmek için lütfen tüm zorunlu alanları eksiksiz doldurup <strong>"Ayarları Kaydet"</strong> butonuna basın.</span>
            </div>
         )}
 

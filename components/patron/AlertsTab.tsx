@@ -52,26 +52,27 @@ export default function AlertsTab({ data }: AlertsTabProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm">
         <div>
           <h2 className="text-xl font-black text-slate-800 tracking-tight">Bildirim ve Çağrı Geçmişi</h2>
           <p className="text-sm text-slate-500 font-medium mt-1">Sahadan gelen arıza talepleri ve acil durum çağrılarının tüm kayıtları.</p>
         </div>
         
-        <div className="flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
+        {/* MOBİL İÇİN YATAY KAYDIRMALI SEKME (Eğer eklersek diye flex-wrap eklendi, ama flex-1 ile sığacaktır) */}
+        <div className="flex w-full sm:w-auto bg-slate-100 p-1 rounded-xl">
           <button 
             onClick={() => setActiveSubTab('faults')}
             // YENİ: active:scale-95 eklendi (Mobil Dokunmatik Hissi)
-            className={`flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2 ${activeSubTab === 'faults' ? 'bg-white text-amber-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2 ${activeSubTab === 'faults' ? 'bg-white text-amber-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
           >
-            <AlertTriangle size={16} /> Arıza Kayıtları ({faults.length})
+            <AlertTriangle size={16} className="shrink-0" /> <span className="truncate">Arıza ({faults.length})</span>
           </button>
           <button 
             onClick={() => setActiveSubTab('emergencies')}
             // YENİ: active:scale-95 eklendi (Mobil Dokunmatik Hissi)
-            className={`flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2 ${activeSubTab === 'emergencies' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2 ${activeSubTab === 'emergencies' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
           >
-            <ShieldAlert size={16} /> Acil Durumlar ({emergencies.length})
+            <ShieldAlert size={16} className="shrink-0" /> <span className="truncate">Acil ({emergencies.length})</span>
           </button>
         </div>
       </div>
@@ -94,13 +95,14 @@ export default function AlertsTab({ data }: AlertsTabProps) {
                   const subTitle = aptName ? fault.asset_name : null;
 
                   return (
-                    <div key={fault.id || idx} className={`p-5 rounded-2xl border flex flex-col md:flex-row gap-5 items-start md:items-center justify-between transition-all hover:shadow-md ${fault.status === 'Aktif' ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200'}`}>
-                      <div className="flex gap-4 items-start w-full md:w-auto flex-1">
-                        <div className={`p-3 rounded-full mt-1 ${fault.status === 'Aktif' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>
+                    <div key={fault.id || idx} className={`p-4 sm:p-5 rounded-2xl border flex flex-col lg:flex-row gap-4 sm:gap-5 items-start lg:items-center justify-between transition-all hover:shadow-md ${fault.status === 'Aktif' ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200'}`}>
+                      {/* MOBİL DİKEY HİYERARŞİ İÇİN flex-col EKLENDİ */}
+                      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start w-full lg:w-auto flex-1">
+                        <div className={`p-3 rounded-full shrink-0 ${fault.status === 'Aktif' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>
                           <AlertTriangle size={24} />
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
+                        <div className="flex-1 w-full min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${fault.status === 'Aktif' ? 'bg-amber-200 text-amber-800' : 'bg-emerald-100 text-emerald-700'}`}>
                               {fault.status === 'Aktif' ? 'Müdahale Bekliyor' : 'Çözüldü'}
                             </span>
@@ -110,35 +112,35 @@ export default function AlertsTab({ data }: AlertsTabProps) {
                           </div>
                           
                           {/* YENİ BAŞLIK YAPISI */}
-                          <h3 className="font-bold text-slate-800 text-lg leading-tight">{mainTitle}</h3>
+                          <h3 className="font-bold text-slate-800 text-lg leading-tight truncate">{mainTitle}</h3>
                           {subTitle && (
-                             <div className="text-xs font-semibold text-slate-500 mt-0.5">{subTitle}</div>
+                             <div className="text-xs font-semibold text-slate-500 mt-0.5 truncate">{subTitle}</div>
                           )}
 
-                          <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-500 mt-2">
-                            <span className="flex items-center gap-1.5"><MapPin size={14} className="text-slate-400" /> {fault.asset_location ? fault.asset_location.replace(aptName || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : 'Konum yok'}</span>
-                            <span className="flex items-center gap-1.5"><User size={14} className="text-slate-400" /> {fault.reporter_name || 'İsimsiz'}</span>
-                            <span className="flex items-center gap-1.5"><Phone size={14} className="text-slate-400" /> {fault.reporter_phone || 'Tel yok'}</span>
+                          <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-4 text-xs font-semibold text-slate-500 mt-2.5">
+                            <span className="flex items-center gap-1.5 w-full sm:w-auto truncate"><MapPin size={14} className="text-slate-400 shrink-0" /> <span className="truncate">{fault.asset_location ? fault.asset_location.replace(aptName || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : 'Konum yok'}</span></span>
+                            <div className="flex items-center gap-4 w-full sm:w-auto">
+                                <span className="flex items-center gap-1.5 truncate"><User size={14} className="text-slate-400 shrink-0" /> <span className="truncate">{fault.reporter_name || 'İsimsiz'}</span></span>
+                                <span className="flex items-center gap-1.5 shrink-0"><Phone size={14} className="text-slate-400 shrink-0" /> {fault.reporter_phone || 'Tel yok'}</span>
+                            </div>
                           </div>
-                          <p className="mt-3 text-sm text-slate-600 italic border-l-2 border-slate-300 pl-3">"{fault.description}"</p>
+                          <p className="mt-3 text-sm text-slate-600 italic border-l-2 border-slate-300 pl-3 line-clamp-3">"{fault.description}"</p>
                         </div>
                       </div>
 
                       {/* Hızlı İletişim Butonları */}
                       {fault.reporter_phone && (
-                          <div className="flex gap-2 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-slate-200/60">
+                          <div className="flex gap-2 w-full lg:w-auto mt-4 lg:mt-0 pt-4 lg:pt-0 border-t lg:border-t-0 border-slate-200/60 shrink-0">
                               <a 
                                 href={`tel:${fault.reporter_phone}`} 
-                                // YENİ: active:scale-95 eklendi (Mobil Dokunmatik Hissi)
-                                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl font-bold text-xs transition-all active:scale-95 shadow-sm"
+                                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl font-bold text-xs transition-all active:scale-95 shadow-sm"
                               >
                                 <Phone size={16} /> Ara
                               </a>
                               <a 
                                 href={`https://wa.me/${formatPhoneForWA(fault.reporter_phone)}?text=${encodeURIComponent(`Merhaba ${fault.reporter_name || ''}, ${mainTitle} için arıza kaydınızla ilgili ulaşıyoruz.`)}`}
                                 target="_blank" rel="noopener noreferrer"
-                                // YENİ: active:scale-95 eklendi (Mobil Dokunmatik Hissi)
-                                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-xs transition-all active:scale-95 shadow-sm shadow-emerald-200"
+                                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-xs transition-all active:scale-95 shadow-sm shadow-emerald-200"
                               >
                                 <MessageCircle size={16} /> WhatsApp
                               </a>
@@ -167,13 +169,14 @@ export default function AlertsTab({ data }: AlertsTabProps) {
                   const subTitle = aptName ? em.asset_name : null;
 
                   return (
-                    <div key={em.id || idx} className={`p-5 rounded-2xl border flex flex-col md:flex-row gap-5 items-start md:items-center justify-between transition-all hover:shadow-md ${em.status === 'Aktif' ? 'bg-rose-50 border-rose-200' : 'bg-white border-slate-200'}`}>
-                      <div className="flex gap-4 items-start w-full md:w-auto">
-                        <div className={`p-3 rounded-full mt-1 ${em.status === 'Aktif' ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-400'}`}>
+                    <div key={em.id || idx} className={`p-4 sm:p-5 rounded-2xl border flex flex-col lg:flex-row gap-4 sm:gap-5 items-start lg:items-center justify-between transition-all hover:shadow-md ${em.status === 'Aktif' ? 'bg-rose-50 border-rose-200' : 'bg-white border-slate-200'}`}>
+                      {/* MOBİL DİKEY HİYERARŞİ İÇİN flex-col EKLENDİ */}
+                      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start w-full lg:w-auto min-w-0">
+                        <div className={`p-3 rounded-full shrink-0 ${em.status === 'Aktif' ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-400'}`}>
                           <ShieldAlert size={24} />
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
+                        <div className="w-full min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${em.status === 'Aktif' ? 'bg-rose-200 text-rose-800' : 'bg-emerald-100 text-emerald-700'}`}>
                               {em.status === 'Aktif' ? 'Kırmızı Alarm' : 'Çözüldü / Kapatıldı'}
                             </span>
@@ -183,13 +186,13 @@ export default function AlertsTab({ data }: AlertsTabProps) {
                           </div>
                           
                           {/* YENİ BAŞLIK YAPISI */}
-                          <h3 className="font-bold text-slate-800 text-lg leading-tight">{mainTitle}</h3>
+                          <h3 className="font-bold text-slate-800 text-lg leading-tight truncate">{mainTitle}</h3>
                           {subTitle && (
-                             <div className="text-xs font-semibold text-slate-500 mt-0.5">{subTitle}</div>
+                             <div className="text-xs font-semibold text-slate-500 mt-0.5 truncate">{subTitle}</div>
                           )}
 
-                          <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-500 mt-2">
-                            <span className="flex items-center gap-1.5"><MapPin size={14} className="text-slate-400" /> {em.asset_location ? em.asset_location.replace(aptName || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : 'Konum yok'}</span>
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-xs font-semibold text-slate-500 mt-2.5">
+                            <span className="flex items-center gap-1.5 w-full sm:w-auto truncate"><MapPin size={14} className="text-slate-400 shrink-0" /> <span className="truncate">{em.asset_location ? em.asset_location.replace(aptName || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : 'Konum yok'}</span></span>
                           </div>
                         </div>
                       </div>

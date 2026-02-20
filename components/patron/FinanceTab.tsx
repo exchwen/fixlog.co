@@ -17,7 +17,7 @@ export default function FinanceTab({ data }: any) {
   const [financeAmount, setFinanceAmount] = useState('');
   const [isSavingFinance, setIsSavingFinance] = useState(false);
 
-  // YENİ: Çevrimdışı kontrolü için State
+  // Çevrimdışı kontrolü için State
   const [isOffline, setIsOffline] = useState(false);
 
   // Filtre State'leri (Her tablo için ayrı tutuluyor)
@@ -46,7 +46,7 @@ export default function FinanceTab({ data }: any) {
     setLocalJobs(data?.jobs || []);
   }, [data]);
 
-  // YENİ: İnternet durumunu dinleyen useEffect
+  // İnternet durumunu dinleyen useEffect
   useEffect(() => {
     setIsOffline(!navigator.onLine);
     const handleOnline = () => setIsOffline(false);
@@ -80,7 +80,7 @@ export default function FinanceTab({ data }: any) {
     const endpoint = financeModal.type === 'Gelir' ? 'add-income' : 'add-expense';
     const bodyData = { slug: activeSlug, description, amount: parseFloat(financeAmount) };
     
-    // YENİ: Her durumda arayüze (Local State) anında ekle ki kullanıcı beklemesin
+    // Her durumda arayüze (Local State) anında ekle ki kullanıcı beklemesin
     const newRecord = {
         id: Date.now().toString(),
         description,
@@ -104,7 +104,7 @@ export default function FinanceTab({ data }: any) {
         alert("Kayıt Başarısız! Lütfen Cloudflare bağlantınızı kontrol edin.");
       }
     } catch (e) { 
-      // YENİ: VERİTABANI HATASI VEYA BAĞLANTI SORUNU İÇİN CACHE SİSTEMİ (OFFLINE QUEUE)
+      // VERİTABANI HATASI VEYA BAĞLANTI SORUNU İÇİN CACHE SİSTEMİ (OFFLINE QUEUE)
       console.warn("İnternet bağlantısı yok veya sunucuya ulaşılamadı. Finans işlemi kuyruğa alındı.");
       
       const pending = JSON.parse(localStorage.getItem(`offline_actions_${activeSlug}`) || '[]');
@@ -186,23 +186,23 @@ export default function FinanceTab({ data }: any) {
 
     return (
       <div className="mb-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3">
-          <h3 className="text-lg font-bold text-slate-900">{title}</h3>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+          <h3 className="text-lg font-black text-slate-800 tracking-tight">{title}</h3>
           
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 w-full md:w-auto">
             {/* ÖZEL TARİH SEÇİCİLER (Sadece "Özel Tarih" seçilirse görünür) */}
             {currentFilter === 'Özel Tarih' && (
-              <div className="flex items-center gap-2 bg-white border border-blue-200 rounded-md shadow-sm px-2 py-1.5 animate-in fade-in slide-in-from-right-4">
+              <div className="flex items-center justify-between sm:justify-start gap-2 bg-white border border-blue-200 rounded-xl shadow-sm px-3 py-2 animate-in fade-in slide-in-from-right-4 w-full sm:w-auto">
                 <input 
                   type="date" 
-                  className="text-xs text-slate-600 outline-none bg-transparent font-medium cursor-pointer"
+                  className="text-xs text-slate-600 outline-none bg-transparent font-medium cursor-pointer w-full"
                   value={customDateRanges[title].start}
                   onChange={e => setCustomDateRanges({...customDateRanges, [title]: {...customDateRanges[title], start: e.target.value}})}
                 />
-                <span className="text-slate-300 font-bold">-</span>
+                <span className="text-slate-300 font-black">-</span>
                 <input 
                   type="date" 
-                  className="text-xs text-slate-600 outline-none bg-transparent font-medium cursor-pointer"
+                  className="text-xs text-slate-600 outline-none bg-transparent font-medium cursor-pointer w-full text-right sm:text-left"
                   value={customDateRanges[title].end}
                   onChange={e => setCustomDateRanges({...customDateRanges, [title]: {...customDateRanges[title], end: e.target.value}})}
                 />
@@ -210,10 +210,10 @@ export default function FinanceTab({ data }: any) {
             )}
 
             {/* FİLTRELEME MENÜSÜ */}
-            <div className={`relative flex items-center bg-white border rounded-md shadow-sm overflow-hidden transition-colors ${currentFilter === 'Özel Tarih' ? 'border-blue-400 ring-1 ring-blue-400/20' : 'border-slate-200'}`}>
-              <div className={`pl-2.5 ${currentFilter === 'Tümü' ? 'text-slate-400' : 'text-blue-500'}`}><Filter size={14} /></div>
+            <div className={`relative flex items-center bg-white border rounded-xl shadow-sm overflow-hidden transition-colors flex-1 sm:flex-none ${currentFilter === 'Özel Tarih' ? 'border-blue-400 ring-2 ring-blue-400/20' : 'border-slate-200'}`}>
+              <div className={`pl-3 ${currentFilter === 'Tümü' ? 'text-slate-400' : 'text-blue-500'}`}><Filter size={16} /></div>
               <select 
-                className="bg-transparent text-slate-700 px-2 py-1.5 text-xs font-semibold outline-none cursor-pointer"
+                className="bg-transparent text-slate-700 px-3 py-2.5 sm:py-2 w-full text-xs font-bold outline-none cursor-pointer appearance-none pr-8"
                 value={currentFilter}
                 onChange={(e) => {
                   setTimeFilters({...timeFilters, [title]: e.target.value});
@@ -222,6 +222,7 @@ export default function FinanceTab({ data }: any) {
                     setCustomDateRanges({...customDateRanges, [title]: { start: '', end: '' }});
                   }
                 }}
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center' }}
               >
                 <option value="Tümü">Tüm Zamanlar</option>
                 <option value="Bugün">Bugün</option>
@@ -234,19 +235,18 @@ export default function FinanceTab({ data }: any) {
             {/* EXCEL BUTONU */}
             <button 
               onClick={() => exportToExcel(filteredData, title)} 
-              // YENİ: active:scale-95 eklendi
-              className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-100 transition-all active:scale-95 shadow-sm"
+              className="bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-600 px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm sm:w-auto w-full"
             >
-              <Download size={14} /> Excel İndir
+              <Download size={16} /> <span className="sm:hidden">Excel Olarak İndir</span><span className="hidden sm:inline">Excel İndir</span>
             </button>
           </div>
         </div>
         
-        {/* DİKEY ÇİZGİLİ VE ZEBRA DESENLİ TABLO */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+        {/* MASAÜSTÜ İÇİN TABLO GÖRÜNÜMÜ */}
+        <div className="hidden md:flex bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex-col">
           <div className="overflow-x-auto overflow-y-auto max-h-[400px] custom-scrollbar">
             <table className="w-full text-left text-xs relative border-collapse min-w-[600px]">
-              <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+              <thead className="bg-slate-50 text-slate-600 font-black border-b border-slate-200 sticky top-0 z-10 shadow-sm uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="px-5 py-4 w-1/2 border-r border-slate-200 last:border-r-0 whitespace-nowrap">Açıklama (Kalemler)</th>
                   <th className="px-5 py-4 border-r border-slate-200 last:border-r-0 whitespace-nowrap">Tarih ve Saat</th>
@@ -261,13 +261,13 @@ export default function FinanceTab({ data }: any) {
                   const dateObj = new Date(f.created_at);
 
                   return (
-                  <tr key={f.id} className="hover:bg-blue-50/30 transition-colors group even:bg-slate-50/50">
+                  <tr key={f.id} className="hover:bg-blue-50/50 transition-colors group">
                     <td className="px-5 py-4 align-top border-r border-slate-100 last:border-r-0">
                       <div className="flex flex-col gap-1.5">
                         {descriptionItems.map((descItem: string, idx: number) => (
                           <div key={idx} className="flex items-start gap-1.5">
                              <span className="w-1.5 h-1.5 rounded-full bg-slate-300 flex-shrink-0 mt-1.5"></span>
-                             <span className="font-medium text-slate-700 leading-relaxed">{descItem}</span>
+                             <span className="font-semibold text-slate-700 leading-relaxed">{descItem}</span>
                           </div>
                         ))}
                       </div>
@@ -275,7 +275,7 @@ export default function FinanceTab({ data }: any) {
                       {relatedJob && (
                         <button 
                           onClick={() => setSelectedJobDetail(relatedJob)} 
-                          className="mt-3 text-[10px] font-bold text-blue-600 bg-blue-50/80 px-2.5 py-1.5 rounded border border-blue-100 hover:bg-blue-100 flex items-center gap-1.5 transition-colors w-max shadow-sm"
+                          className="mt-3 text-[10px] font-bold text-blue-600 bg-blue-50/80 px-2.5 py-1.5 rounded-lg border border-blue-100 hover:bg-blue-100 flex items-center gap-1.5 transition-colors w-max shadow-sm active:scale-95"
                         >
                           <Eye size={12} /> İş Kaydını İncele
                         </button>
@@ -283,45 +283,93 @@ export default function FinanceTab({ data }: any) {
                     </td>
                     <td className="px-5 py-4 align-top border-r border-slate-100 last:border-r-0">
                       <div className="flex flex-col gap-1">
-                        <div className="font-semibold text-slate-800 flex items-center gap-1.5"><Calendar size={12} className="text-slate-400"/> {dateObj.toLocaleDateString('tr-TR')}</div>
-                        <div className="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 ml-0.5"><Clock size={11} className="text-slate-400"/> {dateObj.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</div>
+                        <div className="font-bold text-slate-800 flex items-center gap-1.5"><Calendar size={12} className="text-slate-400"/> {dateObj.toLocaleDateString('tr-TR')}</div>
+                        <div className="text-[10px] text-slate-500 font-semibold flex items-center gap-1.5 ml-0.5 mt-0.5"><Clock size={11} className="text-slate-400"/> {dateObj.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</div>
                       </div>
                     </td>
-                    <td className={`px-5 py-4 font-extrabold align-top text-sm border-r border-slate-100 last:border-r-0 ${f.type === 'Gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    <td className={`px-5 py-4 font-black align-top text-sm border-r border-slate-100 last:border-r-0 ${f.type === 'Gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
                       <div className="flex items-center gap-1">
                         {f.type === 'Gelir' ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
                         ₺{f.amount.toLocaleString('tr-TR')}
                       </div>
                     </td>
                     <td className="px-5 py-4 text-right align-top border-r border-slate-100 last:border-r-0">
-                      <span className={`px-2.5 py-1.5 rounded-md text-[10px] font-bold border ${f.type === 'Gelir' ? 'bg-emerald-50 text-emerald-600 border-emerald-200 shadow-sm' : 'bg-rose-50 text-rose-600 border-rose-200 shadow-sm'}`}>{f.type}</span>
+                      <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black border ${f.type === 'Gelir' ? 'bg-emerald-50 text-emerald-600 border-emerald-200 shadow-sm' : 'bg-rose-50 text-rose-600 border-rose-200 shadow-sm'}`}>{f.type}</span>
                     </td>
                   </tr>
-                )}) : <tr><td colSpan={4} className="p-12 text-center text-slate-400 font-medium">Bu filtreye uygun kayıt bulunmuyor.</td></tr>}
+                )}) : <tr><td colSpan={4} className="p-16 text-center text-slate-400 font-medium bg-slate-50">Bu filtreye uygun finansal hareket bulunmuyor.</td></tr>}
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* MOBİL İÇİN KART GÖRÜNÜMÜ (Yatay Scroll'u Engeller) */}
+        <div className="md:hidden flex flex-col gap-3">
+          {filteredData.length > 0 ? filteredData.map((f: any) => {
+            const relatedJob = localJobs.find((j: any) => f.type === 'Gelir' && j.status === 'Tamamlandı' && f.description.includes(j.customer_name));
+            const descriptionItems = f.description.split(/,|\n/).map((item: string) => item.trim()).filter((item: string) => item.length > 0);
+            const dateObj = new Date(f.created_at);
+
+            return (
+              <div key={f.id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col gap-3">
+                <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
+                  <div className="flex flex-col gap-1">
+                    <span className={`px-2 py-1 w-max rounded-md text-[9px] font-black border uppercase tracking-wider ${f.type === 'Gelir' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                      {f.type}
+                    </span>
+                    <div className="font-bold text-slate-500 text-[10px] flex items-center gap-1 mt-1">
+                      <Calendar size={10} /> {dateObj.toLocaleDateString('tr-TR')} • <Clock size={10} /> {dateObj.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                  <div className={`font-black text-lg flex items-center gap-1 ${f.type === 'Gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {f.type === 'Gelir' ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}
+                    ₺{f.amount.toLocaleString('tr-TR')}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5 pt-1">
+                  {descriptionItems.map((descItem: string, idx: number) => (
+                    <div key={idx} className="flex items-start gap-2">
+                       <span className="w-1.5 h-1.5 rounded-full bg-slate-300 flex-shrink-0 mt-1.5"></span>
+                       <span className="text-xs font-semibold text-slate-700 leading-snug">{descItem}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {relatedJob && (
+                  <button 
+                    onClick={() => setSelectedJobDetail(relatedJob)} 
+                    className="mt-2 w-full text-xs font-bold text-blue-600 bg-blue-50 py-2.5 rounded-xl border border-blue-100 hover:bg-blue-100 flex justify-center items-center gap-2 transition-colors active:scale-95"
+                  >
+                    <Eye size={14} /> Bağlantılı İş Kaydını Görüntüle
+                  </button>
+                )}
+              </div>
+            );
+          }) : (
+            <div className="bg-slate-50 p-10 rounded-2xl border-2 border-dashed border-slate-200 text-center font-medium text-slate-400 text-sm">
+              Bu filtreye uygun hareket bulunmuyor.
+            </div>
+          )}
         </div>
       </div>
     );
   };
 
   return (
-    <div className="space-y-8 relative pb-10">
+    <div className="space-y-6 sm:space-y-8 relative pb-10">
        
-       <div className="flex justify-between items-center mb-6">
+       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 sm:p-0 sm:bg-transparent rounded-3xl border sm:border-none border-slate-200 shadow-sm sm:shadow-none">
          <div>
-           <h2 className="text-2xl font-black text-slate-900 tracking-tight">Finans ve Kasa Yönetimi</h2>
-           <p className="text-xs font-medium text-slate-500 mt-1">İşletmenizin tüm gelir ve gider hareketlerini buradan takip edebilirsiniz.</p>
+           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Finans ve Kasa Yönetimi</h2>
+           <p className="text-xs font-medium text-slate-500 mt-1">Tüm gelir ve gider hareketlerini buradan takip edebilirsiniz.</p>
          </div>
-         <div className="flex gap-2">
-           {/* YENİ: active:scale-95 eklendi */}
-           <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gelir' })} className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-emerald-100 transition-all active:scale-95">
-             <Plus size={14} strokeWidth={3} /> Manuel Gelir İşle
+         <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2.5">
+           <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gelir' })} className="w-full sm:w-auto bg-emerald-500 text-white border border-emerald-600 px-4 py-3 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold flex items-center justify-center gap-2 shadow-sm shadow-emerald-200 hover:bg-emerald-600 transition-all active:scale-95">
+             <Plus size={16} strokeWidth={3} /> Gelir İşle
            </button>
-           {/* YENİ: active:scale-95 eklendi */}
-           <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gider' })} className="bg-rose-50 text-rose-600 border border-rose-200 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-rose-100 transition-all active:scale-95">
-             <Plus size={14} strokeWidth={3} /> Gider / Fiş İşle
+           <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gider' })} className="w-full sm:w-auto bg-rose-50 text-rose-600 border border-rose-200 px-4 py-3 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold flex items-center justify-center gap-2 shadow-sm hover:bg-rose-100 transition-all active:scale-95">
+             <Plus size={16} strokeWidth={3} /> Gider / Fiş İşle
            </button>
          </div>
        </div>
@@ -333,74 +381,76 @@ export default function FinanceTab({ data }: any) {
 
        {/* DİNAMİK GELİR / GİDER EKLEME MODALI */}
        {financeModal.isOpen && (
-         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-sm rounded-xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className={`text-lg font-extrabold flex items-center gap-2 ${financeModal.type === 'Gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {financeModal.type === 'Gelir' ? 'Yeni Gelir Ekle' : 'Gider / Fiş İşle'}
+         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar flex flex-col">
+              <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100 shrink-0">
+                <h2 className={`text-xl font-black flex items-center gap-2 ${financeModal.type === 'Gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {financeModal.type === 'Gelir' ? 'Kasaya Gelir Ekle' : 'Kasadan Gider Çık'}
                   
-                  {/* DÜZELTİLEN KISIM: İkon span içerisine alındı */}
                   {isOffline && (
-                    <span title="Çevrimdışı Mod" className="flex items-center">
+                    <span title="Çevrimdışı Mod" className="flex items-center bg-amber-50 p-1.5 rounded-md border border-amber-200">
                       <WifiOff size={16} className="text-amber-500" />
                     </span>
                   )}
                   
                 </h2>
-                <button onClick={closeFinanceModal} className="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-md transition-colors"><X size={18} /></button>
+                <button onClick={closeFinanceModal} className="text-slate-400 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 p-2 rounded-xl transition-all active:scale-95"><X size={20} /></button>
               </div>
               
-              <div className="space-y-5">
+              <div className="space-y-6 flex-1">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-2.5 uppercase tracking-wider">
+                  <label className="text-[10px] font-black text-slate-400 block mb-3 uppercase tracking-widest">
                     {financeModal.type === 'Gelir' ? 'SATILAN / YAPILAN KALEMLER' : 'ALINAN / HARCANAN KALEMLER'}
                   </label>
-                  <div className="space-y-2.5">
+                  <div className="space-y-3">
                     {financeItems.map((item, index) => (
-                      <div key={index} className="flex gap-2">
+                      <div key={index} className="flex gap-2 relative group">
                         <input 
-                          className={`flex-[3] px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-${financeModal.type === 'Gelir' ? 'emerald' : 'rose'}-400 focus:ring-2 focus:ring-${financeModal.type === 'Gelir' ? 'emerald' : 'rose'}-400/20 shadow-sm transition-all`} 
-                          placeholder={financeModal.type === 'Gelir' ? 'Örn: Bakım Ücreti, Parça' : 'Örn: Kırtasiye, Yakıt Fişi'} 
+                          className={`flex-[3] px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:bg-white focus:border-${financeModal.type === 'Gelir' ? 'emerald' : 'rose'}-400 focus:ring-2 focus:ring-${financeModal.type === 'Gelir' ? 'emerald' : 'rose'}-400/20 transition-all`} 
+                          placeholder={financeModal.type === 'Gelir' ? 'Örn: Bakım, Parça...' : 'Örn: Kırtasiye, Yakıt...'} 
                           value={item.name} 
                           onChange={e => handleItemChange(index, 'name', e.target.value)} 
                         />
                         <input 
                           type="number" 
-                          className={`flex-1 px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-${financeModal.type === 'Gelir' ? 'emerald' : 'rose'}-400 focus:ring-2 focus:ring-${financeModal.type === 'Gelir' ? 'emerald' : 'rose'}-400/20 text-center shadow-sm transition-all`} 
+                          className={`w-20 px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:bg-white focus:border-${financeModal.type === 'Gelir' ? 'emerald' : 'rose'}-400 focus:ring-2 focus:ring-${financeModal.type === 'Gelir' ? 'emerald' : 'rose'}-400/20 text-center transition-all`} 
                           placeholder="Adet" 
                           value={item.qty} 
                           onChange={e => handleItemChange(index, 'qty', e.target.value)} 
                         />
                         {index > 0 && (
-                          <button onClick={() => removeItemRow(index)} className="p-2 text-rose-500 bg-rose-50 hover:bg-rose-100 border border-rose-100 rounded-md transition-colors"><Trash2 size={14} /></button>
+                          <button onClick={() => removeItemRow(index)} className="absolute -right-3 -top-3 p-1.5 text-rose-500 bg-white border border-rose-100 shadow-sm rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-50"><Trash2 size={12} /></button>
                         )}
                       </div>
                     ))}
                   </div>
-                  <button onClick={addItemRow} className="mt-3 text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1.5 w-full py-2.5 border border-dashed border-blue-300 rounded-md bg-blue-50/50 hover:bg-blue-50 transition-colors justify-center">
-                    <Plus size={14} strokeWidth={3} /> Yeni Satır Ekle
+                  <button onClick={addItemRow} className="mt-4 text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1.5 w-full py-3.5 border-2 border-dashed border-blue-200 rounded-xl bg-blue-50/50 hover:bg-blue-50 transition-all justify-center active:scale-95">
+                    <Plus size={16} strokeWidth={3} /> Yeni Kalem Ekle
                   </button>
                 </div>
 
-                <div className="pt-4 border-t border-slate-100">
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1.5 uppercase tracking-wider">TOPLAM TUTAR (₺)</label>
-                  <input 
-                    type="number" 
-                    className={`w-full px-3 py-2.5 border border-slate-200 rounded-md text-sm font-bold outline-none focus:border-${financeModal.type === 'Gelir' ? 'emerald' : 'rose'}-400 focus:ring-2 focus:ring-${financeModal.type === 'Gelir' ? 'emerald' : 'rose'}-400/20 shadow-sm transition-all`} 
-                    placeholder="0.00" 
-                    value={financeAmount} 
-                    onChange={e => setFinanceAmount(e.target.value)} 
-                  />
+                <div className="pt-6 border-t border-slate-100 bg-slate-50 -mx-6 px-6 pb-2">
+                  <label className="text-xs font-black text-slate-500 block mb-2 uppercase tracking-widest">TOPLAM TUTAR (₺)</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-slate-400">₺</span>
+                    <input 
+                      type="number" 
+                      className={`w-full pl-10 pr-4 py-4 bg-white border border-slate-200 rounded-xl text-xl font-black outline-none focus:border-${financeModal.type === 'Gelir' ? 'emerald' : 'rose'}-400 focus:ring-4 focus:ring-${financeModal.type === 'Gelir' ? 'emerald' : 'rose'}-400/20 shadow-inner transition-all`} 
+                      placeholder="0.00" 
+                      value={financeAmount} 
+                      onChange={e => setFinanceAmount(e.target.value)} 
+                    />
+                  </div>
                 </div>
               </div>
               
               <button 
                 disabled={isSavingFinance} 
-                className={`w-full text-white py-3 rounded-md font-bold text-sm mt-6 flex justify-center items-center transition-all shadow-md active:scale-95 ${financeModal.type === 'Gelir' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'}`} 
+                className={`w-full text-white py-4 rounded-xl font-black text-base mt-6 flex justify-center items-center transition-all shadow-lg active:scale-95 disabled:opacity-70 ${financeModal.type === 'Gelir' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200' : 'bg-rose-600 hover:bg-rose-700 shadow-rose-200'}`} 
                 onClick={handleAddFinanceRecord}
               >
-                {isSavingFinance ? <Loader2 className="animate-spin" size={16} /> : (
-                  isOffline ? 'Kuyruğa Al ve Kaydet' : (financeModal.type === 'Gelir' ? 'Geliri Kasaya İşle' : 'Gideri Kasadan Düş')
+                {isSavingFinance ? <Loader2 className="animate-spin" size={20} /> : (
+                  isOffline ? 'Kuyruğa Al ve Kaydet' : (financeModal.type === 'Gelir' ? 'KASAYA GELİR İŞLE' : 'KASADAN GİDER ÇIK')
                 )}
               </button>
             </div>
@@ -409,35 +459,40 @@ export default function FinanceTab({ data }: any) {
 
        {/* İŞ DETAYI GÖSTERİM MODALI */}
        {selectedJobDetail && (
-         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-sm rounded-xl p-6 shadow-2xl relative">
-              <div className="flex justify-between items-start mb-5">
+         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-sm rounded-2xl p-0 shadow-2xl relative overflow-hidden flex flex-col">
+              
+              <div className="bg-slate-900 p-5 flex justify-between items-start text-white">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">İş Kaydı Detayı</h2>
-                  <div className="text-xs font-medium text-slate-500 mt-0.5">Bu gelir aşağıdaki işlemden oluşturuldu</div>
+                  <h2 className="text-xl font-black tracking-tight">İş Kaydı Detayı</h2>
+                  <div className="text-xs font-medium text-blue-200 mt-1">Bu işlemden sağlanan gelir</div>
                 </div>
-                <button onClick={() => setSelectedJobDetail(null)} className="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-md transition-colors"><X size={16} /></button>
+                <button onClick={() => setSelectedJobDetail(null)} className="text-slate-400 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all active:scale-95"><X size={18} /></button>
               </div>
               
-              <div className="space-y-4 bg-slate-50 p-5 rounded-xl border border-slate-200">
-                <div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Müşteri / Firma</div>
-                  <div className="text-sm font-bold text-slate-800">{selectedJobDetail.customer_name}</div>
+              <div className="p-6 space-y-5 bg-slate-50">
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Müşteri / Firma</div>
+                  <div className="text-base font-black text-slate-800">{selectedJobDetail.customer_name}</div>
                 </div>
-                <div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">İş Türü</div>
-                  <div className="text-sm font-semibold text-slate-700">{selectedJobDetail.work_type}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Planlanan Tarih</div>
-                  <div className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                     <Calendar size={14} className="text-slate-400" /> {selectedJobDetail.scheduled_date || 'Tarih Belirtilmedi'}
+                
+                <div className="flex gap-4">
+                  <div className="flex-1 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">İş Türü</div>
+                    <div className="text-sm font-bold text-slate-700">{selectedJobDetail.work_type}</div>
+                  </div>
+                  <div className="flex-1 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tarih</div>
+                    <div className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                       <Calendar size={14} className="text-blue-500" /> {selectedJobDetail.scheduled_date ? selectedJobDetail.scheduled_date.split('-').reverse().join('.') : '-'}
+                    </div>
                   </div>
                 </div>
+
                 {selectedJobDetail.details && selectedJobDetail.details.note && (
-                  <div className="pt-2">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Sahadan Notlar</div>
-                    <div className="text-xs font-medium text-slate-700 bg-white p-3 border border-slate-200 rounded-lg shadow-sm leading-relaxed">{selectedJobDetail.details.note}</div>
+                  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Sahadan Notlar</div>
+                    <div className="text-sm font-medium text-slate-600 italic border-l-2 border-blue-400 pl-3 leading-relaxed">"{selectedJobDetail.details.note}"</div>
                   </div>
                 )}
               </div>

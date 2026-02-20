@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-// YENİ: WifiOff eklendi
-import { ShieldCheck, AlertTriangle, ArrowRight, Settings, Filter, ShieldAlert, Info, MapPin, Check, WifiOff } from 'lucide-react';
+// YENİ: WifiOff ve Download (PWA için) eklendi
+import { ShieldCheck, AlertTriangle, ArrowRight, Settings, Filter, ShieldAlert, Info, MapPin, Check, WifiOff, Download } from 'lucide-react';
 
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
@@ -21,7 +21,7 @@ import AssetsTab from '@/components/patron/AssetsTab';
 import SettingsTab from '@/components/patron/SettingsTab';
 import PendingJobsTab from '@/components/patron/PendingJobsTab'; 
 import AlertsTab from '@/components/patron/AlertsTab';
-import SupportTab from '@/components/patron/SupportTab'; // YENİ EKLENDİ
+import SupportTab from '@/components/patron/SupportTab'; 
 import AssetQRModal from '@/components/modals/AssetQRModal';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
@@ -40,6 +40,10 @@ export default function PatronDashboard() {
   // YENİ: ÇEVRİMDIŞI, CACHE VE SMART STATE KONTROLLERİ
   const [isOffline, setIsOffline] = useState(false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
+
+  // PWA ANA EKRANA EKLE STATE'LERİ
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showPwaPrompt, setShowPwaPrompt] = useState(false);
 
   // STOK KATEGORİ FİLTRESİ
   const [stockCategory, setStockCategory] = useState('Tümü');
@@ -82,6 +86,28 @@ export default function PatronDashboard() {
   // YENİ: landlinePhone ve website eklendi
   const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', landlinePhone: '', emergencyPhone: '', whatsappPhone: '', website: '', logo: '' });
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '' });
+
+  // PWA Kurulum Dinleyicisi
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowPwaPrompt(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallPwa = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        setShowPwaPrompt(false);
+      }
+    }
+  };
 
   // YENİ: isInitial parametresi eklendi, böylece 15 saniyede bir formu ezmesi engellendi
   const fetchData = async (isInitial = false) => {
@@ -378,6 +404,32 @@ export default function PatronDashboard() {
   return (
     <div className={`min-h-screen flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 ${hasEmergency ? 'bg-rose-950' : 'bg-[#F8FAFC] text-slate-900'}`}>
       
+      {/* PWA ANA EKRANA EKLE MODALI (MOBİL İÇİN DİKEY, DESKTOP İÇİN YATAY UYUM) */}
+      <AnimatePresence>
+        {showPwaPrompt && !hasEmergency && (
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }} 
+            exit={{ y: 100, opacity: 0 }} 
+            className="fixed bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[420px] bg-slate-900 text-white p-4 rounded-2xl shadow-2xl z-[9999] flex flex-row items-center justify-between border border-slate-700"
+          >
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-500 p-2.5 rounded-xl">
+                <Download size={20} className="text-white" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-bold text-sm">Uygulamayı Yükle</span>
+                <span className="text-xs text-slate-400">Daha hızlı ve kolay erişim</span>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setShowPwaPrompt(false)} className="px-3 py-2 text-xs font-bold text-slate-300 hover:text-white transition-colors">Geç</button>
+              <button onClick={handleInstallPwa} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95">Yükle</button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* NORMAL ARKA PLAN DEKORLARI */}
       {!hasEmergency && (
         <>
@@ -398,31 +450,33 @@ export default function PatronDashboard() {
                 <div className="w-[800px] h-[800px] bg-rose-500/30 rounded-full animate-ping" style={{ animationDuration: '3s' }}></div>
             </div>
 
-            <div className="relative z-10 flex flex-col items-center max-w-lg text-center">
-                <ShieldAlert size={100} className="text-white mb-6 animate-pulse" />
-                <h1 className="text-5xl font-black mb-2 tracking-tight uppercase">Acil Durum Bildirildi!</h1>
-                <p className="text-xl text-rose-100 mb-8 font-medium">Sahadan veya bir müşteriden acil durum butonu tetiklendi.</p>
+            <div className="relative z-10 flex flex-col items-center max-w-lg text-center w-full">
+                <ShieldAlert size={80} className="text-white mb-6 animate-pulse md:w-[100px] md:h-[100px]" />
+                <h1 className="text-4xl md:text-5xl font-black mb-2 tracking-tight uppercase">Acil Durum Bildirildi!</h1>
+                <p className="text-lg md:text-xl text-rose-100 mb-8 font-medium">Sahadan veya bir müşteriden acil durum butonu tetiklendi.</p>
                 
                 {/* Varlık Bilgileri ve Konumu */}
-                <div className="bg-white/10 p-6 rounded-3xl backdrop-blur-md border border-white/20 mb-8 w-full max-w-md text-left shadow-2xl">
+                <div className="bg-white/10 p-5 md:p-6 rounded-3xl backdrop-blur-md border border-white/20 mb-8 w-full max-w-md text-left shadow-2xl">
                    <div className="text-rose-200 text-xs font-bold uppercase tracking-wider mb-1">İlgili Varlık & Konum</div>
                    {/* Hiyerarşi Düzenlendi: Önce Apartman Varsa O, Yoksa Cihaz Adı */}
-                   <div className="text-2xl font-black text-white mb-2">
+                   <div className="text-xl md:text-2xl font-black text-white mb-2">
                       {activeEmergencies[0]?.asset_apartment || activeEmergencies[0]?.asset_name || 'Bilinmeyen Varlık'}
                    </div>
-                   <div className="flex items-center gap-2 text-rose-100">
-                      <MapPin size={18} /> 
+                   <div className="flex items-start md:items-center gap-2 text-rose-100 text-sm md:text-base">
+                      <MapPin size={18} className="mt-0.5 md:mt-0 flex-shrink-0" /> 
                       {/* Konumdan Apartman Adını Temizleyerek Gösterim (Tekrar olmasın diye) */}
-                      {activeEmergencies[0]?.asset_location 
-                        ? activeEmergencies[0].asset_location.replace(activeEmergencies[0].asset_apartment || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() 
-                        : 'Konum alınamadı'}
+                      <span>
+                        {activeEmergencies[0]?.asset_location 
+                          ? activeEmergencies[0].asset_location.replace(activeEmergencies[0].asset_apartment || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() 
+                          : 'Konum alınamadı'}
+                      </span>
                    </div>
                 </div>
 
                 <button 
                   onClick={() => handleResolveEmergency(activeEmergencies[0]?.id)}
                   disabled={isSaving}
-                  className="bg-white text-rose-600 px-10 py-5 rounded-2xl font-black text-xl shadow-2xl hover:bg-rose-50 hover:scale-105 transition-all active:scale-95 flex items-center gap-3 disabled:opacity-50"
+                  className="bg-white text-rose-600 px-6 py-4 md:px-10 md:py-5 w-full sm:w-auto rounded-2xl font-black text-base md:text-xl shadow-2xl hover:bg-rose-50 hover:scale-105 transition-all active:scale-95 flex flex-col sm:flex-row items-center justify-center gap-3 disabled:opacity-50"
                 >
                   <ShieldCheck size={28} />
                   {isSaving ? 'Kapatılıyor...' : 'KONTROL ETTİM, ALARMI KAPAT'}
@@ -437,43 +491,45 @@ export default function PatronDashboard() {
         {hasFault && !hasEmergency && (
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[99998] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-6"
+            className="fixed inset-0 z-[99998] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-6"
           >
             <motion.div 
                initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
                className="bg-amber-400 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden text-amber-950 flex flex-col"
             >
-               <div className="p-8 flex flex-col items-center text-center border-b border-amber-500/30">
-                  <AlertTriangle size={64} className="mb-4 animate-bounce" />
-                  <h2 className="text-3xl font-black mb-2 uppercase tracking-tight">Arıza Bildirimi!</h2>
-                  <p className="font-bold opacity-80 text-amber-900">Müşterinizden yeni bir arıza kaydı ulaştı.</p>
+               <div className="p-6 md:p-8 flex flex-col items-center text-center border-b border-amber-500/30">
+                  <AlertTriangle size={56} className="mb-4 animate-bounce md:w-[64px] md:h-[64px]" />
+                  <h2 className="text-2xl md:text-3xl font-black mb-2 uppercase tracking-tight">Arıza Bildirimi!</h2>
+                  <p className="font-bold opacity-80 text-amber-900 text-sm md:text-base">Müşterinizden yeni bir arıza kaydı ulaştı.</p>
                </div>
                
-               <div className="bg-white p-8 flex flex-col gap-4">
-                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+               <div className="bg-white p-6 md:p-8 flex flex-col gap-4">
+                  <div className="bg-slate-50 p-4 md:p-5 rounded-2xl border border-slate-100">
                      <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">İlgili Varlık & Konum</div>
                      {/* Hiyerarşi Düzenlendi */}
-                     <div className="font-black text-xl text-slate-800 leading-none mb-2">
+                     <div className="font-black text-lg md:text-xl text-slate-800 leading-none mb-2">
                         {pendingFaults[0]?.asset_apartment || pendingFaults[0]?.asset_name || 'Bilinmeyen Varlık'}
                      </div>
-                     <div className="text-slate-600 font-semibold flex items-center gap-1.5">
-                        <MapPin size={16} className="text-slate-400"/> 
-                        {pendingFaults[0]?.asset_location 
-                            ? pendingFaults[0].asset_location.replace(pendingFaults[0].asset_apartment || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim()
-                            : 'Konum belirtilmemiş'}
+                     <div className="text-slate-600 font-semibold flex items-start md:items-center gap-1.5 text-xs md:text-sm">
+                        <MapPin size={16} className="text-slate-400 mt-0.5 md:mt-0 flex-shrink-0"/> 
+                        <span>
+                          {pendingFaults[0]?.asset_location 
+                              ? pendingFaults[0].asset_location.replace(pendingFaults[0].asset_apartment || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim()
+                              : 'Konum belirtilmemiş'}
+                        </span>
                      </div>
                   </div>
                   
-                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                  <div className="bg-slate-50 p-4 md:p-5 rounded-2xl border border-slate-100">
                      <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Müşteri & Şikayet Detayı</div>
-                     <div className="font-bold text-slate-800 text-base">{pendingFaults[0]?.reporter_name} - {pendingFaults[0]?.reporter_phone}</div>
-                     <div className="text-slate-600 mt-3 text-sm italic border-l-4 border-amber-300 pl-3">"{pendingFaults[0]?.description}"</div>
+                     <div className="font-bold text-slate-800 text-sm md:text-base">{pendingFaults[0]?.reporter_name} - {pendingFaults[0]?.reporter_phone}</div>
+                     <div className="text-slate-600 mt-3 text-xs md:text-sm italic border-l-4 border-amber-300 pl-3">"{pendingFaults[0]?.description}"</div>
                   </div>
                   
                   <button 
                     onClick={() => handleResolveFault(pendingFaults[0]?.id)} 
                     disabled={isSaving}
-                    className="mt-4 w-full bg-slate-900 hover:bg-slate-800 text-amber-400 py-4.5 rounded-2xl font-black text-lg flex items-center justify-center gap-2 transition-all shadow-xl disabled:opacity-50 active:scale-95"
+                    className="mt-2 md:mt-4 w-full bg-slate-900 hover:bg-slate-800 text-amber-400 py-3.5 md:py-4.5 rounded-2xl font-black text-base md:text-lg flex flex-col sm:flex-row items-center justify-center gap-2 transition-all shadow-xl disabled:opacity-50 active:scale-95"
                   >
                     <Check size={24} /> 
                     {isSaving ? 'Kapatılıyor...' : 'GÖRÜLDÜ / BİLDİRİMİ KAPAT'}
@@ -501,9 +557,9 @@ export default function PatronDashboard() {
                 className="bg-amber-500 text-amber-950 px-4 py-2.5 text-xs font-bold flex flex-wrap items-center justify-center gap-2 z-40 border-b border-amber-600/20"
               >
                 <WifiOff size={16} />
-                {isOffline ? 'Bağlantı koptu. Veriler önbellekten okunuyor.' : 'İnternet bağlantısı sağlandı.'}
+                <span className="text-center">{isOffline ? 'Bağlantı koptu. Veriler önbellekten okunuyor.' : 'İnternet bağlantısı sağlandı.'}</span>
                 {pendingSyncCount > 0 && (
-                  <span className="bg-amber-950 text-amber-400 px-2.5 py-1 rounded-full ml-2 animate-pulse flex items-center gap-1">
+                  <span className="bg-amber-950 text-amber-400 px-2.5 py-1 rounded-full ml-0 sm:ml-2 animate-pulse flex items-center gap-1 w-full sm:w-auto justify-center mt-1 sm:mt-0">
                      Kuyrukta bekleyen {pendingSyncCount} işlem var...
                   </span>
                 )}
@@ -515,7 +571,7 @@ export default function PatronDashboard() {
           <Header data={data} searchTerm={searchTerm} setSearchTerm={setSearchTerm} setIsMobileMenuOpen={setIsMobileMenuOpen} />
         </div>
 
-        <div className="p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">
+        <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">
           
           {/* YENİ: Bilgiler eksikse sadece SettingsTab gösterilir */}
           {isCompanyDataIncomplete && !hasEmergency && !hasFault && activeTab !== 'support' && (
@@ -537,13 +593,16 @@ export default function PatronDashboard() {
           {activeTab === 'stock' && (
             <div className="flex flex-col space-y-4">
               <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-end w-full">
-                <div className="bg-white border border-slate-200 rounded-xl p-1.5 shadow-sm flex items-center gap-2 z-20">
-                  <Filter size={16} className="text-slate-400 ml-2" />
-                  <span className="text-xs font-semibold text-slate-500">Kategori:</span>
+                {/* MOBİL İÇİN DİKEY HİYERARŞİ: flexDirection sm:flex-row yapıldı, w-full mobilde uzatıldı */}
+                <div className="bg-white border border-slate-200 rounded-xl p-2 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto z-20">
+                  <div className="flex items-center gap-2 px-2 sm:px-0">
+                    <Filter size={16} className="text-slate-400" />
+                    <span className="text-xs font-semibold text-slate-500">Kategori:</span>
+                  </div>
                   <select 
                     value={stockCategory} 
                     onChange={(e) => setStockCategory(e.target.value)}
-                    className="bg-slate-50 border-none text-sm font-bold text-slate-700 rounded-lg px-4 py-2 outline-none cursor-pointer hover:bg-slate-100 transition-colors appearance-none pr-8"
+                    className="bg-slate-50 border border-slate-100 sm:border-none w-full sm:w-auto text-sm font-bold text-slate-700 rounded-lg px-4 py-2 outline-none cursor-pointer hover:bg-slate-100 transition-colors appearance-none pr-8"
                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center' }}
                   >
                     <option value="Tümü">Tüm Kategoriler</option>

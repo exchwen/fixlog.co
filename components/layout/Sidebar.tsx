@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 // YENİ: X ikonu eklendi (Mobil menüyü kapatmak için)
 import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, ShieldCheck, CheckSquare, Bell, HelpCircle, X } from 'lucide-react';
 
@@ -15,6 +15,46 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
     // Kullanıcıyı giriş ekranına yönlendir
     window.location.href = '/'; 
   };
+
+  // YENİ: Mobilde kaydırma (Swipe) hareketlerini algılayan zeka
+  useEffect(() => {
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX = e.changedTouches[0].screenX;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    };
+
+    const handleSwipe = () => {
+      const swipeDistance = touchEndX - touchStartX;
+      
+      // Soldan sağa kaydırma (Menüyü Açma) 
+      // Sadece ekranın sol kenarından (ilk 50px) kaydırma başlarsa çalışsın ki normal sayfadaki yatay kaydırmaları bozmasın
+      if (swipeDistance > 50 && touchStartX < 50) {
+        if (setIsMobileMenuOpen) setIsMobileMenuOpen(true);
+      }
+      
+      // Sağdan sola kaydırma (Menüyü Kapatma)
+      // Menü zaten açıksa ve sağdan sola doğru net bir kaydırma yapıldıysa
+      if (swipeDistance < -50 && isMobileMenuOpen) {
+        if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
+      }
+    };
+
+    // Passive true ayarı, scroll performansını düşürmemek için eklendi (Sıfır maliyet & Yüksek performans)
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isMobileMenuOpen, setIsMobileMenuOpen]);
 
   return (
     <>

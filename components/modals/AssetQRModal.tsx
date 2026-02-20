@@ -3,7 +3,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { X, Printer, Copy, Check, Building2, Phone, Globe, Palette } from 'lucide-react';
-// YENİ: Orijinal WhatsApp ikonu için react-icons kullanıyoruz
+// Orijinal WhatsApp ikonu için react-icons kullanıyoruz
 import { FaWhatsapp } from 'react-icons/fa'; 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReactToPrint } from 'react-to-print';
@@ -27,7 +27,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
   const [showPrintModeSelection, setShowPrintModeSelection] = useState(false);
   const [printMode, setPrintMode] = useState<'color' | 'bw'>('color');
 
-  // YENİ: Akıllı ESC Tuşu Yönetimi (Sadece Baskı Seçim Ekranını Kapatmak İçin)
+  // Akıllı ESC Tuşu Yönetimi (Sadece Baskı Seçim Ekranını Kapatmak İçin)
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -54,7 +54,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
     const img = new Image();
     img.crossOrigin = "Anonymous";
     
-    // YENİ: Çevrimdışı (Offline) Durumda Resim Yüklenemezse Patlamayı Önleme
+    // Çevrimdışı (Offline) Durumda Resim Yüklenemezse Patlamayı Önleme
     img.onerror = () => {
       setLogoBgColor('#ffffff');
     };
@@ -140,12 +140,12 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           border: none !important; 
           box-shadow: none !important; 
           border-radius: 0 !important; 
-          padding: 3mm !important; /* Padding biraz azaltıldı */
+          padding: 3mm !important; 
           margin: 0 !important;
           display: flex !important;
           flex-direction: column !important;
           align-items: center !important;
-          justify-content: space-between !important; /* Dikeyde yay */
+          justify-content: space-between !important; 
           position: relative !important;
           box-sizing: border-box !important;
           page-break-inside: avoid !important;
@@ -153,10 +153,10 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
 
         /* Yeni sade footer için baskı stili */
         .print-simple-footer {
-            color: #64748b !important; /* slate-500 */
+            color: #64748b !important; 
         }
         .print-simple-footer-link {
-            color: #94a3b8 !important; /* slate-400 */
+            color: #94a3b8 !important; 
         }
 
         /* Siyah-beyaz modda ikonları siyah yap */
@@ -193,26 +193,26 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
   return (
     <AnimatePresence>
       <div 
-        className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[150] flex items-center justify-center p-4 print:p-0 print:bg-white print:fixed print:inset-0"
-        onClick={onClose} // YENİ: Boşluğa tıklayarak kapatma (Smart Mobile UX)
+        className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print:p-0 print:bg-white print:fixed print:inset-0"
+        onClick={onClose} 
       >
         
         <motion.div 
-          onClick={(e) => e.stopPropagation()} // YENİ: İçeriğe tıklayınca modalın kapanmasını engeller
+          onClick={(e) => e.stopPropagation()} 
           initial={{ opacity: 0, scale: 0.95 }} 
           animate={{ opacity: 1, scale: 1 }} 
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col relative print:shadow-none print:w-auto print:max-w-none print:rounded-none"
+          className="bg-white rounded-3xl shadow-2xl w-full max-w-sm max-h-[90vh] overflow-hidden flex flex-col relative print:shadow-none print:w-auto print:max-w-none print:rounded-none"
         >
           {/* BASKI MODU SEÇİM EKRANI (OVERLAY) */}
           <AnimatePresence>
             {showPrintModeSelection && (
               <motion.div 
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="absolute inset-0 z-50 bg-white/95 backdrop-blur-md flex flex-col items-center justify-center p-8 print:hidden"
+                className="absolute inset-0 z-50 bg-white/95 backdrop-blur-md flex flex-col items-center justify-center p-6 sm:p-8 print:hidden"
               >
                 <h3 className="text-2xl font-black text-slate-800 mb-2">Baskı Türü</h3>
-                <p className="text-[13px] font-medium text-slate-500 mb-8 text-center px-4">
+                <p className="text-[13px] font-medium text-slate-500 mb-8 text-center px-2">
                   Etiketinizi yazıcınıza uygun olan formatta yazdırın.
                 </p>
                 
@@ -234,7 +234,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
 
                 <button 
                   onClick={() => setShowPrintModeSelection(false)} 
-                  className="mt-6 px-6 py-2 text-slate-400 font-bold text-sm hover:text-slate-800 transition-colors"
+                  className="mt-6 px-6 py-2 text-slate-400 font-bold text-sm hover:text-slate-800 transition-colors active:scale-95"
                 >
                   İptal Et
                 </button>
@@ -243,22 +243,21 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           </AnimatePresence>
 
           {/* Header */}
-          <div className="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50 print:hidden">
-            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+          <div className="flex justify-between items-center p-5 border-b border-slate-100 bg-slate-50 print:hidden shrink-0">
+            <h3 className="font-black text-slate-800 flex items-center gap-2">
                <Printer size={18} className="text-blue-600"/> Etiket Önizleme
             </h3>
-            <button onClick={onClose} className="p-1.5 hover:bg-slate-200 rounded-full text-slate-500 transition-colors">
+            <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-xl text-slate-500 transition-colors active:scale-95">
               <X size={20} />
             </button>
           </div>
 
-          {/* YAZDIRILACAK ALAN (80x80mm'ye eşdeğer piksel) */}
-          <div className="flex-1 py-8 flex items-center justify-center bg-slate-100 print:bg-white print:p-0 print:m-0 print:block">
+          {/* YAZDIRILACAK ALAN */}
+          <div className="flex-1 py-8 overflow-y-auto flex flex-col items-center justify-center bg-slate-100 print:bg-white print:p-0 print:m-0 print:block">
             
             <div 
               ref={printRef} 
-              // Padding'i 3'ten 2.5'a düşürdük, dikeyde biraz daha yer açtık.
-              className="print-container w-[302px] h-[302px] bg-white border border-slate-200 shadow-lg rounded-xl flex flex-col items-center justify-between p-2.5 relative box-border print:border-none print:shadow-none print:rounded-none"
+              className="print-container w-[302px] h-[302px] bg-white border border-slate-200 shadow-xl rounded-2xl flex flex-col items-center justify-between p-2.5 relative box-border print:border-none print:shadow-none print:rounded-none shrink-0"
             >
               
               {/* 1. LOGO VE FİRMA ADI */}
@@ -268,7 +267,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                   style={{ backgroundColor: printMode === 'bw' ? '#ffffff' : (companyLogo ? logoBgColor : '#f8fafc') }}
                 >
                   {companyLogo ? (
-                    // YENİ: Siyah-beyaz modda brightness(0%) ile tam siyah siluet yapıyoruz
                     <img 
                       src={companyLogo} 
                       alt="Logo" 
@@ -287,7 +285,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
               <div className="flex-1 flex flex-col items-center justify-center w-full my-1">
                 <QRCodeSVG 
                   value={qrUrl} 
-                  size={100} // Boyutu biraz kıstık
+                  size={100} 
                   level="Q"
                   includeMargin={false}
                 />
@@ -315,7 +313,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                     )}
                     {whatsappPhone && (
                       <div className={`flex items-center gap-1 text-[9px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-800'}`}>
-                        {/* YENİ: Orijinal WhatsApp İkonu */}
                         <FaWhatsapp size={iconSize} className={printMode === 'bw' ? 'print-bw-icon' : 'text-[#25D366]'} /> {whatsappPhone}
                       </div>
                     )}
@@ -328,7 +325,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                 )}
               </div>
 
-              {/* 4. YENİ SADE FOOTER (Dikkat Çekmeyen) */}
+              {/* 4. YENİ SADE FOOTER */}
               <div className="flex flex-col items-center justify-center mt-1">
                 <span className={`text-[8px] font-medium ${printMode === 'bw' ? 'text-black' : 'text-slate-500'} print-simple-footer`}>
                    Powered by İş Dökümü
@@ -342,10 +339,10 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           </div>
 
           {/* Footer Butonları */}
-          <div className="p-4 border-t border-slate-100 bg-white grid grid-cols-2 gap-3 print:hidden">
+          <div className="p-5 border-t border-slate-100 bg-white grid grid-cols-2 gap-3 print:hidden shrink-0">
             <button 
               onClick={() => setShowPrintModeSelection(true)} 
-              className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-slate-900/20 active:scale-95"
+              className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl text-sm font-bold transition-all shadow-md active:scale-95"
             >
               <Printer size={18} /> Yazdır
             </button>

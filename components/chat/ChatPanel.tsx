@@ -1,20 +1,18 @@
 'use client';
 
-// YENİ: useState eklendi
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-// YENİ: WifiOff eklendi
 import { ChevronDown, Send, X, MessageSquare, ArrowLeft, WifiOff } from 'lucide-react';
 
 export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, setActiveChatId, data, messages, messageInput, setMessageInput, sendMessage }: any) {
   const chatEndRef = useRef<HTMLDivElement>(null);
   
-  // YENİ: Sohbet için yerel çevrimdışı kontrolü
+  // Çevrimdışı kontrolü
   const [isOffline, setIsOffline] = useState(false);
   
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
-  // YENİ: İnternet durumunu anlık dinleyen yapı
+  // İnternet durumunu anlık dinleyen yapı
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
@@ -29,6 +27,60 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  // YENİ: Masaüstü ESC tuşu ve Mobil Geri Tuşu (Smart State PWA) Yönetimi
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isChatOpen) {
+        setIsChatOpen(false);
+      }
+    };
+
+    const handlePopState = () => {
+      if (isChatOpen) {
+        setIsChatOpen(false);
+      }
+    };
+
+    if (isChatOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      window.addEventListener('popstate', handlePopState);
+      
+      // Geçmişe sadece modal ilk açıldığında state ekle
+      if (!window.history.state?.chatOpen) {
+         window.history.pushState({ chatOpen: true }, '');
+      }
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isChatOpen, setIsChatOpen]);
+
+  // YENİ: Bağlantı kopsa dahi veriyi kaybetmemek için Taslak (Draft) Cache Sistemi
+  useEffect(() => {
+    if (activeChatId) {
+      const draftKey = `chat_draft_${activeChatId}`;
+      if (messageInput) {
+        localStorage.setItem(draftKey, messageInput);
+      } else {
+        const savedDraft = localStorage.getItem(draftKey);
+        if (savedDraft) {
+          setMessageInput(savedDraft);
+        }
+      }
+    }
+  }, [messageInput, activeChatId, setMessageInput]);
+
+  // Gönderim yapıldığında taslağı temizle
+  const handleSendMessage = () => {
+    if (!messageInput.trim() || isOffline) return;
+    sendMessage();
+    if (activeChatId) {
+      localStorage.removeItem(`chat_draft_${activeChatId}`);
+    }
+  };
 
   // Aktif personeli bul
   const activeStaff = activeChatId ? data?.staff?.find((s: any) => s.id === activeChatId) : null;
@@ -66,17 +118,23 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   const activeStatus = activeStaff ? getDynamicStaffStatus(activeStaff.id) : null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-3">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[100] flex flex-col items-end gap-3 pointer-events-none">
       <AnimatePresence>
         {isChatOpen && (
-          <motion.div initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }} className="w-[320px] h-[480px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+          <motion.div 
+            initial={{ opacity: 0, y: 20, scale: 0.95 }} 
+            animate={{ opacity: 1, y: 0, scale: 1 }} 
+            exit={{ opacity: 0, y: 20, scale: 0.95 }} 
+            // YENİ: Mobil görünüm için responsive genişlik ve yükseklik ayarı (Nefes alan tasarım)
+            className="w-[calc(100vw-32px)] sm:w-[340px] h-[70vh] max-h-[550px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden origin-bottom-right pointer-events-auto"
+          >
             
             {/* ÜST BİLGİ ALANI (HEADER) */}
-            <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between font-medium text-xs shadow-md z-10">
+            <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between font-medium text-xs shadow-md z-10 shrink-0">
               <div className="flex items-center gap-2">
                 {activeStaff && activeStatus ? (
                   <div className="flex items-center gap-2.5">
-                    <button onClick={() => setActiveChatId(null)} className="p-1.5 bg-slate-800/50 hover:bg-slate-700 rounded-md transition-colors">
+                    <button onClick={() => setActiveChatId(null)} className="p-1.5 bg-slate-800/50 hover:bg-slate-700 rounded-md transition-colors active:scale-95">
                       <ArrowLeft size={16} />
                     </button>
                     <div className="flex flex-col">
@@ -94,7 +152,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                   </div>
                 )}
               </div>
-              <ChevronDown className="cursor-pointer hover:text-blue-400 transition-colors mr-1 p-1" onClick={() => setIsChatOpen(false)} size={20} />
+              <ChevronDown className="cursor-pointer hover:text-blue-400 transition-colors mr-1 p-1 active:scale-95" onClick={() => setIsChatOpen(false)} size={20} />
             </div>
 
             {/* SOHBET / PERSONEL LİSTESİ ALANI (BODY) */}
@@ -112,12 +170,12 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                          {/* Dinamik Renkli Nokta */}
                          <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${status.dot}`}></span>
                        </div>
-                       <div className="flex-1 overflow-hidden">
+                       <div className="flex-1 min-w-0">
                          <div className="text-sm font-bold text-slate-800 truncate">{m.name}</div>
-                         <div className="text-[11px] text-slate-500 font-medium truncate mt-1 flex items-center justify-between">
-                           <span className="uppercase tracking-wider font-bold text-[9px]">{m.role}</span>
+                         <div className="text-[11px] text-slate-500 font-medium truncate mt-1 flex items-center justify-between gap-2">
+                           <span className="uppercase tracking-wider font-bold text-[9px] truncate">{m.role}</span>
                            {/* Dinamik Durum Rozeti */}
-                           <span className={`px-2 py-0.5 rounded text-[9px] font-bold border ${status.badge}`}>
+                           <span className={`px-2 py-0.5 rounded text-[9px] font-bold border shrink-0 ${status.badge}`}>
                              {status.label}
                            </span>
                          </div>
@@ -126,7 +184,8 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                    );
                  })}
                  {(!data?.staff || data?.staff.length === 0) && (
-                   <div className="text-center p-8 text-slate-400 text-xs font-medium">
+                   <div className="text-center p-8 text-slate-400 text-xs font-medium flex flex-col items-center justify-center h-full gap-2">
+                     <MessageSquare size={32} className="opacity-20" />
                      Kayıtlı personel bulunamadı.
                    </div>
                  )}
@@ -145,7 +204,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
                   {messages.map((m: any, i: number) => (
                     <div key={i} className={`flex flex-col ${m.sender_id === 'PATRON' ? 'items-end' : 'items-start'}`}>
-                      <div className={`px-3.5 py-2.5 rounded-2xl max-w-[85%] shadow-sm text-[13px] leading-relaxed ${m.sender_id === 'PATRON' ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-white text-slate-700 border border-slate-200 rounded-tl-sm'}`}>
+                      <div className={`px-3.5 py-2.5 rounded-2xl max-w-[85%] shadow-sm text-[13px] leading-relaxed break-words ${m.sender_id === 'PATRON' ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-white text-slate-700 border border-slate-200 rounded-tl-sm'}`}>
                         {m.message}
                       </div>
                       <div className="text-[10px] text-slate-400 mt-1 font-medium px-1">
@@ -160,19 +219,21 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                   )}
                   <div ref={chatEndRef} />
                 </div>
-                <div className="p-3 bg-white border-t border-slate-100 flex gap-2 items-center">
+                
+                {/* YENİ: Hiyerarşik ve esnek input alanı */}
+                <div className="p-3 bg-white border-t border-slate-100 flex flex-col sm:flex-row gap-2 items-stretch sm:items-center shrink-0">
                   <input 
                     value={messageInput} 
                     onChange={e => setMessageInput(e.target.value)} 
-                    onKeyDown={e => e.key === 'Enter' && !isOffline && sendMessage()} 
+                    onKeyDown={e => e.key === 'Enter' && !isOffline && handleSendMessage()} 
                     disabled={isOffline}
                     placeholder={isOffline ? "İnternet bağlantısı yok..." : "Mesaj yazın..."} 
-                    className="flex-1 bg-slate-50 px-4 py-2.5 rounded-xl text-[13px] outline-none border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all placeholder:text-slate-400 disabled:opacity-50 disabled:bg-slate-100" 
+                    className="flex-1 bg-slate-50 px-4 py-3 sm:py-2.5 rounded-xl text-[13px] outline-none border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all placeholder:text-slate-400 disabled:opacity-50 disabled:bg-slate-100" 
                   />
                   <button 
-                    onClick={sendMessage} 
+                    onClick={handleSendMessage} 
                     disabled={!messageInput.trim() || isOffline}
-                    className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center"
+                    className="bg-blue-600 text-white p-3 sm:p-2.5 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center shrink-0 active:scale-95"
                   >
                     {isOffline ? <WifiOff size={18} /> : <Send size={18} />}
                   </button>
@@ -182,7 +243,10 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
           </motion.div>
         )}
       </AnimatePresence>
-      <button onClick={() => setIsChatOpen(!isChatOpen)} className="w-14 h-14 bg-slate-900 text-white rounded-full shadow-xl flex items-center justify-center hover:bg-slate-800 transition-all hover:scale-105 active:scale-95 relative border-2 border-white">
+      <button 
+        onClick={() => setIsChatOpen(!isChatOpen)} 
+        className="w-14 h-14 bg-slate-900 text-white rounded-full shadow-xl flex items-center justify-center hover:bg-slate-800 transition-all hover:scale-105 active:scale-95 relative border-2 border-white pointer-events-auto"
+      >
         {isChatOpen ? <X size={24} /> : <MessageSquare size={24} />}
       </button>
     </div>
