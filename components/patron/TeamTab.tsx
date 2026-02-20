@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { UserPlus, Activity, MapPin, CheckCircle, Plus, ChevronRight } from 'lucide-react';
+import { UserPlus, Activity, MapPin, CheckCircle, Plus, ChevronRight, KeyRound, X } from 'lucide-react';
 
 // --- TİP TANIMLAMALARI (INTERFACES) ---
 
@@ -25,6 +25,8 @@ interface Staff {
   role: string;
   branch?: string;
   phone?: string;
+  username?: string;
+  is_active?: number;
   [key: string]: any;
 }
 
@@ -168,10 +170,12 @@ export default function TeamTab({
       {/* PERSONEL KARTLARI */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {data?.staff?.map((s: Staff) => {
-          const status = getAutoStatus(s.id);
+          const status = s.is_active === 0 
+            ? { text: 'Hesap Pasif', details: [{ text: 'Sisteme girişi engellendi.', jobData: null }], color: 'bg-rose-500', bg: 'bg-rose-50', textCol: 'text-rose-700', icon: <X size={14} /> } 
+            : getAutoStatus(s.id);
           
           return (
-            <div key={s.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300 relative flex flex-col items-center text-center overflow-hidden group">
+            <div key={s.id} className={`bg-white p-5 rounded-2xl border ${s.is_active === 0 ? 'border-rose-200 opacity-80' : 'border-slate-200'} shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300 relative flex flex-col items-center text-center overflow-hidden group`}>
               {/* Dinamik Durum Çizgisi */}
               <div className={`absolute top-0 left-0 w-full h-1.5 ${status.color}`}></div>
               
@@ -181,7 +185,12 @@ export default function TeamTab({
               <div className="font-black text-slate-800 text-base leading-tight mb-0.5">{s.name}</div>
               
               <div className="text-xs font-bold text-slate-600 uppercase tracking-wider mt-1">{s.role}</div>
-              <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-4 mt-1 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">{s.branch ? s.branch : 'Genel Görev'}</div>
+              <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-1 mt-1 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">{s.branch ? s.branch : 'Genel Görev'}</div>
+              
+              {/* YENİ: Personel Kullanıcı Adı Rozeti */}
+              <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md mb-4 mt-2 border border-slate-200">
+                <KeyRound size={10} /> {s.username || 'Kullanıcı adı yok'}
+              </div>
               
               {/* Otomatik Durum Rozeti */}
               <div className={`w-full flex flex-col items-center justify-center py-2.5 px-3 rounded-xl mb-5 ${status.bg} ${status.textCol} border border-white/50 shadow-sm`}>
@@ -221,7 +230,11 @@ export default function TeamTab({
               {/* AKSİYON BUTONLARI */}
               <div className="grid grid-cols-2 gap-2 w-full pt-4 border-t border-slate-100 mt-auto">
                  <button 
-                   onClick={() => { setShowStaffDetail(s); setEditStaffForm(s); setIsEditingStaff(false); }} 
+                   onClick={() => { 
+                     setShowStaffDetail(s); 
+                     setEditStaffForm({ ...s, password: '', is_active: s.is_active ?? 1 }); 
+                     setIsEditingStaff(false); 
+                   }} 
                    className="flex items-center justify-center gap-1.5 bg-white border border-slate-200 text-slate-700 py-2.5 rounded-xl text-[11px] sm:text-xs font-bold hover:bg-slate-50 hover:text-slate-900 transition-all active:scale-95 shadow-sm"
                  >
                    Dosya

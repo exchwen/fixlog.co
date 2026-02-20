@@ -567,6 +567,26 @@ export default function DashboardModals({
                               <option value="Genel Usta">Genel Usta</option>
                            </select>
                         </div>
+                        <div className="sm:col-span-2 pt-2 border-t border-slate-200 mt-2">
+                           <span className="text-xs font-black text-blue-600 uppercase tracking-widest block mb-3">Güvenlik ve Giriş Bilgileri</span>
+                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div>
+                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Kullanıcı Adı (Giriş İçin)</label>
+                                 <input className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none focus:border-blue-500 transition-all" value={editStaffForm.username} onChange={(e) => setEditStaffForm({...editStaffForm, username: e.target.value})} placeholder="örn: ali.usta" />
+                              </div>
+                              <div>
+                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Hesap Şifresi</label>
+                                 <input type="password" title="Mevcut şifreyi değiştirmek istemiyorsanız boş bırakın." className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 transition-all placeholder:text-[10px] placeholder:text-slate-400" value={editStaffForm.password} onChange={(e) => setEditStaffForm({...editStaffForm, password: e.target.value})} placeholder="Değiştirmek için yazın..." />
+                              </div>
+                              <div className="sm:col-span-2">
+                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Hesap Durumu</label>
+                                 <select className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none bg-white focus:border-blue-500 transition-all" value={editStaffForm.is_active} onChange={(e) => setEditStaffForm({...editStaffForm, is_active: Number(e.target.value)})}>
+                                    <option value={1}>Aktif (Sisteme Girebilir)</option>
+                                    <option value={0}>Pasif (Dondurulmuş Hesap)</option>
+                                 </select>
+                              </div>
+                           </div>
+                        </div>
                       </div>
                       <div className="flex gap-2 pt-2">
                         <button onClick={() => handleAction('add-staff', { ...editStaffForm, id: showStaffDetail.id }, () => setShowStaffDetail(null), () => setIsEditingStaff(false))} className="flex-1 bg-blue-600 text-white py-3 sm:py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-md">{isSaving ? <Loader2 className="animate-spin mx-auto" size={18} /> : 'Değişiklikleri Kaydet'}</button>
@@ -1121,14 +1141,14 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* 8. YENİ PERSONEL EKLE MODALI */}
+      {/* 8. YENİ PERSONEL EKLE MODALI (GÜNCELLENDİ) */}
       <AnimatePresence>
         {showStaffModal && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
             <div className="absolute inset-0" onClick={() => setShowStaffModal(false)}></div>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-sm rounded-2xl p-0 shadow-2xl relative pointer-events-auto overflow-hidden">
               <div className="flex justify-between items-center p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50"><h2 className="text-xl font-black text-slate-800 tracking-tight">Personel Ekle</h2><button onClick={() => setShowStaffModal(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-xl transition-all active:scale-95"><X size={20} /></button></div>
-              <div className="p-5 sm:p-6 space-y-4 bg-white">
+              <div className="p-5 sm:p-6 space-y-4 bg-white overflow-y-auto max-h-[60vh] custom-scrollbar">
                  <input className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="Ad Soyad" onChange={e => setStaffForm({...staffForm, name: e.target.value})} />
                  <input className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="Telefon Numarası" onChange={e => setStaffForm({...staffForm, phone: e.target.value})} />
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1142,9 +1162,16 @@ export default function DashboardModals({
                         <option value="Yönetici">Yönetici</option>
                      </select>
                  </div>
+                 
+                 {/* YENİ EKLENEN KISIM: KULLANICI ADI VE ŞİFRE */}
+                 <div className="pt-4 border-t border-slate-100 mt-2 space-y-3">
+                    <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest block mb-2">Giriş / Güvenlik Bilgileri</span>
+                    <input className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="Kullanıcı Adı (Örn: ali.usta)" onChange={e => setStaffForm({...staffForm, username: e.target.value})} />
+                    <input type="password" className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="Şifre Belirleyin" onChange={e => setStaffForm({...staffForm, password: e.target.value})} />
+                 </div>
               </div>
               <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50">
-                 <button className="w-full bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl font-bold text-sm hover:bg-slate-800 transition-all active:scale-95 flex justify-center items-center shadow-lg" onClick={() => handleAction('add-staff', staffForm, setShowStaffModal, () => setStaffForm({ name: '', phone: '', role: 'Usta', branch: '' }))}>
+                 <button className="w-full bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl font-bold text-sm hover:bg-slate-800 transition-all active:scale-95 flex justify-center items-center shadow-lg" onClick={() => handleAction('add-staff', staffForm, setShowStaffModal, () => setStaffForm({ name: '', phone: '', role: 'Usta', branch: '', username: '', password: '' }))}>
                     {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Personeli Kaydet'}
                  </button>
               </div>
@@ -1271,9 +1298,9 @@ export default function DashboardModals({
               </div>
 
               <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50">
-                  <button disabled={isSaving} className="w-full bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl font-bold text-sm hover:bg-slate-800 transition-all active:scale-95 flex justify-center items-center shadow-lg disabled:opacity-50" onClick={() => handleAction('add-stock', stockForm, setShowStockModal, () => setStockForm({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', category: '', supplierId: '', supplierMode: 'NONE', newSupplier: { name: '', phone: '' } }))}>
-                     {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Stoğu Sisteme Kaydet'}
-                  </button>
+                 <button disabled={isSaving} className="w-full bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl font-bold text-sm hover:bg-slate-800 transition-all active:scale-95 flex justify-center items-center shadow-lg disabled:opacity-50" onClick={() => handleAction('add-stock', stockForm, setShowStockModal, () => setStockForm({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', category: '', supplierId: '', supplierMode: 'NONE', newSupplier: { name: '', phone: '' } }))}>
+                    {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Stoğu Sisteme Kaydet'}
+                 </button>
               </div>
             </motion.div>
           </div>
@@ -1341,9 +1368,9 @@ export default function DashboardModals({
                  <input className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="Telefon Numarası" value={supplierForm.phone} onChange={e => setSupplierForm({...supplierForm, phone: e.target.value})} />
               </div>
               <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50">
-                  <button disabled={isSaving} className="w-full bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl font-bold text-sm hover:bg-slate-800 transition-all active:scale-95 flex justify-center items-center shadow-lg disabled:opacity-50" onClick={() => handleAction('add-supplier', supplierForm, setShowSupplierModal, () => setSupplierForm({ name: '', phone: '' }))}>
+                 <button disabled={isSaving} className="w-full bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl font-bold text-sm hover:bg-slate-800 transition-all active:scale-95 flex justify-center items-center shadow-lg disabled:opacity-50" onClick={() => handleAction('add-supplier', supplierForm, setShowSupplierModal, () => setSupplierForm({ name: '', phone: '' }))}>
                     {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Tedarikçiyi Kaydet'}
-                  </button>
+                 </button>
               </div>
             </motion.div>
           </div>
