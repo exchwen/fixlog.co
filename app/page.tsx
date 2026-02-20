@@ -38,6 +38,10 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 
+// YENİ: Firebase Oturum Kontrolü İçin Gereken İçe Aktarmalar
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/lib/firebase'; // Not: Projendeki firebase dosyasının yoluna göre burayı ayarlayabilirsin (örn: '../../lib/firebase')
+
 // Sabit veriler
 const SECTORS = [
   'Asansör Bakım & Montaj',
@@ -74,7 +78,6 @@ const REVIEWS = [
   },
 ];
 
-// YENİ EKLENEN ÖZELLİKLER (NEDEN BİZ) LİSTESİ
 const FEATURES = [
   {
     icon: Smartphone,
@@ -146,6 +149,22 @@ export default function LandingPage() {
   const [mockupTab, setMockupTab] = useState('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // YENİ: OTOMATİK GİRİŞ (AUTO-REDIRECT) ZEKASI
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // Firebase kullanıcıyı tanıdı, localStorage'dan slug bilgisini alıp panele fırlat!
+        const savedSlug = localStorage.getItem('userSlug');
+        if (savedSlug) {
+          router.push(`/${savedSlug}/dashboard`);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
+
+  // Yorumlar için zamanlayıcı
   useEffect(() => {
     const timer = setInterval(
       () => setReviewIndex((prev) => (prev + 1) % REVIEWS.length),

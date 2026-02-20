@@ -18,6 +18,8 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
 } from '../../lib/firebase';
+// YENİ EKLENEN FIREBASE MODÜLLERİ (Kalıcılık İçin)
+import { setPersistence, browserLocalPersistence } from 'firebase/auth';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
@@ -36,6 +38,9 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     try {
+      // YENİ: Firebase oturumunu tarayıcıda (localStorage) KALICI hale getirir
+      await setPersistence(auth, browserLocalPersistence);
+
       const userCredential = await signInWithEmailAndPassword(
         auth,
         formData.email,
@@ -48,6 +53,8 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (data.slug) {
+        // YENİ: PWA (Uygulama) yeniden açıldığında nereye gideceğini bilmesi için slug'ı kaydediyoruz
+        localStorage.setItem('userSlug', data.slug);
         router.push(`/${data.slug}/dashboard`);
       } else {
         router.push('/register');
@@ -62,12 +69,17 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     try {
+      // YENİ: Firebase oturumunu tarayıcıda (localStorage) KALICI hale getirir
+      await setPersistence(auth, browserLocalPersistence);
+
       const result = await signInWithPopup(auth, googleProvider);
 
       const res = await fetch(`${API_URL}/get-slug?uid=${result.user.uid}`);
       const data = await res.json();
 
       if (data.slug) {
+        // YENİ: PWA (Uygulama) yeniden açıldığında nereye gideceğini bilmesi için slug'ı kaydediyoruz
+        localStorage.setItem('userSlug', data.slug);
         router.push(`/${data.slug}/dashboard`);
       } else {
         router.push('/register');
@@ -80,11 +92,9 @@ export default function LoginPage() {
   };
 
   return (
-    // YENİ: min-h-screen yerine min-h-[100dvh] (Klavye açıldığında bozulmayı önler)
     <div className="min-h-[100dvh] bg-[#F8FAFC] flex items-center justify-center p-4 sm:p-6 relative font-sans">
       <button
         onClick={() => router.push('/')}
-        // YENİ: active:scale-95 eklendi
         className="absolute top-4 sm:top-6 left-4 sm:left-6 flex items-center gap-2 text-[11px] font-bold text-gray-500 hover:text-blue-600 transition-all uppercase tracking-widest bg-white hover:bg-gray-50 px-4 py-2.5 rounded-xl shadow-sm border border-gray-100 active:scale-95"
       >
         <ArrowLeft className="w-3.5 h-3.5" /> Ana Sayfa
@@ -163,7 +173,6 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            // YENİ: active:scale-95 eklendi
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-bold text-sm shadow-xl shadow-blue-600/20 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-70 mt-6"
           >
             {isLoading ? (
@@ -189,7 +198,6 @@ export default function LoginPage() {
           onClick={handleGoogleLogin}
           type="button"
           disabled={isLoading}
-          // YENİ: active:scale-95 eklendi
           className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-100 rounded-2xl px-4 py-4 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-200 transition-all active:scale-95 shadow-sm disabled:opacity-70"
         >
           <img
