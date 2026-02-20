@@ -300,9 +300,10 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         </div>
 
         {/* SAĞ: PERFORMANS VE STOK */}
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6">
           
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden h-full sm:h-[192px] flex flex-col justify-center group hover:shadow-md transition-shadow">
+          {/* DÜZELTME: Mobil için height otomatikleştirildi (h-auto), taşmalar engellendi */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden h-auto min-h-[140px] sm:h-[192px] flex flex-col justify-center group hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-2.5">
                  <div className={`p-2 rounded-lg ${isGrowthPositive ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
@@ -324,7 +325,8 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden h-full sm:h-[192px] flex flex-col justify-center group hover:shadow-md transition-shadow">
+          {/* DÜZELTME: Mobil için height otomatikleştirildi (h-auto), taşmalar engellendi */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden h-auto min-h-[140px] sm:h-[192px] flex flex-col justify-center group hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-2.5">
                  <div className={`p-2 rounded-lg ${lowStockItems.length > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-600'}`}>

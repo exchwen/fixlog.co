@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 // YENİ: X ikonu eklendi (Mobil menüyü kapatmak için)
-import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, ShieldCheck, CheckSquare, Bell, HelpCircle, X } from 'lucide-react';
+import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, ShieldCheck, CheckSquare, Bell, HelpCircle, X, CheckCircle2 } from 'lucide-react';
 
 // YENİ: isMobileMenuOpen ve setIsMobileMenuOpen propları eklendi
 export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen }: any) {
@@ -66,10 +66,10 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
         />
       )}
 
-      {/* DÜZENLENDİ: Hem masaüstü hem mobil için duyarlı (responsive) class'lar eklendi */}
-      <aside className={`fixed lg:sticky top-0 left-0 h-screen z-[100] lg:z-50 bg-slate-900 text-slate-400 flex-col border-r border-slate-800 transition-transform duration-300 w-64 lg:w-56 flex ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+      {/* DÜZENLENDİ: Mobil tarayıcılarda alt kısmı kesilmemesi için h-screen yerine h-[100dvh] eklendi */}
+      <aside className={`fixed lg:sticky top-0 left-0 h-[100dvh] z-[100] lg:z-50 bg-slate-900 text-slate-400 flex flex-col border-r border-slate-800 transition-transform duration-300 w-64 lg:w-56 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         
-        <div className="p-5 flex items-center justify-between border-b border-slate-800 bg-slate-900/50">
+        <div className="p-5 flex items-center justify-between border-b border-slate-800 bg-slate-900/50 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg"><ShieldCheck size={18} /></div>
             <span className="font-bold text-sm text-white tracking-tight uppercase">İŞ DÖKÜMÜ</span>
@@ -88,6 +88,7 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
             { id: 'home', label: 'Genel Bakış', icon: LayoutDashboard },
             { id: 'jobs', label: 'İş Emirleri', icon: ClipboardList },
             { id: 'pending', label: 'Onay Bekleyenler', icon: CheckSquare },
+            { id: 'completed', label: 'Tamamlanan İşler', icon: CheckCircle2 },
             { id: 'alerts', label: 'Kayıt Geçmişi', icon: Bell }, // YENİ EKLENEN SEKME
             { id: 'team', label: 'Saha Ekibi', icon: Users },
             { id: 'customers', label: 'Müşteriler', icon: UserPlus },
@@ -117,7 +118,7 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
           ))}
         </nav>
         
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-4 border-t border-slate-800 shrink-0">
           <button 
             onClick={handleLogout} 
             className="w-full flex items-center justify-center gap-2 px-3 py-2 text-rose-400 font-medium hover:bg-rose-500/10 rounded-lg transition-all text-xs"

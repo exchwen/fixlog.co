@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import InstallPrompt from '@/components/InstallPrompt';
 import OfflineSyncManager from '@/components/OfflineSyncManager'; // YENİ EKLENDİ
 
 export const viewport: Viewport = {
@@ -36,7 +35,6 @@ export default function RootLayout({
       <body>
         {children}
         <OfflineSyncManager /> {/* YENİ EKLENDİ - Arka Planda Eşitleme Yapar */}
-        <InstallPrompt />
       </body>
     </html>
   );

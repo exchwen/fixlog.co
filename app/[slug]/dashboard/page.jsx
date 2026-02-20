@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-// YENİ: WifiOff ve Download (PWA için) eklendi
 import { ShieldCheck, AlertTriangle, ArrowRight, Settings, Filter, ShieldAlert, Info, MapPin, Check, WifiOff, Download } from 'lucide-react';
 
 import Sidebar from '@/components/layout/Sidebar';
@@ -20,6 +19,7 @@ import FinanceTab from '@/components/patron/FinanceTab';
 import AssetsTab from '@/components/patron/AssetsTab';
 import SettingsTab from '@/components/patron/SettingsTab';
 import PendingJobsTab from '@/components/patron/PendingJobsTab'; 
+import CompletedJobsTab from '@/components/patron/CompletedJobsTab';
 import AlertsTab from '@/components/patron/AlertsTab';
 import SupportTab from '@/components/patron/SupportTab'; 
 import AssetQRModal from '@/components/modals/AssetQRModal';
@@ -37,18 +37,15 @@ export default function PatronDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // YENİ: ÇEVRİMDIŞI, CACHE VE SMART STATE KONTROLLERİ
   const [isOffline, setIsOffline] = useState(false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
-  // PWA ANA EKRANA EKLE STATE'LERİ
+  // PWA DÜZELTMESİ: Modalın görünmesi için state'ler
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showPwaPrompt, setShowPwaPrompt] = useState(false);
 
-  // STOK KATEGORİ FİLTRESİ
   const [stockCategory, setStockCategory] = useState('Tümü');
 
-  // MODAL STATE'LERİ
   const [showJobModal, setShowJobModal] = useState(false);
   const [showAssetModal, setShowAssetModal] = useState(false);
   const [showStaffModal, setShowStaffModal] = useState(false);
@@ -75,7 +72,6 @@ export default function PatronDashboard() {
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
 
-  // FORMLAR
   const [jobForm, setJobForm] = useState({ customerName: '', assetId: '', staffId: '', workType: 'Genel Görev', jobType: 'Anlık', scheduledDate: '', taskNote: '' });
   const [assetForm, setAssetForm] = useState({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', customerMode: 'NONE', newCustomer: { name: '', contact: '', address: '', taxInfo: '' } });
   const [staffForm, setStaffForm] = useState({ name: '', phone: '', role: 'Usta', branch: '', status: 'Aktif' });
@@ -83,45 +79,58 @@ export default function PatronDashboard() {
   const [stockForm, setStockForm] = useState({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', category: '', supplierId: '', supplierMode: 'NONE', newSupplier: { name: '', phone: '' } });
   const [supplierForm, setSupplierForm] = useState({ name: '', phone: '' });
   
-  // YENİ: landlinePhone ve website eklendi
   const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', landlinePhone: '', emergencyPhone: '', whatsappPhone: '', website: '', logo: '' });
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '' });
 
-  // PWA Kurulum Dinleyicisi
+  // YENİ PWA KURULUM ZEKASI: Kullanıcı bir kez redderse bir daha gösterme (localStorage ile)
   useEffect(() => {
+    const isPwaDismissed = localStorage.getItem('pwa_prompt_dismissed');
+    
+    // Eğer uygulama zaten PWA olarak çalışıyorsa veya reddedildiyse dinleme
+    if (window.matchMedia('(display-mode: standalone)').matches || isPwaDismissed === 'true') {
+      return;
+    }
+
     const handler = (e) => {
-      e.preventDefault();
+      e.preventDefault(); // Tarayıcının varsayılan pop-up'ını engelle
       setDeferredPrompt(e);
-      setShowPwaPrompt(true);
+      // Gecikmeli göster (Kullanıcı veriler yüklenirken rahatsız olmasın)
+      setTimeout(() => setShowPwaPrompt(true), 2000); 
     };
+
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
   const handleInstallPwa = async () => {
     if (deferredPrompt) {
-      deferredPrompt.prompt();
+      setShowPwaPrompt(false); // Modalı anında gizle
+      deferredPrompt.prompt(); // Tarayıcının kendi yükleme ekranını çağır
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-        setShowPwaPrompt(false);
+        console.log('PWA Kuruldu');
+      } else {
+        localStorage.setItem('pwa_prompt_dismissed', 'true');
       }
+      setDeferredPrompt(null);
     }
   };
 
-  // YENİ: isInitial parametresi eklendi, böylece 15 saniyede bir formu ezmesi engellendi
+  const handleDismissPwa = () => {
+    setShowPwaPrompt(false);
+    localStorage.setItem('pwa_prompt_dismissed', 'true');
+  };
+
   const fetchData = async (isInitial = false) => {
     try {
       const res = await fetch(`${API_URL}/dashboard-data?slug=${slug}`);
       if (!res.ok) throw new Error("Ağ hatası");
       const result = await res.json();
       
-      // YENİ: Başarılı veri çekişinde cache'i güncelle
       localStorage.setItem(`dashboard_cache_${slug}`, JSON.stringify(result));
       setIsOffline(false);
       setData(result);
       
-      // Sadece sayfa ilk yüklendiğinde veya ayarlar kaydedildiğinde formu doldur
       if (result && isInitial) {
         setSettingsForm({ 
             companyName: result.name || '', 
@@ -139,7 +148,6 @@ export default function PatronDashboard() {
       }
     } catch (err) { 
       console.error("Veri çekilemedi:", err); 
-      // YENİ: Veri çekilemezse cache'den yükle
       setIsOffline(true);
       const cachedData = localStorage.getItem(`dashboard_cache_${slug}`);
       if (cachedData) {
@@ -158,7 +166,6 @@ export default function PatronDashboard() {
     } catch (err) {}
   };
 
-  // YENİ: Bekleyen (offline) işlemleri senkronize etme fonksiyonu
   const syncOfflineActions = async () => {
     const pending = JSON.parse(localStorage.getItem(`offline_actions_${slug}`) || '[]');
     if (pending.length === 0) {
@@ -181,10 +188,9 @@ export default function PatronDashboard() {
     }
     localStorage.setItem(`offline_actions_${slug}`, JSON.stringify(remaining));
     setPendingSyncCount(remaining.length);
-    if (remaining.length < pending.length) fetchData(true); // Bazıları başarıyla senkronize olduysa veriyi yenile
+    if (remaining.length < pending.length) fetchData(true);
   };
 
-  // YENİ: Çevrimiçi/Çevrimdışı durum dinleyicileri ve ilk senkronizasyon kontrolü
   useEffect(() => {
     const handleOnline = () => { setIsOffline(false); syncOfflineActions(); };
     const handleOffline = () => setIsOffline(true);
@@ -202,7 +208,6 @@ export default function PatronDashboard() {
     };
   }, [slug]);
 
-  // YENİ: Masaüstü ESC tuşu ve Mobil Geri Tuşu (Smart State PWA) Yönetimi
   useEffect(() => {
     const closeAnyOpenModal = () => {
       if (showQRModal) { setShowQRModal(false); return true; }
@@ -219,7 +224,7 @@ export default function PatronDashboard() {
       if (showAssetDetail) { setShowAssetDetail(null); return true; }
       if (isChatOpen) { setIsChatOpen(false); return true; }
       if (isMobileMenuOpen) { setIsMobileMenuOpen(false); return true; }
-      return false; // Hiçbir şey açık değilse false döner
+      return false; 
     };
 
     const handleKeyDown = (e) => {
@@ -231,7 +236,6 @@ export default function PatronDashboard() {
     const handlePopState = (e) => {
       const closedSomething = closeAnyOpenModal();
       if (closedSomething) {
-        // Modalı kapattıysak, kullanıcının uygulamadan tamamen çıkmasını engellemek için mevcut state'i tekrar pushluyoruz
         window.history.pushState({ modalOpen: true }, '');
       }
     };
@@ -239,7 +243,6 @@ export default function PatronDashboard() {
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('popstate', handlePopState);
 
-    // Geri tuşunu manipüle edebilmek için sayfaya girildiğinde history eklenir
     if (!window.history.state?.modalOpen) {
        window.history.pushState({ modalOpen: true }, '');
     }
@@ -254,7 +257,6 @@ export default function PatronDashboard() {
       showStaffDetail, showCustomerDetail, showAssetDetail, isChatOpen, isMobileMenuOpen
   ]);
 
-  // YENİ: setInterval içinde isInitial false olarak çağrılıyor
   useEffect(() => { 
     fetchData(true); 
     const int = setInterval(() => fetchData(false), 15000); 
@@ -270,8 +272,6 @@ export default function PatronDashboard() {
       if (res.ok) { 
         if(closeFn) closeFn(false); 
         if(resetFn) resetFn(); 
-        
-        // Kayıt başarılıysa veriyi ve formu tazeleyebiliriz
         await fetchData(true); 
         return true; 
       } else { 
@@ -279,7 +279,6 @@ export default function PatronDashboard() {
         return false; 
       }
     } catch (err) { 
-      // YENİ: VERİTABANI HATASI VEYA BAĞLANTI SORUNU İÇİN CACHE SİSTEMİ
       const pending = JSON.parse(localStorage.getItem(`offline_actions_${slug}`) || '[]');
       pending.push({ endpoint, body, timestamp: new Date().toISOString() });
       localStorage.setItem(`offline_actions_${slug}`, JSON.stringify(pending));
@@ -291,7 +290,6 @@ export default function PatronDashboard() {
       if(resetFn) resetFn(); 
       
       if (endpoint !== 'update-settings' && endpoint !== 'add-support-ticket') {
-         // Kullanıcıya akıcı deneyim sunmak için işlem kuyruğa alınır, uygulamanın donması engellenir
          console.warn("İnternet bağlantısı yok veya sunucuya ulaşılamadı. İşlem kuyruğa alındı.");
       }
       return true; 
@@ -306,7 +304,6 @@ export default function PatronDashboard() {
     setMessageInput(''); fetchMessages();
   };
 
-  // 🚨 ACİL DURUM KONTROLÜ VE KAPATMA FONKSİYONU
   const activeEmergencies = data?.activeEmergencies || [];
   const hasEmergency = activeEmergencies.length > 0;
 
@@ -326,7 +323,6 @@ export default function PatronDashboard() {
     }
   };
 
-  // ⚠️ ARIZA BİLDİRİM KONTROLÜ
   const pendingFaults = data?.pendingFaults || [];
   const hasFault = pendingFaults.length > 0;
 
@@ -365,7 +361,6 @@ export default function PatronDashboard() {
     );
   }, [data]);
 
-  // YENİ: Veriler eksikse kullanıcıyı zorla Ayarlar sekmesinde tut
   useEffect(() => {
     if (isCompanyDataIncomplete && !hasEmergency && !hasFault && activeTab !== 'support') {
       setActiveTab('settings');
@@ -387,7 +382,7 @@ export default function PatronDashboard() {
   }, [data, stockCategory, activeTab]);
 
   if (loading) return (
-    <div className="h-screen flex flex-col items-center justify-center bg-slate-950">
+    <div className="h-[100dvh] flex flex-col items-center justify-center bg-slate-950">
       <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }} className="mb-4"><ShieldCheck className="text-blue-500 w-12 h-12" /></motion.div>
       <div className="text-white font-black tracking-widest text-[11px] uppercase opacity-40">D1 Senkronize Ediliyor...</div>
     </div>
@@ -402,9 +397,9 @@ export default function PatronDashboard() {
   };
 
   return (
-    <div className={`min-h-screen flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 ${hasEmergency ? 'bg-rose-950' : 'bg-[#F8FAFC] text-slate-900'}`}>
+    <div className={`min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 ${hasEmergency ? 'bg-rose-950' : 'bg-[#F8FAFC] text-slate-900'}`}>
       
-      {/* PWA ANA EKRANA EKLE MODALI (MOBİL İÇİN DİKEY, DESKTOP İÇİN YATAY UYUM) */}
+      {/* PWA ANA EKRANA EKLE MODALI DÜZELTİLDİ */}
       <AnimatePresence>
         {showPwaPrompt && !hasEmergency && (
           <motion.div 
@@ -423,14 +418,13 @@ export default function PatronDashboard() {
               </div>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setShowPwaPrompt(false)} className="px-3 py-2 text-xs font-bold text-slate-300 hover:text-white transition-colors">Geç</button>
+              <button onClick={handleDismissPwa} className="px-3 py-2 text-xs font-bold text-slate-300 hover:text-white transition-colors">Geç</button>
               <button onClick={handleInstallPwa} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95">Yükle</button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* NORMAL ARKA PLAN DEKORLARI */}
       {!hasEmergency && (
         <>
           <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400/5 blur-[120px] rounded-full z-0 pointer-events-none"></div>
@@ -438,14 +432,12 @@ export default function PatronDashboard() {
         </>
       )}
 
-      {/* 🚨 ACİL DURUM KIRMIZI EKRAN UYARISI (TAM EKRAN KAPLAMA) */}
       <AnimatePresence>
         {hasEmergency && (
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[99999] bg-rose-600 flex flex-col items-center justify-center text-white p-6"
           >
-            {/* Arka plan radar / nabız efekti */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
                 <div className="w-[800px] h-[800px] bg-rose-500/30 rounded-full animate-ping" style={{ animationDuration: '3s' }}></div>
             </div>
@@ -455,16 +447,13 @@ export default function PatronDashboard() {
                 <h1 className="text-4xl md:text-5xl font-black mb-2 tracking-tight uppercase">Acil Durum Bildirildi!</h1>
                 <p className="text-lg md:text-xl text-rose-100 mb-8 font-medium">Sahadan veya bir müşteriden acil durum butonu tetiklendi.</p>
                 
-                {/* Varlık Bilgileri ve Konumu */}
                 <div className="bg-white/10 p-5 md:p-6 rounded-3xl backdrop-blur-md border border-white/20 mb-8 w-full max-w-md text-left shadow-2xl">
                    <div className="text-rose-200 text-xs font-bold uppercase tracking-wider mb-1">İlgili Varlık & Konum</div>
-                   {/* Hiyerarşi Düzenlendi: Önce Apartman Varsa O, Yoksa Cihaz Adı */}
                    <div className="text-xl md:text-2xl font-black text-white mb-2">
                       {activeEmergencies[0]?.asset_apartment || activeEmergencies[0]?.asset_name || 'Bilinmeyen Varlık'}
                    </div>
                    <div className="flex items-start md:items-center gap-2 text-rose-100 text-sm md:text-base">
                       <MapPin size={18} className="mt-0.5 md:mt-0 flex-shrink-0" /> 
-                      {/* Konumdan Apartman Adını Temizleyerek Gösterim (Tekrar olmasın diye) */}
                       <span>
                         {activeEmergencies[0]?.asset_location 
                           ? activeEmergencies[0].asset_location.replace(activeEmergencies[0].asset_apartment || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() 
@@ -486,7 +475,6 @@ export default function PatronDashboard() {
         )}
       </AnimatePresence>
 
-      {/* ⚠️ SARI ARIZA BİLDİRİMİ MODALI */}
       <AnimatePresence>
         {hasFault && !hasEmergency && (
           <motion.div 
@@ -506,7 +494,6 @@ export default function PatronDashboard() {
                <div className="bg-white p-6 md:p-8 flex flex-col gap-4">
                   <div className="bg-slate-50 p-4 md:p-5 rounded-2xl border border-slate-100">
                      <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">İlgili Varlık & Konum</div>
-                     {/* Hiyerarşi Düzenlendi */}
                      <div className="font-black text-lg md:text-xl text-slate-800 leading-none mb-2">
                         {pendingFaults[0]?.asset_apartment || pendingFaults[0]?.asset_name || 'Bilinmeyen Varlık'}
                      </div>
@@ -540,14 +527,12 @@ export default function PatronDashboard() {
         )}
       </AnimatePresence>
 
-      {/* YENİ: DÜZELTME - Veriler eksikse Sidebar kilitlenir, ancak z-index ile mobilde sorun yaratmaz */}
       <div className={`flex z-50 ${isCompanyDataIncomplete && activeTab !== 'support' ? "pointer-events-none opacity-50 grayscale transition-all duration-300" : ""}`}>
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
       </div>
 
-      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto relative z-10">
+      <main className="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-y-auto relative z-10">
         
-        {/* YENİ: ÇEVRİMDIŞI VE SENKRONİZASYON UYARISI BANNER'I */}
         <AnimatePresence>
             {(isOffline || pendingSyncCount > 0) && !hasEmergency && (
               <motion.div 
@@ -573,7 +558,6 @@ export default function PatronDashboard() {
 
         <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">
           
-          {/* YENİ: Bilgiler eksikse sadece SettingsTab gösterilir */}
           {isCompanyDataIncomplete && !hasEmergency && !hasFault && activeTab !== 'support' && (
             <div className="bg-rose-50 border border-rose-200 text-rose-700 p-5 rounded-2xl shadow-sm mb-6 flex flex-col items-center text-center">
               <ShieldAlert size={40} className="mb-3 text-rose-500" />
@@ -585,6 +569,7 @@ export default function PatronDashboard() {
           {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} />}
           {activeTab === 'jobs' && <JobsTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} />}
           {activeTab === 'pending' && <PendingJobsTab data={data} setSelectedJob={setSelectedJob} />}
+          {activeTab === 'completed' && <CompletedJobsTab data={data} setSelectedJob={setSelectedJob} statusColors={statusColors} />}
           {activeTab === 'alerts' && <AlertsTab data={data} />} 
           {activeTab === 'team' && <TeamTab data={data} setShowStaffModal={setShowStaffModal} setShowJobModal={setShowJobModal} setShowStaffDetail={setShowStaffDetail} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} setSelectedJob={setSelectedJob} />}
           {activeTab === 'customers' && <CustomersTab data={data} setShowCustomerModal={setShowCustomerModal} setShowCustomerDetail={setShowCustomerDetail} />}
@@ -593,7 +578,6 @@ export default function PatronDashboard() {
           {activeTab === 'stock' && (
             <div className="flex flex-col space-y-4">
               <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-end w-full">
-                {/* MOBİL İÇİN DİKEY HİYERARŞİ: flexDirection sm:flex-row yapıldı, w-full mobilde uzatıldı */}
                 <div className="bg-white border border-slate-200 rounded-xl p-2 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto z-20">
                   <div className="flex items-center gap-2 px-2 sm:px-0">
                     <Filter size={16} className="text-slate-400" />
