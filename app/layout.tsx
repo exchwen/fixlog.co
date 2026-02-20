@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import InstallPrompt from '@/components/InstallPrompt'; // YENİ EKLENDİ
+import InstallPrompt from '@/components/InstallPrompt';
+import OfflineSyncManager from '@/components/OfflineSyncManager'; // YENİ EKLENDİ
 
 export const viewport: Viewport = {
   themeColor: "#0f172a",
@@ -34,7 +35,8 @@ export default function RootLayout({
     <html lang="tr">
       <body>
         {children}
-        <InstallPrompt /> {/* YENİ EKLENDİ */}
+        <OfflineSyncManager /> {/* YENİ EKLENDİ - Arka Planda Eşitleme Yapar */}
+        <InstallPrompt />
       </body>
     </html>
   );
