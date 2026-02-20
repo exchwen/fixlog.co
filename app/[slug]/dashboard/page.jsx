@@ -40,10 +40,11 @@ export default function PatronDashboard() {
   const [isOffline, setIsOffline] = useState(false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
-  // PWA VE iOS TESPİT STATE'LERİ
+  // YENİ: PWA YÜKLEME DURUMU STATE'LERİ EKLENDİ
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showPwaPrompt, setShowPwaPrompt] = useState(false);
   const [isIos, setIsIos] = useState(false);
+  const [installState, setInstallState] = useState('idle'); // 'idle' | 'success'
 
   const [stockCategory, setStockCategory] = useState('Tümü');
 
@@ -83,7 +84,7 @@ export default function PatronDashboard() {
   const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', landlinePhone: '', emergencyPhone: '', whatsappPhone: '', website: '', logo: '' });
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '' });
 
-  // YENİ: ZORUNLU PWA YAKALAMA SİSTEMİ (Geç butonu ve mantığı kaldırıldı)
+  // YENİ: ZORUNLU VE GERİ BİLDİRİMLİ PWA YAKALAMA SİSTEMİ
   useEffect(() => {
     // Sadece PWA (uygulama) içinden açılmışsa durdur ve balonu gösterme.
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -108,16 +109,34 @@ export default function PatronDashboard() {
         setTimeout(() => setShowPwaPrompt(true), 2000);
       };
       window.addEventListener('beforeinstallprompt', handler);
-      return () => window.removeEventListener('beforeinstallprompt', handler);
+
+      // YENİ: Tarayıcı menüsünden kurulursa dahi algılayıp "Başarılı" diyen dinleyici
+      const handleInstalled = () => {
+        setInstallState('success');
+        setTimeout(() => setShowPwaPrompt(false), 3000);
+      };
+      window.addEventListener('appinstalled', handleInstalled);
+
+      return () => {
+        window.removeEventListener('beforeinstallprompt', handler);
+        window.removeEventListener('appinstalled', handleInstalled);
+      };
     }
   }, []);
 
   const handleInstallPwa = async () => {
     if (deferredPrompt) {
-      setShowPwaPrompt(false); 
+      // Yükle der demez balonu gizlemiyoruz! Native onay penceresi açılacak.
       deferredPrompt.prompt(); 
       const { outcome } = await deferredPrompt.userChoice;
-      // İptal etse bile sayfayı yenileyince tekrar çıkacak çünkü localStorage kuralını kaldırdık
+      
+      // Kullanıcı native ekranda "Kabul Et" dediyse:
+      if (outcome === 'accepted') {
+        setInstallState('success');
+        setTimeout(() => setShowPwaPrompt(false), 3000); // 3 saniye yeşil tik gösterip yok eder
+      } else {
+        // İptal ederse balon ekranda kalmaya devam eder, çünkü "Geç" opsiyonu yok
+      }
       setDeferredPrompt(null);
     }
   };
@@ -400,7 +419,7 @@ export default function PatronDashboard() {
   return (
     <div className={`min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 ${hasEmergency ? 'bg-rose-950' : 'bg-[#F8FAFC] text-slate-900'}`}>
       
-      {/* ZORUNLU PWA ANA EKRANA EKLE MODALI ("Geç" butonu tamamen kaldırıldı) */}
+      {/* ZORUNLU PWA ANA EKRANA EKLE MODALI ("Geç" butonu tamamen kaldırıldı, Başarı Animasyonu Eklendi) */}
       <AnimatePresence>
         {showPwaPrompt && !hasEmergency && (
           <motion.div 
@@ -409,31 +428,47 @@ export default function PatronDashboard() {
             exit={{ y: 100, opacity: 0 }} 
             className="fixed bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[420px] bg-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-2xl z-[9999] flex flex-row items-center justify-between border border-slate-700"
           >
-            <div className="flex items-center gap-3 w-full">
-              <div className="bg-blue-500 p-2.5 rounded-xl shrink-0">
-                <Download size={20} className="text-white" />
+            {installState === 'success' ? (
+              // BAŞARILI YÜKLEME EKRANI
+              <div className="flex items-center gap-3 w-full justify-center py-1">
+                <div className="bg-emerald-500 p-2 rounded-full shrink-0">
+                  <Check size={20} className="text-white" />
+                </div>
+                <div className="flex flex-col flex-1 min-w-0 pr-2">
+                  <span className="font-bold text-sm text-emerald-400">Kurulum Başarılı!</span>
+                  <span className="text-xs text-slate-400 mt-0.5">Cihazınızın ana ekranından giriş yapabilirsiniz.</span>
+                </div>
               </div>
-              <div className="flex flex-col flex-1 min-w-0 pr-2">
-                <span className="font-bold text-sm">Uygulamayı Yükle</span>
-                {isIos ? (
-                   // iOS Safari için özel talimat metni
-                   <span className="text-[11px] text-slate-400 mt-0.5 leading-tight">
-                     Yüklemek için <Share size={12} className="inline-block mx-0.5 mb-0.5" /> <b>Paylaş</b> ikonuna basıp <br/> <b>Ana Ekrana Ekle</b>'yi seçin.
-                   </span>
-                ) : (
-                   // Android / Masaüstü metni
-                   <span className="text-xs text-slate-400 mt-0.5">Daha hızlı ve kolay erişim</span>
-                )}
-              </div>
-            </div>
-            <div className="flex gap-2 shrink-0 items-center">
-              {/* Sadece Android/Masaüstü ise Yükle Butonunu göster */}
-              {!isIos && (
-                 <button onClick={handleInstallPwa} className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95">
-                   Yükle
-                 </button>
-              )}
-            </div>
+            ) : (
+              // STANDART YÜKLEME ÇAĞRISI
+              <>
+                <div className="flex items-center gap-3 w-full">
+                  <div className="bg-blue-500 p-2.5 rounded-xl shrink-0">
+                    <Download size={20} className="text-white" />
+                  </div>
+                  <div className="flex flex-col flex-1 min-w-0 pr-2">
+                    <span className="font-bold text-sm">Uygulamayı Yükle</span>
+                    {isIos ? (
+                       // iOS Safari için özel talimat metni
+                       <span className="text-[11px] text-slate-400 mt-0.5 leading-tight">
+                         Yüklemek için <Share size={12} className="inline-block mx-0.5 mb-0.5" /> <b>Paylaş</b> ikonuna basıp <br/> <b>Ana Ekrana Ekle</b>'yi seçin.
+                       </span>
+                    ) : (
+                       // Android / Masaüstü metni
+                       <span className="text-xs text-slate-400 mt-0.5">Daha hızlı ve kolay erişim</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-2 shrink-0 items-center">
+                  {/* Sadece Android/Masaüstü ise Yükle Butonunu göster */}
+                  {!isIos && (
+                     <button onClick={handleInstallPwa} className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95">
+                       Yükle
+                     </button>
+                  )}
+                </div>
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
