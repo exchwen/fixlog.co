@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, AlertTriangle, ArrowRight, Settings, Filter, ShieldAlert, Info, MapPin, Check, WifiOff, Download } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, ArrowRight, Settings, Filter, ShieldAlert, Info, MapPin, Check, WifiOff, Download, Share } from 'lucide-react';
 
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
@@ -40,9 +40,10 @@ export default function PatronDashboard() {
   const [isOffline, setIsOffline] = useState(false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
-  // PWA DÜZELTMESİ: Modalın görünmesi için state'ler
+  // YENİ: PWA VE iOS TESPİT STATE'LERİ
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showPwaPrompt, setShowPwaPrompt] = useState(false);
+  const [isIos, setIsIos] = useState(false);
 
   const [stockCategory, setStockCategory] = useState('Tümü');
 
@@ -82,34 +83,42 @@ export default function PatronDashboard() {
   const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', landlinePhone: '', emergencyPhone: '', whatsappPhone: '', website: '', logo: '' });
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '' });
 
-  // YENİ PWA KURULUM ZEKASI: Kullanıcı bir kez redderse bir daha gösterme (localStorage ile)
+  // YENİ: KUSURSUZ PWA (ANDROID & IOS) YAKALAMA SİSTEMİ
   useEffect(() => {
-    const isPwaDismissed = localStorage.getItem('pwa_prompt_dismissed');
+    // Daha önce kapatıldıysa veya zaten PWA içinden açılmışsa durdur.
+    const isDismissed = localStorage.getItem('pwa_prompt_dismissed');
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     
-    // Eğer uygulama zaten PWA olarak çalışıyorsa veya reddedildiyse dinleme
-    if (window.matchMedia('(display-mode: standalone)').matches || isPwaDismissed === 'true') {
+    if (isStandalone || isDismissed === 'true') {
       return;
     }
 
-    const handler = (e) => {
-      e.preventDefault(); // Tarayıcının varsayılan pop-up'ını engelle
-      setDeferredPrompt(e);
-      // Gecikmeli göster (Kullanıcı veriler yüklenirken rahatsız olmasın)
-      setTimeout(() => setShowPwaPrompt(true), 2000); 
-    };
+    // Cihazın Apple (iOS) olup olmadığını tespit et
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
 
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    if (isIOSDevice) {
+      setIsIos(true);
+      // Apple cihazda buton çıkmaz, sadece yönerge balonu 2 sn sonra açılır
+      setTimeout(() => setShowPwaPrompt(true), 2000);
+    } else {
+      // Android / Masaüstü Chrome vb.
+      const handler = (e) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+        setTimeout(() => setShowPwaPrompt(true), 2000);
+      };
+      window.addEventListener('beforeinstallprompt', handler);
+      return () => window.removeEventListener('beforeinstallprompt', handler);
+    }
   }, []);
 
   const handleInstallPwa = async () => {
     if (deferredPrompt) {
-      setShowPwaPrompt(false); // Modalı anında gizle
-      deferredPrompt.prompt(); // Tarayıcının kendi yükleme ekranını çağır
+      setShowPwaPrompt(false); 
+      deferredPrompt.prompt(); 
       const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        console.log('PWA Kuruldu');
-      } else {
+      if (outcome === 'dismissed') {
         localStorage.setItem('pwa_prompt_dismissed', 'true');
       }
       setDeferredPrompt(null);
@@ -399,27 +408,39 @@ export default function PatronDashboard() {
   return (
     <div className={`min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 ${hasEmergency ? 'bg-rose-950' : 'bg-[#F8FAFC] text-slate-900'}`}>
       
-      {/* PWA ANA EKRANA EKLE MODALI DÜZELTİLDİ */}
+      {/* YENİ NESİL PWA ANA EKRANA EKLE MODALI (iOS VE ANDROID AKILLI) */}
       <AnimatePresence>
         {showPwaPrompt && !hasEmergency && (
           <motion.div 
             initial={{ y: 100, opacity: 0 }} 
             animate={{ y: 0, opacity: 1 }} 
             exit={{ y: 100, opacity: 0 }} 
-            className="fixed bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[420px] bg-slate-900 text-white p-4 rounded-2xl shadow-2xl z-[9999] flex flex-row items-center justify-between border border-slate-700"
+            className="fixed bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[420px] bg-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-2xl z-[9999] flex flex-row items-center justify-between border border-slate-700"
           >
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-500 p-2.5 rounded-xl">
+            <div className="flex items-center gap-3 w-full">
+              <div className="bg-blue-500 p-2.5 rounded-xl shrink-0">
                 <Download size={20} className="text-white" />
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col flex-1 min-w-0 pr-2">
                 <span className="font-bold text-sm">Uygulamayı Yükle</span>
-                <span className="text-xs text-slate-400">Daha hızlı ve kolay erişim</span>
+                {isIos ? (
+                   // iOS Safari için özel talimat metni
+                   <span className="text-[11px] text-slate-400 mt-0.5 leading-tight">
+                     Yüklemek için <Share size={12} className="inline-block mx-0.5 mb-0.5" /> <b>Paylaş</b> ikonuna basıp <br/> <b>Ana Ekrana Ekle</b>'yi seçin.
+                   </span>
+                ) : (
+                   // Android / Masaüstü metni
+                   <span className="text-xs text-slate-400 mt-0.5">Daha hızlı ve kolay erişim</span>
+                )}
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 shrink-0 items-center">
               <button onClick={handleDismissPwa} className="px-3 py-2 text-xs font-bold text-slate-300 hover:text-white transition-colors">Geç</button>
-              <button onClick={handleInstallPwa} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95">Yükle</button>
+              
+              {/* Sadece Android/Masaüstü ise Yükle Butonunu göster */}
+              {!isIos && (
+                 <button onClick={handleInstallPwa} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95">Yükle</button>
+              )}
             </div>
           </motion.div>
         )}
