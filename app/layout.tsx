@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import OfflineSyncManager from '@/components/OfflineSyncManager';
-import PwaRegistry from '@/components/PwaRegistry'; // YENİ EKLENDİ - Service Worker'ı kaydeder
+import PwaRegistry from '@/components/PwaRegistry';
 
 export const viewport: Viewport = {
   themeColor: "#0f172a",
@@ -17,9 +17,12 @@ export const metadata: Metadata = {
     'Global, ölçeklenebilir ve sürdürülebilir yeni nesil iş takip SaaS platformu.',
   manifest: "/manifest.json",
   appleWebApp: {
-    capable: true,
+    // capable: true, -> Konsoldaki sarı uyarının sebebi buydu, kaldırıldı.
     statusBarStyle: "default",
     title: "İş Dökümü",
+  },
+  other: {
+    "mobile-web-app-capable": "yes" // YENİ STANDART: Sarı uyarının istediği yeni etiket eklendi
   },
   formatDetection: {
     telephone: false,
@@ -36,7 +39,7 @@ export default function RootLayout({
       <body>
         {children}
         <OfflineSyncManager />
-        <PwaRegistry /> {/* YENİ EKLENDİ - PWA Yükleme Balonunun Tetikleyicisi */}
+        <PwaRegistry />
       </body>
     </html>
   );
