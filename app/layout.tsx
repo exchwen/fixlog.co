@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import OfflineSyncManager from '@/components/OfflineSyncManager'; // YENİ EKLENDİ
+import OfflineSyncManager from '@/components/OfflineSyncManager';
+import PwaRegistry from '@/components/PwaRegistry'; // YENİ EKLENDİ - Service Worker'ı kaydeder
 
 export const viewport: Viewport = {
   themeColor: "#0f172a",
@@ -34,7 +35,8 @@ export default function RootLayout({
     <html lang="tr">
       <body>
         {children}
-        <OfflineSyncManager /> {/* YENİ EKLENDİ - Arka Planda Eşitleme Yapar */}
+        <OfflineSyncManager />
+        <PwaRegistry /> {/* YENİ EKLENDİ - PWA Yükleme Balonunun Tetikleyicisi */}
       </body>
     </html>
   );
