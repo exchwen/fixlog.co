@@ -1,22 +1,42 @@
 'use client';
 
+// YENİ: WifiOff eklendi
 import React, { useEffect, useState } from 'react';
-import { Save, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle, MessageCircle, ImagePlus, CheckCircle, Globe } from 'lucide-react';
+import { Save, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle, MessageCircle, ImagePlus, CheckCircle, Globe, WifiOff } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CITY_DATA: any = trCitiesData;
 
-export default function SettingsTab({ settingsForm, setSettingsForm, handleAction, isSaving }: any) {
+export default function SettingsTab({ settingsForm = {}, setSettingsForm, handleAction, isSaving }: any) {
   
   const [localCity, setLocalCity] = useState('');
   const [localDistrict, setLocalDistrict] = useState('');
   const [localDetail, setLocalDetail] = useState('');
   
   const [modalState, setModalState] = useState<'idle' | 'success' | 'error'>('idle');
+  
+  // YENİ: Çevrimdışı kontrolü için State
+  const [isOffline, setIsOffline] = useState(false);
+
+  // YENİ: İnternet durumunu dinleyen useEffect
+  useEffect(() => {
+    if (typeof navigator !== 'undefined') {
+      setIsOffline(!navigator.onLine);
+    }
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
-    if (settingsForm.address) {
+    if (settingsForm?.address) {
       const parts = settingsForm.address.split(' / ');
       if (parts.length >= 3) {
         const city = parts[parts.length - 1].trim();
@@ -31,7 +51,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
       }
       setLocalDetail(settingsForm.address);
     }
-  }, [settingsForm.address]);
+  }, [settingsForm?.address]);
 
   const updateAddress = (newDetail: string, newCity: string, newDistrict: string) => {
     setLocalDetail(newDetail);
@@ -42,7 +62,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
     if (newDistrict) fullAddress += ` / ${newDistrict}`;
     if (newCity) fullAddress += ` / ${newCity}`;
 
-    setSettingsForm({ ...settingsForm, address: fullAddress });
+    setSettingsForm({ ...(settingsForm || {}), address: fullAddress });
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,7 +96,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
         if(ctx) {
             ctx.drawImage(img, 0, 0, width, height);
             const dataUrl = canvas.toDataURL('image/png');
-            setSettingsForm({ ...settingsForm, logo: dataUrl });
+            setSettingsForm({ ...(settingsForm || {}), logo: dataUrl });
         }
       };
       img.src = event.target?.result as string;
@@ -85,6 +105,19 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
   };
 
   const handleSave = async () => {
+    // YENİ: Çevrimdışı/Offline Kuyruk Koruması Entegrasyonu
+    if (isOffline) {
+       console.warn("İnternet bağlantısı yok. Ayarlarınız kuyruğa alındı.");
+       const activeSlug = localStorage.getItem('companySlug') || ''; // Eğer parametreyle gelmiyorsa lokalden çek
+       const pending = JSON.parse(localStorage.getItem(`offline_actions_${activeSlug}`) || '[]');
+       pending.push({ endpoint: 'update-settings', body: settingsForm, timestamp: new Date().toISOString() });
+       localStorage.setItem(`offline_actions_${activeSlug}`, JSON.stringify(pending));
+       
+       setModalState('success');
+       setTimeout(() => setModalState('idle'), 3000);
+       return;
+    }
+
     const success = await handleAction('update-settings', settingsForm);
     if (success) {
       setModalState('success');
@@ -95,13 +128,13 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
   };
 
   const isFormValid = 
-    settingsForm.companyName?.trim() &&
-    settingsForm.ownerName?.trim() &&
-    settingsForm.sector?.trim() &&
-    settingsForm.phone?.trim() &&
-    settingsForm.emergencyPhone?.trim() &&
-    settingsForm.address?.trim() &&
-    settingsForm.taxInfo?.trim();
+    settingsForm?.companyName?.trim() &&
+    settingsForm?.ownerName?.trim() &&
+    settingsForm?.sector?.trim() &&
+    settingsForm?.phone?.trim() &&
+    settingsForm?.emergencyPhone?.trim() &&
+    settingsForm?.address?.trim() &&
+    settingsForm?.taxInfo?.trim();
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -109,7 +142,12 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
       {/* Modal - Onay veya Hata */}
       <AnimatePresence>
         {modalState !== 'idle' && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4"
+          >
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }} 
               animate={{ scale: 1, opacity: 1 }} 
@@ -122,7 +160,10 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
                     <CheckCircle size={32} />
                   </div>
                   <h3 className="text-xl font-bold text-slate-800 mb-2">Başarılı!</h3>
-                  <p className="text-slate-500 text-center text-sm mb-6">İşletme ayarlarınız başarıyla güncellendi ve sisteme kaydedildi.</p>
+                  <p className="text-slate-500 text-center text-sm mb-6">
+                    {/* YENİ: Offline ise başarılı mesajı değişir */}
+                    {isOffline ? 'İnternet bağlantınız yok. Ayarlarınız cihaza kaydedildi, bağlantı sağlandığında sisteme aktarılacaktır.' : 'İşletme ayarlarınız başarıyla güncellendi ve sisteme kaydedildi.'}
+                  </p>
                 </>
               ) : (
                 <>
@@ -140,22 +181,27 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
                 Kapat
               </button>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
       <div className="flex justify-between items-center border-b border-slate-200 pb-4">
         <div>
-          <h3 className="text-lg font-bold text-slate-900">İşletme Ayarları</h3>
+          <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+             İşletme Ayarları
+             {/* YENİ: Offline durumu için küçük ikon. Span içine alındı. */}
+             {isOffline && <span title="Çevrimdışı Mod"><WifiOff size={14} className="text-amber-500" /></span>}
+          </h3>
           <p className="text-xs text-slate-500 mt-1">Firma bilgilerinizi buradan güncelleyebilirsiniz.</p>
         </div>
         <button 
           disabled={isSaving || !isFormValid} 
           onClick={handleSave} 
-          className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          // YENİ: active:scale-95 eklendi (Mobil dokunmatik hissi)
+          className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-          Ayarları Kaydet
+          {isSaving ? <Loader2 className="animate-spin" size={16} /> : (isOffline ? <WifiOff size={16} /> : <Save size={16} />)}
+          {isOffline ? 'Kuyruğa Al' : 'Ayarları Kaydet'}
         </button>
       </div>
 
@@ -164,7 +210,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
         {/* Logo Yükleme Alanı */}
         <div className="flex flex-col sm:flex-row gap-5 items-center bg-slate-50 p-4 border border-slate-200 rounded-xl">
           <div className="w-20 h-20 bg-white border border-slate-200 rounded-lg flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-            {settingsForm.logo ? (
+            {settingsForm?.logo ? (
               <img src={settingsForm.logo} alt="Logo" className="max-w-full max-h-full object-contain p-2" />
             ) : (
               <ImagePlus className="text-slate-300" size={32} />
@@ -174,12 +220,12 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Firma Logosu</label>
             <p className="text-xs text-slate-500 mb-3">Şeffaf arka plana sahip bir PNG dosyası yüklemeniz önerilir. Sistemimiz görseli anında optimize edecektir.</p>
             <div className="flex gap-2">
-              <label className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-xs font-bold cursor-pointer hover:bg-slate-50 transition-colors shadow-sm inline-block">
+              <label className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-xs font-bold cursor-pointer hover:bg-slate-50 transition-all active:scale-95 shadow-sm inline-block">
                 <input type="file" accept="image/png" className="hidden" onChange={handleLogoUpload} />
                 Logo Seç
               </label>
-              {settingsForm.logo && (
-                <button onClick={() => setSettingsForm({...settingsForm, logo: ''})} className="bg-rose-50 border border-rose-100 text-rose-600 px-4 py-2 rounded-lg text-xs font-bold hover:bg-rose-100 transition-colors shadow-sm">
+              {settingsForm?.logo && (
+                <button onClick={() => setSettingsForm({...settingsForm, logo: ''})} className="bg-rose-50 border border-rose-100 text-rose-600 px-4 py-2 rounded-lg text-xs font-bold hover:bg-rose-100 transition-all active:scale-95 shadow-sm">
                   Kaldır
                 </button>
               )}
@@ -195,7 +241,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
               <Building2 className="absolute left-3 top-2.5 text-slate-400" size={16} />
               <input 
                 className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800 font-medium"
-                value={settingsForm.companyName || ''}
+                value={settingsForm?.companyName || ''}
                 onChange={(e) => setSettingsForm({ ...settingsForm, companyName: e.target.value })}
                 placeholder="Örn: Kaya Asansör Ltd. Şti."
               />
@@ -208,7 +254,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
               <User className="absolute left-3 top-2.5 text-slate-400" size={16} />
               <input 
                 className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800"
-                value={settingsForm.ownerName || ''}
+                value={settingsForm?.ownerName || ''}
                 onChange={(e) => setSettingsForm({ ...settingsForm, ownerName: e.target.value })}
                 placeholder="Ad Soyad"
               />
@@ -219,14 +265,14 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
         {/* Sektör (KİLİTLİ) & Web Sitesi */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
-            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block flex items-center gap-1">
+            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
               Faaliyet Sektörü <span className="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-400 font-normal">(Değiştirilemez)</span>
             </label>
             <div className="relative">
               <Briefcase className="absolute left-3 top-2.5 text-slate-400" size={16} />
               <input 
                 className="w-full pl-10 pr-3 py-2.5 border border-slate-200 bg-slate-50 text-slate-500 rounded-lg text-sm outline-none cursor-not-allowed font-medium"
-                value={settingsForm.sector || ''}
+                value={settingsForm?.sector || ''}
                 readOnly
                 placeholder="Sektör"
               />
@@ -240,7 +286,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
               <input 
                 type="url"
                 className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800"
-                value={settingsForm.website || ''}
+                value={settingsForm?.website || ''}
                 onChange={(e) => setSettingsForm({ ...settingsForm, website: e.target.value })}
                 placeholder="www.firmaniz.com"
               />
@@ -257,7 +303,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
                 <input 
                   type="tel"
                   className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800"
-                  value={settingsForm.phone || ''}
+                  value={settingsForm?.phone || ''}
                   onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
                   placeholder="05XX XXX XX XX"
                 />
@@ -272,7 +318,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
                 <input 
                   type="tel"
                   className="w-full pl-10 pr-3 py-2.5 border border-blue-200 bg-blue-50/30 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800 placeholder:text-blue-300"
-                  value={settingsForm.landlinePhone || ''}
+                  value={settingsForm?.landlinePhone || ''}
                   onChange={(e) => setSettingsForm({ ...settingsForm, landlinePhone: e.target.value })}
                   placeholder="02XX XXX XX XX"
                 />
@@ -287,7 +333,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
                 <input 
                   type="tel"
                   className="w-full pl-10 pr-3 py-2.5 border border-emerald-200 bg-emerald-50/30 rounded-lg text-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-slate-800 placeholder:text-emerald-300"
-                  value={settingsForm.whatsappPhone || ''}
+                  value={settingsForm?.whatsappPhone || ''}
                   onChange={(e) => setSettingsForm({ ...settingsForm, whatsappPhone: e.target.value })}
                   placeholder="05XX XXX XX XX"
                 />
@@ -296,7 +342,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
             </div>
 
             <div>
-              <label className="text-[11px] font-bold text-rose-600 uppercase tracking-wider mb-1.5 block flex items-center gap-1">
+              <label className="text-[11px] font-bold text-rose-600 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                   <AlertTriangle size={12} /> Acil Durum Hattı
               </label>
               <div className="relative">
@@ -304,7 +350,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
                 <input 
                   type="tel"
                   className="w-full pl-10 pr-3 py-2.5 border border-rose-200 bg-rose-50 rounded-lg text-sm outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all text-slate-800 placeholder:text-rose-300"
-                  value={settingsForm.emergencyPhone || ''}
+                  value={settingsForm?.emergencyPhone || ''}
                   onChange={(e) => setSettingsForm({ ...settingsForm, emergencyPhone: e.target.value })}
                   placeholder="05XX XXX XX XX"
                 />
@@ -367,7 +413,7 @@ export default function SettingsTab({ settingsForm, setSettingsForm, handleActio
             <FileText className="absolute left-3 top-2.5 text-slate-400" size={16} />
             <input 
               className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-800"
-              value={settingsForm.taxInfo || ''}
+              value={settingsForm?.taxInfo || ''}
               onChange={(e) => setSettingsForm({ ...settingsForm, taxInfo: e.target.value })}
               placeholder="Vergi Dairesi ve Numarası"
             />

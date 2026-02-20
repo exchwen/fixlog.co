@@ -86,6 +86,12 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
 
   // TEKİL SİPARİŞ GÖNDERME (TEK BUTON)
   const sendSingleOrder = () => {
+    // YENİ: Çevrimdışı Koruması
+    if (!navigator.onLine) {
+       alert("WhatsApp üzerinden sipariş geçebilmek için internet bağlantısına ihtiyacınız var.");
+       return;
+    }
+
     if (!selectedSupplierForOrder) return;
 
     const itemsToOrder = selectedSupplierForOrder.items.filter((item:any) => orderQuantities[item.id] && Number(orderQuantities[item.id]) > 0);
@@ -121,6 +127,12 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
 
   // TOPLU SİPARİŞ İÇİN WHATSAPP LİNKİ OLUŞTURMA VE AÇMA
   const openWhatsappForSupplier = (supplier: any) => {
+    // YENİ: Çevrimdışı Koruması
+    if (!navigator.onLine) {
+       alert("WhatsApp üzerinden sipariş geçebilmek için internet bağlantısına ihtiyacınız var.");
+       return;
+    }
+
     const itemsToOrder = supplier.items.filter((item:any) => orderQuantities[item.id] && Number(orderQuantities[item.id]) > 0);
     if (itemsToOrder.length === 0) return;
 
@@ -171,7 +183,8 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
               <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
                 <button 
                     onClick={() => { setOrderMode('SINGLE'); setShowOrderModal(true); }}
-                    className="bg-white text-amber-600 border border-amber-200 hover:bg-amber-100 px-3 py-2 rounded-lg text-xs font-bold shadow-sm flex items-center gap-2 transition-transform active:scale-95"
+                    // YENİ: active:scale-95 ve transition-all eklendi
+                    className="bg-white text-amber-600 border border-amber-200 hover:bg-amber-100 px-3 py-2 rounded-lg text-xs font-bold shadow-sm flex items-center gap-2 transition-all active:scale-95"
                 >
                     <Package size={16} />
                     Sipariş Oluştur
@@ -179,7 +192,8 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
 
                 <button 
                     onClick={() => { setOrderMode('BULK'); setShowOrderModal(true); }}
-                    className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg text-xs font-bold shadow-lg shadow-amber-600/20 flex items-center gap-2 transition-transform active:scale-95"
+                    // YENİ: active:scale-95 ve transition-all eklendi
+                    className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg text-xs font-bold shadow-lg shadow-amber-600/20 flex items-center gap-2 transition-all active:scale-95"
                 >
                     <ShoppingCart size={16} />
                     Toplu Sipariş Oluştur
@@ -250,30 +264,33 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
              />
            </div>
            
-           <button onClick={() => setShowCategoryModal(true)} className="bg-slate-100 text-slate-700 px-3 py-2 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-slate-200 whitespace-nowrap transition-colors border border-slate-200">
+           {/* YENİ: Butonlara active:scale-95 eklendi */}
+           <button onClick={() => setShowCategoryModal(true)} className="bg-slate-100 text-slate-700 px-3 py-2 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-slate-200 whitespace-nowrap transition-all active:scale-95 border border-slate-200">
              <Tags size={14} /> Kategoriler
            </button>
-           <button onClick={() => setShowSupplierListModal(true)} className="bg-slate-100 text-slate-700 px-3 py-2 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-slate-200 whitespace-nowrap transition-colors border border-slate-200">
+           <button onClick={() => setShowSupplierListModal(true)} className="bg-slate-100 text-slate-700 px-3 py-2 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-slate-200 whitespace-nowrap transition-all active:scale-95 border border-slate-200">
              <Truck size={14} /> Tedarikçiler
            </button>
-           <button onClick={() => setShowStockModal(true)} className="bg-blue-600 text-white px-3 py-2 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-blue-700 whitespace-nowrap transition-colors border border-blue-700">
+           <button onClick={() => setShowStockModal(true)} className="bg-blue-600 text-white px-3 py-2 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-blue-700 whitespace-nowrap transition-all active:scale-95 border border-blue-700">
              <Plus size={14} /> Yeni Parça
            </button>
          </div>
        </div>
 
        {/* 3. STOK TABLOSU */}
-       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-         <div className="overflow-x-auto custom-scrollbar">
+       {/* YENİ: overflow-x-auto kapsayıcısı */}
+       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden overflow-x-auto custom-scrollbar">
+         <div>
+           {/* YENİ: min-w-[700px] hücre ezilmesini önler */}
            <table className="w-full text-left text-xs min-w-[700px]">
              <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 uppercase tracking-wider text-[10px]">
                 <tr>
-                  <th className="px-5 py-4">Parça Adı</th>
-                  <th className="px-5 py-4">Kategori</th>
-                  <th className="px-5 py-4">Miktar / Birim</th>
-                  <th className="px-5 py-4">Birim Fiyatı</th>
-                  <th className="px-5 py-4">Tedarikçi Firma</th>
-                  <th className="px-5 py-4 text-right">İşlemler</th>
+                  <th className="px-5 py-4 whitespace-nowrap">Parça Adı</th>
+                  <th className="px-5 py-4 whitespace-nowrap">Kategori</th>
+                  <th className="px-5 py-4 whitespace-nowrap">Miktar / Birim</th>
+                  <th className="px-5 py-4 whitespace-nowrap">Birim Fiyatı</th>
+                  <th className="px-5 py-4 whitespace-nowrap">Tedarikçi Firma</th>
+                  <th className="px-5 py-4 text-right whitespace-nowrap">İşlemler</th>
                 </tr>
              </thead>
              <tbody className="divide-y divide-slate-100">
@@ -293,14 +310,14 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                       </td>
                       <td className="px-5 py-3">
                         {item.category ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-600 rounded text-[10px] font-semibold border border-slate-200">
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-600 rounded text-[10px] font-semibold border border-slate-200 whitespace-nowrap">
                             <Tag size={10} /> {item.category}
                           </span>
                         ) : (
-                          <span className="text-slate-400 text-[10px] italic">Kategorisiz</span>
+                          <span className="text-slate-400 text-[10px] italic whitespace-nowrap">Kategorisiz</span>
                         )}
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="px-5 py-3 whitespace-nowrap">
                          <span className={`font-black text-sm ${isCritical ? 'text-amber-600' : 'text-blue-600'}`}>
                            {item.quantity}
                          </span> 
@@ -308,23 +325,25 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                            {item.unit_name}
                          </span>
                       </td>
-                      <td className="px-5 py-3 text-emerald-600 font-bold">₺{item.unit_price || '0'}</td>
+                      <td className="px-5 py-3 text-emerald-600 font-bold whitespace-nowrap">₺{item.unit_price || '0'}</td>
                       <td className="px-5 py-3">
-                         <div className="font-bold text-slate-700">{supName}</div>
-                         <div className="text-[10px] text-slate-400 font-medium mt-0.5">{supPhone || 'Telefon Kaydı Yok'}</div>
+                         <div className="font-bold text-slate-700 whitespace-nowrap">{supName}</div>
+                         <div className="text-[10px] text-slate-400 font-medium mt-0.5 whitespace-nowrap">{supPhone || 'Telefon Kaydı Yok'}</div>
                       </td>
                       <td className="px-5 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
                            <button 
                               onClick={() => setEditingStock({ id: item.id, itemName: item.item_name, quantity: item.quantity, unitName: item.unit_name, unitPrice: item.unit_price, category: item.category || '', supplierId: item.supplier_id || '' })} 
-                              className="p-1.5 text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-600 hover:text-white rounded-md transition-all shadow-sm"
+                              // YENİ: active:scale-95 eklendi
+                              className="p-1.5 text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-600 hover:text-white rounded-md transition-all active:scale-95 shadow-sm"
                               title="Düzenle"
                            >
                              <Edit2 size={14} />
                            </button>
                            <button 
                               onClick={() => handleDelete(item.id)} 
-                              className="p-1.5 text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-600 hover:text-white rounded-md transition-all shadow-sm"
+                              // YENİ: active:scale-95 eklendi
+                              className="p-1.5 text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-600 hover:text-white rounded-md transition-all active:scale-95 shadow-sm"
                               title="Sil"
                            >
                              <Trash2 size={14} />
@@ -505,6 +524,7 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                                             
                                             <button 
                                                 onClick={() => openWhatsappForSupplier(supplier)}
+                                                // YENİ: active:scale-95 eklendi
                                                 className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-xs transition-all active:scale-95 ${isSent ? 'bg-white border border-green-200 text-green-700' : 'bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-600/20'}`}
                                             >
                                                 {isSent ? 'Tekrar Gönder' : 'WhatsApp İle Gönder'}
@@ -528,6 +548,7 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                         selectedSupplierForOrder && (
                             <button 
                                 onClick={sendSingleOrder}
+                                // YENİ: active:scale-95 eklendi
                                 className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-green-600/20 flex items-center justify-center gap-2 transition-all active:scale-95"
                             >
                                 <Send size={18} />
@@ -545,6 +566,7 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                                     }
                                     setOrderStep('SENDING');
                                 }}
+                                // YENİ: active:scale-95 eklendi
                                 className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl font-bold text-sm shadow-xl flex items-center justify-center gap-2 transition-all active:scale-95"
                             >
                                 Gönderimi Başlat <ArrowRight size={18} />
@@ -552,6 +574,7 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                         ) : (
                              <button 
                                 onClick={handleCloseOrderModal}
+                                // YENİ: active:scale-95 eklendi
                                 className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
                             >
                                 İşlemi Tamamla ve Kapat

@@ -141,16 +141,19 @@ export default function TeamTab({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      {/* YENİ: Mobilde başlık ve butonların sıkışmasını engellemek için flex-col sm:flex-row ve gap-4 eklendi */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
            <h3 className="text-lg font-bold text-slate-900">Saha Operasyon Ekibi</h3>
            <p className="text-slate-500 text-xs">Personel durumları iş emirlerine göre otomatik güncellenir.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setShowJobModal(true)} className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-blue-700 transition-colors">
+        <div className="flex items-center flex-wrap gap-2 w-full sm:w-auto">
+          {/* YENİ: active:scale-95 eklendi */}
+          <button onClick={() => setShowJobModal(true)} className="flex-1 sm:flex-none justify-center bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-blue-700 transition-all active:scale-95">
             <Plus size={14} /> İş Ata
           </button>
-          <button onClick={() => setShowStaffModal(true)} className="bg-slate-900 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-slate-800 transition-colors">
+          {/* YENİ: active:scale-95 eklendi */}
+          <button onClick={() => setShowStaffModal(true)} className="flex-1 sm:flex-none justify-center bg-slate-900 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-slate-800 transition-all active:scale-95">
             <UserPlus size={14} /> Personel Ekle
           </button>
         </div>
@@ -199,8 +202,10 @@ export default function TeamTab({
               </div>
 
               <div className="grid grid-cols-2 gap-2 w-full pt-3 border-t border-slate-100">
-                 <button onClick={() => { setShowStaffDetail(s); setEditStaffForm(s); setIsEditingStaff(false); }} className="flex items-center justify-center gap-1 bg-white border border-slate-200 text-slate-600 py-1.5 rounded-md text-xs font-medium hover:bg-slate-50 transition-colors">Dosya</button>
-                 <button onClick={() => { setActiveChatId(s.id); setIsChatOpen(true); }} className="flex items-center justify-center gap-1 bg-blue-50 text-blue-600 py-1.5 rounded-md text-xs font-medium hover:bg-blue-100 transition-colors">Mesaj</button>
+                 {/* YENİ: active:scale-95 eklendi */}
+                 <button onClick={() => { setShowStaffDetail(s); setEditStaffForm(s); setIsEditingStaff(false); }} className="flex items-center justify-center gap-1 bg-white border border-slate-200 text-slate-600 py-1.5 rounded-md text-xs font-medium hover:bg-slate-50 transition-all active:scale-95">Dosya</button>
+                 {/* YENİ: active:scale-95 eklendi */}
+                 <button onClick={() => { setActiveChatId(s.id); setIsChatOpen(true); }} className="flex items-center justify-center gap-1 bg-blue-50 text-blue-600 py-1.5 rounded-md text-xs font-medium hover:bg-blue-100 transition-all active:scale-95">Mesaj</button>
               </div>
             </div>
           )

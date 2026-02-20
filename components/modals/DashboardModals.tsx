@@ -247,7 +247,7 @@ export default function DashboardModals({
                     <h2 className="text-xl font-bold text-slate-900">{isEditingJobDetail ? 'İş Emrini Düzenle' : 'İş Emri Detayı'}</h2>
                     <div className="text-xs text-slate-500 mt-0.5">ID: #{selectedJob.id} • {selectedJob.created_at?.split('T')[0] || ''}</div>
                 </div>
-                <button onClick={() => { setSelectedJob(null); setIsEditingJobDetail(false); setShowCancelConfirm(false); }} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md transition-colors"><X size={18} /></button>
+                <button onClick={() => { setSelectedJob(null); setIsEditingJobDetail(false); setShowCancelConfirm(false); }} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md transition-all active:scale-95"><X size={18} /></button>
               </div>
 
               {!isEditingJobDetail ? (
@@ -273,13 +273,13 @@ export default function DashboardModals({
                                           lastEditedBy: data?.ownerName || 'Yönetici' 
                                       }, () => setSelectedJob(null), () => {});
                                   }}
-                                  className="flex-1 bg-rose-600 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-rose-700 shadow-sm shadow-rose-200"
+                                  className="flex-1 bg-rose-600 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-rose-700 shadow-sm shadow-rose-200 transition-all active:scale-95"
                                >
                                   {isSaving ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Evet, İptal Et'}
                                </button>
                                <button 
                                   onClick={() => setShowCancelConfirm(false)}
-                                  className="flex-1 bg-white border border-slate-200 text-slate-700 py-2.5 rounded-lg text-xs font-bold hover:bg-slate-50"
+                                  className="flex-1 bg-white border border-slate-200 text-slate-700 py-2.5 rounded-lg text-xs font-bold hover:bg-slate-50 transition-all active:scale-95"
                                >
                                   Vazgeç
                                </button>
@@ -346,7 +346,7 @@ export default function DashboardModals({
                     <div className="pt-4 border-t border-slate-100 flex gap-2">
                         <button 
                             onClick={handleEditClick}
-                            className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+                            className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-sm"
                         >
                             <Settings size={14} /> Düzenle / Ata
                         </button>
@@ -354,7 +354,7 @@ export default function DashboardModals({
                         {selectedJob.status !== 'İptal' && selectedJob.status !== 'Tamamlandı' && (
                             <button 
                                 onClick={() => setShowCancelConfirm(true)}
-                                className="px-4 bg-rose-50 text-rose-600 border border-rose-100 py-2.5 rounded-lg text-xs font-bold hover:bg-rose-100 transition-colors flex items-center justify-center gap-2"
+                                className="px-4 bg-rose-50 text-rose-600 border border-rose-100 py-2.5 rounded-lg text-xs font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"
                             >
                                 <X size={14} /> İptal Et
                             </button>
@@ -367,16 +367,16 @@ export default function DashboardModals({
                     <div>
                       <label className="text-[11px] font-semibold text-slate-600 block mb-1.5">İş Türü</label>
                       <div className="grid grid-cols-2 gap-2">
-                          <button onClick={() => setEditJobDetailForm({...editJobDetailForm, workCategory: 'Normal İş Atama'})} className={`py-2 text-xs font-semibold rounded-md border transition-colors ${editJobDetailForm.workCategory !== 'Genel İş Atama' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Normal İş Atama</button>
-                          <button onClick={() => setEditJobDetailForm({...editJobDetailForm, workCategory: 'Genel İş Atama', customerName: '', assetId: ''})} className={`py-2 text-xs font-semibold rounded-md border transition-colors ${editJobDetailForm.workCategory === 'Genel İş Atama' ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Genel İş Atama</button>
+                          <button onClick={() => setEditJobDetailForm({...editJobDetailForm, workCategory: 'Normal İş Atama'})} className={`py-2 text-xs font-semibold rounded-md border transition-all active:scale-95 ${editJobDetailForm.workCategory !== 'Genel İş Atama' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Normal İş Atama</button>
+                          <button onClick={() => setEditJobDetailForm({...editJobDetailForm, workCategory: 'Genel İş Atama', customerName: '', assetId: ''})} className={`py-2 text-xs font-semibold rounded-md border transition-all active:scale-95 ${editJobDetailForm.workCategory === 'Genel İş Atama' ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Genel İş Atama</button>
                       </div>
                     </div>
 
                     <div>
                       <label className="text-[11px] font-semibold text-slate-600 block mb-1.5">Tarih / Zamanlama</label>
                       <div className="grid grid-cols-2 gap-2">
-                          <button onClick={() => setEditJobDetailForm({...editJobDetailForm, jobType: 'Anlık', scheduledDate: ''})} className={`py-1.5 text-xs font-semibold rounded-md border ${editJobDetailForm.jobType === 'Anlık' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>Anlık Görev</button>
-                          <button onClick={() => setEditJobDetailForm({...editJobDetailForm, jobType: 'Planlı'})} className={`py-1.5 text-xs font-semibold rounded-md border ${editJobDetailForm.jobType === 'Planlı' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>Tarih Planla</button>
+                          <button onClick={() => setEditJobDetailForm({...editJobDetailForm, jobType: 'Anlık', scheduledDate: ''})} className={`py-1.5 text-xs font-semibold rounded-md border transition-all active:scale-95 ${editJobDetailForm.jobType === 'Anlık' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>Anlık Görev</button>
+                          <button onClick={() => setEditJobDetailForm({...editJobDetailForm, jobType: 'Planlı'})} className={`py-1.5 text-xs font-semibold rounded-md border transition-all active:scale-95 ${editJobDetailForm.jobType === 'Planlı' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>Tarih Planla</button>
                       </div>
                       {editJobDetailForm.jobType === 'Planlı' && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-2">
@@ -388,8 +388,8 @@ export default function DashboardModals({
                     {editJobDetailForm.workCategory !== 'Genel İş Atama' && (
                       <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                         <div className="flex gap-2 mb-3">
-                          <button onClick={() => setJobTargetMode('CUSTOMER')} className={`flex-1 py-1.5 text-xs font-semibold rounded-md border transition-colors ${jobTargetMode === 'CUSTOMER' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-100'}`}>Müşteri Seç</button>
-                          <button onClick={() => setJobTargetMode('ASSET')} className={`flex-1 py-1.5 text-xs font-semibold rounded-md border transition-colors ${jobTargetMode === 'ASSET' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-100'}`}>Varlık Seç</button>
+                          <button onClick={() => setJobTargetMode('CUSTOMER')} className={`flex-1 py-1.5 text-xs font-semibold rounded-md border transition-all active:scale-95 ${jobTargetMode === 'CUSTOMER' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-100'}`}>Müşteri Seç</button>
+                          <button onClick={() => setJobTargetMode('ASSET')} className={`flex-1 py-1.5 text-xs font-semibold rounded-md border transition-all active:scale-95 ${jobTargetMode === 'ASSET' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-100'}`}>Varlık Seç</button>
                         </div>
 
                         {jobTargetMode === 'CUSTOMER' ? (
@@ -447,13 +447,13 @@ export default function DashboardModals({
                                 id: selectedJob.id,
                                 lastEditedBy: data?.ownerName || 'Yönetici' 
                             }, () => setSelectedJob(null), () => setIsEditingJobDetail(false))} 
-                            className="flex-1 bg-slate-900 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors disabled:opacity-50"
+                            className="flex-1 bg-slate-900 text-white py-2.5 rounded-lg text-xs font-bold hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50"
                         >
                             {isSaving ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Değişiklikleri Kaydet'}
                         </button>
                         <button 
                             onClick={() => setIsEditingJobDetail(false)} 
-                            className="flex-1 bg-white border border-slate-200 text-slate-700 py-2.5 rounded-lg text-xs font-bold hover:bg-slate-50 transition-colors"
+                            className="flex-1 bg-white border border-slate-200 text-slate-700 py-2.5 rounded-lg text-xs font-bold hover:bg-slate-50 transition-all active:scale-95"
                         >
                             Vazgeç
                         </button>
@@ -477,7 +477,7 @@ export default function DashboardModals({
             >
               <div className="flex justify-between items-start mb-6">
                 <div><h2 className="text-xl font-bold text-slate-900">{showStaffDetail.name}</h2><div className="text-xs text-slate-500 mt-0.5">Personel Dosyası</div></div>
-                <button onClick={() => setShowStaffDetail(null)} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md transition-colors"><X size={18} /></button>
+                <button onClick={() => setShowStaffDetail(null)} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md transition-all active:scale-95"><X size={18} /></button>
               </div>
               <div className="grid grid-cols-2 gap-3 mb-6">
                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-100"><div className="text-[10px] font-semibold text-slate-500 uppercase">Branş/Rol</div><div className="text-xs font-medium text-slate-800 mt-0.5">{showStaffDetail.branch || showStaffDetail.role}</div></div>
@@ -509,7 +509,7 @@ export default function DashboardModals({
                                e.stopPropagation(); 
                                setSelectedJob(j); 
                            }} 
-                           className={`p-3 border rounded-lg flex items-center justify-between text-xs cursor-pointer transition-all group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-300' : 'bg-white border-slate-100 hover:bg-slate-50'}`}
+                           className={`p-3 border rounded-lg flex items-center justify-between text-xs cursor-pointer transition-all active:scale-95 group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-300' : 'bg-white border-slate-100 hover:bg-slate-50'}`}
                         >
                            <div>
                               <div className="font-semibold text-slate-800 group-hover:text-blue-700 transition-colors">{j.customer_name}</div>
@@ -527,8 +527,8 @@ export default function DashboardModals({
               <div className="pt-4 border-t border-slate-100 mt-4">
                   {!isEditingStaff ? (
                     <div className="flex gap-2 w-full">
-                      <button onClick={() => setIsEditingStaff(true)} className="flex-[2] bg-slate-100 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5"><Settings size={14} /> Düzenle</button>
-                      <button onClick={async () => { if(confirm(`${showStaffDetail.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-staff', { id: showStaffDetail.id }, () => setShowStaffDetail(null), () => {}); } }} className="flex-1 bg-rose-50 text-rose-600 py-2 rounded-md text-xs font-semibold hover:bg-rose-100 transition-colors flex items-center justify-center gap-1.5"><Trash2 size={14} /> Sil</button>
+                      <button onClick={() => setIsEditingStaff(true)} className="flex-[2] bg-slate-100 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-200 transition-all active:scale-95 flex items-center justify-center gap-1.5"><Settings size={14} /> Düzenle</button>
+                      <button onClick={async () => { if(confirm(`${showStaffDetail.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-staff', { id: showStaffDetail.id }, () => setShowStaffDetail(null), () => {}); } }} className="flex-1 bg-rose-50 text-rose-600 py-2 rounded-md text-xs font-semibold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-1.5"><Trash2 size={14} /> Sil</button>
                     </div>
                   ) : (
                     <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
@@ -544,8 +544,8 @@ export default function DashboardModals({
                         </select>
                       </div>
                       <div className="flex gap-2 pt-2">
-                        <button onClick={() => handleAction('add-staff', { ...editStaffForm, id: showStaffDetail.id }, () => setShowStaffDetail(null), () => setIsEditingStaff(false))} className="flex-1 bg-blue-600 text-white py-1.5 rounded-md text-xs font-semibold hover:bg-blue-700">{isSaving ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Kaydet'}</button>
-                        <button onClick={() => setIsEditingStaff(false)} className="px-4 bg-slate-200 text-slate-700 py-1.5 rounded-md text-xs font-semibold hover:bg-slate-300">İptal</button>
+                        <button onClick={() => handleAction('add-staff', { ...editStaffForm, id: showStaffDetail.id }, () => setShowStaffDetail(null), () => setIsEditingStaff(false))} className="flex-1 bg-blue-600 text-white py-1.5 rounded-md text-xs font-semibold hover:bg-blue-700 transition-all active:scale-95">{isSaving ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Kaydet'}</button>
+                        <button onClick={() => setIsEditingStaff(false)} className="px-4 bg-slate-200 text-slate-700 py-1.5 rounded-md text-xs font-semibold hover:bg-slate-300 transition-all active:scale-95">İptal</button>
                       </div>
                     </div>
                   )}
@@ -562,7 +562,7 @@ export default function DashboardModals({
             <motion.div initial={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} animate={{ opacity: 1, scale: 1, x: selectedJob ? -280 : 0 }} exit={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} className="bg-white w-full max-w-lg rounded-xl p-6 shadow-xl relative flex flex-col max-h-[85vh] transition-transform duration-300 pointer-events-auto">
               <div className="flex justify-between items-start mb-6">
                 <div><h2 className="text-xl font-bold text-slate-900">{showCustomerDetail.name}</h2><div className="text-xs text-slate-500 mt-0.5">Müşteri Profili</div></div>
-                <button onClick={() => handleCloseDetail('customer')} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md"><X size={18} /></button>
+                <button onClick={() => handleCloseDetail('customer')} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md transition-all active:scale-95"><X size={18} /></button>
               </div>
               
               {!isEditingCustomer ? (
@@ -575,16 +575,16 @@ export default function DashboardModals({
                          <div className="flex items-center justify-between mt-0.5">
                            <div className="text-xs font-medium text-slate-800 line-clamp-2">{showCustomerDetail.address || '-'}</div>
                            {showCustomerDetail.address && (
-                             <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(showCustomerDetail.address || '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-100/50 hover:bg-blue-100 px-2 py-1 rounded transition-colors whitespace-nowrap ml-2"><MapPin size={12} /> Haritada Gör</a>
+                             <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(showCustomerDetail.address || '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-100/50 hover:bg-blue-100 px-2 py-1 rounded transition-all active:scale-95 whitespace-nowrap ml-2"><MapPin size={12} /> Haritada Gör</a>
                            )}
                          </div>
                       </div>
                   </div>
                   <div className="flex-1 overflow-y-auto space-y-4 mb-6 custom-scrollbar">
-                      <div><h4 className="text-[11px] font-semibold text-blue-600 mb-2 uppercase tracking-wider">Kayıtlı Cihazları / Varlıkları</h4>{(data?.assets || []).filter((a: any) => a.customer_id === showCustomerDetail.id).length > 0 ? (data?.assets || []).filter((a: any) => a.customer_id === showCustomerDetail.id).map((a: any) => (<div key={a.id} onClick={() => { setShowCustomerDetail(null); setShowAssetDetail(a); }} className="p-3 border border-blue-100 rounded-lg bg-blue-50/30 text-xs mb-2 cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all"><div className="font-semibold text-blue-800">{a.name}</div><div className="text-[10px] text-blue-600/80 mt-0.5">{a.location || ''}</div></div>)) : <div className="text-center p-4 text-slate-400 text-xs bg-slate-50 rounded-lg">Kayıtlı cihaz bulunmuyor.</div>}</div>
-                      <div><h4 className="text-[11px] font-semibold text-slate-500 mb-2 uppercase tracking-wider">Geçmiş İş Kayıtları</h4>{(data?.jobs || []).filter((j: any) => j.customer_name === showCustomerDetail.name).length > 0 ? (data?.jobs || []).filter((j: any) => j.customer_name === showCustomerDetail.name).map((j: any) => (<div key={j.id} onClick={(e) => { e.stopPropagation(); setSelectedJob(j); }} className={`p-3 border rounded-lg flex items-center justify-between text-xs mb-2 cursor-pointer transition-all group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-300' : 'bg-white border-slate-100 hover:bg-slate-50'}`}><div><div className="font-semibold text-slate-800 group-hover:text-blue-700 transition-colors">{j.work_type || 'Görev'}</div><div className="text-[10px] text-slate-500 mt-0.5">{j.scheduled_date || 'Anlık'}</div></div><div className="flex items-center gap-2"><span className={`px-2 py-1 rounded text-[10px] font-medium border ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span><ArrowRight size={14} className={`transition-all ${selectedJob?.id === j.id ? 'text-blue-600 opacity-100' : 'text-slate-300 opacity-0 group-hover:opacity-100'}`} /></div></div>)) : <div className="text-center p-4 text-slate-400 text-xs bg-slate-50 rounded-lg">Geçmiş iş kaydı bulunmuyor.</div>}</div>
+                      <div><h4 className="text-[11px] font-semibold text-blue-600 mb-2 uppercase tracking-wider">Kayıtlı Cihazları / Varlıkları</h4>{(data?.assets || []).filter((a: any) => a.customer_id === showCustomerDetail.id).length > 0 ? (data?.assets || []).filter((a: any) => a.customer_id === showCustomerDetail.id).map((a: any) => (<div key={a.id} onClick={() => { setShowCustomerDetail(null); setShowAssetDetail(a); }} className="p-3 border border-blue-100 rounded-lg bg-blue-50/30 text-xs mb-2 cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all active:scale-95"><div className="font-semibold text-blue-800">{a.name}</div><div className="text-[10px] text-blue-600/80 mt-0.5">{a.location || ''}</div></div>)) : <div className="text-center p-4 text-slate-400 text-xs bg-slate-50 rounded-lg">Kayıtlı cihaz bulunmuyor.</div>}</div>
+                      <div><h4 className="text-[11px] font-semibold text-slate-500 mb-2 uppercase tracking-wider">Geçmiş İş Kayıtları</h4>{(data?.jobs || []).filter((j: any) => j.customer_name === showCustomerDetail.name).length > 0 ? (data?.jobs || []).filter((j: any) => j.customer_name === showCustomerDetail.name).map((j: any) => (<div key={j.id} onClick={(e) => { e.stopPropagation(); setSelectedJob(j); }} className={`p-3 border rounded-lg flex items-center justify-between text-xs mb-2 cursor-pointer transition-all active:scale-95 group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-300' : 'bg-white border-slate-100 hover:bg-slate-50'}`}><div><div className="font-semibold text-slate-800 group-hover:text-blue-700 transition-colors">{j.work_type || 'Görev'}</div><div className="text-[10px] text-slate-500 mt-0.5">{j.scheduled_date || 'Anlık'}</div></div><div className="flex items-center gap-2"><span className={`px-2 py-1 rounded text-[10px] font-medium border ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span><ArrowRight size={14} className={`transition-all ${selectedJob?.id === j.id ? 'text-blue-600 opacity-100' : 'text-slate-300 opacity-0 group-hover:opacity-100'}`} /></div></div>)) : <div className="text-center p-4 text-slate-400 text-xs bg-slate-50 rounded-lg">Geçmiş iş kaydı bulunmuyor.</div>}</div>
                   </div>
-                  <div className="pt-4 border-t border-slate-100"><div className="flex gap-2 w-full"><button onClick={() => { setIsEditingCustomer(true); setEditCustomerForm({ id: showCustomerDetail.id, name: showCustomerDetail.name, contact: showCustomerDetail.contact || '', address: parseAddressToState(showCustomerDetail.address || ''), taxInfo: showCustomerDetail.tax_info || '' }); }} className="flex-[2] bg-slate-100 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5"><Settings size={14} /> Düzenle</button><button onClick={async () => { if(confirm(`${showCustomerDetail.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-customer', { id: showCustomerDetail.id }, () => handleCloseDetail('customer'), () => {}); } }} className="flex-1 bg-rose-50 text-rose-600 py-2 rounded-md text-xs font-semibold hover:bg-rose-100 transition-colors flex items-center justify-center gap-1.5"><Trash2 size={14} /> Sil</button></div></div>
+                  <div className="pt-4 border-t border-slate-100"><div className="flex gap-2 w-full"><button onClick={() => { setIsEditingCustomer(true); setEditCustomerForm({ id: showCustomerDetail.id, name: showCustomerDetail.name, contact: showCustomerDetail.contact || '', address: parseAddressToState(showCustomerDetail.address || ''), taxInfo: showCustomerDetail.tax_info || '' }); }} className="flex-[2] bg-slate-100 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-200 transition-all active:scale-95 flex items-center justify-center gap-1.5"><Settings size={14} /> Düzenle</button><button onClick={async () => { if(confirm(`${showCustomerDetail.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-customer', { id: showCustomerDetail.id }, () => handleCloseDetail('customer'), () => {}); } }} className="flex-1 bg-rose-50 text-rose-600 py-2 rounded-md text-xs font-semibold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-1.5"><Trash2 size={14} /> Sil</button></div></div>
                   </>
               ) : (
                     <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
@@ -616,11 +616,11 @@ export default function DashboardModals({
                                 const combined = getFullAddress(editCustomerForm.address, buildingNo, selectedCity, selectedDistrict);
                                 handleAction('update-customer', { ...editCustomerForm, address: combined }, () => handleCloseDetail('customer'), () => setIsEditingCustomer(false))
                             }} 
-                            className="flex-1 bg-blue-600 text-white py-2 rounded-md text-xs font-semibold hover:bg-blue-700"
+                            className="flex-1 bg-blue-600 text-white py-2 rounded-md text-xs font-semibold hover:bg-blue-700 transition-all active:scale-95"
                         >
                             {isSaving ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Değişiklikleri Kaydet'}
                         </button>
-                        <button onClick={() => setIsEditingCustomer(false)} className="px-4 bg-slate-200 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-300">İptal</button>
+                        <button onClick={() => setIsEditingCustomer(false)} className="px-4 bg-slate-200 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-300 transition-all active:scale-95">İptal</button>
                       </div>
                     </div>
               )}
@@ -636,16 +636,16 @@ export default function DashboardModals({
             <motion.div initial={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} animate={{ opacity: 1, scale: 1, x: selectedJob ? -280 : 0 }} exit={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} className="bg-white w-full max-w-lg rounded-xl shadow-xl relative flex flex-col max-h-[85vh] transition-transform duration-300 pointer-events-auto overflow-hidden">
               <div className="flex justify-between items-start p-6 pb-4 border-b border-slate-100">
                 <div><h2 className="text-xl font-bold text-slate-900">{showAssetDetail.name}</h2><div className="text-xs text-slate-500 mt-0.5">Cihaz / Varlık Profili</div></div>
-                <button onClick={() => handleCloseDetail('asset')} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md"><X size={18} /></button>
+                <button onClick={() => handleCloseDetail('asset')} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md transition-all active:scale-95"><X size={18} /></button>
               </div>
 
               {/* SEKME MENÜSÜ */}
               {!isEditingAsset && (
-                  <div className="flex border-b border-slate-200 bg-slate-50/50 px-4">
-                      <button onClick={() => setAssetDetailTab('info')} className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${assetDetailTab === 'info' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>Bilgiler</button>
-                      <button onClick={() => setAssetDetailTab('jobs')} className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${assetDetailTab === 'jobs' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>İşler</button>
-                      <button onClick={() => setAssetDetailTab('faults')} className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${assetDetailTab === 'faults' ? 'border-amber-500 text-amber-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>Arızalar</button>
-                      <button onClick={() => setAssetDetailTab('emergencies')} className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${assetDetailTab === 'emergencies' ? 'border-rose-500 text-rose-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>Acil Durumlar</button>
+                  <div className="flex border-b border-slate-200 bg-slate-50/50 px-4 overflow-x-auto custom-scrollbar">
+                      <button onClick={() => setAssetDetailTab('info')} className={`px-4 py-3 text-sm font-bold border-b-2 transition-all active:scale-95 whitespace-nowrap ${assetDetailTab === 'info' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>Bilgiler</button>
+                      <button onClick={() => setAssetDetailTab('jobs')} className={`px-4 py-3 text-sm font-bold border-b-2 transition-all active:scale-95 whitespace-nowrap ${assetDetailTab === 'jobs' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>İşler</button>
+                      <button onClick={() => setAssetDetailTab('faults')} className={`px-4 py-3 text-sm font-bold border-b-2 transition-all active:scale-95 whitespace-nowrap ${assetDetailTab === 'faults' ? 'border-amber-500 text-amber-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>Arızalar</button>
+                      <button onClick={() => setAssetDetailTab('emergencies')} className={`px-4 py-3 text-sm font-bold border-b-2 transition-all active:scale-95 whitespace-nowrap ${assetDetailTab === 'emergencies' ? 'border-rose-500 text-rose-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>Acil Durumlar</button>
                   </div>
               )}
               
@@ -661,7 +661,7 @@ export default function DashboardModals({
                                           {showAssetDetail.customer_id ? (() => { 
                                               const cust = (data?.customers || []).find((c: any) => c.id === showAssetDetail.customer_id); 
                                               return cust ? (
-                                                  <span onClick={() => { setShowAssetDetail(null); setShowCustomerDetail(cust); }} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 font-semibold border border-blue-200 rounded-md hover:bg-blue-100 hover:text-blue-800 transition-colors cursor-pointer"><User size={12} className="opacity-70" />{cust.name}<ExternalLink size={12} className="opacity-50 ml-1" /></span>
+                                                  <span onClick={() => { setShowAssetDetail(null); setShowCustomerDetail(cust); }} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 font-semibold border border-blue-200 rounded-md hover:bg-blue-100 hover:text-blue-800 transition-all active:scale-95 cursor-pointer"><User size={12} className="opacity-70" />{cust.name}<ExternalLink size={12} className="opacity-50 ml-1" /></span>
                                               ) : <span className="text-slate-500">Bilinmiyor</span>; 
                                           })() : <span className="text-slate-500">Bağımsız Cihaz</span>}
                                       </div>
@@ -675,7 +675,7 @@ export default function DashboardModals({
                                           )}
                                           <div className="text-xs font-medium text-slate-800">{showAssetDetail.location || '-'}</div>
                                           {showAssetDetail.location && (
-                                              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(showAssetDetail.location || '')}`} target="_blank" rel="noopener noreferrer" className="self-start inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-100/50 hover:bg-blue-100 px-2 py-1 rounded transition-colors"><MapPin size={12} /> Haritada Gör</a>
+                                              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(showAssetDetail.location || '')}`} target="_blank" rel="noopener noreferrer" className="self-start inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-100/50 hover:bg-blue-100 px-2 py-1 rounded transition-all active:scale-95"><MapPin size={12} /> Haritada Gör</a>
                                           )}
                                       </div>
                                   </div>
@@ -687,8 +687,8 @@ export default function DashboardModals({
                               <div className="pt-4 border-t border-slate-100">
                                   <div className="flex gap-2 w-full">
                                       {/* EDİT BUTONU GÜNCELLENDİ: APARTMAN ADINI FORM'A AKTARIR */}
-                                      <button onClick={() => { setIsEditingAsset(true); setEditAssetForm({ id: showAssetDetail.id, name: showAssetDetail.name, location: parseAddressToState(showAssetDetail.location || ''), apartmentName: showAssetDetail.apartmentName || showAssetDetail.apartment_name || '', deviceDetails: showAssetDetail.asset_details || '' }); }} className="flex-[2] bg-slate-100 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5"><Settings size={14} /> Düzenle</button>
-                                      <button onClick={async () => { if(confirm(`${showAssetDetail.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-asset', { id: showAssetDetail.id }, () => handleCloseDetail('asset'), () => {}); } }} className="flex-1 bg-rose-50 text-rose-600 py-2 rounded-md text-xs font-semibold hover:bg-rose-100 transition-colors flex items-center justify-center gap-1.5"><Trash2 size={14} /> Sil</button>
+                                      <button onClick={() => { setIsEditingAsset(true); setEditAssetForm({ id: showAssetDetail.id, name: showAssetDetail.name, location: parseAddressToState(showAssetDetail.location || ''), apartmentName: showAssetDetail.apartmentName || showAssetDetail.apartment_name || '', deviceDetails: showAssetDetail.asset_details || '' }); }} className="flex-[2] bg-slate-100 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-200 transition-all active:scale-95 flex items-center justify-center gap-1.5"><Settings size={14} /> Düzenle</button>
+                                      <button onClick={async () => { if(confirm(`${showAssetDetail.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-asset', { id: showAssetDetail.id }, () => handleCloseDetail('asset'), () => {}); } }} className="flex-1 bg-rose-50 text-rose-600 py-2 rounded-md text-xs font-semibold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-1.5"><Trash2 size={14} /> Sil</button>
                                   </div>
                               </div>
                           </div>
@@ -697,7 +697,7 @@ export default function DashboardModals({
                       {assetDetailTab === 'jobs' && (
                           <div className="space-y-2">
                               {(data?.jobs || []).filter((j: any) => j.asset_id === showAssetDetail.id).length > 0 ? (data?.jobs || []).filter((j: any) => j.asset_id === showAssetDetail.id).map((j: any) => (
-                                  <div key={j.id} onClick={(e) => { e.stopPropagation(); setSelectedJob(j); }} className={`p-3 border rounded-lg flex items-center justify-between text-xs cursor-pointer transition-all group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-300' : 'bg-white border-slate-100 hover:bg-slate-50'}`}>
+                                  <div key={j.id} onClick={(e) => { e.stopPropagation(); setSelectedJob(j); }} className={`p-3 border rounded-lg flex items-center justify-between text-xs cursor-pointer transition-all active:scale-95 group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-300' : 'bg-white border-slate-100 hover:bg-slate-50'}`}>
                                       <div>
                                           <div className="font-semibold text-slate-800 group-hover:text-blue-700 transition-colors">{j.work_type || 'Görev'}</div>
                                           <div className="text-[10px] text-slate-500 mt-0.5">{j.scheduled_date || 'Anlık'}</div>
@@ -776,11 +776,11 @@ export default function DashboardModals({
                                     // Apartman adını location içine eklemiyoruz, ayrı gönderiyoruz
                                     handleAction('update-asset', { ...editAssetForm, location: combined }, () => handleCloseDetail('asset'), () => setIsEditingAsset(false))
                                 }} 
-                                className="flex-1 bg-blue-600 text-white py-2 rounded-md text-xs font-semibold hover:bg-blue-700"
+                                className="flex-1 bg-blue-600 text-white py-2 rounded-md text-xs font-semibold hover:bg-blue-700 transition-all active:scale-95"
                             >
                                 {isSaving ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Değişiklikleri Kaydet'}
                             </button>
-                           <button onClick={() => setIsEditingAsset(false)} className="px-4 bg-slate-200 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-300">İptal</button>
+                           <button onClick={() => setIsEditingAsset(false)} className="px-4 bg-slate-200 text-slate-700 py-2 rounded-md text-xs font-semibold hover:bg-slate-300 transition-all active:scale-95">İptal</button>
                           </div>
                         </div>
                   )}
@@ -795,22 +795,22 @@ export default function DashboardModals({
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
             <div className="absolute inset-0" onClick={() => setShowJobModal(false)}></div>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative overflow-y-auto max-h-[90vh] custom-scrollbar pointer-events-auto">
-              <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">İş Emri Ata</h2><button onClick={() => setShowJobModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button></div>
+              <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">İş Emri Ata</h2><button onClick={() => setShowJobModal(false)} className="text-slate-400 hover:text-slate-600 transition-all active:scale-95"><X size={18} /></button></div>
               <div className="space-y-4">
                 
                 <div>
                   <label className="text-[11px] font-semibold text-slate-600 block mb-1.5">İş Türü</label>
                   <div className="grid grid-cols-2 gap-2">
-                      <button onClick={() => setJobForm({...jobForm, workCategory: 'Normal İş Atama', customerName: '', assetId: ''})} className={`py-2 text-xs font-semibold rounded-md border transition-colors ${jobForm.workCategory !== 'Genel İş Atama' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Normal İş Atama</button>
-                      <button onClick={() => setJobForm({...jobForm, workCategory: 'Genel İş Atama', customerName: '', assetId: ''})} className={`py-2 text-xs font-semibold rounded-md border transition-colors ${jobForm.workCategory === 'Genel İş Atama' ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Genel İş Atama</button>
+                      <button onClick={() => setJobForm({...jobForm, workCategory: 'Normal İş Atama', customerName: '', assetId: ''})} className={`py-2 text-xs font-semibold rounded-md border transition-all active:scale-95 ${jobForm.workCategory !== 'Genel İş Atama' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Normal İş Atama</button>
+                      <button onClick={() => setJobForm({...jobForm, workCategory: 'Genel İş Atama', customerName: '', assetId: ''})} className={`py-2 text-xs font-semibold rounded-md border transition-all active:scale-95 ${jobForm.workCategory === 'Genel İş Atama' ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Genel İş Atama</button>
                   </div>
                 </div>
 
                 <div>
                   <label className="text-[11px] font-semibold text-slate-600 block mb-1.5">Tarih / Zamanlama</label>
                   <div className="grid grid-cols-2 gap-2">
-                      <button onClick={() => setJobForm({...jobForm, jobType: 'Anlık', scheduledDate: ''})} className={`py-1.5 text-xs font-semibold rounded-md border ${jobForm.jobType === 'Anlık' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>Anlık Görev</button>
-                      <button onClick={() => setJobForm({...jobForm, jobType: 'Planlı'})} className={`py-1.5 text-xs font-semibold rounded-md border ${jobForm.jobType === 'Planlı' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>Tarih Planla</button>
+                      <button onClick={() => setJobForm({...jobForm, jobType: 'Anlık', scheduledDate: ''})} className={`py-1.5 text-xs font-semibold rounded-md border transition-all active:scale-95 ${jobForm.jobType === 'Anlık' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>Anlık Görev</button>
+                      <button onClick={() => setJobForm({...jobForm, jobType: 'Planlı'})} className={`py-1.5 text-xs font-semibold rounded-md border transition-all active:scale-95 ${jobForm.jobType === 'Planlı' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>Tarih Planla</button>
                   </div>
                   {jobForm.jobType === 'Planlı' && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-2">
@@ -822,8 +822,8 @@ export default function DashboardModals({
                 {jobForm.workCategory !== 'Genel İş Atama' && (
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                     <div className="flex gap-2 mb-3">
-                      <button onClick={() => setJobTargetMode('CUSTOMER')} className={`flex-1 py-1.5 text-xs font-semibold rounded-md border transition-colors ${jobTargetMode === 'CUSTOMER' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-100'}`}>Müşteri Seç</button>
-                      <button onClick={() => setJobTargetMode('ASSET')} className={`flex-1 py-1.5 text-xs font-semibold rounded-md border transition-colors ${jobTargetMode === 'ASSET' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-100'}`}>Varlık Seç</button>
+                      <button onClick={() => setJobTargetMode('CUSTOMER')} className={`flex-1 py-1.5 text-xs font-semibold rounded-md border transition-all active:scale-95 ${jobTargetMode === 'CUSTOMER' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-100'}`}>Müşteri Seç</button>
+                      <button onClick={() => setJobTargetMode('ASSET')} className={`flex-1 py-1.5 text-xs font-semibold rounded-md border transition-all active:scale-95 ${jobTargetMode === 'ASSET' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-100'}`}>Varlık Seç</button>
                     </div>
 
                     {jobTargetMode === 'CUSTOMER' ? (
@@ -873,7 +873,7 @@ export default function DashboardModals({
                   <textarea rows={3} className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none resize-none focus:border-blue-400" placeholder="İşin detayı nedir?..." value={jobForm.taskNote} onChange={e => setJobForm({...jobForm, taskNote: e.target.value})} />
                 </div>
               </div>
-              <button disabled={isSaving || !isJobValid} onClick={() => handleAction('add-job', { ...jobForm, workCategory: jobForm.workCategory || 'Normal İş Atama', details: { note: jobForm.taskNote } }, setShowJobModal, () => setJobForm({ customerName: '', assetId: '', staffId: '', workType: 'Görev', workCategory: 'Normal İş Atama', jobType: 'Anlık', scheduledDate: '', taskNote: '' }))} className="w-full bg-blue-600 text-white py-2.5 rounded-md font-semibold text-sm mt-5 hover:bg-blue-700 transition-colors flex justify-center items-center disabled:opacity-50">
+              <button disabled={isSaving || !isJobValid} onClick={() => handleAction('add-job', { ...jobForm, workCategory: jobForm.workCategory || 'Normal İş Atama', details: { note: jobForm.taskNote } }, setShowJobModal, () => setJobForm({ customerName: '', assetId: '', staffId: '', workType: 'Görev', workCategory: 'Normal İş Atama', jobType: 'Anlık', scheduledDate: '', taskNote: '' }))} className="w-full bg-blue-600 text-white py-2.5 rounded-md font-semibold text-sm mt-5 hover:bg-blue-700 transition-all active:scale-95 flex justify-center items-center disabled:opacity-50">
                  {isSaving ? <Loader2 className="animate-spin" size={16} /> : 'İş Emrini Gönder'}
               </button>
             </motion.div>
@@ -886,7 +886,7 @@ export default function DashboardModals({
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
             <div className="absolute inset-0" onClick={() => setShowAssetModal(false)}></div>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative max-h-[90vh] overflow-y-auto custom-scrollbar pointer-events-auto">
-              <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">Varlık/Cihaz Ekle</h2><button onClick={() => setShowAssetModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button></div>
+              <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">Varlık/Cihaz Ekle</h2><button onClick={() => setShowAssetModal(false)} className="text-slate-400 hover:text-slate-600 transition-all active:scale-95"><X size={18} /></button></div>
               <div className="space-y-4">
                 <div className="mb-4">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">CİHAZIN SAHİBİ (MÜŞTERİ)</label>
@@ -955,7 +955,7 @@ export default function DashboardModals({
                     <textarea rows={3} className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none resize-none focus:border-blue-400" placeholder="Teknik Detaylar (Seri No, Model vs.)" value={assetForm.deviceDetails} onChange={e => setAssetForm({...assetForm, deviceDetails: e.target.value})} />
                   </div>
                 </div>
-                <button disabled={isSaving} className="w-full bg-slate-900 text-white py-2.5 rounded-md font-semibold text-sm mt-4 hover:bg-slate-800 flex justify-center items-center" onClick={() => { 
+                <button disabled={isSaving} className="w-full bg-slate-900 text-white py-2.5 rounded-md font-semibold text-sm mt-4 hover:bg-slate-800 transition-all active:scale-95 flex justify-center items-center" onClick={() => { 
     const newUUID = self.crypto.randomUUID();
     if (assetCustMode === 'NEW') { 
         const combinedAddress = getFullAddress(assetForm.newCustomer.address, buildingNo, selectedCity, selectedDistrict); 
@@ -984,7 +984,7 @@ export default function DashboardModals({
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
             <div className="absolute inset-0" onClick={() => setShowCustomerModal(false)}></div>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative max-h-[90vh] overflow-y-auto custom-scrollbar pointer-events-auto">
-              <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">Müşteri Ekle</h2><button onClick={() => setShowCustomerModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button></div>
+              <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">Müşteri Ekle</h2><button onClick={() => setShowCustomerModal(false)} className="text-slate-400 hover:text-slate-600 transition-all active:scale-95"><X size={18} /></button></div>
               <div className="space-y-4">
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">MÜŞTERİ/FİRMA KİMLİĞİ</label>
@@ -1022,7 +1022,7 @@ export default function DashboardModals({
      <textarea className="w-full px-3 py-2 border border-slate-300 shadow-sm rounded-md text-xs outline-none focus:border-blue-400 bg-white" placeholder="Teknik Detay" value={customerForm.newAsset?.deviceDetails || ''} onChange={e => setCustomerForm({...customerForm, newAsset: {...customerForm.newAsset, deviceDetails: e.target.value}})} />
   </motion.div>
 )}</div></div></div>
-              <button disabled={isSaving} className="w-full bg-blue-600 text-white py-2.5 rounded-md font-semibold text-sm mt-4 hover:bg-blue-700 flex justify-center items-center" onClick={() => { const combinedAddress = getFullAddress(customerForm.address, buildingNo, selectedCity, selectedDistrict); handleAction('add-customer', { ...customerForm, address: combinedAddress }, setShowCustomerModal, () => { setCustomerForm({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', assetMode: 'NONE', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } }); setSelectedCity(''); setSelectedDistrict(''); setBuildingNo(''); }); }}>{isSaving ? <Loader2 className="animate-spin" size={16} /> : 'Müşteriyi Kaydet'}</button>
+              <button disabled={isSaving} className="w-full bg-blue-600 text-white py-2.5 rounded-md font-semibold text-sm mt-4 hover:bg-blue-700 transition-all active:scale-95 flex justify-center items-center" onClick={() => { const combinedAddress = getFullAddress(customerForm.address, buildingNo, selectedCity, selectedDistrict); handleAction('add-customer', { ...customerForm, address: combinedAddress }, setShowCustomerModal, () => { setCustomerForm({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', assetMode: 'NONE', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } }); setSelectedCity(''); setSelectedDistrict(''); setBuildingNo(''); }); }}>{isSaving ? <Loader2 className="animate-spin" size={16} /> : 'Müşteriyi Kaydet'}</button>
               </div>
             </motion.div>
           </div>
@@ -1034,8 +1034,8 @@ export default function DashboardModals({
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
             <div className="absolute inset-0" onClick={() => setShowStaffModal(false)}></div>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-xs rounded-xl p-6 shadow-xl relative pointer-events-auto">
-              <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">Personel Ekle</h2><button onClick={() => setShowStaffModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button></div>
-              <div className="space-y-3"><input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Ad Soyad" onChange={e => setStaffForm({...staffForm, name: e.target.value})} /><input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Telefon" onChange={e => setStaffForm({...staffForm, phone: e.target.value})} /><select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" onChange={e => setStaffForm({...staffForm, branch: e.target.value})}><option value="">Branş / Uzmanlık Seçin</option>{branchList.map((subType: any) => (<option key={subType} value={subType}>{subType}</option>))}<option value="Genel Usta">Genel Usta</option></select><select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" onChange={e => setStaffForm({...staffForm, role: e.target.value})}><option value="Usta">Saha Ustası</option><option value="Yönetici">Yönetici</option></select><button className="w-full bg-slate-900 text-white py-2 rounded-md font-semibold text-sm mt-2 hover:bg-slate-800" onClick={() => handleAction('add-staff', staffForm, setShowStaffModal, () => setStaffForm({ name: '', phone: '', role: 'Usta', branch: '' }))}>Kaydet</button></div>
+              <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">Personel Ekle</h2><button onClick={() => setShowStaffModal(false)} className="text-slate-400 hover:text-slate-600 transition-all active:scale-95"><X size={18} /></button></div>
+              <div className="space-y-3"><input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Ad Soyad" onChange={e => setStaffForm({...staffForm, name: e.target.value})} /><input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Telefon" onChange={e => setStaffForm({...staffForm, phone: e.target.value})} /><select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" onChange={e => setStaffForm({...staffForm, branch: e.target.value})}><option value="">Branş / Uzmanlık Seçin</option>{branchList.map((subType: any) => (<option key={subType} value={subType}>{subType}</option>))}<option value="Genel Usta">Genel Usta</option></select><select className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none bg-white focus:border-blue-400" onChange={e => setStaffForm({...staffForm, role: e.target.value})}><option value="Usta">Saha Ustası</option><option value="Yönetici">Yönetici</option></select><button className="w-full bg-slate-900 text-white py-2 rounded-md font-semibold text-sm mt-2 hover:bg-slate-800 transition-all active:scale-95" onClick={() => handleAction('add-staff', staffForm, setShowStaffModal, () => setStaffForm({ name: '', phone: '', role: 'Usta', branch: '' }))}>Kaydet</button></div>
             </motion.div>
           </div>
         )}
@@ -1048,11 +1048,11 @@ export default function DashboardModals({
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-sm rounded-xl p-6 shadow-xl relative pointer-events-auto">
               <div className="flex justify-between items-center mb-5">
                 <h2 className="text-lg font-bold text-slate-800">Kategorileri Yönet</h2>
-                <button onClick={() => setShowCategoryModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+                <button onClick={() => setShowCategoryModal(false)} className="text-slate-400 hover:text-slate-600 transition-all active:scale-95"><X size={18} /></button>
               </div>
               <div className="flex gap-2 mb-4">
                 <input type="text" className="flex-1 px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Yeni Kategori Adı" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} />
-                <button disabled={!newCategoryName || isSaving} onClick={() => handleAction('add-category', { name: newCategoryName }, null, () => setNewCategoryName(''))} className="bg-blue-600 text-white px-4 py-2 rounded-md text-xs font-bold hover:bg-blue-700 transition-colors disabled:opacity-50">
+                <button disabled={!newCategoryName || isSaving} onClick={() => handleAction('add-category', { name: newCategoryName }, null, () => setNewCategoryName(''))} className="bg-blue-600 text-white px-4 py-2 rounded-md text-xs font-bold hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50">
                   {isSaving ? <Loader2 size={14} className="animate-spin" /> : 'Ekle'}
                 </button>
               </div>
@@ -1060,7 +1060,7 @@ export default function DashboardModals({
                 {categories.length > 0 ? categories.map((c: any) => (
                   <div key={c.id} className="flex justify-between items-center p-2.5 bg-slate-50 border border-slate-100 rounded-lg">
                     <span className="text-xs font-semibold text-slate-700">{c.name}</span>
-                    <button onClick={async () => { if(confirm('Bu kategoriyi silmek istediğinize emin misiniz?')) { await handleAction('delete-category', { id: c.id }, null, null); } }} className="text-rose-500 hover:text-rose-700 p-1"><Trash2 size={14} /></button>
+                    <button onClick={async () => { if(confirm('Bu kategoriyi silmek istediğinize emin misiniz?')) { await handleAction('delete-category', { id: c.id }, null, null); } }} className="text-rose-500 hover:text-rose-700 p-1 transition-all active:scale-95"><Trash2 size={14} /></button>
                   </div>
                 )) : <div className="text-center p-4 text-xs text-slate-400">Henüz kategori eklenmemiş.</div>}
               </div>
@@ -1074,7 +1074,7 @@ export default function DashboardModals({
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
             <div className="absolute inset-0" onClick={() => setShowStockModal(false)}></div>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative max-h-[90vh] overflow-y-auto custom-scrollbar pointer-events-auto">
-              <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">Parça Girişi</h2><button onClick={() => setShowStockModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button></div>
+              <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">Parça Girişi</h2><button onClick={() => setShowStockModal(false)} className="text-slate-400 hover:text-slate-600 transition-all active:scale-95"><X size={18} /></button></div>
               
               <div className="space-y-4">
                  <div>
@@ -1152,7 +1152,7 @@ export default function DashboardModals({
                  </div>
               </div>
 
-              <button disabled={isSaving} className="w-full bg-slate-900 text-white py-2 rounded-md font-semibold text-sm mt-5 hover:bg-slate-800 flex justify-center" onClick={() => handleAction('add-stock', stockForm, setShowStockModal, () => setStockForm({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', category: '', supplierId: '', supplierMode: 'NONE', newSupplier: { name: '', phone: '' } }))}>
+              <button disabled={isSaving} className="w-full bg-slate-900 text-white py-2 rounded-md font-semibold text-sm mt-5 hover:bg-slate-800 transition-all active:scale-95 flex justify-center" onClick={() => handleAction('add-stock', stockForm, setShowStockModal, () => setStockForm({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', category: '', supplierId: '', supplierMode: 'NONE', newSupplier: { name: '', phone: '' } }))}>
                  {isSaving ? <Loader2 className="animate-spin" size={16} /> : 'Stok Kaydet'}
               </button>
             </motion.div>
@@ -1167,7 +1167,7 @@ export default function DashboardModals({
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl relative max-h-[85vh] flex flex-col pointer-events-auto">
               <div className="flex justify-between items-center mb-5">
                 <h2 className="text-lg font-bold text-slate-800">Tedarikçileri Yönet</h2>
-                <button onClick={() => setShowSupplierListModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+                <button onClick={() => setShowSupplierListModal(false)} className="text-slate-400 hover:text-slate-600 transition-all active:scale-95"><X size={18} /></button>
               </div>
               
               <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
@@ -1178,8 +1178,8 @@ export default function DashboardModals({
                         <input className="w-full px-3 py-1.5 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" value={editSupFormLocal.name} onChange={e => setEditSupFormLocal({...editSupFormLocal, name: e.target.value})} placeholder="Firma Adı" />
                         <input className="w-full px-3 py-1.5 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400 bg-white" value={editSupFormLocal.phone} onChange={e => setEditSupFormLocal({...editSupFormLocal, phone: e.target.value})} placeholder="Telefon" />
                         <div className="flex gap-2 mt-2">
-                          <button onClick={() => handleAction('update-supplier', { id: s.id, name: editSupFormLocal.name, phone: editSupFormLocal.phone }, null, () => setEditingSupplierId(null))} className="flex-1 bg-blue-600 text-white py-1.5 rounded-md text-[10px] font-bold">Kaydet</button>
-                          <button onClick={() => setEditingSupplierId(null)} className="flex-1 bg-slate-200 text-slate-700 py-1.5 rounded-md text-[10px] font-bold">İptal</button>
+                          <button onClick={() => handleAction('update-supplier', { id: s.id, name: editSupFormLocal.name, phone: editSupFormLocal.phone }, null, () => setEditingSupplierId(null))} className="flex-1 bg-blue-600 text-white py-1.5 rounded-md text-[10px] font-bold transition-all active:scale-95">Kaydet</button>
+                          <button onClick={() => setEditingSupplierId(null)} className="flex-1 bg-slate-200 text-slate-700 py-1.5 rounded-md text-[10px] font-bold transition-all active:scale-95">İptal</button>
                         </div>
                       </div>
                     ) : (
@@ -1189,8 +1189,8 @@ export default function DashboardModals({
                           <div className="text-[10px] text-slate-500 mt-0.5">{s.phone || 'Telefon Yok'}</div>
                         </div>
                         <div className="flex gap-1.5">
-                          <button onClick={() => { setEditingSupplierId(s.id); setEditSupFormLocal({ name: s.name, phone: s.phone || '' }); }} className="p-1.5 text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-600 hover:text-white rounded-md transition-colors"><Edit2 size={14} /></button>
-                          <button onClick={async () => { if(confirm('Bu tedarikçiyi silmek istediğinize emin misiniz? (Bağlı stok ürünleri varsa tedarikçi alanı boş kalır)')) { await handleAction('delete-supplier', { id: s.id }, null, null); } }} className="p-1.5 text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-600 hover:text-white rounded-md transition-colors"><Trash2 size={14} /></button>
+                          <button onClick={() => { setEditingSupplierId(s.id); setEditSupFormLocal({ name: s.name, phone: s.phone || '' }); }} className="p-1.5 text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-600 hover:text-white rounded-md transition-all active:scale-95"><Edit2 size={14} /></button>
+                          <button onClick={async () => { if(confirm('Bu tedarikçiyi silmek istediğinize emin misiniz? (Bağlı stok ürünleri varsa tedarikçi alanı boş kalır)')) { await handleAction('delete-supplier', { id: s.id }, null, null); } }} className="p-1.5 text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-600 hover:text-white rounded-md transition-all active:scale-95"><Trash2 size={14} /></button>
                         </div>
                       </div>
                     )}
@@ -1199,7 +1199,7 @@ export default function DashboardModals({
               </div>
 
               <div className="mt-4 pt-4 border-t border-slate-100">
-                 <button onClick={() => { setShowSupplierListModal(false); setShowSupplierModal(true); }} className="w-full bg-slate-100 text-slate-700 py-2.5 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-slate-200 transition-colors">
+                 <button onClick={() => { setShowSupplierListModal(false); setShowSupplierModal(true); }} className="w-full bg-slate-100 text-slate-700 py-2.5 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-slate-200 transition-all active:scale-95">
                     <Plus size={14} /> Yeni Tedarikçi Ekle
                  </button>
               </div>
@@ -1213,11 +1213,11 @@ export default function DashboardModals({
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
             <div className="absolute inset-0" onClick={() => setShowSupplierModal(false)}></div>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-xs rounded-xl p-6 shadow-xl relative pointer-events-auto">
-              <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">Tedarikçi Ekle</h2><button onClick={() => setShowSupplierModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button></div>
+              <div className="flex justify-between items-center mb-5"><h2 className="text-lg font-bold text-slate-800">Tedarikçi Ekle</h2><button onClick={() => setShowSupplierModal(false)} className="text-slate-400 hover:text-slate-600 transition-all active:scale-95"><X size={18} /></button></div>
               <div className="space-y-3">
                  <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Tedarikçi Firma Adı" value={supplierForm.name} onChange={e => setSupplierForm({...supplierForm, name: e.target.value})} />
                  <input className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-400" placeholder="Telefon" value={supplierForm.phone} onChange={e => setSupplierForm({...supplierForm, phone: e.target.value})} />
-                 <button disabled={isSaving} className="w-full bg-slate-900 text-white py-2 rounded-md font-semibold text-sm mt-2 hover:bg-slate-800 flex justify-center" onClick={() => handleAction('add-supplier', supplierForm, setShowSupplierModal, () => setSupplierForm({ name: '', phone: '' }))}>
+                 <button disabled={isSaving} className="w-full bg-slate-900 text-white py-2 rounded-md font-semibold text-sm mt-2 hover:bg-slate-800 transition-all active:scale-95 flex justify-center" onClick={() => handleAction('add-supplier', supplierForm, setShowSupplierModal, () => setSupplierForm({ name: '', phone: '' }))}>
                     {isSaving ? <Loader2 className="animate-spin" size={16} /> : 'Kaydet'}
                  </button>
               </div>
