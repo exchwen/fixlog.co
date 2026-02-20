@@ -30,7 +30,12 @@ import {
   Package,
   Smartphone,
   WifiOff,
-  LineChart
+  LineChart,
+  CheckCircle2,
+  Calendar,
+  MapPin,
+  User,
+  ArrowUpRight
 } from 'lucide-react';
 
 // Sabit veriler
@@ -129,15 +134,6 @@ const t = {
   explore: 'Özellikleri İncele',
 };
 
-// Basit mockup datası (Geçici)
-const MOCKUP_DATA = {
-  title: 'Sistem Aktif',
-  stats: '34 Aktif İşlem',
-  jobs: ['09:00 - Merkez Plaza Bakım', '11:30 - Gül Sitesi Arıza', '14:00 - A Blok Montaj'],
-  bg: 'bg-blue-50',
-  color: 'text-blue-600',
-};
-
 export default function LandingPage() {
   const router = useRouter();
 
@@ -148,7 +144,6 @@ export default function LandingPage() {
   const [reviewIndex, setReviewIndex] = useState(0);
 
   const [mockupTab, setMockupTab] = useState('dashboard');
-  const [islerTab, setIslerTab] = useState('gelecek');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -173,66 +168,31 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-7 h-7 text-blue-600" />
-            <span
-              translate="no"
-              className="notranslate text-xl font-black tracking-tight text-gray-900"
-            >
+            <span translate="no" className="notranslate text-xl font-black tracking-tight text-gray-900">
               {t.brand}
             </span>
           </div>
           <div className="flex items-center gap-4">
-            <button
-              onClick={handleLogin}
-              className="hidden md:flex items-center gap-1.5 text-gray-600 hover:text-blue-600 text-sm font-bold transition-all active:scale-95"
-            >
+            <button onClick={handleLogin} className="hidden md:flex items-center gap-1.5 text-gray-600 hover:text-blue-600 text-sm font-bold transition-all active:scale-95">
               <LogIn className="w-4 h-4" /> {t.login}
             </button>
-            <button
-              onClick={handleRegister}
-              className="hidden md:flex bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-md shadow-blue-600/20 items-center gap-2 hover:scale-105 active:scale-95"
-            >
+            <button onClick={handleRegister} className="hidden md:flex bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-md shadow-blue-600/20 items-center gap-2 hover:scale-105 active:scale-95">
               {t.tryFree}
             </button>
-            {/* Mobil Menü Butonu */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors active:scale-95"
-            >
-              {isMobileMenuOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
+            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors active:scale-95">
+              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
 
-        {/* Mobil Dropdown Menü */}
         <AnimatePresence>
           {isMobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden border-b border-gray-100 bg-white absolute w-full overflow-hidden shadow-2xl"
-            >
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="md:hidden border-b border-gray-100 bg-white absolute w-full overflow-hidden shadow-2xl">
               <div className="px-4 pt-4 pb-6 flex flex-col gap-3">
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    handleLogin();
-                  }}
-                  className="w-full flex items-center justify-center gap-2 bg-gray-50 text-gray-700 hover:bg-gray-100 px-4 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95"
-                >
+                <button onClick={() => { setIsMobileMenuOpen(false); handleLogin(); }} className="w-full flex items-center justify-center gap-2 bg-gray-50 text-gray-700 hover:bg-gray-100 px-4 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95">
                   <LogIn className="w-4 h-4" /> {t.login}
                 </button>
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    handleRegister();
-                  }}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 active:scale-95"
-                >
+                <button onClick={() => { setIsMobileMenuOpen(false); handleRegister(); }} className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 active:scale-95">
                   {t.tryFree}
                 </button>
               </div>
@@ -241,82 +201,51 @@ export default function LandingPage() {
         </AnimatePresence>
       </header>
 
-      {/* ANA İÇERİK */}
       <main className="flex-1">
         
-        {/* HERO SECTION */}
         <section className="relative pt-12 md:pt-20 pb-16 md:pb-24 overflow-hidden px-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-50/70 via-white to-white">
           <div className="max-w-5xl mx-auto text-center relative z-10">
-            <motion.h1
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-3xl sm:text-5xl lg:text-6xl font-black text-gray-900 tracking-tight mb-5 leading-[1.15]"
-            >
+            <motion.h1 initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="text-3xl sm:text-5xl lg:text-6xl font-black text-gray-900 tracking-tight mb-5 leading-[1.15]">
               {t.heroTitle1} <br className="hidden sm:block" />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-blue-500 to-amber-500">
                 {t.heroTitle2}
               </span>
             </motion.h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-sm sm:text-lg text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed px-2 font-medium"
-            >
+            <motion.p initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-sm sm:text-lg text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed px-2 font-medium">
               {t.heroDesc}
             </motion.p>
 
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="flex flex-col sm:flex-row justify-center gap-3 mb-16 sm:mb-20 px-4"
-            >
-              <button
-                onClick={handleRegister}
-                className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-4 sm:py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-3 shadow-xl shadow-gray-900/20 w-full sm:w-auto active:scale-95"
-              >
-                <img
-                  src="https://www.svgrepo.com/show/475656/google-color.svg"
-                  alt="Google"
-                  className="w-5 h-5 bg-white rounded-full p-0.5"
-                />
+            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex flex-col sm:flex-row justify-center gap-3 mb-16 sm:mb-20 px-4">
+              <button onClick={handleRegister} className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-4 sm:py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-3 shadow-xl shadow-gray-900/20 w-full sm:w-auto active:scale-95">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5 bg-white rounded-full p-0.5" />
                 {t.tryFree}
               </button>
-              <button
-                onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-                className="bg-white border-2 border-gray-200 hover:border-blue-600 text-gray-700 hover:text-blue-600 px-8 py-4 sm:py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 w-full sm:w-auto hover:bg-blue-50 active:scale-95"
-              >
+              <button onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} className="bg-white border-2 border-gray-200 hover:border-blue-600 text-gray-700 hover:text-blue-600 px-8 py-4 sm:py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 w-full sm:w-auto hover:bg-blue-50 active:scale-95">
                 {t.explore} <ArrowRight className="w-4 h-4" />
               </button>
             </motion.div>
 
             {/* İNTERAKTİF DASHBOARD ÖNİZLEMESİ */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="relative mx-auto max-w-5xl text-left group px-2 sm:px-0"
-            >
+            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="relative mx-auto max-w-5xl text-left group px-2 sm:px-0">
               <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-blue-400 to-amber-500 rounded-[2rem] blur-2xl opacity-30 group-hover:opacity-50 transition duration-700"></div>
               
               <div className="relative bg-white border border-gray-200/80 rounded-[1.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row h-[600px] md:h-[500px] ring-1 ring-gray-100 transition-all duration-500">
+                
                 {/* Sol Menü */}
                 <div className="w-full md:w-60 bg-[#F8FAFC] border-b md:border-b-0 md:border-r border-gray-200 p-2 md:p-5 flex flex-row md:flex-col gap-2 z-10 overflow-x-auto md:overflow-y-auto custom-scrollbar items-center md:items-stretch shrink-0">
                   <div className="hidden md:flex items-center gap-2.5 mb-6 px-2">
                     <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-md shadow-blue-600/30">
                       <ShieldCheck className="w-5 h-5" />
                     </div>
-                    <span className="font-black text-gray-900 text-base tracking-tight">
-                      İş Dökümü
-                    </span>
+                    <span className="font-black text-gray-900 text-base tracking-tight">İş Dökümü</span>
                   </div>
 
                   {[
                     { id: 'dashboard', icon: LayoutDashboard, label: 'Genel Bakış' },
                     { id: 'personel', icon: Users, label: 'Personel & Ekipler' },
                     { id: 'isler', icon: Briefcase, label: 'İş Emirleri' },
+                    { id: 'completed', icon: CheckCircle2, label: 'Tamamlanan İşler' },
                     { id: 'musteriler', icon: Users, label: 'Müşteri Bilgileri' },
                     { id: 'varliklar', icon: Box, label: 'Varlık Yönetimi' },
                     { id: 'stok', icon: Package, label: 'Stok & Depo' },
@@ -327,24 +256,18 @@ export default function LandingPage() {
                       key={item.id}
                       onClick={() => setMockupTab(item.id)}
                       className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 whitespace-nowrap shrink-0 ${
-                        mockupTab === item.id
-                          ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20 md:translate-x-1'
-                          : 'text-gray-500 hover:bg-gray-100 hover:text-blue-600'
+                        mockupTab === item.id ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20 md:translate-x-1' : 'text-gray-500 hover:bg-gray-100 hover:text-blue-600'
                       }`}
                     >
                       <item.icon className={`w-4 h-4 ${mockupTab === item.id ? 'text-white' : 'text-gray-400'}`} />
                       {item.label}
-                      {item.id === 'mesajlar' && (
-                        <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">1</span>
-                      )}
+                      {item.id === 'mesajlar' && <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">1</span>}
                     </button>
                   ))}
 
                   <div className="hidden md:block mt-auto border-t border-gray-200 pt-4">
                     <div className="flex items-center gap-3 px-2 cursor-pointer hover:bg-gray-100 p-2.5 rounded-xl transition-colors">
-                      <div className="w-10 h-10 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-black shadow-md">
-                        P
-                      </div>
+                      <div className="w-10 h-10 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-black shadow-md">P</div>
                       <div>
                         <div className="text-sm font-bold text-gray-900">Patron Hesabı</div>
                         <div className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mt-0.5">Premium Aktif</div>
@@ -360,6 +283,7 @@ export default function LandingPage() {
                       {mockupTab === 'dashboard' && 'İşletme Özeti'}
                       {mockupTab === 'personel' && 'Yönetici ve Usta Atamaları'}
                       {mockupTab === 'isler' && 'İş Kayıtları ve Planlama'}
+                      {mockupTab === 'completed' && 'Tamamlanan İşler Arşivi'}
                       {mockupTab === 'mesajlar' && 'Saha Yöneticisi İletişimi'}
                       {mockupTab === 'musteriler' && 'Müşteri Bilgileri ve Yönetimi'}
                       {mockupTab === 'varliklar' && 'Varlık Yönetimi ve QR İşlemleri'}
@@ -375,16 +299,11 @@ export default function LandingPage() {
                     </div>
                   </div>
 
-                  <div className="p-5 sm:p-8 flex-1 overflow-y-auto bg-gray-50/50">
+                  <div className="p-5 sm:p-8 flex-1 overflow-y-auto bg-gray-50/50 custom-scrollbar">
                     <AnimatePresence mode="wait">
-                      <motion.div
-                        key={mockupTab}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.2 }}
-                        className="h-full flex flex-col gap-4 sm:gap-6"
-                      >
+                      <motion.div key={mockupTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="h-full flex flex-col gap-4 sm:gap-6">
+                        
+                        {/* 1. DASHBOARD TAB */}
                         {mockupTab === 'dashboard' && (
                           <>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-5">
@@ -401,9 +320,9 @@ export default function LandingPage() {
                                 <div className="text-2xl lg:text-3xl font-black text-blue-600">8 Usta</div>
                               </div>
                             </div>
-                            <div className="flex-1 bg-white border border-gray-100 rounded-2xl shadow-sm p-5 overflow-hidden flex flex-col">
-                              <div className="text-xs font-black text-gray-400 mb-4 uppercase tracking-widest">Son Tamamlanan İşler</div>
-                              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 flex flex-col min-h-[200px] h-auto">
+                              <div className="text-xs font-black text-gray-400 mb-4 uppercase tracking-widest shrink-0">Son Tamamlanan İşler</div>
+                              <div className="flex flex-col gap-1">
                                 {[1, 2, 3].map((i) => (
                                   <div key={i} className="flex justify-between items-center py-3 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors rounded-xl px-2 -mx-2">
                                     <div className="truncate pr-2">
@@ -414,21 +333,230 @@ export default function LandingPage() {
                                         {i === 1 ? 'Ali Usta • 2 saat sürdü' : i === 2 ? 'Mehmet U. • 45 dk sürdü' : 'Canan T. • 4 saat sürdü'}
                                       </div>
                                     </div>
-                                    <span className="shrink-0 bg-green-100 text-green-700 px-3 py-1.5 rounded-lg text-[10px] font-bold tracking-wide">TAMAMLANDI</span>
+                                    <span className="shrink-0 bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-[10px] font-bold tracking-wide">TAMAMLANDI</span>
                                   </div>
                                 ))}
                               </div>
                             </div>
                           </>
                         )}
-                        {/* Mockup'ın geri kalan tab'ları görsel temsili olduğu için aynı bırakıyoruz, paddingler güncellendi. */}
-                        {mockupTab !== 'dashboard' && (
-                            <div className="h-full flex items-center justify-center flex-col text-gray-400 text-center px-4">
-                              <MoreVertical className="w-10 h-10 mb-4 opacity-30" />
-                              <div className="text-base font-bold text-gray-500">Bu alanın tüm detaylarını görmek için ücretsiz kayıt olun.</div>
-                              <button onClick={handleRegister} className="mt-6 bg-blue-100 hover:bg-blue-200 text-blue-700 px-6 py-3 rounded-xl font-bold text-sm transition-colors active:scale-95">Hemen Başla</button>
+
+                        {/* 2. İŞ EMİRLERİ TAB */}
+                        {mockupTab === 'isler' && (
+                          <div className="flex flex-col gap-4">
+                            <div className="flex justify-between items-center">
+                              <div className="text-sm font-bold text-slate-800">Aktif Sahadaki İşler</div>
+                              <button className="bg-blue-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-blue-700 shadow-sm">+ Yeni İş Ata</button>
                             </div>
+                            <div className="flex flex-col gap-3">
+                              {[
+                                { name: 'Klima Motor Değişimi', loc: 'Merkez Plaza', date: 'Yarın, 14:00', status: 'Gelecek', color: 'bg-slate-100 text-slate-600' },
+                                { name: 'Yıllık Periyodik Bakım', loc: 'Gül Apartmanı', date: 'Bugün, 10:00', status: 'Devam Ediyor', color: 'bg-blue-100 text-blue-700' },
+                                { name: 'Güvenlik Kamera Montajı', loc: 'A Blok', date: 'Bekliyor', status: 'Beklemede', color: 'bg-amber-100 text-amber-700' }
+                              ].map((job, idx) => (
+                                <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                  <div>
+                                    <div className="font-bold text-slate-800 text-sm">{job.name}</div>
+                                    <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-1"><MapPin size={12}/> {job.loc}</div>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <div className="text-xs font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-md border border-slate-100 flex items-center gap-1.5"><Calendar size={12}/>{job.date}</div>
+                                    <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider ${job.color}`}>{job.status}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         )}
+
+                        {/* 3. TAMAMLANAN İŞLER TAB */}
+                        {mockupTab === 'completed' && (
+                          <div className="flex flex-col gap-4">
+                            <div className="flex justify-between items-center">
+                              <div className="text-sm font-bold text-slate-800">Geçmiş Teslimatlar Arşivi</div>
+                            </div>
+                            <div className="flex flex-col gap-3">
+                              {[
+                                { name: 'Merkez Plaza Asansör Bakımı', staff: 'Ali Usta', date: '15 Eylül 2024' },
+                                { name: 'A Blok Yangın Tüpü Dolumu', staff: 'Mehmet U.', date: '12 Eylül 2024' },
+                                { name: 'Bina Dış Cephe Temizliği', staff: 'Canan T.', date: '10 Eylül 2024' }
+                              ].map((job, idx) => (
+                                <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-emerald-300 transition-colors">
+                                  <div>
+                                    <div className="font-bold text-slate-800 text-sm group-hover:text-emerald-700 transition-colors">{job.name}</div>
+                                    <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-1"><User size={12} className="text-blue-500"/> {job.staff}</div>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <div className="text-xs font-bold text-slate-500"><Calendar size={12} className="inline mr-1 text-emerald-500"/>{job.date}</div>
+                                    <span className="bg-emerald-100 text-emerald-700 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border border-emerald-200 shadow-sm">Tamamlandı</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 4. PERSONEL TAB */}
+                        {mockupTab === 'personel' && (
+                          <div className="flex flex-col gap-4">
+                            <div className="flex justify-between items-center">
+                              <div className="text-sm font-bold text-slate-800">Aktif Saha Ekibi</div>
+                              <button className="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-slate-200">Personel Ekle</button>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {[
+                                { name: 'Yavuz Ş.', role: 'Yönetici', status: 'Müsait', color: 'bg-emerald-100 text-emerald-700' },
+                                { name: 'Ali M.', role: 'Bakım Ustası', status: 'Sahada (İşte)', color: 'bg-blue-100 text-blue-700' },
+                                { name: 'Canan T.', role: 'Temizlik Şefi', status: 'İzinli', color: 'bg-slate-100 text-slate-500' }
+                              ].map((p, idx) => (
+                                <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-3">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-black">{p.name.charAt(0)}</div>
+                                    <div>
+                                      <div className="font-bold text-slate-800 text-sm">{p.name}</div>
+                                      <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{p.role}</div>
+                                    </div>
+                                  </div>
+                                  <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border border-white/0 shadow-sm ${p.color}`}>{p.status}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 5. MÜŞTERİLER TAB */}
+                        {mockupTab === 'musteriler' && (
+                          <div className="flex flex-col gap-4">
+                            <div className="flex justify-between items-center">
+                              <div className="text-sm font-bold text-slate-800">Kayıtlı Müşteri ve Binalar</div>
+                            </div>
+                            <div className="flex flex-col gap-3">
+                              {[
+                                { name: 'Merkez Plaza (A Blok)', contact: 'Ahmet Bey (Yönetici)', phone: '0532 *** ** **' },
+                                { name: 'Gül Apartmanı', contact: 'Ayşe Hanım', phone: '0533 *** ** **' }
+                              ].map((m, idx) => (
+                                <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                  <div>
+                                    <div className="font-bold text-slate-800 text-sm">{m.name}</div>
+                                    <div className="text-xs text-slate-500 mt-0.5">{m.contact}</div>
+                                  </div>
+                                  <div className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100">{m.phone}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 6. VARLIKLAR (QR) TAB */}
+                        {mockupTab === 'varliklar' && (
+                          <div className="flex flex-col gap-4">
+                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-start gap-3">
+                              <QrCode className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+                              <div>
+                                <div className="text-sm font-bold text-blue-900">QR Etiket Sistemi</div>
+                                <div className="text-xs text-blue-700 mt-1">Cihazların üzerine yapıştırmak için QR kodu yazdırın. Müşteri tek tıkla arıza bildirsin.</div>
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-3">
+                              {[
+                                { name: 'Merkez Plaza Ana Asansör', code: 'VAR-1892' },
+                                { name: 'A Blok Zemin Kat Klima', code: 'VAR-2041' }
+                              ].map((v, idx) => (
+                                <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 group">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors"><Box size={18}/></div>
+                                    <div>
+                                      <div className="font-bold text-slate-800 text-sm">{v.name}</div>
+                                      <div className="text-[10px] text-slate-500 font-semibold mt-0.5">ID: {v.code}</div>
+                                    </div>
+                                  </div>
+                                  <button className="text-xs font-bold text-blue-600 bg-white border border-blue-200 px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-2 hover:bg-blue-50 transition-colors w-full sm:w-auto justify-center"><QrCode size={14}/> QR Yazdır</button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 7. STOK TAB */}
+                        {mockupTab === 'stok' && (
+                          <div className="flex flex-col gap-4">
+                            <div className="flex justify-between items-center">
+                              <div className="text-sm font-bold text-slate-800">Merkez Depo Durumu</div>
+                            </div>
+                            <div className="flex flex-col gap-3">
+                              {[
+                                { name: 'Kontaktör 24V', cat: 'Elektrik Aksamı', qty: '145 Adet', status: 'İyi', color: 'bg-emerald-100 text-emerald-700' },
+                                { name: 'V Kayışı (Tip B)', cat: 'Mekanik Parçalar', qty: '4 Adet', status: 'Kritik', color: 'bg-rose-100 text-rose-700 animate-pulse' }
+                              ].map((s, idx) => (
+                                <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                  <div>
+                                    <div className="font-bold text-slate-800 text-sm">{s.name}</div>
+                                    <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mt-0.5">{s.cat}</div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-black text-slate-700 text-sm">{s.qty}</span>
+                                    <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border border-white/0 shadow-sm ${s.color}`}>{s.status}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 8. FİNANS TAB */}
+                        {mockupTab === 'finans' && (
+                          <div className="flex flex-col gap-4">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl">
+                                <div className="text-xs text-emerald-600 font-bold uppercase tracking-wider mb-1">Aylık Gelir</div>
+                                <div className="text-xl font-black text-emerald-700">₺155.000</div>
+                              </div>
+                              <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl">
+                                <div className="text-xs text-rose-600 font-bold uppercase tracking-wider mb-1">Aylık Gider</div>
+                                <div className="text-xl font-black text-rose-700">₺42.500</div>
+                              </div>
+                            </div>
+                            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col p-4 gap-3">
+                               <div className="text-xs font-black text-slate-400 uppercase tracking-widest">Son Finansal Hareketler</div>
+                               <div className="flex justify-between items-center border-b border-slate-50 pb-2">
+                                 <div className="text-sm font-semibold text-slate-700">Merkez Plaza Bakım Faturası</div>
+                                 <div className="text-sm font-black text-emerald-600">+₺12.000</div>
+                               </div>
+                               <div className="flex justify-between items-center border-b border-slate-50 pb-2">
+                                 <div className="text-sm font-semibold text-slate-700">Tedarikçi (Motor Alımı)</div>
+                                 <div className="text-sm font-black text-rose-600">-₺8.500</div>
+                               </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 9. MESAJLAR TAB */}
+                        {mockupTab === 'mesajlar' && (
+                          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col h-full min-h-[300px] overflow-hidden">
+                            <div className="p-3 border-b border-slate-100 bg-slate-50 flex items-center gap-3">
+                              <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold shrink-0 shadow-sm">YŞ</div>
+                              <div className="truncate">
+                                <div className="text-xs font-bold text-slate-800 truncate">Yavuz Şef (Saha Yöneticisi)</div>
+                                <div className="text-[10px] text-emerald-500 flex items-center gap-1 font-semibold">
+                                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full inline-block"></span> Çevrimiçi
+                                </div>
+                              </div>
+                            </div>
+                            <div className="p-4 flex-1 flex flex-col gap-3 overflow-y-auto bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-opacity-5">
+                              <div className="bg-slate-100 text-slate-800 p-3 rounded-2xl rounded-tl-sm text-xs self-start max-w-[85%] font-medium shadow-sm">
+                                Patron, A binasının asansör revizyonu tamamlandı. Fotoğrafları sisteme yükledim, faturayı kesebiliriz.
+                              </div>
+                              <div className="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-sm text-xs self-end max-w-[85%] shadow-md font-medium">
+                                Harika, elinize sağlık. Faturayı şimdi muhasebeye iletiyorum.
+                              </div>
+                            </div>
+                            <div className="p-3 border-t border-slate-100 flex gap-2 shrink-0 bg-white">
+                              <input type="text" placeholder="Cevap yaz..." disabled className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs outline-none focus:border-blue-400 focus:bg-white transition-colors cursor-not-allowed" />
+                              <button className="bg-blue-600 text-white p-2.5 rounded-xl opacity-50 cursor-not-allowed"><Send className="w-4 h-4" /></button>
+                            </div>
+                          </div>
+                        )}
+
                       </motion.div>
                     </AnimatePresence>
                   </div>
@@ -438,10 +566,9 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* EKSİK OLAN "NEDEN BİZ" (ÖZELLİKLER) KISMININ YENİDEN İNŞASI */}
+        {/* EKSİK OLAN "NEDEN BİZ" (ÖZELLİKLER) KISMI */}
         <section id="features" className="relative py-16 md:py-24 bg-gray-50/50 border-y border-gray-100 overflow-hidden">
           
-          {/* Arka Plan Dekoratif Objeleri */}
           <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-100/40 rounded-full blur-3xl mix-blend-multiply pointer-events-none hidden md:block"></div>
           <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-amber-50/60 rounded-full blur-3xl mix-blend-multiply pointer-events-none hidden md:block"></div>
 
@@ -453,7 +580,7 @@ export default function LandingPage() {
                 Neden Bizi Seçmelisiniz?
               </h2>
               <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto px-2 font-medium leading-relaxed">
-                Saha operasyonlarınızı dijitalleştirirken maliyetlerinizi düşüren, işininize prestij katan benzersiz SaaS özellikleri.
+                Saha operasyonlarınızı dijitalleştirirken maliyetlerinizi düşüren, işinize prestij katan benzersiz SaaS özellikleri.
               </p>
             </div>
 
@@ -610,17 +737,13 @@ export default function LandingPage() {
         </section>
       </main>
 
-      {/* FOOTER */}
       <footer className="bg-white border-t border-gray-100 py-12 md:py-16 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 sm:gap-8">
             <div className="col-span-1 sm:col-span-2 md:col-span-1">
               <div className="flex items-center gap-2 mb-5">
                 <ShieldCheck className="w-7 h-7 text-blue-600" />
-                <span
-                  translate="no"
-                  className="notranslate text-xl font-black text-gray-900 tracking-tight"
-                >
+                <span translate="no" className="notranslate text-xl font-black text-gray-900 tracking-tight">
                   İş Dökümü
                 </span>
               </div>
@@ -634,18 +757,10 @@ export default function LandingPage() {
                 Özellikler
               </h4>
               <ul className="space-y-4 text-sm text-gray-500 font-medium">
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">
-                  Varlık & QR Yönetimi
-                </li>
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">
-                  Sesle Form Doldurma
-                </li>
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">
-                  Performans Analizi
-                </li>
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">
-                  Offline PWA Desteği
-                </li>
+                <li className="hover:text-blue-600 cursor-pointer transition-colors">Varlık & QR Yönetimi</li>
+                <li className="hover:text-blue-600 cursor-pointer transition-colors">Sesle Form Doldurma</li>
+                <li className="hover:text-blue-600 cursor-pointer transition-colors">Performans Analizi</li>
+                <li className="hover:text-blue-600 cursor-pointer transition-colors">Offline PWA Desteği</li>
               </ul>
             </div>
             <div>
@@ -653,18 +768,10 @@ export default function LandingPage() {
                 Kurumsal
               </h4>
               <ul className="space-y-4 text-sm text-gray-500 font-medium">
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">
-                  Hakkımızda
-                </li>
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">
-                  Sektörel Çözümler
-                </li>
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">
-                  Fiyatlandırma
-                </li>
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">
-                  İletişim & Destek
-                </li>
+                <li className="hover:text-blue-600 cursor-pointer transition-colors">Hakkımızda</li>
+                <li className="hover:text-blue-600 cursor-pointer transition-colors">Sektörel Çözümler</li>
+                <li className="hover:text-blue-600 cursor-pointer transition-colors">Fiyatlandırma</li>
+                <li className="hover:text-blue-600 cursor-pointer transition-colors">İletişim & Destek</li>
               </ul>
             </div>
             <div>
@@ -672,15 +779,9 @@ export default function LandingPage() {
                 Yasal
               </h4>
               <ul className="space-y-4 text-sm text-gray-500 font-medium">
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">
-                  Kullanım Koşulları
-                </li>
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">
-                  Gizlilik Politikası (KVKK)
-                </li>
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">
-                  İptal ve İade
-                </li>
+                <li className="hover:text-blue-600 cursor-pointer transition-colors">Kullanım Koşulları</li>
+                <li className="hover:text-blue-600 cursor-pointer transition-colors">Gizlilik Politikası (KVKK)</li>
+                <li className="hover:text-blue-600 cursor-pointer transition-colors">İptal ve İade</li>
               </ul>
             </div>
           </div>

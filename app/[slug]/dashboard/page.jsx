@@ -40,7 +40,7 @@ export default function PatronDashboard() {
   const [isOffline, setIsOffline] = useState(false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
-  // YENİ: PWA VE iOS TESPİT STATE'LERİ
+  // PWA VE iOS TESPİT STATE'LERİ
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showPwaPrompt, setShowPwaPrompt] = useState(false);
   const [isIos, setIsIos] = useState(false);
@@ -83,13 +83,12 @@ export default function PatronDashboard() {
   const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', landlinePhone: '', emergencyPhone: '', whatsappPhone: '', website: '', logo: '' });
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '' });
 
-  // YENİ: KUSURSUZ PWA (ANDROID & IOS) YAKALAMA SİSTEMİ
+  // YENİ: ZORUNLU PWA YAKALAMA SİSTEMİ (Geç butonu ve mantığı kaldırıldı)
   useEffect(() => {
-    // Daha önce kapatıldıysa veya zaten PWA içinden açılmışsa durdur.
-    const isDismissed = localStorage.getItem('pwa_prompt_dismissed');
+    // Sadece PWA (uygulama) içinden açılmışsa durdur ve balonu gösterme.
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     
-    if (isStandalone || isDismissed === 'true') {
+    if (isStandalone) {
       return;
     }
 
@@ -118,16 +117,9 @@ export default function PatronDashboard() {
       setShowPwaPrompt(false); 
       deferredPrompt.prompt(); 
       const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'dismissed') {
-        localStorage.setItem('pwa_prompt_dismissed', 'true');
-      }
+      // İptal etse bile sayfayı yenileyince tekrar çıkacak çünkü localStorage kuralını kaldırdık
       setDeferredPrompt(null);
     }
-  };
-
-  const handleDismissPwa = () => {
-    setShowPwaPrompt(false);
-    localStorage.setItem('pwa_prompt_dismissed', 'true');
   };
 
   const fetchData = async (isInitial = false) => {
@@ -408,7 +400,7 @@ export default function PatronDashboard() {
   return (
     <div className={`min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 ${hasEmergency ? 'bg-rose-950' : 'bg-[#F8FAFC] text-slate-900'}`}>
       
-      {/* YENİ NESİL PWA ANA EKRANA EKLE MODALI (iOS VE ANDROID AKILLI) */}
+      {/* ZORUNLU PWA ANA EKRANA EKLE MODALI ("Geç" butonu tamamen kaldırıldı) */}
       <AnimatePresence>
         {showPwaPrompt && !hasEmergency && (
           <motion.div 
@@ -435,11 +427,11 @@ export default function PatronDashboard() {
               </div>
             </div>
             <div className="flex gap-2 shrink-0 items-center">
-              <button onClick={handleDismissPwa} className="px-3 py-2 text-xs font-bold text-slate-300 hover:text-white transition-colors">Geç</button>
-              
               {/* Sadece Android/Masaüstü ise Yükle Butonunu göster */}
               {!isIos && (
-                 <button onClick={handleInstallPwa} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95">Yükle</button>
+                 <button onClick={handleInstallPwa} className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95">
+                   Yükle
+                 </button>
               )}
             </div>
           </motion.div>

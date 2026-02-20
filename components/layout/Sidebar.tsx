@@ -34,14 +34,15 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
       const swipeDistance = touchEndX - touchStartX;
       
       // Soldan sağa kaydırma (Menüyü Açma) 
-      // Sadece ekranın sol kenarından (ilk 50px) kaydırma başlarsa çalışsın ki normal sayfadaki yatay kaydırmaları bozmasın
-      if (swipeDistance > 50 && touchStartX < 50) {
+      // DÜZELTME: touchStartX 50'den 120'ye çıkarıldı (Daha geniş alandan tutulabilir)
+      // swipeDistance 50'den 40'a düşürüldü (Daha kısa kaydırmayla açılır)
+      if (swipeDistance > 40 && touchStartX < 120) {
         if (setIsMobileMenuOpen) setIsMobileMenuOpen(true);
       }
       
       // Sağdan sola kaydırma (Menüyü Kapatma)
       // Menü zaten açıksa ve sağdan sola doğru net bir kaydırma yapıldıysa
-      if (swipeDistance < -50 && isMobileMenuOpen) {
+      if (swipeDistance < -40 && isMobileMenuOpen) {
         if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
       }
     };
