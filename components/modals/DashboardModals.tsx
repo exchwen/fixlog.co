@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin, Calendar, AlertTriangle, ArrowRight, Filter, ShieldCheck, Clock, Plus, Tags, Truck, Edit2, ShieldAlert } from 'lucide-react';
+import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin, Calendar, AlertTriangle, ArrowRight, Filter, ShieldCheck, Clock, Plus, Tags, Truck, Edit2, ShieldAlert, MessageSquareText, Image as ImageIcon, Download } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 import trCitiesData from '@/lib/data/tr-cities.json';
 
@@ -21,7 +21,8 @@ export default function DashboardModals({
   showSupplierListModal, setShowSupplierListModal,
   showCategoryModal, setShowCategoryModal,
   selectedJob, setSelectedJob,
-  handleAction, isSaving, data
+  handleAction, isSaving, data,
+  userRole = 'Patron'
 }: any) {
   
   const [searchCust, setSearchCust] = useState('');
@@ -46,6 +47,7 @@ export default function DashboardModals({
   
   const [editJobDetailForm, setEditJobDetailForm] = useState({ 
     workCategory: 'Normal İş Atama',
+    workType: 'Genel Görev',
     jobType: 'Anlık',
     scheduledDate: '', 
     staffId: '', 
@@ -54,13 +56,16 @@ export default function DashboardModals({
     assetId: ''
   });
 
-  // Yeni Modallar İçin Local Stateler
   const [newCategoryName, setNewCategoryName] = useState('');
   const [editingSupplierId, setEditingSupplierId] = useState<string | null>(null);
   const [editSupFormLocal, setEditSupFormLocal] = useState({ name: '', phone: '' });
 
-  // Varlık detayındaki alt sekmeler için (BİLGİ, İŞLER, ARIZALAR, ACİL DURUMLAR)
   const [assetDetailTab, setAssetDetailTab] = useState('info');
+
+  const [jobPrice, setJobPrice] = useState('');
+  const [isApproving, setIsApproving] = useState(false);
+  const [previewPdfJob, setPreviewPdfJob] = useState<any>(null);
+  const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
 
   const parseAddressToState = (fullAddress: string) => {
     if (!fullAddress) {
@@ -107,12 +112,12 @@ export default function DashboardModals({
       return full;
   };
 
-  // Tüm modalları kapatma fonksiyonu (Reset)
   const closeAllModals = () => {
     if (showStaffDetail) setShowStaffDetail(null);
     if (showCustomerDetail) { setShowCustomerDetail(null); setIsEditingCustomer(false); }
     if (showAssetDetail) { setShowAssetDetail(null); setIsEditingAsset(false); setAssetDetailTab('info'); }
-    if (selectedJob) { setSelectedJob(null); setIsEditingJobDetail(false); setShowCancelConfirm(false); }
+    if (selectedJob) { setSelectedJob(null); setIsEditingJobDetail(false); setShowCancelConfirm(false); setFullScreenImage(null); }
+    if (previewPdfJob) setPreviewPdfJob(null);
     
     setShowJobModal(false); 
     setShowAssetModal(false); 
@@ -142,24 +147,35 @@ export default function DashboardModals({
         setSelectedJob(null); 
         setIsEditingJobDetail(false); 
         setShowCancelConfirm(false); 
+        setFullScreenImage(null);
     }
   };
 
-  // --- MOBİL GERİ TUŞU VE ESC MANTIĞI ---
-  const isAnyModalOpen = showStaffDetail || showCustomerDetail || showAssetDetail || showJobModal || showAssetModal || showStaffModal || showCustomerModal || showStockModal || showSupplierModal || showSupplierListModal || showCategoryModal || selectedJob;
+  const isAnyModalOpen = showStaffDetail || showCustomerDetail || showAssetDetail || showJobModal || showAssetModal || showStaffModal || showCustomerModal || showStockModal || showSupplierModal || showSupplierListModal || showCategoryModal || selectedJob || previewPdfJob || fullScreenImage;
 
   useEffect(() => {
     if (isAnyModalOpen) {
-      // Modal açıldığında history'ye push yap
       window.history.pushState({ modalOpen: true }, '', window.location.href);
 
       const handlePopState = () => {
-        closeAllModals(); // Geri tuşuna basılınca hepsini kapat
+        if (fullScreenImage) {
+            setFullScreenImage(null);
+        } else if (previewPdfJob) {
+            setPreviewPdfJob(null);
+        } else {
+            closeAllModals(); 
+        }
       };
 
       const handleEsc = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
-          closeAllModals();
+            if (fullScreenImage) {
+                setFullScreenImage(null);
+            } else if (previewPdfJob) {
+                setPreviewPdfJob(null);
+            } else {
+                closeAllModals();
+            }
         }
       };
 
@@ -171,13 +187,13 @@ export default function DashboardModals({
         window.removeEventListener('keydown', handleEsc);
       };
     }
-  }, [isAnyModalOpen]);
-
+  }, [isAnyModalOpen, previewPdfJob, fullScreenImage]);
 
   const handleEditClick = () => {
     setIsEditingJobDetail(true);
     setEditJobDetailForm({
         workCategory: selectedJob.work_type === 'Genel Görev' ? 'Genel İş Atama' : 'Normal İş Atama',
+        workType: selectedJob.work_type || 'Genel Görev',
         jobType: selectedJob.job_type || 'Anlık',
         scheduledDate: selectedJob.scheduled_date || '',
         staffId: selectedJob.staff_id || '',
@@ -192,12 +208,28 @@ export default function DashboardModals({
     }
   };
 
+  const sendCustomerWhatsApp = (jobData: any) => {
+     const custPhone = (data?.customers || []).find((c:any) => c.name === jobData.customer_name)?.contact;
+     if(!custPhone) { alert("Müşterinin kayıtlı telefonu bulunamadı."); return; }
+     
+     let formattedPhone = custPhone.replace(/\s+/g, '');
+     if (formattedPhone.startsWith('0')) formattedPhone = '90' + formattedPhone.substring(1);
+     
+     const assetName = (data?.assets || []).find((a:any) => a.id === jobData.asset_id)?.name || 'Cihazınızda';
+     const price = jobData.details?.price || 'Ücretsiz';
+     
+     const message = `Merhaba ${jobData.customer_name},\n\n${assetName} işlem yapılmıştır, iş tamamlanmış olup detayları PDF olarak sunulmuştur.\n\nFiyat teklifimiz: ${price}\nÖdeme bilgilerimiz:\nTRXX XXXX XXXX XXXX XXXX XXXX (İş Bankası)\n\n(Servis formunu bu mesaja ek olarak iletebilirsiniz.)`;
+     
+     window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
   const statusColors: any = { 
     'Beklemede': 'bg-amber-100 text-amber-700 border-amber-200', 
     'Tamamlandı': 'bg-emerald-100 text-emerald-700 border-emerald-200', 
     'Devam Ediyor': 'bg-blue-100 text-blue-700 border-blue-200', 
     'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200',
-    'İptal': 'bg-rose-100 text-rose-700 border-rose-200'
+    'İptal': 'bg-rose-100 text-rose-700 border-rose-200',
+    'Onay Bekliyor': 'bg-purple-100 text-purple-700 border-purple-200'
   };
 
   const assetCustMode = assetForm.customerMode || 'NONE';
@@ -227,9 +259,96 @@ export default function DashboardModals({
 
   return (
     <>
+      {/* 0. PDF ÖNİZLEME MODALI */}
+      <AnimatePresence>
+        {previewPdfJob && (
+          <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col max-h-[90vh] shadow-2xl relative">
+                <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 no-print z-10">
+                   <h2 className="font-black text-lg text-slate-800">Servis Formu & Fiyat Özeti</h2>
+                   <button onClick={() => setPreviewPdfJob(null)} className="p-2 bg-white rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"><X size={18} /></button>
+                </div>
+                
+                <div id="pdf-printable-area" className="p-8 overflow-y-auto custom-scrollbar bg-white text-black print-area flex-1 relative">
+                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] pointer-events-none no-print"></div>
+                    
+                    <div className="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-start relative z-10">
+                       <div>
+                          <h1 className="text-2xl font-black">{data?.name || 'Firma Adı'}</h1>
+                          <p className="text-sm text-slate-500 mt-1">{data?.address}</p>
+                          <p className="text-xs font-bold text-slate-400 mt-1">{data?.phone}</p>
+                       </div>
+                       <div className="text-right">
+                          <div className="text-xl font-black text-slate-300 tracking-widest">SERVİS FORMU</div>
+                          <div className="text-sm font-bold mt-1">Kayıt No: #{previewPdfJob.id}</div>
+                          <div className="text-xs text-slate-500 mt-0.5">{new Date().toLocaleDateString('tr-TR')}</div>
+                       </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 mb-8 relative z-10">
+                       <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
+                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Müşteri Bilgisi</div>
+                          <div className="font-bold text-sm text-slate-800">{previewPdfJob.customer_name}</div>
+                       </div>
+                       <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
+                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Cihaz / Konum</div>
+                          <div className="font-bold text-sm text-slate-800">{(data?.assets || []).find((a:any) => a.id === previewPdfJob.asset_id)?.name || 'Belirtilmedi'}</div>
+                       </div>
+                    </div>
+
+                    <div className="mb-8 relative z-10">
+                       <div className="text-xs font-black text-slate-800 uppercase border-b border-slate-200 pb-2 mb-3">Yapılan İşlem / Rapor Detayı</div>
+                       <div className="text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed">
+                           {previewPdfJob.details?.note?.replace(/\[📍 Konum Kaydı\].*/g, '') || 'Rapor girilmemiş.'}
+                       </div>
+                    </div>
+
+                    {previewPdfJob.details?.price && (
+                      <div className="flex justify-end border-t-2 border-slate-800 pt-4 mb-8 relative z-10">
+                         <div className="text-right">
+                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Toplam İşlem Tutarı</div>
+                            <div className="text-3xl font-black text-slate-900">{previewPdfJob.details.price}</div>
+                         </div>
+                      </div>
+                    )}
+
+                    {previewPdfJob.photos && previewPdfJob.photos.length > 0 && (
+                       <div className="relative z-10">
+                          <div className="text-xs font-black text-slate-800 uppercase border-b border-slate-200 pb-2 mb-3">Saha Kayıt Fotoğrafları</div>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                             {previewPdfJob.photos.map((p: string, i: number) => (
+                               <img key={i} src={p} className="w-full h-32 object-cover rounded-xl border border-slate-200 shadow-sm" />
+                             ))}
+                          </div>
+                       </div>
+                    )}
+                </div>
+
+                <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row gap-3 no-print z-10">
+                   <button onClick={() => window.print()} className="flex-[2] bg-slate-900 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-md active:scale-95">
+                      <Download size={18} /> PDF Olarak Cihaza Kaydet
+                   </button>
+                   <button onClick={() => sendCustomerWhatsApp(previewPdfJob)} className="flex-1 bg-emerald-500 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all shadow-md active:scale-95">
+                      <MessageSquareText size={18} /> Müşteriye Gönder
+                   </button>
+                </div>
+             </motion.div>
+             
+             <style dangerouslySetInnerHTML={{__html:`
+               @media print {
+                 body * { visibility: hidden; }
+                 .print-area, .print-area * { visibility: visible; }
+                 .print-area { position: absolute; left: 0; top: 0; width: 100%; height: 100%; padding: 20mm; background: white; z-index: 999999; }
+                 .no-print { display: none !important; }
+               }
+             `}} />
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* 1. SEÇİLİ İŞ (GÖREV) DETAY MODALI */}
       <AnimatePresence>
-        {selectedJob && (
+        {selectedJob && !previewPdfJob && (
           <div className={`fixed inset-0 z-[130] flex items-center justify-center p-4 ${isAnyProfileDetailOpen ? 'bg-transparent pointer-events-none' : 'bg-slate-900/60 backdrop-blur-sm'}`}>
             
             {isAnyProfileDetailOpen ? null : (
@@ -252,7 +371,7 @@ export default function DashboardModals({
                        <span className="flex items-center gap-1"><Clock size={12}/> {selectedJob.created_at?.split('T')[0] || ''}</span>
                     </div>
                 </div>
-                <button onClick={() => { setSelectedJob(null); setIsEditingJobDetail(false); setShowCancelConfirm(false); }} className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-xl transition-all active:scale-95"><X size={20} /></button>
+                <button onClick={() => { setSelectedJob(null); setIsEditingJobDetail(false); setShowCancelConfirm(false); setFullScreenImage(null); }} className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-xl transition-all active:scale-95"><X size={20} /></button>
               </div>
 
               {!isEditingJobDetail ? (
@@ -298,7 +417,6 @@ export default function DashboardModals({
                         <span className={`px-3 py-1.5 rounded-lg text-xs font-black border uppercase tracking-wider ${statusColors[selectedJob.status] || 'bg-slate-100'}`}>{selectedJob.status}</span>
                     </div>
 
-                    {/* Mobilde 1, Masaüstünde 2 sütun */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm hover:border-blue-200 transition-colors">
                             <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Müşteri / Lokasyon</div>
@@ -330,6 +448,25 @@ export default function DashboardModals({
                         </div>
                     </div>
 
+                    {selectedJob.photos && selectedJob.photos.length > 0 && (
+                        <div className="bg-slate-50 p-4 sm:p-5 rounded-xl border border-slate-200">
+                            <div className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest flex items-center gap-1.5">
+                                <ImageIcon size={14} /> SAHA FOTOĞRAFLARI ({selectedJob.photos.length})
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {selectedJob.photos.map((photoUrl: string, idx: number) => (
+                                    <div 
+                                      key={idx} 
+                                      onClick={() => setFullScreenImage(photoUrl)}
+                                      className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition-all hover:scale-105 active:scale-95"
+                                    >
+                                        <img src={photoUrl} alt={`Saha Fotoğrafı ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="bg-slate-50 p-4 sm:p-5 rounded-xl border border-slate-200">
                         <div className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">GÖREV NOTLARI / AÇIKLAMA</div>
                         <p className="text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-wrap italic border-l-2 border-slate-300 pl-3">
@@ -349,23 +486,48 @@ export default function DashboardModals({
                         </div>
                     )}
 
-                    {/* Mobilde alt alta butonlar */}
-                    <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row gap-2 sm:gap-3">
-                        <button 
-                            onClick={handleEditClick}
-                            className="flex-1 bg-blue-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md shadow-blue-200"
-                        >
-                            <Settings size={16} /> Düzenle / Ata
-                        </button>
-                        
-                        {selectedJob.status !== 'İptal' && selectedJob.status !== 'Tamamlandı' && (
-                            <button 
-                                onClick={() => setShowCancelConfirm(true)}
-                                className="sm:w-1/3 bg-rose-50 text-rose-600 border border-rose-200 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"
-                            >
-                                <X size={16} strokeWidth={3} /> İptal Et
+                    <div className="pt-4 border-t border-slate-100 space-y-3">
+                        {/* YENİ: ONAY VE FİYATLANDIRMA MODÜLÜ */}
+                        {selectedJob.status === 'Onay Bekliyor' && (
+                            <div className="bg-amber-50 border border-amber-200 p-4 sm:p-5 rounded-2xl flex flex-col gap-3 shadow-inner">
+                               <div className="text-amber-800 font-black text-sm flex items-center gap-2"><AlertTriangle size={18}/> Personel İşi Tamamladı. Onayınız Bekleniyor.</div>
+                               <input type="number" placeholder="Müşteriye yansıtılacak işlem ücreti (₺)" value={jobPrice} onChange={e => setJobPrice(e.target.value)} className="px-4 py-3 sm:py-3.5 rounded-xl border border-amber-300 font-bold outline-none focus:border-amber-500 w-full text-sm bg-white" />
+                               <button disabled={isApproving || !jobPrice} onClick={async () => {
+                                   setIsApproving(true);
+                                   const newDetails = { ...selectedJob.details, price: jobPrice + ' TL' };
+                                   await handleAction('update-job', { id: selectedJob.id, status: 'Tamamlandı', taskNote: selectedJob.details?.note, lastEditedBy: data?.ownerName, workType: selectedJob.work_type, details: newDetails }, null, null);
+                                   await handleAction('approve-job', { jobId: selectedJob.id, amount: jobPrice, customerName: selectedJob.customer_name }, () => setSelectedJob(null), () => setJobPrice(''));
+                                   setIsApproving(false);
+                               }} className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black py-3 sm:py-3.5 rounded-xl transition-all shadow-md flex justify-center items-center active:scale-95 text-sm">
+                                   {isApproving ? <Loader2 className="animate-spin" size={18}/> : 'Fiyatı Onayla ve Kasa\'ya İşle'}
+                               </button>
+                            </div>
+                        )}
+
+                        {/* YENİ: WHATSAPP MÜŞTERİ RAPORU BUTONU */}
+                        {selectedJob.status === 'Tamamlandı' && (
+                            <button onClick={() => setPreviewPdfJob(selectedJob)} className="w-full bg-emerald-100 border border-emerald-300 text-emerald-700 font-black py-3.5 rounded-xl hover:bg-emerald-200 transition-all flex justify-center items-center gap-2 shadow-sm active:scale-95 text-sm">
+                               <MessageSquareText size={18} /> Rapor Önizleme & WhatsApp Gönder
                             </button>
                         )}
+
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full pt-2">
+                            <button 
+                                onClick={handleEditClick}
+                                className="flex-1 bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"
+                            >
+                                <Settings size={16} /> Düzenle / Ata
+                            </button>
+                            
+                            {selectedJob.status !== 'İptal' && selectedJob.status !== 'Tamamlandı' && (
+                                <button 
+                                    onClick={() => setShowCancelConfirm(true)}
+                                    className="sm:w-1/3 bg-rose-50 text-rose-600 border border-rose-200 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                >
+                                    <X size={16} strokeWidth={3} /> İptal Et
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
               ) : (
@@ -433,11 +595,23 @@ export default function DashboardModals({
                     )}
 
                     <div>
-                      <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Sorumlu Personel (Yalnızca Yöneticiler)</label>
+                      <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Görev Tipi / Branş</label>
+                      <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={editJobDetailForm.workType} onChange={e => setEditJobDetailForm({...editJobDetailForm, workType: e.target.value})}>
+                        <option value="Genel Görev">Genel Görev</option>
+                        {branchList.map((subType: any) => (
+                          <option key={subType} value={subType}>{subType}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Sorumlu Personel</label>
                       <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={editJobDetailForm.staffId} onChange={e => setEditJobDetailForm({...editJobDetailForm, staffId: e.target.value})}>
-                        <option value="">Kayıtlı Yöneticilerden Seçin...</option>
-                        {(data?.staff || []).filter((s:any) => s.role === 'Yönetici').map((s:any) => (
-                          <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
+                        <option value="">Seçiniz...</option>
+                        {(data?.staff || [])
+                          .filter((s:any) => userRole === 'Patron' ? s.role === 'Yönetici' : s.role === 'Usta')
+                          .map((s:any) => (
+                            <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
                         ))}
                       </select>
                     </div>
@@ -470,6 +644,32 @@ export default function DashboardModals({
               )}
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {fullScreenImage && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="fixed inset-0 z-[200] bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center p-4"
+            onClick={() => setFullScreenImage(null)}
+          >
+            <button 
+               onClick={() => setFullScreenImage(null)} 
+               className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-rose-500 text-white rounded-full transition-colors backdrop-blur-sm"
+            >
+               <X size={24} />
+            </button>
+            <motion.img 
+               initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
+               src={fullScreenImage} 
+               alt="Büyütülmüş Fotoğraf" 
+               className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+               onClick={(e) => e.stopPropagation()} 
+            />
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -964,11 +1164,13 @@ export default function DashboardModals({
                 )}
 
                 <div>
-                  <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Sorumlu Personel (Yalnızca Yöneticiler)</label>
+                  <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Sorumlu Personel</label>
                   <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={jobForm.staffId} onChange={e => setJobForm({...jobForm, staffId: e.target.value})}>
-                    <option value="">Kayıtlı Yöneticilerden Seçin...</option>
-                    {(data?.staff || []).filter((s:any) => s.role === 'Yönetici').map((s:any) => (
-                      <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
+                    <option value="">Seçiniz...</option>
+                    {(data?.staff || [])
+                      .filter((s:any) => userRole === 'Patron' ? s.role === 'Yönetici' : s.role === 'Usta')
+                      .map((s:any) => (
+                        <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
                     ))}
                   </select>
                 </div>

@@ -1,47 +1,52 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClipboardList, Users, Box, Wallet, Plus, ArrowUpRight, 
   CheckCircle, Clock, Calendar, TrendingUp, TrendingDown, 
-  Package, AlertTriangle, ShieldCheck, Activity, User, Lock, Settings, X, Wrench
+  Package, AlertTriangle, ShieldCheck, Activity, User, Lock, 
+  Settings, X, Wrench, Link as LinkIcon, Check, Database, Image as ImageIcon
 } from 'lucide-react';
 
 export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob, setActiveTab }: any) {
+  
+  const { slug } = useParams(); 
 
-  // 1. PROFİL DOLULUK KONTROLÜ (ZORUNLU KİLİT)
+  const [copied, setCopied] = useState(false);
+
   const isProfileComplete = data?.name && data?.ownerName && data?.sector && data?.address && data?.phone && data?.taxInfo;
 
-  // STOK DETAY MODALI İÇİN STATE
   const [showLowStockModal, setShowLowStockModal] = useState(false);
 
-  // 2. VERİLERİ PARÇALAMA VE HESAPLAMA
   const jobs = data?.jobs || [];
   const finances = data?.finances || [];
   const stock = data?.stock || [];
   const staff = data?.staff || [];
 
-  // İş İstatistikleri (4'lü Kutu İçin)
   const totalJobs = jobs.length;
   const completedJobs = jobs.filter((j: any) => j.status === 'Tamamlandı').length;
   const pendingJobs = jobs.filter((j: any) => j.status === 'Beklemede' || j.status === 'Devam Ediyor').length;
   const plannedJobs = jobs.filter((j: any) => j.status === 'Gelecek').length;
 
-  // Aylık Büyüme Hızı Hesaplama (Yapay Zeka)
-  const { currentMonthJobs, lastMonthJobs, growthPercent, isGrowthPositive } = useMemo(() => {
+  const { currentMonthJobs, lastMonthJobs, growthPercent, isGrowthPositive, monthlyPhotos } = useMemo(() => {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
     
     let currentCount = 0;
     let lastCount = 0;
+    let photosThisMonth = 0;
 
     jobs.forEach((j: any) => {
       if (!j.created_at) return;
       const jobDate = new Date(j.created_at);
       if (jobDate.getFullYear() === currentYear) {
-        if (jobDate.getMonth() === currentMonth) currentCount++;
+        if (jobDate.getMonth() === currentMonth) {
+            currentCount++;
+            photosThisMonth += (j.photos?.length || 0); 
+        }
         if (jobDate.getMonth() === currentMonth - 1) lastCount++;
       }
     });
@@ -53,17 +58,21 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
       currentMonthJobs: currentCount,
       lastMonthJobs: lastCount,
       growthPercent: Math.abs(percent).toFixed(1),
-      isGrowthPositive: percent >= 0
+      isGrowthPositive: percent >= 0,
+      monthlyPhotos: photosThisMonth
     };
   }, [jobs]);
 
-  // Finans İstatistikleri & Son İşlemler
+  const totalLifetimePhotos = jobs.reduce((sum: number, j: any) => sum + (j.photos?.length || 0), 0);
+  const totalCustomersCount = data?.customers?.length || 0;
+  const totalAssetsCount = data?.assets?.length || 0;
+  const totalStockTypes = stock.length;
+
   const totalIncome = data?.finSummary?.income || 0;
   const totalExpense = data?.finSummary?.expense || 0;
   const netCash = totalIncome - totalExpense;
   const recentFinances = finances.slice(0, 4);
 
-  // ZEKİ VE SAF SVG TREND GRAFİĞİ 
   const miniChartPoints = useMemo(() => {
     const chartData = [...finances].reverse().slice(-10).map((f: any) => 
       f.type === 'Gelir' ? Number(f.amount) : -Math.abs(Number(f.amount))
@@ -82,10 +91,15 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
     }).join(' ');
   }, [finances]);
 
-  // Stok İstatistikleri (Kritik Seviye Uyarısı)
   const lowStockItems = stock.filter((s: any) => Number(s.quantity) <= 5);
 
-  // EĞER PROFİL EKSİKSE KİLİT EKRANI GÖSTER
+  const handleCopyLink = () => {
+    const loginUrl = `${window.location.origin}/${slug}/login`;
+    navigator.clipboard.writeText(loginUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   if (!isProfileComplete) {
     return (
       <div className="relative h-[80vh] flex flex-col items-center justify-center bg-white rounded-2xl border border-rose-100 shadow-sm overflow-hidden p-4">
@@ -122,11 +136,9 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
     );
   }
 
-  // PROFİL TAMAMSA ANA EKRANI GÖSTER
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       
-      {/* KRİTİK STOK DETAY MODALI */}
       <AnimatePresence>
         {showLowStockModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
@@ -170,7 +182,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         )}
       </AnimatePresence>
 
-      {/* BAŞLIK VE SİSTEM DURUMU */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
         <div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
@@ -178,18 +189,26 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
           </h2>
           <p className="text-slate-500 text-xs mt-1">Sistem üzerindeki anlık özetin aşağıdadır.</p>
         </div>
-        <div className="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100 flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wide shadow-sm w-fit">
-          <span className="relative flex h-2 w-2 mr-1 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
-          Bulut Senkronizasyonu Aktif
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <button 
+              onClick={handleCopyLink} 
+              className="flex items-center justify-center gap-1.5 px-4 py-2 sm:py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-all active:scale-95 shadow-sm border border-slate-700"
+            >
+               {copied ? <Check size={14} className="text-emerald-400" /> : <LinkIcon size={14} className="text-blue-400" />}
+               {copied ? 'Bağlantı Kopyalandı' : 'Personel Giriş Linkini Kopyala'}
+            </button>
+            <div className="px-3 py-2 sm:py-2.5 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100 flex items-center justify-center gap-1.5 font-bold text-[10px] sm:text-xs uppercase tracking-wide shadow-sm">
+                <span className="relative flex h-2 w-2 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                Bulut Senkronizasyonu Aktif
+            </div>
         </div>
       </div>
 
-      {/* 4'LÜ İSTATİSTİK KARTLARI */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-blue-300 transition-colors group">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-blue-300 transition-colors group cursor-pointer active:scale-95">
           <div className="w-10 h-10 bg-blue-50/80 rounded-xl flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform shrink-0">
             <ClipboardList size={18} />
           </div>
@@ -199,7 +218,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-emerald-300 transition-colors group">
+        <div onClick={() => setActiveTab('completed')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-emerald-300 transition-colors group cursor-pointer active:scale-95">
           <div className="w-10 h-10 bg-emerald-50/80 rounded-xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform shrink-0">
             <CheckCircle size={18} />
           </div>
@@ -209,7 +228,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-amber-300 transition-colors group">
+        <div onClick={() => setActiveTab('pending')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-amber-300 transition-colors group cursor-pointer active:scale-95">
           <div className="w-10 h-10 bg-amber-50/80 rounded-xl flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform shrink-0">
             <Clock size={18} />
           </div>
@@ -219,7 +238,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-purple-300 transition-colors group">
+        <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-purple-300 transition-colors group cursor-pointer active:scale-95">
           <div className="w-10 h-10 bg-purple-50/80 rounded-xl flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform shrink-0">
             <Calendar size={18} />
           </div>
@@ -228,13 +247,22 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
             <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Planlanan</div>
           </div>
         </div>
+
+        <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-indigo-300 transition-colors group cursor-pointer active:scale-95 sm:col-span-2 md:col-span-1 lg:col-span-1">
+          <div className="w-10 h-10 bg-indigo-50/80 rounded-xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform shrink-0">
+            <ImageIcon size={18} />
+          </div>
+          <div>
+            <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none mb-1">{monthlyPhotos}</div>
+            <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Bu Ayki Foto</div>
+          </div>
+        </div>
       </div>
 
-      {/* ORTA BÖLÜM: FİNANS, BÜYÜME VE STOK */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         
-        {/* SOL: YENİ NESİL NET KASA TASARIMI */}
-        <div className="lg:col-span-2 bg-slate-900 rounded-2xl p-5 sm:p-6 shadow-lg border border-slate-800 flex flex-col relative overflow-hidden">
+        {/* CSS HİLESİ İLE YÖNETİCİDEN GİZLENEN KASA BLOĞU */}
+        <div className="lg:col-span-2 bg-slate-900 rounded-2xl p-5 sm:p-6 shadow-lg border border-slate-800 flex flex-col relative overflow-hidden finance-block">
            <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 blur-3xl rounded-full pointer-events-none"></div>
            
            <div className="flex justify-between items-start mb-6 z-10 relative">
@@ -247,7 +275,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                <div className="text-2xl sm:text-3xl font-black text-white tracking-tight break-all">₺{netCash.toLocaleString('tr-TR')}</div>
              </div>
              
-             {/* YENİ SVG TREND GRAFİĞİ */}
              <div className="h-10 sm:h-12 w-20 sm:w-32 opacity-80 flex items-center justify-end shrink-0">
                {miniChartPoints ? (
                  <svg viewBox="-5 -5 110 50" className="w-full h-full overflow-visible">
@@ -299,10 +326,8 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
            </div>
         </div>
 
-        {/* SAĞ: PERFORMANS VE STOK */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6">
           
-          {/* DÜZELTME: Mobil için height otomatikleştirildi (h-auto), taşmalar engellendi */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden h-auto min-h-[140px] sm:h-[192px] flex flex-col justify-center group hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-2.5">
@@ -325,7 +350,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
             </div>
           </div>
 
-          {/* DÜZELTME: Mobil için height otomatikleştirildi (h-auto), taşmalar engellendi */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden h-auto min-h-[140px] sm:h-[192px] flex flex-col justify-center group hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-2.5">
@@ -362,7 +386,35 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         </div>
       </div>
 
-      {/* ALT BÖLÜM: YENİLENMİŞ SON İŞLER TABLOSU VE MOBİL KARTLARI */}
+      <div className="bg-slate-900 rounded-2xl p-5 sm:p-6 shadow-lg border border-slate-800 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-emerald-500 to-amber-500"></div>
+        <h3 className="text-sm font-black text-white uppercase tracking-widest mb-5 flex items-center gap-2">
+            <Database size={16} className="text-blue-400" /> Başlangıçtan Bugüne Sistem Verileri
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+               <div className="text-2xl font-black text-white mb-1">{totalJobs}</div>
+               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Toplam İş Kaydı</div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+               <div className="text-2xl font-black text-emerald-400 mb-1">{totalLifetimePhotos}</div>
+               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Saha Fotoğrafı</div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+               <div className="text-2xl font-black text-blue-400 mb-1">{totalCustomersCount}</div>
+               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Kayıtlı Müşteri</div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+               <div className="text-2xl font-black text-amber-400 mb-1">{totalAssetsCount}</div>
+               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Cihaz / Varlık</div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center sm:col-span-3 md:col-span-1">
+               <div className="text-2xl font-black text-purple-400 mb-1">{totalStockTypes}</div>
+               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Farklı Stok Kalemi</div>
+            </div>
+        </div>
+      </div>
+
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
         <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-50/50">
           <div className="flex items-center gap-2">
@@ -374,7 +426,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
           </button>
         </div>
         
-        {/* MASAÜSTÜ TABLO GÖRÜNÜMÜ */}
         <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[400px] custom-scrollbar w-full">
           <table className="w-full text-left text-xs border-collapse min-w-[700px]">
             <thead className="bg-white text-slate-500 font-bold sticky top-0 z-10 shadow-sm uppercase tracking-wider text-[10px]">
@@ -491,7 +542,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
           </table>
         </div>
 
-        {/* MOBİL İÇİN DİKEY KART GÖRÜNÜMÜ */}
         <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50/50 max-h-[500px] overflow-y-auto custom-scrollbar">
           {jobs.slice(0, 10).map((j: any) => {
              const assignedManager = j.staff_id ? staff.find((s:any) => s.id === j.staff_id) : null;
@@ -509,7 +559,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                  onClick={() => setSelectedJob && setSelectedJob(j)}
                  className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col gap-4 active:scale-95 transition-all cursor-pointer"
                >
-                 {/* Müşteri ve Durum */}
                  <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
                     <div className="min-w-0">
                       <div className="font-black text-slate-800 text-sm truncate">{j.customer_name}</div>
@@ -520,7 +569,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                     </span>
                  </div>
 
-                 {/* Personel Atama Durumu */}
                  <div className="flex flex-col gap-2.5">
                     {isSamePerson ? (
                       <div className="flex items-center gap-2">
@@ -570,7 +618,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                     </div>
                  </div>
 
-                 {/* Tarih ve Oku */}
                  <div className="flex justify-between items-center pt-2 border-t border-slate-50">
                    <div className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-md border border-slate-100 flex items-center gap-1.5 w-fit">
                       <Calendar size={12} className="text-slate-400" /> {j.scheduled_date || 'Tarih Planlanmadı'}

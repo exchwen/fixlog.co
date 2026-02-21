@@ -8,7 +8,6 @@ import sectorsData from '@/lib/data/sectors.json';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
-// JWT'yi (Bileti) çözüp ustanın ID'sini ve adını almak için ufak bir araç
 const parseJwt = (token) => {
   try {
     const base64Url = token.split('.')[1];
@@ -41,11 +40,9 @@ export default function WorkerDashboard() {
   const [dynamicForm, setDynamicForm] = useState({}); 
   const [isSaving, setIsSaving] = useState(false);
 
-  // FOTOĞRAF YÜKLEME STATE'LERİ
   const [photos, setPhotos] = useState([]);
   const fileInputRef = useRef(null);
 
-  // ÇEVRİMDIŞI & PWA STATE'LERİ
   const [isOffline, setIsOffline] = useState(false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -53,7 +50,6 @@ export default function WorkerDashboard() {
   const [isIos, setIsIos] = useState(false);
   const [installState, setInstallState] = useState('idle');
 
-  // PWA YAKALAMA ZEKASI
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     if (isStandalone) return;
@@ -97,7 +93,6 @@ export default function WorkerDashboard() {
     }
   };
 
-  // İNTERNETSİZ İŞLEM KUYRUĞU (OFFLINE SYNC)
   const syncOfflineActions = async () => {
     const pending = JSON.parse(localStorage.getItem(`offline_actions_${slug}`) || '[]');
     if (pending.length === 0) {
@@ -146,7 +141,6 @@ export default function WorkerDashboard() {
   }, [slug]);
 
 
-  // Güvenlik ve Veri Çekme (Önbellekli)
   const fetchData = async (isInitial = false) => {
     const token = localStorage.getItem('authToken');
     const role = localStorage.getItem('userRole');
@@ -223,8 +217,6 @@ export default function WorkerDashboard() {
     setDynamicForm(prev => ({ ...prev, [name]: value }));
   };
 
-  // SICAK VERİ OPTİMİZASYONU: Telefondan gelen 15MB fotoğrafı sunucuyu çökertmemesi için 
-  // HD (1920px) kalitede JPEG olarak alıyoruz. (Daha sonra Cron ile WebP yapılacak)
   const handlePhotoSelect = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
@@ -239,14 +231,13 @@ export default function WorkerDashboard() {
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 1920; // Orijinale en yakın HD (Sıcak Veri) çözünürlüğü
+                    const MAX_WIDTH = 1920; 
                     let scale = 1;
                     if (img.width > MAX_WIDTH) { scale = MAX_WIDTH / img.width; }
                     canvas.width = img.width * scale;
                     canvas.height = img.height * scale;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    // %90 Kalite JPEG (Orijinal kaliteyi korur ama dosya boyutunu sunucunun taşıyabileceği seviyeye indirir)
                     resolve(canvas.toDataURL('image/jpeg', 0.90)); 
                 };
                 img.src = event.target.result;
@@ -272,20 +263,35 @@ export default function WorkerDashboard() {
     const token = localStorage.getItem('authToken');
 
     let formText = '';
-    if (newStatus === 'Tamamlandı' && currentFields.length > 0) {
+    const targetStatus = newStatus === 'Tamamlandı' ? 'Onay Bekliyor' : newStatus;
+
+    if (targetStatus === 'Onay Bekliyor' && currentFields.length > 0) {
         const filledData = currentFields.map(f => `${f.label}: ${dynamicForm[f.name] || 'Belirtilmedi'}`).join('\n');
         formText = `\n--- ${staffBranch} Saha Formu ---\n${filledData}\n----------------------------------\n`;
+    }
+
+    let gpsNote = '';
+    if (targetStatus === 'Onay Bekliyor' && navigator.geolocation) {
+       try {
+         const pos = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000 });
+         });
+         gpsNote = `\n[📍 Konum Kaydı]: https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+       } catch (e) {
+         console.warn("Konum alınamadı.");
+       }
     }
 
     const finalNote = [
         selectedJob.details?.note || '', 
         formText, 
-        jobNote ? `[Usta Notu]: ${jobNote}` : ''
+        jobNote ? `[Usta Notu]: ${jobNote}` : '',
+        gpsNote
     ].filter(Boolean).join('\n\n').trim();
 
     const payload = {
         id: selectedJob.id,
-        status: newStatus,
+        status: targetStatus,
         taskNote: finalNote ? finalNote : undefined,
         lastEditedBy: userData.name,
         photos: photos 
@@ -319,7 +325,7 @@ export default function WorkerDashboard() {
 
       const updatedJobs = jobs.map(j => {
           if (j.id === selectedJob.id) {
-             return { ...j, status: newStatus, details: { ...j.details, note: finalNote } };
+             return { ...j, status: targetStatus, details: { ...j.details, note: finalNote } };
           }
           return j;
       });
@@ -585,7 +591,6 @@ export default function WorkerDashboard() {
                                <span className="text-[10px] font-bold text-slate-400">{photos.length} Seçildi</span>
                            </div>
                            
-                           {/* DÜZELTME: capture="environment" KALDIRILDI. Artık hem Galeri hem Kamera soracak. */}
                            <input 
                               type="file" 
                               accept="image/*" 
