@@ -59,7 +59,7 @@ export default function AssetScanPage() {
       setIsIos(true);
       setTimeout(() => setShowPwaPrompt(true), 2000);
     } else {
-      const handler = (e: Event) => {
+      const handler = (e: any) => {
         e.preventDefault();
         setDeferredPrompt(e);
         setTimeout(() => setShowPwaPrompt(true), 2000);
@@ -258,7 +258,7 @@ export default function AssetScanPage() {
 
   const handleEmergencyConfirm = async () => {
     setIsSubmitting(true);
-    const body = { uuid: asset.uuid || uuid, company_slug: asset.company_slug };
+    const body = { uuid: asset?.uuid || uuid, company_slug: asset?.company_slug };
     try {
       await fetch(`${API_URL}/public/trigger-emergency`, {
         method: 'POST',
@@ -275,7 +275,7 @@ export default function AssetScanPage() {
     } finally {
       setIsSubmitting(false);
       setShowEmergencyConfirm(false);
-      if (asset.emergency_phone) {
+      if (asset?.emergency_phone) {
         window.location.href = `tel:${asset.emergency_phone}`;
       }
     }
@@ -285,8 +285,8 @@ export default function AssetScanPage() {
     e.preventDefault();
     setIsSubmitting(true);
     const body = { 
-      uuid: asset.uuid || uuid, 
-      company_slug: asset.company_slug,
+      uuid: asset?.uuid || uuid, 
+      company_slug: asset?.company_slug,
       ...faultForm 
     };
     try {
@@ -356,9 +356,9 @@ export default function AssetScanPage() {
     </div>
   );
 
-  const aptName = asset.apartmentName || asset.apartment_name;
-  const mainTitle = aptName || asset.name;
-  const subTitle = aptName ? asset.name : null;
+  const aptName = asset?.apartmentName || asset?.apartment_name;
+  const mainTitle = aptName || asset?.name;
+  const subTitle = aptName ? asset?.name : null;
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 font-sans relative selection:bg-blue-100">
@@ -369,7 +369,7 @@ export default function AssetScanPage() {
             <motion.button 
               initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
               onClick={() => {
-                  const savedSlug = localStorage.getItem('userSlug') || asset.company_slug;
+                  const savedSlug = localStorage.getItem('userSlug') || asset?.company_slug;
                   if(staffRole === 'Patron') router.push(`/${savedSlug}/dashboard`);
                   else if(staffRole === 'Yönetici') router.push(`/${savedSlug}/manager`);
                   else if(staffRole === 'Usta') router.push(`/${savedSlug}/worker`);
@@ -458,7 +458,7 @@ export default function AssetScanPage() {
         <div className="bg-slate-900 pt-10 pb-8 px-8 text-center text-white relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-500 via-slate-900 to-slate-900"></div>
           <div className="relative z-10">
-            {asset.logo ? (
+            {asset?.logo ? (
                <div 
                  className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg ring-4 ring-white/5 p-2 overflow-hidden"
                  style={{ backgroundColor: logoBgColor }}
@@ -477,14 +477,14 @@ export default function AssetScanPage() {
                 <div className="text-blue-200 font-semibold text-sm mb-1 bg-white/10 inline-block px-3 py-0.5 rounded-lg border border-white/10">{subTitle}</div>
             )}
 
-            <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mt-1">{asset.company_name}</p>
+            <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mt-1">{asset?.company_name}</p>
           </div>
         </div>
 
         <div className="p-6">
           
           <button 
-             onClick={() => router.push(`/${asset.company_slug}/login`)}
+             onClick={() => router.push(`/${asset?.company_slug}/login`)}
              className="w-full flex items-center justify-center gap-2 bg-slate-800 text-white text-xs font-bold py-3.5 rounded-xl hover:bg-slate-700 transition-colors shadow-sm mb-5 active:scale-95"
           >
              <User size={16} /> Personel Girişi
@@ -503,7 +503,7 @@ export default function AssetScanPage() {
                     )}
                     
                     <div className="text-sm text-slate-700 font-semibold leading-snug">
-                        {asset.location ? asset.location.replace(aptName || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : '-'}
+                        {asset?.location ? asset.location.replace(aptName || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : '-'}
                     </div>
                 </div>
              </div>
@@ -532,26 +532,26 @@ export default function AssetScanPage() {
             </button>
             
             <a 
-                href={asset.whatsapp_phone ? `https://wa.me/${asset.whatsapp_phone.replace(/\D/g, '').length >= 10 ? '90' + asset.whatsapp_phone.replace(/\D/g, '').slice(-10) : asset.whatsapp_phone.replace(/\D/g, '')}?text=${encodeURIComponent('Merhaba, ' + (aptName || asset.name) + ' (' + (aptName ? asset.name : '') + ') cihazı için destek almak istiyorum.')}` : '#'} 
-                target={asset.whatsapp_phone ? "_blank" : undefined} rel={asset.whatsapp_phone ? "noopener noreferrer" : undefined} onClick={(e) => !asset.whatsapp_phone && e.preventDefault()}
+                href={asset?.whatsapp_phone ? `https://wa.me/${asset.whatsapp_phone.replace(/\D/g, '').length >= 10 ? '90' + asset.whatsapp_phone.replace(/\D/g, '').slice(-10) : asset.whatsapp_phone.replace(/\D/g, '')}?text=${encodeURIComponent('Merhaba, ' + (aptName || asset?.name) + ' (' + (aptName ? asset?.name : '') + ') cihazı için destek almak istiyorum.')}` : '#'} 
+                target={asset?.whatsapp_phone ? "_blank" : undefined} rel={asset?.whatsapp_phone ? "noopener noreferrer" : undefined} onClick={(e) => !asset?.whatsapp_phone && e.preventDefault()}
                 className={`w-full flex items-center justify-center gap-3 py-4 rounded-xl font-bold text-lg shadow-lg transition-all active:scale-95 text-white
-                    ${asset.whatsapp_phone ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200/50 cursor-pointer' : 'bg-slate-300 cursor-not-allowed'}
+                    ${asset?.whatsapp_phone ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200/50 cursor-pointer' : 'bg-slate-300 cursor-not-allowed'}
                 `}
             >
-              <MessageCircle size={24} /> {asset.whatsapp_phone ? 'WhatsApp Destek' : 'WhatsApp Tanımlı Değil'}
+              <MessageCircle size={24} /> {asset?.whatsapp_phone ? 'WhatsApp Destek' : 'WhatsApp Tanımlı Değil'}
             </a>
 
             <button 
                 onClick={(e) => {
-                  if(!asset.emergency_phone) return;
+                  if(!asset?.emergency_phone) return;
                   e.preventDefault();
                   setShowEmergencyConfirm(true);
                 }}
                 className={`w-full flex items-center justify-center gap-3 py-4 rounded-xl font-bold text-lg shadow-lg transition-all active:scale-95 text-white
-                    ${asset.emergency_phone ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-200/50 cursor-pointer' : 'bg-slate-300 cursor-not-allowed'}
+                    ${asset?.emergency_phone ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-200/50 cursor-pointer' : 'bg-slate-300 cursor-not-allowed'}
                 `}
             >
-              <Phone size={24} /> {asset.emergency_phone ? 'Acil Destek Ara' : 'Numara Tanımlı Değil'}
+              <Phone size={24} /> {asset?.emergency_phone ? 'Acil Destek Ara' : 'Numara Tanımlı Değil'}
             </button>
           </div>
 
@@ -664,7 +664,7 @@ export default function AssetScanPage() {
                     </button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                    {asset.jobs && asset.jobs.length > 0 ? (
+                    {asset?.jobs && asset.jobs.length > 0 ? (
                         <div className="space-y-3">
                             {asset.jobs.map((job: any, index: number) => (
                                 <div key={index} className="p-3 border border-slate-100 rounded-xl bg-slate-50 flex justify-between items-center">

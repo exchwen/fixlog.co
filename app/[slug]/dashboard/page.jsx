@@ -28,14 +28,13 @@ const API_URL = 'https://backend.isdokumu.workers.dev';
 
 export default function PatronDashboard() {
   const { slug } = useParams();
-  const router = useRouter(); // Yönlendirme için eklendi
+  const router = useRouter(); 
   
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
   
   const [data, setData] = useState(null); 
   
-  const [searchTerm, setSearchTerm] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [isOffline, setIsOffline] = useState(false);
@@ -127,11 +126,10 @@ export default function PatronDashboard() {
     }
   };
 
-  // ZIRH EKLENDİ: fetchData artık cüzdanında Token taşıyor
   const fetchData = async (isInitial = false) => {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('patron_authToken'); // ZIRH EKLENDİ
     if (!token) {
-        window.location.href = `/${slug}/login`; // Bilet yoksa dışarı
+        window.location.href = `/${slug}/login`; 
         return;
     }
 
@@ -182,10 +180,9 @@ export default function PatronDashboard() {
     }
   };
 
-  // ZIRH EKLENDİ: fetchMessages
   const fetchMessages = async () => {
     if (!activeChatId) return;
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('patron_authToken');
     try {
       const res = await fetch(`${API_URL}/get-messages?slug=${slug}&staffId=${activeChatId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -194,7 +191,6 @@ export default function PatronDashboard() {
     } catch (err) {}
   };
 
-  // ZIRH EKLENDİ: syncOfflineActions
   const syncOfflineActions = async () => {
     const pending = JSON.parse(localStorage.getItem(`offline_actions_${slug}`) || '[]');
     if (pending.length === 0) {
@@ -202,7 +198,7 @@ export default function PatronDashboard() {
       return;
     }
     
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('patron_authToken');
     const remaining = [];
     
     for (const item of pending) {
@@ -299,10 +295,9 @@ export default function PatronDashboard() {
   
   useEffect(() => { if (isChatOpen && activeChatId) { fetchMessages(); const cInt = setInterval(fetchMessages, 4000); return () => clearInterval(cInt); } }, [isChatOpen, activeChatId]);
 
-  // ZIRH EKLENDİ: handleAction
   const handleAction = async (endpoint, body, closeFn, resetFn) => {
     setIsSaving(true);
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('patron_authToken');
     try {
       const res = await fetch(`${API_URL}/${endpoint}`, { 
           method: 'POST', 
@@ -341,10 +336,9 @@ export default function PatronDashboard() {
     }
   };
 
-  // ZIRH EKLENDİ: sendMessage
   const sendMessage = async () => {
     if (!messageInput.trim() || !activeChatId) return;
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('patron_authToken');
     await fetch(`${API_URL}/send-message`, { 
         method: 'POST', 
         headers: { 
@@ -359,10 +353,9 @@ export default function PatronDashboard() {
   const activeEmergencies = data?.activeEmergencies || [];
   const hasEmergency = activeEmergencies.length > 0;
 
-  // ZIRH EKLENDİ: handleResolveEmergency
   const handleResolveEmergency = async (emergencyId) => {
     setIsSaving(true);
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('patron_authToken');
     try {
       await fetch(`${API_URL}/resolve-emergency`, {
         method: 'POST',
@@ -383,10 +376,9 @@ export default function PatronDashboard() {
   const pendingFaults = data?.pendingFaults || [];
   const hasFault = pendingFaults.length > 0;
 
-  // ZIRH EKLENDİ: handleResolveFault
   const handleResolveFault = async (faultId) => {
     setIsSaving(true);
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('patron_authToken');
     try {
       await fetch(`${API_URL}/resolve-fault`, {
         method: 'POST',
@@ -637,7 +629,7 @@ export default function PatronDashboard() {
         </AnimatePresence>
 
         <div className={isCompanyDataIncomplete && activeTab !== 'support' ? "pointer-events-none" : ""}>
-          <Header data={data} searchTerm={searchTerm} setSearchTerm={setSearchTerm} setIsMobileMenuOpen={setIsMobileMenuOpen} />
+        <Header data={data} setIsMobileMenuOpen={setIsMobileMenuOpen} setSelectedJob={setSelectedJob} />
         </div>
 
         <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">

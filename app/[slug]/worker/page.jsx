@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Clock, CheckCircle2, MessageSquareText, LogOut, ChevronRight, PenTool, Loader2, AlertCircle, PlayCircle, ClipboardList, WifiOff, Download, Share, Check, Camera, X } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
+import Header from '@/components/layout/Header';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
@@ -28,12 +29,14 @@ export default function WorkerDashboard() {
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
   const [jobs, setJobs] = useState([]);
+  const [data, setData] = useState(null); // Header için ham veriyi tutar
   
   const [companyName, setCompanyName] = useState('İşletme');
   const [companySector, setCompanySector] = useState('');
   const [staffBranch, setStaffBranch] = useState(''); 
   
   const [activeTab, setActiveTab] = useState('jobs'); 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Header menüsü için
   
   const [selectedJob, setSelectedJob] = useState(null);
   const [jobNote, setJobNote] = useState('');
@@ -101,7 +104,7 @@ export default function WorkerDashboard() {
     }
     
     const remaining = [];
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('staff_authToken'); // ZIRH EKLENDİ
 
     for (const item of pending) {
       try {
@@ -142,8 +145,8 @@ export default function WorkerDashboard() {
 
 
   const fetchData = async (isInitial = false) => {
-    const token = localStorage.getItem('authToken');
-    const role = localStorage.getItem('userRole');
+    const token = localStorage.getItem('staff_authToken'); // ZIRH EKLENDİ
+    const role = localStorage.getItem('staff_userRole'); // ZIRH EKLENDİ
 
     if (!token || role !== 'Usta') {
         localStorage.clear();
@@ -160,12 +163,13 @@ export default function WorkerDashboard() {
       });
 
       if (res.ok) {
-        const data = await res.json();
+        const result = await res.json();
+        setData(result); // Ham veriyi Header için set ediyoruz
         
-        localStorage.setItem(`worker_cache_${slug}`, JSON.stringify(data));
+        localStorage.setItem(`worker_cache_${slug}`, JSON.stringify(result));
         setIsOffline(false);
 
-        setCompanyName(data.name);
+        setCompanyName(result.name);
         setCompanySector(data.sector || '');
         
         const myStaffRecord = data.staff.find(s => String(s.id) === String(decoded.id));
@@ -260,7 +264,7 @@ export default function WorkerDashboard() {
 
   const handleStatusUpdate = async (newStatus) => {
     setIsSaving(true);
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('staff_authToken'); // ZIRH EKLENDİ
 
     let formText = '';
     const targetStatus = newStatus === 'Tamamlandı' ? 'Onay Bekliyor' : newStatus;
@@ -358,6 +362,8 @@ export default function WorkerDashboard() {
   return (
     <div className="min-h-[100dvh] bg-[#F8FAFC] text-slate-900 font-sans flex flex-col pb-20 selection:bg-blue-100 relative">
       
+      <Header data={data} setIsMobileMenuOpen={setIsMobileMenuOpen} setSelectedJob={setSelectedJob} />
+
       {/* PWA YÜKLEME MODALI */}
       <AnimatePresence>
         {showPwaPrompt && (

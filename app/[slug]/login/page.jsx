@@ -148,10 +148,10 @@ export default function StaffLoginPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userRole', data.role);
-        localStorage.setItem('userSlug', slug);
-        localStorage.setItem('userName', data.name);
+        localStorage.setItem('staff_authToken', data.token);
+        localStorage.setItem('staff_userRole', data.role);
+        localStorage.setItem('staff_userSlug', slug);
+        localStorage.setItem('staff_userName', data.name);
 
         if (data.role === 'Yönetici') {
             router.push(`/${slug}/manager`);

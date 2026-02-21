@@ -87,7 +87,7 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
         created_at: new Date().toISOString()
     };
 
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem(userRole === 'Patron' ? 'patron_authToken' : 'staff_authToken');
 
     try {
       const res = await fetch(`https://backend.isdokumu.workers.dev/${endpoint}`, {

@@ -83,10 +83,10 @@ export default function LoginPage() {
 
       if (data.slug && data.token) {
         // DÜZELTME: Worker'dan gelen güvenlik biletini, rolü ve ismi tarayıcıya KAZIYORUZ!
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userRole', data.role || 'Patron');
-        localStorage.setItem('userName', data.name || 'Patron');
-        localStorage.setItem('userSlug', data.slug);
+        localStorage.setItem('patron_authToken', data.token);
+        localStorage.setItem('patron_userRole', data.role || 'Patron');
+        localStorage.setItem('patron_userName', data.name || 'Patron');
+        localStorage.setItem('patron_userSlug', data.slug);
         
         router.push(`/${data.slug}/dashboard`);
       } else {

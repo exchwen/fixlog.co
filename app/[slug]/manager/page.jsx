@@ -49,7 +49,6 @@ export default function ManagerDashboard() {
   
   const [data, setData] = useState(null); 
   
-  const [searchTerm, setSearchTerm] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [isOffline, setIsOffline] = useState(false);
@@ -142,8 +141,8 @@ export default function ManagerDashboard() {
 
   // YÖNETİCİ VERİ ÇEKME (ZIRHLI JWT)
   const fetchData = async (isInitial = false) => {
-    const token = localStorage.getItem('authToken');
-    const role = localStorage.getItem('userRole');
+    const token = localStorage.getItem('staff_authToken'); // ZIRH EKLENDİ (PERSONEL BİLETİ)
+    const role = localStorage.getItem('staff_userRole');
 
     // Güvenlik: Token yoksa veya Yönetici değilse kapı dışarı!
     if (!token || role !== 'Yönetici') {
@@ -184,7 +183,7 @@ export default function ManagerDashboard() {
 
   const fetchMessages = async () => {
     if (!activeChatId) return;
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('staff_authToken'); // ZIRH EKLENDİ
     try {
       const res = await fetch(`${API_URL}/get-messages?slug=${slug}&staffId=${activeChatId}`, {
          headers: { 'Authorization': `Bearer ${token}` }
@@ -201,7 +200,7 @@ export default function ManagerDashboard() {
     }
     
     const remaining = [];
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('staff_authToken'); // ZIRH EKLENDİ
 
     for (const item of pending) {
       try {
@@ -254,7 +253,7 @@ export default function ManagerDashboard() {
     }
 
     setIsSaving(true);
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('staff_authToken'); // ZIRH EKLENDİ
 
     try {
       const res = await fetch(`${API_URL}/${endpoint}`, { 
@@ -293,7 +292,7 @@ export default function ManagerDashboard() {
 
   const sendMessage = async () => {
     if (!messageInput.trim() || !activeChatId) return;
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('staff_authToken'); // ZIRH EKLENDİ
     await fetch(`${API_URL}/send-message`, { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -426,7 +425,7 @@ export default function ManagerDashboard() {
             )}
         </AnimatePresence>
 
-        <Header data={data} searchTerm={searchTerm} setSearchTerm={setSearchTerm} setIsMobileMenuOpen={setIsMobileMenuOpen} />
+        <Header data={data} setIsMobileMenuOpen={setIsMobileMenuOpen} setSelectedJob={setSelectedJob} />
 
         <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">
           
