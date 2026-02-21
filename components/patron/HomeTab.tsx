@@ -68,6 +68,44 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const totalAssetsCount = data?.assets?.length || 0;
   const totalStockTypes = stock.length;
 
+  // --- GÜNCELLENEN SaaS FİYATLANDIRMA VE ROI ZEKASI ---
+  const { totalPaidToSystem, totalSystemProfit, monthsUsed, currentMonthBill } = useMemo(() => {
+    // 1. Sisteme kayıt olunan ilk tarihi bul (En eski iş kaydından hesaplar)
+    const earliestDate = jobs.length > 0 
+      ? new Date(Math.min(...jobs.map((j: any) => new Date(j.created_at || new Date()).getTime()))) 
+      : new Date();
+    
+    // 2. Geçen ay sayısını hesapla (Mevcut ayı da saymak için +1)
+    const calculatedMonths = (new Date().getFullYear() - earliestDate.getFullYear()) * 12 + new Date().getMonth() - earliestDate.getMonth() + 1;
+    const finalMonthsUsed = Math.max(1, calculatedMonths); 
+    
+    // 3. Özel Fiyatlandırma Sistemi
+    const baseMonthlyFee = 3000; // Sabit aylık ücret
+    const perAssetFee = 50;      // Varlık başına aylık ücret
+    const perPhotoFee = 1;       // Fotoğraf başına ücret
+    const perJobFee = 5;         // İş kaydı başına ücret
+
+    // Toplam Ödenen (Geçmişe Dönük Toplam)
+    // Sabit ücret ve varlık ücreti aydan aya çarpılır. Fotoğraf ve işler toplam adede göre çarpılır.
+    const totalBasePaid = finalMonthsUsed * baseMonthlyFee;
+    const totalAssetPaid = finalMonthsUsed * (totalAssetsCount * perAssetFee);
+    const totalPhotoPaid = totalLifetimePhotos * perPhotoFee;
+    const totalJobPaid = totalJobs * perJobFee;
+    
+    const paid = totalBasePaid + totalAssetPaid + totalPhotoPaid + totalJobPaid;
+
+    // Bu Ayki Güncel Fatura Tutarı
+    const currentBill = baseMonthlyFee + (totalAssetsCount * perAssetFee) + (monthlyPhotos * perPhotoFee) + (currentMonthJobs * perJobFee);
+
+    // 4. Sistem Sayesinde Kurtarılan Kâr/Tasarruf
+    const operationalSavings = totalJobs * 150; 
+    const printAndStorageSavings = totalLifetimePhotos * 5; 
+    const profit = operationalSavings + printAndStorageSavings;
+
+    return { totalPaidToSystem: paid, totalSystemProfit: profit, monthsUsed: finalMonthsUsed, currentMonthBill: currentBill };
+  }, [jobs, totalJobs, totalLifetimePhotos, totalAssetsCount, monthlyPhotos, currentMonthJobs]);
+  // --------------------------------------------------------
+
   const totalIncome = data?.finSummary?.income || 0;
   const totalExpense = data?.finSummary?.expense || 0;
   const netCash = totalIncome - totalExpense;
@@ -261,7 +299,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         
-        {/* CSS HİLESİ İLE YÖNETİCİDEN GİZLENEN KASA BLOĞU */}
         <div className="lg:col-span-2 bg-slate-900 rounded-2xl p-5 sm:p-6 shadow-lg border border-slate-800 flex flex-col relative overflow-hidden finance-block">
            <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 blur-3xl rounded-full pointer-events-none"></div>
            
@@ -386,12 +423,13 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         </div>
       </div>
 
-      <div className="bg-slate-900 rounded-2xl p-5 sm:p-6 shadow-lg border border-slate-800 relative overflow-hidden">
+      <div className="bg-slate-900 rounded-2xl p-5 sm:p-6 shadow-lg border border-slate-800 relative overflow-hidden finance-block">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-emerald-500 to-amber-500"></div>
         <h3 className="text-sm font-black text-white uppercase tracking-widest mb-5 flex items-center gap-2">
             <Database size={16} className="text-blue-400" /> Başlangıçtan Bugüne Sistem Verileri
         </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
+        
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 mb-5">
             <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center">
                <div className="text-2xl font-black text-white mb-1">{totalJobs}</div>
                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Toplam İş Kaydı</div>
@@ -411,6 +449,19 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
             <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center sm:col-span-3 md:col-span-1">
                <div className="text-2xl font-black text-purple-400 mb-1">{totalStockTypes}</div>
                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Farklı Stok Kalemi</div>
+            </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-4 border-t border-white/10">
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 sm:p-5 flex flex-col justify-center">
+               <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest mb-1 flex items-center gap-1.5"><TrendingUp size={14}/> Önlenen Gizli Operasyon Maliyeti</div>
+               <div className="text-2xl sm:text-3xl font-black text-emerald-500">₺{totalSystemProfit.toLocaleString('tr-TR')}</div>
+               <div className="text-[10px] text-emerald-400/60 mt-1 font-medium mt-1.5">Kasa haricinde; zaman, kağıt, telefon trafiği ve personel mesaisinden elde edilen tahmini tasarruf.</div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 sm:p-5 flex flex-col justify-center">
+               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 flex items-center gap-1.5"><Wallet size={14}/> Yazılıma Ödenen Toplam Tutar</div>
+               <div className="text-2xl sm:text-3xl font-black text-white">₺{totalPaidToSystem.toLocaleString('tr-TR')}</div>
+               <div className="text-[10px] text-slate-500 mt-1 font-medium mt-1.5">{monthsUsed} Aylık Kullanım (Bu Ayki Fatura: ₺{currentMonthBill.toLocaleString('tr-TR')})</div>
             </div>
         </div>
       </div>
