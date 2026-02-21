@@ -67,6 +67,15 @@ export default function DashboardModals({
   const [previewPdfJob, setPreviewPdfJob] = useState<any>(null);
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
 
+  // YENİ: Mobilde yan yana açılmayı engellemek için ekran genişliği kontrolü
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const parseAddressToState = (fullAddress: string) => {
     if (!fullAddress) {
         setSelectedCity('');
@@ -349,16 +358,16 @@ export default function DashboardModals({
       {/* 1. SEÇİLİ İŞ (GÖREV) DETAY MODALI */}
       <AnimatePresence>
         {selectedJob && !previewPdfJob && (
-          <div className={`fixed inset-0 z-[130] flex items-center justify-center p-4 ${isAnyProfileDetailOpen ? 'bg-transparent pointer-events-none' : 'bg-slate-900/60 backdrop-blur-sm'}`}>
+          <div className={`fixed inset-0 z-[130] flex items-center justify-center p-4 ${isAnyProfileDetailOpen && !isMobile ? 'bg-transparent pointer-events-none' : 'bg-slate-900/60 backdrop-blur-sm'}`}>
             
-            {isAnyProfileDetailOpen ? null : (
+            {!(isAnyProfileDetailOpen && !isMobile) && (
                 <div className="absolute inset-0" onClick={() => handleCloseDetail('job')}></div>
             )}
 
             <motion.div 
-                initial={{ opacity: 0, scale: 0.95, x: isAnyProfileDetailOpen ? 280 : 0 }} 
-                animate={{ opacity: 1, scale: 1, x: isAnyProfileDetailOpen ? 280 : 0 }} 
-                exit={{ opacity: 0, scale: 0.95, x: isAnyProfileDetailOpen ? 280 : 0 }} 
+                initial={{ opacity: 0, scale: 0.95, x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 }} 
+                animate={{ opacity: 1, scale: 1, x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 }} 
+                exit={{ opacity: 0, scale: 0.95, x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 }} 
                 className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 pointer-events-auto transition-transform duration-300"
             >
               
@@ -552,23 +561,42 @@ export default function DashboardModals({
                       )}
                     </div>
 
+                    {/* DÜZENLENEN ALAN: AKILLI HEDEF SEÇİMİ (EDIT MODU İÇİN) */}
                     {editJobDetailForm.workCategory !== 'Genel İş Atama' && (
-                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                        <div className="flex gap-2">
-                          <button onClick={() => setJobTargetMode('CUSTOMER')} className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 ${jobTargetMode === 'CUSTOMER' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-200'}`}>Müşteri Seç</button>
-                          <button onClick={() => setJobTargetMode('ASSET')} className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 ${jobTargetMode === 'ASSET' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-200'}`}>Varlık Seç</button>
+                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 shadow-sm">
+                        <div className="flex flex-col sm:flex-row gap-2 mb-2">
+                          <button onClick={() => setJobTargetMode('CUSTOMER')} className={`flex-1 py-2.5 sm:py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 ${jobTargetMode === 'CUSTOMER' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-200'}`}>👤 Müşteri Seçerek İlerle</button>
+                          <button onClick={() => setJobTargetMode('ASSET')} className={`flex-1 py-2.5 sm:py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 ${jobTargetMode === 'ASSET' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-200'}`}>📦 Varlık Seçerek İlerle</button>
                         </div>
 
                         {jobTargetMode === 'CUSTOMER' ? (
-                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                            <div className="relative mb-2">
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+                            <div className="relative">
                               <Search className="absolute left-3 top-3 sm:top-2.5 text-slate-400" size={16} />
                               <input type="text" placeholder="İsim veya TC ile Müşteri Ara..." className="w-full pl-9 pr-3 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 bg-white" value={searchCust} onChange={e => setSearchCust(e.target.value)} />
                             </div>
                             <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500 custom-scrollbar" size={4} value={editJobDetailForm.customerName} onChange={e => setEditJobDetailForm({...editJobDetailForm, customerName: e.target.value, assetId: ''})}>
-                              <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- Listeden Müşteri Seçin --</option>
+                              <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- 1. Listeden Müşteri Seçin --</option>
                               {(data?.customers || []).filter((c:any) => c.name?.toLowerCase().includes(searchCust.toLowerCase()) || c.tax_info?.includes(searchCust)).map((c: any) => <option key={c.id} value={c.name} className="py-2 border-b border-slate-50 last:border-0">{c.name} {c.tax_info ? `(${c.tax_info})` : ''}</option>)}
                             </select>
+                            
+                            {editJobDetailForm.customerName && (() => {
+                               const selectedCustomer = (data?.customers || []).find((c:any) => c.name === editJobDetailForm.customerName);
+                               const customerAssets = (data?.assets || []).filter((a:any) => a.customer_id === selectedCustomer?.id);
+                               
+                               return (
+                                 <div className="pt-2 border-t border-slate-100">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">2. Bu Müşteriye Ait Varlık (İsteğe Bağlı)</label>
+                                    <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500" value={editJobDetailForm.assetId} onChange={e => setEditJobDetailForm({...editJobDetailForm, assetId: e.target.value})}>
+                                        <option value="">-- Varlık Seçilmedi (Genel Müşteri İşi) --</option>
+                                        {customerAssets.map((a:any) => (
+                                           <option key={a.id} value={a.id}>{a.name} - {a.location}</option>
+                                        ))}
+                                    </select>
+                                    {customerAssets.length === 0 && <div className="text-[10px] text-amber-500 mt-1.5 font-bold px-1">Bu müşteriye ait kayıtlı varlık bulunamadı.</div>}
+                                 </div>
+                               );
+                            })()}
                           </motion.div>
                         ) : (
                           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -586,6 +614,11 @@ export default function DashboardModals({
                                 <option key={a.id} value={a.id} className="py-2 border-b border-slate-50 last:border-0">{a.name} - {a.location}</option>
                               ))}
                             </select>
+                            {editJobDetailForm.assetId && (
+                                <div className="mt-3 text-[10px] font-bold text-blue-700 bg-blue-50/80 p-2.5 rounded-lg border border-blue-100 flex items-center gap-1.5">
+                                    <CheckCircle size={14} className="text-blue-500"/> Otomatik Eşleşen Müşteri: <span className="text-slate-800">{editJobDetailForm.customerName || 'Bağımsız Varlık (Müşteri Yok)'}</span>
+                                </div>
+                            )}
                           </motion.div>
                         )}
                       </div>
@@ -632,7 +665,7 @@ export default function DashboardModals({
                         </button>
                         <button 
                             onClick={() => setIsEditingJobDetail(false)} 
-                            className="sm:w-1/3 bg-white border-2 border-slate-200 text-slate-700 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95"
+                            className="w-full sm:w-1/3 bg-white border-2 border-slate-200 text-slate-700 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95"
                         >
                             Vazgeç
                         </button>
@@ -676,87 +709,85 @@ export default function DashboardModals({
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
             <div className="absolute inset-0" onClick={() => setShowStaffDetail(null)}></div>
             <motion.div 
-                initial={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} 
-                animate={{ opacity: 1, scale: 1, x: selectedJob ? -280 : 0 }} 
-                exit={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} 
+                initial={{ opacity: 0, scale: 0.95, x: selectedJob && !isMobile ? -280 : 0 }} 
+                animate={{ opacity: 1, scale: 1, x: selectedJob && !isMobile ? -280 : 0 }} 
+                exit={{ opacity: 0, scale: 0.95, x: selectedJob && !isMobile ? -280 : 0 }} 
                 className="bg-white w-full max-w-lg rounded-2xl p-6 shadow-2xl relative flex flex-col max-h-[85vh] transition-transform duration-300 pointer-events-auto"
             >
-              <div className="flex justify-between items-start mb-6">
+              <div className="flex justify-between items-start mb-6 shrink-0">
                 <div><h2 className="text-2xl font-black text-slate-900">{showStaffDetail.name}</h2><div className="text-xs font-medium text-slate-500 mt-1">Personel Dosyası</div></div>
                 <button onClick={() => setShowStaffDetail(null)} className="p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 rounded-xl transition-all active:scale-95"><X size={20} /></button>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Branş / Rol</div>
-                    <div className="text-sm font-bold text-slate-800 mt-1">{showStaffDetail.branch || showStaffDetail.role}</div>
-                 </div>
-                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Telefon Numarası</div>
-                    <div className="text-sm font-bold text-slate-800 mt-1">{showStaffDetail.phone || '-'}</div>
-                 </div>
-              </div>
-              
-              <div className="flex-1 flex flex-col overflow-hidden">
-                 <div className="flex justify-between items-center mb-3">
-                    <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest">GÖREV GEÇMİŞİ</h4>
-                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">{filteredStaffJobs.length} Kayıt</span>
-                 </div>
-                 
-                 <div className="relative mb-3">
-                    <Search className="absolute left-3 top-3 text-slate-400" size={16} />
-                    <input 
-                      type="text" 
-                      placeholder="Geçmiş işlerde ara..." 
-                      className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" 
-                      value={staffJobSearch}
-                      onChange={(e) => setStaffJobSearch(e.target.value)}
-                    />
-                 </div>
+              <div className="flex-1 flex flex-col overflow-y-auto custom-scrollbar pr-1 space-y-4 pb-2">
+                  {!isEditingStaff ? (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 shrink-0">
+                         <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Branş / Rol</div>
+                            <div className="text-sm font-bold text-slate-800 mt-1">{showStaffDetail.branch || showStaffDetail.role}</div>
+                         </div>
+                         <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Telefon Numarası</div>
+                            <div className="text-sm font-bold text-slate-800 mt-1">{showStaffDetail.phone || '-'}</div>
+                         </div>
+                      </div>
+                      
+                      <div className="flex-1 flex flex-col min-h-0">
+                         <div className="flex justify-between items-center mb-3 shrink-0">
+                            <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest">GÖREV GEÇMİŞİ</h4>
+                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">{filteredStaffJobs.length} Kayıt</span>
+                         </div>
+                         
+                         <div className="relative mb-3 shrink-0">
+                            <Search className="absolute left-3 top-3 text-slate-400" size={16} />
+                            <input 
+                              type="text" 
+                              placeholder="Geçmiş işlerde ara..." 
+                              className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" 
+                              value={staffJobSearch}
+                              onChange={(e) => setStaffJobSearch(e.target.value)}
+                            />
+                         </div>
 
-                 <div className="overflow-y-auto custom-scrollbar space-y-2.5 flex-1 pr-1">
-                      {filteredStaffJobs.length > 0 ? filteredStaffJobs.map((j: any) => (
-                        <div 
-                           key={j.id} 
-                           onClick={(e) => { 
-                               e.stopPropagation(); 
-                               setSelectedJob(j); 
-                           }} 
-                           className={`p-4 border rounded-xl flex items-center justify-between cursor-pointer transition-all active:scale-95 group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-500/20' : 'bg-white border-slate-200 hover:border-blue-200 hover:shadow-sm'}`}
-                        >
-                           <div className="min-w-0 pr-2">
-                              <div className="font-bold text-sm text-slate-800 group-hover:text-blue-700 transition-colors truncate">{j.customer_name}</div>
-                              <div className="text-[10px] font-medium text-slate-500 mt-1 flex items-center gap-1"><Calendar size={12}/> {j.scheduled_date || 'Anlık'}</div>
-                           </div>
-                           <div className="flex items-center gap-3 shrink-0">
-                              <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border shadow-sm ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span>
-                              <ArrowRight size={16} className={`transition-all ${selectedJob?.id === j.id ? 'text-blue-600 opacity-100' : 'text-slate-300 opacity-0 group-hover:opacity-100'}`} />
-                           </div>
-                        </div>
-                      )) : <div className="text-center p-8 text-slate-400 text-sm font-medium border-2 border-dashed border-slate-200 rounded-xl">Kriterlere uygun kayıt bulunamadı.</div>}
-                 </div>
-              </div>
-
-              <div className="pt-5 border-t border-slate-100 mt-4">
-                 {!isEditingStaff ? (
-                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
-                      <button onClick={() => setIsEditingStaff(true)} className="flex-[2] bg-slate-900 text-white py-3 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"><Settings size={16} /> Profili Düzenle</button>
-                      <button onClick={async () => { if(confirm(`${showStaffDetail.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-staff', { id: showStaffDetail.id }, () => setShowStaffDetail(null), () => {}); } }} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 py-3 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"><Trash2 size={16} /> Sil</button>
-                    </div>
+                         <div className="overflow-y-auto custom-scrollbar space-y-2.5 flex-1 pr-1 pb-4">
+                              {filteredStaffJobs.length > 0 ? filteredStaffJobs.map((j: any) => (
+                                <div 
+                                   key={j.id} 
+                                   onClick={(e) => { 
+                                       e.stopPropagation(); 
+                                       setSelectedJob(j); 
+                                   }} 
+                                   className={`p-4 border rounded-xl flex items-center justify-between cursor-pointer transition-all active:scale-95 group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-500/20' : 'bg-white border-slate-200 hover:border-blue-200 hover:shadow-sm'}`}
+                                >
+                                   <div className="min-w-0 pr-2">
+                                      <div className="font-bold text-sm text-slate-800 group-hover:text-blue-700 transition-colors truncate">{j.customer_name}</div>
+                                      <div className="text-[10px] font-medium text-slate-500 mt-1 flex items-center gap-1"><Calendar size={12}/> {j.scheduled_date || 'Anlık'}</div>
+                                   </div>
+                                   <div className="flex items-center gap-3 shrink-0">
+                                      <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border shadow-sm ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span>
+                                      <ArrowRight size={16} className={`transition-all ${selectedJob?.id === j.id ? 'text-blue-600 opacity-100' : 'text-slate-300 opacity-0 group-hover:opacity-100'}`} />
+                                   </div>
+                                </div>
+                              )) : <div className="text-center p-8 text-slate-400 text-sm font-medium border-2 border-dashed border-slate-200 rounded-xl">Kriterlere uygun kayıt bulunamadı.</div>}
+                         </div>
+                      </div>
+                    </>
                  ) : (
-                    <div className="space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                    // DÜZELTİLEN YER: MOBİL EKRANDA TAŞMAYAN PERSONEL FORMU
+                    <div className="space-y-4 bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                        <div className="sm:col-span-2">
+                        <div className="col-span-1 sm:col-span-2">
                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Ad Soyad</label>
-                           <input className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none focus:border-blue-500 transition-all" value={editStaffForm.name} onChange={(e) => setEditStaffForm({...editStaffForm, name: e.target.value})} placeholder="Ad Soyad" />
+                           <input className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none focus:border-blue-500 transition-all bg-white" value={editStaffForm.name} onChange={(e) => setEditStaffForm({...editStaffForm, name: e.target.value})} placeholder="Ad Soyad" />
                         </div>
-                        <div>
+                        <div className="col-span-1">
                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Telefon</label>
-                           <input className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 transition-all" value={editStaffForm.phone} onChange={(e) => setEditStaffForm({...editStaffForm, phone: e.target.value})} placeholder="Telefon" />
+                           <input className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 transition-all bg-white" value={editStaffForm.phone} onChange={(e) => setEditStaffForm({...editStaffForm, phone: e.target.value})} placeholder="Telefon" />
                         </div>
-                        <div>
+                        <div className="col-span-1">
                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Branş / Uzmanlık</label>
-                           <select className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none bg-white focus:border-blue-500 transition-all" value={editStaffForm.branch} onChange={(e) => setEditStaffForm({...editStaffForm, branch: e.target.value})}>
+                           <select className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none bg-white focus:border-blue-500 transition-all" value={editStaffForm.branch} onChange={(e) => setEditStaffForm({...editStaffForm, branch: e.target.value})}>
                               <option value="">Seçiniz</option>
                               {branchList.map((subType: any) => (
                                 <option key={subType} value={subType}>{subType}</option>
@@ -765,34 +796,41 @@ export default function DashboardModals({
                            </select>
                         </div>
                         
-                        {/* MOBİL GÖRÜNÜM İÇİN DÜZELTİLEN YER: sm:col-span-2, grid-cols-1 sm:grid-cols-2 eklendi */}
-                        <div className="col-span-1 sm:col-span-2 pt-2 border-t border-slate-200 mt-2">
-                           <span className="text-xs font-black text-blue-600 uppercase tracking-widest block mb-3">Güvenlik ve Giriş Bilgileri</span>
+                        <div className="col-span-1 sm:col-span-2 pt-3 border-t border-slate-200 mt-1">
+                           <span className="text-[11px] font-black text-blue-600 uppercase tracking-widest block mb-3">Güvenlik ve Giriş Bilgileri</span>
                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <div className="col-span-1">
                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Kullanıcı Adı</label>
-                                 <input className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none focus:border-blue-500 transition-all" value={editStaffForm.username} onChange={(e) => setEditStaffForm({...editStaffForm, username: e.target.value})} placeholder="örn: ali.usta" />
+                                 <input className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none focus:border-blue-500 transition-all bg-white" value={editStaffForm.username} onChange={(e) => setEditStaffForm({...editStaffForm, username: e.target.value})} placeholder="örn: ali.usta" />
                               </div>
                               <div className="col-span-1">
                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Hesap Şifresi</label>
-                                 <input type="password" title="Mevcut şifreyi değiştirmek istemiyorsanız boş bırakın." className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 transition-all placeholder:text-[10px] placeholder:text-slate-400" value={editStaffForm.password} onChange={(e) => setEditStaffForm({...editStaffForm, password: e.target.value})} placeholder="Değiştirmek için yazın..." />
+                                 <input type="password" title="Mevcut şifreyi değiştirmek istemiyorsanız boş bırakın." className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 transition-all placeholder:text-[10px] placeholder:text-slate-400 bg-white" value={editStaffForm.password} onChange={(e) => setEditStaffForm({...editStaffForm, password: e.target.value})} placeholder="Değiştirmek için yazın..." />
                               </div>
                               <div className="col-span-1 sm:col-span-2">
                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Hesap Durumu</label>
-                                 <select className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none bg-white focus:border-blue-500 transition-all" value={editStaffForm.is_active} onChange={(e) => setEditStaffForm({...editStaffForm, is_active: Number(e.target.value)})}>
+                                 <select className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none bg-white focus:border-blue-500 transition-all" value={editStaffForm.is_active} onChange={(e) => setEditStaffForm({...editStaffForm, is_active: Number(e.target.value)})}>
                                     <option value={1}>Aktif (Sisteme Girebilir)</option>
                                     <option value={0}>Pasif (Dondurulmuş Hesap)</option>
                                  </select>
                               </div>
                            </div>
                         </div>
-                        {/* -------------------------------------------------- */}
-                        
                       </div>
-                      <div className="flex gap-2 pt-2">
-                        <button onClick={() => handleAction('add-staff', { ...editStaffForm, id: showStaffDetail.id }, () => setShowStaffDetail(null), () => setIsEditingStaff(false))} className="flex-1 bg-blue-600 text-white py-3 sm:py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-md">{isSaving ? <Loader2 className="animate-spin mx-auto" size={18} /> : 'Değişiklikleri Kaydet'}</button>
-                        <button onClick={() => setIsEditingStaff(false)} className="px-6 bg-white border-2 border-slate-200 text-slate-700 py-3 sm:py-2.5 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95">İptal</button>
-                      </div>
+                    </div>
+                 )}
+              </div>
+
+              <div className="pt-4 sm:pt-5 border-t border-slate-100 shrink-0">
+                 {!isEditingStaff ? (
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
+                      <button onClick={() => setIsEditingStaff(true)} className="flex-[2] bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"><Settings size={16} /> Profili Düzenle</button>
+                      <button onClick={async () => { if(confirm(`${showStaffDetail.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-staff', { id: showStaffDetail.id }, () => setShowStaffDetail(null), () => {}); } }} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"><Trash2 size={16} /> Sil</button>
+                    </div>
+                 ) : (
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                      <button onClick={() => handleAction('add-staff', { ...editStaffForm, id: showStaffDetail.id }, () => setShowStaffDetail(null), () => setIsEditingStaff(false))} className="w-full sm:flex-[2] bg-blue-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-md flex justify-center items-center">{isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Kaydet'}</button>
+                      <button onClick={() => setIsEditingStaff(false)} className="w-full sm:flex-1 bg-white border-2 border-slate-200 text-slate-700 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95">İptal</button>
                     </div>
                  )}
               </div>
@@ -806,7 +844,7 @@ export default function DashboardModals({
         {showCustomerDetail && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
             <div className="absolute inset-0" onClick={() => handleCloseDetail('customer')}></div>
-            <motion.div initial={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} animate={{ opacity: 1, scale: 1, x: selectedJob ? -280 : 0 }} exit={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[85vh] transition-transform duration-300 pointer-events-auto overflow-hidden">
+            <motion.div initial={{ opacity: 0, scale: 0.95, x: selectedJob && !isMobile ? -280 : 0 }} animate={{ opacity: 1, scale: 1, x: selectedJob && !isMobile ? -280 : 0 }} exit={{ opacity: 0, scale: 0.95, x: selectedJob && !isMobile ? -280 : 0 }} className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[85vh] transition-transform duration-300 pointer-events-auto overflow-hidden">
               
               <div className="flex justify-between items-start p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50">
                 <div><h2 className="text-xl font-black text-slate-900 leading-tight">{showCustomerDetail.name}</h2><div className="text-xs font-medium text-slate-500 mt-1">Müşteri / Kurum Profili</div></div>
@@ -864,8 +902,8 @@ export default function DashboardModals({
 
                       <div className="pt-5 border-t border-slate-100">
                           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
-                              <button onClick={() => { setIsEditingCustomer(true); setEditCustomerForm({ id: showCustomerDetail.id, name: showCustomerDetail.name, contact: showCustomerDetail.contact || '', address: parseAddressToState(showCustomerDetail.address || ''), taxInfo: showCustomerDetail.tax_info || '' }); }} className="flex-[2] bg-slate-900 text-white py-3 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"><Settings size={16} /> Profili Düzenle</button>
-                              <button onClick={async () => { if(confirm(`${showCustomerDetail.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-customer', { id: showCustomerDetail.id }, () => handleCloseDetail('customer'), () => {}); } }} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 py-3 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"><Trash2 size={16} /> Sil</button>
+                              <button onClick={() => { setIsEditingCustomer(true); setEditCustomerForm({ id: showCustomerDetail.id, name: showCustomerDetail.name, contact: showCustomerDetail.contact || '', address: parseAddressToState(showCustomerDetail.address || ''), taxInfo: showCustomerDetail.tax_info || '' }); }} className="flex-[2] bg-slate-900 text-white py-3.5 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"><Settings size={16} /> Profili Düzenle</button>
+                              <button onClick={async () => { if(confirm(`${showCustomerDetail.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-customer', { id: showCustomerDetail.id }, () => handleCloseDetail('customer'), () => {}); } }} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 py-3.5 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"><Trash2 size={16} /> Sil</button>
                           </div>
                       </div>
                       </div>
@@ -929,7 +967,7 @@ export default function DashboardModals({
         {showAssetDetail && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
             <div className="absolute inset-0" onClick={() => handleCloseDetail('asset')}></div>
-            <motion.div initial={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} animate={{ opacity: 1, scale: 1, x: selectedJob ? -280 : 0 }} exit={{ opacity: 0, scale: 0.95, x: selectedJob ? -280 : 0 }} className="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative flex flex-col max-h-[85vh] transition-transform duration-300 pointer-events-auto overflow-hidden">
+            <motion.div initial={{ opacity: 0, scale: 0.95, x: selectedJob && !isMobile ? -280 : 0 }} animate={{ opacity: 1, scale: 1, x: selectedJob && !isMobile ? -280 : 0 }} exit={{ opacity: 0, scale: 0.95, x: selectedJob && !isMobile ? -280 : 0 }} className="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative flex flex-col max-h-[85vh] transition-transform duration-300 pointer-events-auto overflow-hidden">
               <div className="flex justify-between items-start p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50">
                 <div><h2 className="text-xl font-black text-slate-900 leading-tight">{showAssetDetail.name}</h2><div className="text-xs font-medium text-slate-500 mt-1">Cihaz / Varlık Profili</div></div>
                 <button onClick={() => handleCloseDetail('asset')} className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-xl transition-all active:scale-95"><X size={20} /></button>
@@ -1095,7 +1133,7 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* 5. YENİ İŞ ATA MODALI */}
+      {/* 5. YENİ İŞ ATA MODALI (AKILLANDIRILDI) */}
       <AnimatePresence>
         {showJobModal && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -1127,21 +1165,40 @@ export default function DashboardModals({
 
                 {jobForm.workCategory !== 'Genel İş Atama' && (
                   <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 shadow-sm">
-                    <div className="flex gap-2">
-                      <button onClick={() => setJobTargetMode('CUSTOMER')} className={`flex-1 py-2.5 sm:py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 ${jobTargetMode === 'CUSTOMER' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-200'}`}>Müşteri Seç</button>
-                      <button onClick={() => setJobTargetMode('ASSET')} className={`flex-1 py-2.5 sm:py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 ${jobTargetMode === 'ASSET' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-200'}`}>Varlık Seç</button>
+                    <div className="flex flex-col sm:flex-row gap-2 mb-2">
+                      <button onClick={() => setJobTargetMode('CUSTOMER')} className={`flex-1 py-2.5 sm:py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 flex items-center justify-center gap-1.5 ${jobTargetMode === 'CUSTOMER' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-200'}`}><User size={14}/> Müşteri ile İlerle</button>
+                      <button onClick={() => setJobTargetMode('ASSET')} className={`flex-1 py-2.5 sm:py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 flex items-center justify-center gap-1.5 ${jobTargetMode === 'ASSET' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-200'}`}><Box size={14}/> Varlık ile İlerle</button>
                     </div>
 
                     {jobTargetMode === 'CUSTOMER' ? (
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <div className="relative mb-2">
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+                        <div className="relative">
                           <Search className="absolute left-3 top-3 sm:top-2.5 text-slate-400" size={16} />
                           <input type="text" placeholder="İsim veya TC ile Müşteri Ara..." className="w-full pl-9 pr-3 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 bg-white" value={searchCust} onChange={e => setSearchCust(e.target.value)} />
                         </div>
                         <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500 custom-scrollbar" size={4} value={jobForm.customerName} onChange={e => setJobForm({...jobForm, customerName: e.target.value, assetId: ''})}>
-                          <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- Listeden Müşteri Seçin --</option>
+                          <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- 1. Listeden Müşteri Seçin --</option>
                           {(data?.customers || []).filter((c:any) => c.name?.toLowerCase().includes(searchCust.toLowerCase()) || c.tax_info?.includes(searchCust)).map((c: any) => <option key={c.id} value={c.name} className="py-2 border-b border-slate-50 last:border-0">{c.name} {c.tax_info ? `(${c.tax_info})` : ''}</option>)}
                         </select>
+                        
+                        {/* AKILLANDIRMA: Seçilen Müşterinin Varlıklarını Getir */}
+                        {jobForm.customerName && (() => {
+                           const selectedCustomer = (data?.customers || []).find((c:any) => c.name === jobForm.customerName);
+                           const customerAssets = (data?.assets || []).filter((a:any) => a.customer_id === selectedCustomer?.id);
+                           
+                           return (
+                             <div className="pt-2 border-t border-slate-100">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">2. Bu Müşteriye Ait Varlık (İsteğe Bağlı)</label>
+                                <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500" value={jobForm.assetId} onChange={e => setJobForm({...jobForm, assetId: e.target.value})}>
+                                    <option value="">-- Varlık Seçilmedi (Genel Müşteri İşi) --</option>
+                                    {customerAssets.map((a:any) => (
+                                       <option key={a.id} value={a.id}>{a.name} - {a.location}</option>
+                                    ))}
+                                </select>
+                                {customerAssets.length === 0 && <div className="text-[10px] text-amber-500 mt-1.5 font-bold px-1">Bu müşteriye ait kayıtlı varlık bulunamadı.</div>}
+                             </div>
+                           );
+                        })()}
                       </motion.div>
                     ) : (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -1159,6 +1216,12 @@ export default function DashboardModals({
                             <option key={a.id} value={a.id} className="py-2 border-b border-slate-50 last:border-0">{a.name} - {a.location}</option>
                           ))}
                         </select>
+                        {/* AKILLANDIRMA: Otomatik Eşleşen Müşteri Uyarısı */}
+                        {jobForm.assetId && (
+                            <div className="mt-3 text-[10px] font-bold text-blue-700 bg-blue-50/80 p-2.5 rounded-lg border border-blue-100 flex items-center gap-1.5">
+                                <CheckCircle size={14} className="text-blue-500 shrink-0"/> Müşteri Eşleşti: <span className="text-slate-800 truncate">{jobForm.customerName || 'Bağımsız Varlık'}</span>
+                            </div>
+                        )}
                       </motion.div>
                     )}
                   </div>
@@ -1344,7 +1407,7 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* 8. YENİ PERSONEL EKLE MODALI */}
+      {/* 8. YENİ PERSONEL EKLE MODALI (MOBİLE UYUMLANDI) */}
       <AnimatePresence>
         {showStaffModal && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -1369,7 +1432,6 @@ export default function DashboardModals({
                  <div className="pt-4 border-t border-slate-100 mt-2 space-y-3">
                     <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest block mb-2">Giriş / Güvenlik Bilgileri</span>
                     
-                    {/* YENİ: Mobilde alt alta, Masaüstünde yan yana yapıldı */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                        <input className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="Kullanıcı Adı" onChange={e => setStaffForm({...staffForm, username: e.target.value})} />
                        <input type="password" className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="Şifre Belirleyin" onChange={e => setStaffForm({...staffForm, password: e.target.value})} />
@@ -1531,9 +1593,9 @@ export default function DashboardModals({
                       <div className="space-y-3">
                         <input className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" value={editSupFormLocal.name} onChange={e => setEditSupFormLocal({...editSupFormLocal, name: e.target.value})} placeholder="Firma Adı" />
                         <input className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" value={editSupFormLocal.phone} onChange={e => setEditSupFormLocal({...editSupFormLocal, phone: e.target.value})} placeholder="Telefon" />
-                        <div className="flex gap-2 sm:gap-3 pt-2">
-                          <button onClick={() => handleAction('update-supplier', { id: s.id, name: editSupFormLocal.name, phone: editSupFormLocal.phone }, null, () => setEditingSupplierId(null))} className="flex-1 bg-blue-600 text-white py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md">Kaydet</button>
-                          <button onClick={() => setEditingSupplierId(null)} className="flex-1 bg-slate-100 text-slate-700 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95 hover:bg-slate-200">İptal</button>
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
+                          <button onClick={() => handleAction('update-supplier', { id: s.id, name: editSupFormLocal.name, phone: editSupFormLocal.phone }, null, () => setEditingSupplierId(null))} className="w-full sm:flex-1 bg-blue-600 text-white py-3 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold transition-all active:scale-95 shadow-md">Kaydet</button>
+                          <button onClick={() => setEditingSupplierId(null)} className="w-full sm:flex-1 bg-slate-100 text-slate-700 py-3 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold transition-all active:scale-95 hover:bg-slate-200">İptal</button>
                         </div>
                       </div>
                     ) : (
