@@ -487,7 +487,6 @@ export default function DashboardModals({
                     )}
 
                     <div className="pt-4 border-t border-slate-100 space-y-3">
-                        {/* YENİ: ONAY VE FİYATLANDIRMA MODÜLÜ */}
                         {selectedJob.status === 'Onay Bekliyor' && (
                             <div className="bg-amber-50 border border-amber-200 p-4 sm:p-5 rounded-2xl flex flex-col gap-3 shadow-inner">
                                <div className="text-amber-800 font-black text-sm flex items-center gap-2"><AlertTriangle size={18}/> Personel İşi Tamamladı. Onayınız Bekleniyor.</div>
@@ -504,7 +503,6 @@ export default function DashboardModals({
                             </div>
                         )}
 
-                        {/* YENİ: WHATSAPP MÜŞTERİ RAPORU BUTONU */}
                         {selectedJob.status === 'Tamamlandı' && (
                             <button onClick={() => setPreviewPdfJob(selectedJob)} className="w-full bg-emerald-100 border border-emerald-300 text-emerald-700 font-black py-3.5 rounded-xl hover:bg-emerald-200 transition-all flex justify-center items-center gap-2 shadow-sm active:scale-95 text-sm">
                                <MessageSquareText size={18} /> Rapor Önizleme & WhatsApp Gönder
@@ -531,7 +529,6 @@ export default function DashboardModals({
                     </div>
                 </div>
               ) : (
-                // DÜZENLEME EKRANI
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6 space-y-5">
                     
                     <div>
@@ -767,18 +764,20 @@ export default function DashboardModals({
                               <option value="Genel Usta">Genel Usta</option>
                            </select>
                         </div>
-                        <div className="sm:col-span-2 pt-2 border-t border-slate-200 mt-2">
+                        
+                        {/* MOBİL GÖRÜNÜM İÇİN DÜZELTİLEN YER: sm:col-span-2, grid-cols-1 sm:grid-cols-2 eklendi */}
+                        <div className="col-span-1 sm:col-span-2 pt-2 border-t border-slate-200 mt-2">
                            <span className="text-xs font-black text-blue-600 uppercase tracking-widest block mb-3">Güvenlik ve Giriş Bilgileri</span>
                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div>
-                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Kullanıcı Adı (Giriş İçin)</label>
+                              <div className="col-span-1">
+                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Kullanıcı Adı</label>
                                  <input className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none focus:border-blue-500 transition-all" value={editStaffForm.username} onChange={(e) => setEditStaffForm({...editStaffForm, username: e.target.value})} placeholder="örn: ali.usta" />
                               </div>
-                              <div>
+                              <div className="col-span-1">
                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Hesap Şifresi</label>
                                  <input type="password" title="Mevcut şifreyi değiştirmek istemiyorsanız boş bırakın." className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 transition-all placeholder:text-[10px] placeholder:text-slate-400" value={editStaffForm.password} onChange={(e) => setEditStaffForm({...editStaffForm, password: e.target.value})} placeholder="Değiştirmek için yazın..." />
                               </div>
-                              <div className="sm:col-span-2">
+                              <div className="col-span-1 sm:col-span-2">
                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Hesap Durumu</label>
                                  <select className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none bg-white focus:border-blue-500 transition-all" value={editStaffForm.is_active} onChange={(e) => setEditStaffForm({...editStaffForm, is_active: Number(e.target.value)})}>
                                     <option value={1}>Aktif (Sisteme Girebilir)</option>
@@ -787,6 +786,8 @@ export default function DashboardModals({
                               </div>
                            </div>
                         </div>
+                        {/* -------------------------------------------------- */}
+                        
                       </div>
                       <div className="flex gap-2 pt-2">
                         <button onClick={() => handleAction('add-staff', { ...editStaffForm, id: showStaffDetail.id }, () => setShowStaffDetail(null), () => setIsEditingStaff(false))} className="flex-1 bg-blue-600 text-white py-3 sm:py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-md">{isSaving ? <Loader2 className="animate-spin mx-auto" size={18} /> : 'Değişiklikleri Kaydet'}</button>
@@ -1343,7 +1344,7 @@ export default function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* 8. YENİ PERSONEL EKLE MODALI (GÜNCELLENDİ) */}
+      {/* 8. YENİ PERSONEL EKLE MODALI */}
       <AnimatePresence>
         {showStaffModal && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -1365,11 +1366,14 @@ export default function DashboardModals({
                      </select>
                  </div>
                  
-                 {/* YENİ EKLENEN KISIM: KULLANICI ADI VE ŞİFRE */}
                  <div className="pt-4 border-t border-slate-100 mt-2 space-y-3">
                     <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest block mb-2">Giriş / Güvenlik Bilgileri</span>
-                    <input className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="Kullanıcı Adı (Örn: ali.usta)" onChange={e => setStaffForm({...staffForm, username: e.target.value})} />
-                    <input type="password" className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="Şifre Belirleyin" onChange={e => setStaffForm({...staffForm, password: e.target.value})} />
+                    
+                    {/* YENİ: Mobilde alt alta, Masaüstünde yan yana yapıldı */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                       <input className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="Kullanıcı Adı" onChange={e => setStaffForm({...staffForm, username: e.target.value})} />
+                       <input type="password" className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="Şifre Belirleyin" onChange={e => setStaffForm({...staffForm, password: e.target.value})} />
+                    </div>
                  </div>
               </div>
               <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50">
