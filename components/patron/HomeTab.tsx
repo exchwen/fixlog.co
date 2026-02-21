@@ -68,41 +68,40 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const totalAssetsCount = data?.assets?.length || 0;
   const totalStockTypes = stock.length;
 
-  // --- GÜNCELLENEN SaaS FİYATLANDIRMA VE ROI ZEKASI ---
-  const { totalPaidToSystem, totalSystemProfit, monthsUsed, currentMonthBill } = useMemo(() => {
-    // 1. Sisteme kayıt olunan ilk tarihi bul (En eski iş kaydından hesaplar)
+  // --- SAAS FİYATLANDIRMA VE PSİKOLOJİK ROI ZEKASI ---
+  const { usagePaid, totalSystemProfit, currentUsageBill, baseMonthlyFee } = useMemo(() => {
+    // 1. Sisteme kayıt olunan ilk tarihi bul
     const earliestDate = jobs.length > 0 
       ? new Date(Math.min(...jobs.map((j: any) => new Date(j.created_at || new Date()).getTime()))) 
       : new Date();
     
-    // 2. Geçen ay sayısını hesapla (Mevcut ayı da saymak için +1)
+    // 2. Geçen ay sayısını hesapla
     const calculatedMonths = (new Date().getFullYear() - earliestDate.getFullYear()) * 12 + new Date().getMonth() - earliestDate.getMonth() + 1;
     const finalMonthsUsed = Math.max(1, calculatedMonths); 
     
     // 3. Özel Fiyatlandırma Sistemi
-    const baseMonthlyFee = 3000; // Sabit aylık ücret
+    const baseFee = 3000;        // Sabit aylık ücret (Ayrı gösterilecek)
     const perAssetFee = 50;      // Varlık başına aylık ücret
     const perPhotoFee = 1;       // Fotoğraf başına ücret
     const perJobFee = 5;         // İş kaydı başına ücret
 
-    // Toplam Ödenen (Geçmişe Dönük Toplam)
-    // Sabit ücret ve varlık ücreti aydan aya çarpılır. Fotoğraf ve işler toplam adede göre çarpılır.
-    const totalBasePaid = finalMonthsUsed * baseMonthlyFee;
-    const totalAssetPaid = finalMonthsUsed * (totalAssetsCount * perAssetFee);
-    const totalPhotoPaid = totalLifetimePhotos * perPhotoFee;
-    const totalJobPaid = totalJobs * perJobFee;
-    
-    const paid = totalBasePaid + totalAssetPaid + totalPhotoPaid + totalJobPaid;
+    // Sadece "Kullanım" odaklı ödenen toplam tutar (Tüm Zamanlar)
+    const uPaid = (finalMonthsUsed * (totalAssetsCount * perAssetFee)) + (totalLifetimePhotos * perPhotoFee) + (totalJobs * perJobFee);
 
-    // Bu Ayki Güncel Fatura Tutarı
-    const currentBill = baseMonthlyFee + (totalAssetsCount * perAssetFee) + (monthlyPhotos * perPhotoFee) + (currentMonthJobs * perJobFee);
+    // Bu Ayki Güncel Kullanım Faturası (Sabit ücret hariç belirgin kısım)
+    const cUsageBill = (totalAssetsCount * perAssetFee) + (monthlyPhotos * perPhotoFee) + (currentMonthJobs * perJobFee);
 
-    // 4. Sistem Sayesinde Kurtarılan Kâr/Tasarruf
+    // 4. Sistem Sayesinde Kurtarılan Kâr/Tasarruf (Tüm Zamanlar)
     const operationalSavings = totalJobs * 150; 
     const printAndStorageSavings = totalLifetimePhotos * 5; 
     const profit = operationalSavings + printAndStorageSavings;
 
-    return { totalPaidToSystem: paid, totalSystemProfit: profit, monthsUsed: finalMonthsUsed, currentMonthBill: currentBill };
+    return { 
+        usagePaid: uPaid, 
+        totalSystemProfit: profit, 
+        currentUsageBill: cUsageBill, 
+        baseMonthlyFee: baseFee 
+    };
   }, [jobs, totalJobs, totalLifetimePhotos, totalAssetsCount, monthlyPhotos, currentMonthJobs]);
   // --------------------------------------------------------
 
@@ -423,49 +422,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         </div>
       </div>
 
-      <div className="bg-slate-900 rounded-2xl p-5 sm:p-6 shadow-lg border border-slate-800 relative overflow-hidden finance-block">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-emerald-500 to-amber-500"></div>
-        <h3 className="text-sm font-black text-white uppercase tracking-widest mb-5 flex items-center gap-2">
-            <Database size={16} className="text-blue-400" /> Başlangıçtan Bugüne Sistem Verileri
-        </h3>
-        
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 mb-5">
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center">
-               <div className="text-2xl font-black text-white mb-1">{totalJobs}</div>
-               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Toplam İş Kaydı</div>
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center">
-               <div className="text-2xl font-black text-emerald-400 mb-1">{totalLifetimePhotos}</div>
-               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Saha Fotoğrafı</div>
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center">
-               <div className="text-2xl font-black text-blue-400 mb-1">{totalCustomersCount}</div>
-               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Kayıtlı Müşteri</div>
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center">
-               <div className="text-2xl font-black text-amber-400 mb-1">{totalAssetsCount}</div>
-               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Cihaz / Varlık</div>
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center sm:col-span-3 md:col-span-1">
-               <div className="text-2xl font-black text-purple-400 mb-1">{totalStockTypes}</div>
-               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Farklı Stok Kalemi</div>
-            </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-4 border-t border-white/10">
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 sm:p-5 flex flex-col justify-center">
-               <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest mb-1 flex items-center gap-1.5"><TrendingUp size={14}/> Önlenen Gizli Operasyon Maliyeti</div>
-               <div className="text-2xl sm:text-3xl font-black text-emerald-500">₺{totalSystemProfit.toLocaleString('tr-TR')}</div>
-               <div className="text-[10px] text-emerald-400/60 mt-1 font-medium mt-1.5">Kasa haricinde; zaman, kağıt, telefon trafiği ve personel mesaisinden elde edilen tahmini tasarruf.</div>
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4 sm:p-5 flex flex-col justify-center">
-               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 flex items-center gap-1.5"><Wallet size={14}/> Yazılıma Ödenen Toplam Tutar</div>
-               <div className="text-2xl sm:text-3xl font-black text-white">₺{totalPaidToSystem.toLocaleString('tr-TR')}</div>
-               <div className="text-[10px] text-slate-500 mt-1 font-medium mt-1.5">{monthsUsed} Aylık Kullanım (Bu Ayki Fatura: ₺{currentMonthBill.toLocaleString('tr-TR')})</div>
-            </div>
-        </div>
-      </div>
-
+      {/* ALT BÖLÜM: YENİLENMİŞ SON İŞLER TABLOSU VE MOBİL KARTLARI */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
         <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-50/50">
           <div className="flex items-center gap-2">
@@ -683,6 +640,69 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
               Henüz iş emri bulunmuyor.
             </div>
           )}
+        </div>
+      </div>
+
+      {/* EN ALT: ÖMÜR BOYU VERİLER VE YATIRIM GETİRİSİ (ROI) - FİNANS KİLİDİ DAHİL */}
+      <div className="bg-slate-900 rounded-2xl p-5 sm:p-6 shadow-xl border border-slate-800 relative overflow-hidden finance-block mt-8">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-emerald-500 to-amber-500"></div>
+        
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                <Database size={16} className="text-blue-400" /> Başlangıçtan Bugüne Sistem Verileri
+            </h3>
+            
+            {/* HİLE: Sabit lisans ücretini ayrı, teknik bir detaymış gibi köşeye aldık */}
+            <div className="bg-blue-500/10 border border-blue-500/20 px-3 py-2 rounded-lg flex items-center gap-2">
+                <ShieldCheck size={14} className="text-blue-400" />
+                <div className="flex flex-col">
+                    <span className="text-[9px] text-blue-400/80 font-black uppercase tracking-widest">Altyapı & Lisans</span>
+                    <span className="text-xs font-bold text-white leading-none mt-0.5">₺{baseMonthlyFee.toLocaleString('tr-TR')} <span className="text-[10px] text-slate-400 font-normal">/ Ay</span></span>
+                </div>
+            </div>
+        </div>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 mb-6">
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+               <div className="text-2xl font-black text-white mb-1">{totalJobs}</div>
+               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Toplam İş Kaydı</div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+               <div className="text-2xl font-black text-emerald-400 mb-1">{totalLifetimePhotos}</div>
+               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Saha Fotoğrafı</div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+               <div className="text-2xl font-black text-blue-400 mb-1">{totalCustomersCount}</div>
+               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Kayıtlı Müşteri</div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+               <div className="text-2xl font-black text-amber-400 mb-1">{totalAssetsCount}</div>
+               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Cihaz / Varlık</div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center sm:col-span-3 md:col-span-1">
+               <div className="text-2xl font-black text-purple-400 mb-1">{totalStockTypes}</div>
+               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Farklı Stok Kalemi</div>
+            </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 pt-5 border-t border-white/10">
+            {/* KÂR KUTUSU (Devasa ve belirgin) */}
+            <div className="lg:col-span-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-5 sm:p-6 flex flex-col justify-center relative overflow-hidden">
+               <div className="absolute right-0 bottom-0 opacity-10 translate-x-4 translate-y-4"><TrendingUp size={120} /></div>
+               <div className="text-xs text-emerald-400 font-black uppercase tracking-widest mb-1 flex items-center gap-1.5 z-10"><TrendingUp size={16}/> Önlenen Gizli Operasyon Maliyeti (Tüm Zamanlar)</div>
+               <div className="text-4xl sm:text-5xl font-black text-emerald-500 mt-1 mb-2 z-10">₺{totalSystemProfit.toLocaleString('tr-TR')}</div>
+               <div className="text-[10px] sm:text-xs text-emerald-400/70 font-medium z-10 max-w-lg">Kasa haricinde; tüm zamanlar boyunca zaman, kağıt, telefon trafiği ve personel mesaisinden elde edilen tahmini tasarruf miktarıdır.</div>
+            </div>
+            
+            {/* KULLANIM MALİYETİ KUTUSU (Aylık belirgin) */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-5 sm:p-6 flex flex-col justify-center relative">
+               <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1 flex items-center gap-1.5"><Activity size={14}/> Bu Ayki İşlem (Kullanım) Ücreti</div>
+               <div className="text-3xl sm:text-4xl font-black text-white mt-1 mb-2">₺{currentUsageBill.toLocaleString('tr-TR')}</div>
+               <div className="text-[10px] text-slate-500 font-medium pt-3 border-t border-white/5 mt-auto">
+                  <span className="block text-slate-400 font-bold mb-0.5">Tüm Zamanlar Toplam İşlem Ücreti:</span>
+                  ₺{usagePaid.toLocaleString('tr-TR')}
+               </div>
+            </div>
         </div>
       </div>
 

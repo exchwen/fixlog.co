@@ -52,9 +52,13 @@ export default function LoginPage() {
       );
       const data = await res.json();
 
-      if (data.slug) {
-        // YENİ: PWA (Uygulama) yeniden açıldığında nereye gideceğini bilmesi için slug'ı kaydediyoruz
+      if (data.slug && data.token) {
+        // DÜZELTME: Worker'dan gelen güvenlik biletini, rolü ve ismi tarayıcıya KAZIYORUZ!
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userRole', data.role || 'Patron');
+        localStorage.setItem('userName', data.name || 'Patron');
         localStorage.setItem('userSlug', data.slug);
+        
         router.push(`/${data.slug}/dashboard`);
       } else {
         router.push('/register');
@@ -77,9 +81,13 @@ export default function LoginPage() {
       const res = await fetch(`${API_URL}/get-slug?uid=${result.user.uid}`);
       const data = await res.json();
 
-      if (data.slug) {
-        // YENİ: PWA (Uygulama) yeniden açıldığında nereye gideceğini bilmesi için slug'ı kaydediyoruz
+      if (data.slug && data.token) {
+        // DÜZELTME: Worker'dan gelen güvenlik biletini, rolü ve ismi tarayıcıya KAZIYORUZ!
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userRole', data.role || 'Patron');
+        localStorage.setItem('userName', data.name || 'Patron');
         localStorage.setItem('userSlug', data.slug);
+        
         router.push(`/${data.slug}/dashboard`);
       } else {
         router.push('/register');
