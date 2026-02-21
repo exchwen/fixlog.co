@@ -805,7 +805,7 @@ export default function DashboardModals({
                               </div>
                               <div className="col-span-1">
                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Hesap Şifresi</label>
-                                 <input type="password" title="Mevcut şifreyi değiştirmek istemiyorsanız boş bırakın." className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 transition-all placeholder:text-[10px] placeholder:text-slate-400 bg-white" value={editStaffForm.password} onChange={(e) => setEditStaffForm({...editStaffForm, password: e.target.value})} placeholder="Değiştirmek için yazın..." />
+                                 <input type="password" autoComplete="new-password" title="Mevcut şifreyi değiştirmek istemiyorsanız boş bırakın." className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 transition-all placeholder:text-[10px] placeholder:text-slate-400 bg-white" value={editStaffForm.password} onChange={(e) => setEditStaffForm({...editStaffForm, password: e.target.value})} placeholder="Değiştirmek için yazın..." />
                               </div>
                               <div className="col-span-1 sm:col-span-2">
                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Hesap Durumu</label>
@@ -1434,7 +1434,7 @@ export default function DashboardModals({
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                        <input className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="Kullanıcı Adı" onChange={e => setStaffForm({...staffForm, username: e.target.value})} />
-                       <input type="password" className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="Şifre Belirleyin" onChange={e => setStaffForm({...staffForm, password: e.target.value})} />
+                       <input type="password" autoComplete="new-password" className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="Şifre Belirleyin" onChange={e => setStaffForm({...staffForm, password: e.target.value})} />
                     </div>
                  </div>
               </div>
