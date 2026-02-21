@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-// YENİ: WifiOff eklendi
-import { Plus, X, Loader2, ArrowDownRight, ArrowUpRight, Trash2, Download, Eye, Calendar, Clock, Filter, WifiOff } from 'lucide-react';
+import { Plus, X, Loader2, ArrowDownRight, ArrowUpRight, Trash2, Download, Eye, Calendar, Clock, Filter, WifiOff, Wallet } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
 
-export default function FinanceTab({ data }: any) {
+export default function FinanceTab({ data, userRole = 'Patron' }: any) {
   const params = useParams();
   const router = useRouter();
   const activeSlug = params?.slug || localStorage.getItem('companySlug');
@@ -80,7 +79,6 @@ export default function FinanceTab({ data }: any) {
     const endpoint = financeModal.type === 'Gelir' ? 'add-income' : 'add-expense';
     const bodyData = { slug: activeSlug, description, amount: parseFloat(financeAmount) };
     
-    // Her durumda arayüze (Local State) anında ekle ki kullanıcı beklemesin
     const newRecord = {
         id: Date.now().toString(),
         description,
@@ -89,29 +87,35 @@ export default function FinanceTab({ data }: any) {
         created_at: new Date().toISOString()
     };
 
+    const token = localStorage.getItem('authToken');
+
     try {
       const res = await fetch(`https://backend.isdokumu.workers.dev/${endpoint}`, {
         method: 'POST', 
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+        },
         body: JSON.stringify(bodyData)
       });
 
       if (res.ok) {
         setLocalFinances([newRecord, ...localFinances]);
         closeFinanceModal();
+        if (userRole === 'Yönetici') {
+            alert('İşlem başarıyla kaydedildi. Patron hesabına aktarıldı.');
+        }
         router.refresh(); 
       } else {
-        alert("Kayıt Başarısız! Lütfen Cloudflare bağlantınızı kontrol edin.");
+        alert("Kayıt Başarısız! İşlem reddedildi veya bağlantınız koptu.");
       }
     } catch (e) { 
-      // VERİTABANI HATASI VEYA BAĞLANTI SORUNU İÇİN CACHE SİSTEMİ (OFFLINE QUEUE)
       console.warn("İnternet bağlantısı yok veya sunucuya ulaşılamadı. Finans işlemi kuyruğa alındı.");
       
       const pending = JSON.parse(localStorage.getItem(`offline_actions_${activeSlug}`) || '[]');
       pending.push({ endpoint, body: bodyData, timestamp: new Date().toISOString() });
       localStorage.setItem(`offline_actions_${activeSlug}`, JSON.stringify(pending));
       
-      // Local state'e ekleyip modalı kapat, kullanıcıyı mağdur etme
       setLocalFinances([newRecord, ...localFinances]);
       closeFinanceModal();
       
@@ -127,7 +131,6 @@ export default function FinanceTab({ data }: any) {
     setFinanceAmount('');
   };
 
-  // İSTEMCİ TARAFINDA EXCEL ÇIKTISI
   const exportToExcel = (tableData: any[], title: string) => {
     const rows = tableData.map((f: any) => {
       const dateObj = new Date(f.created_at);
@@ -149,7 +152,6 @@ export default function FinanceTab({ data }: any) {
     XLSX.writeFile(workbook, `${title.replace(/\s+/g, '_')}_Rapor.xlsx`);
   };
 
-  // ZAMAN FİLTRESİ UYGULAMA FONKSİYONU
   const applyTimeFilter = (data: any[], filterValue: string, title: string) => {
     if (filterValue === 'Tümü') return data;
     
@@ -179,7 +181,6 @@ export default function FinanceTab({ data }: any) {
     });
   };
 
-  // 3 FARKLI TABLOYU RENDER EDEN FONKSİYON
   const renderFinanceTable = (title: string, rawData: any[]) => {
     const currentFilter = timeFilters[title] || 'Tümü';
     const filteredData = applyTimeFilter(rawData, currentFilter, title);
@@ -190,7 +191,6 @@ export default function FinanceTab({ data }: any) {
           <h3 className="text-lg font-black text-slate-800 tracking-tight">{title}</h3>
           
           <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 w-full md:w-auto">
-            {/* ÖZEL TARİH SEÇİCİLER (Sadece "Özel Tarih" seçilirse görünür) */}
             {currentFilter === 'Özel Tarih' && (
               <div className="flex items-center justify-between sm:justify-start gap-2 bg-white border border-blue-200 rounded-xl shadow-sm px-3 py-2 animate-in fade-in slide-in-from-right-4 w-full sm:w-auto">
                 <input 
@@ -209,7 +209,6 @@ export default function FinanceTab({ data }: any) {
               </div>
             )}
 
-            {/* FİLTRELEME MENÜSÜ */}
             <div className={`relative flex items-center bg-white border rounded-xl shadow-sm overflow-hidden transition-colors flex-1 sm:flex-none ${currentFilter === 'Özel Tarih' ? 'border-blue-400 ring-2 ring-blue-400/20' : 'border-slate-200'}`}>
               <div className={`pl-3 ${currentFilter === 'Tümü' ? 'text-slate-400' : 'text-blue-500'}`}><Filter size={16} /></div>
               <select 
@@ -217,7 +216,6 @@ export default function FinanceTab({ data }: any) {
                 value={currentFilter}
                 onChange={(e) => {
                   setTimeFilters({...timeFilters, [title]: e.target.value});
-                  // Farklı filtre seçilince tarihleri sıfırla
                   if (e.target.value !== 'Özel Tarih') {
                     setCustomDateRanges({...customDateRanges, [title]: { start: '', end: '' }});
                   }
@@ -232,7 +230,6 @@ export default function FinanceTab({ data }: any) {
               </select>
             </div>
 
-            {/* EXCEL BUTONU */}
             <button 
               onClick={() => exportToExcel(filteredData, title)} 
               className="bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-600 px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm sm:w-auto w-full"
@@ -242,7 +239,6 @@ export default function FinanceTab({ data }: any) {
           </div>
         </div>
         
-        {/* MASAÜSTÜ İÇİN TABLO GÖRÜNÜMÜ */}
         <div className="hidden md:flex bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex-col">
           <div className="overflow-x-auto overflow-y-auto max-h-[400px] custom-scrollbar">
             <table className="w-full text-left text-xs relative border-collapse min-w-[600px]">
@@ -303,7 +299,6 @@ export default function FinanceTab({ data }: any) {
           </div>
         </div>
 
-        {/* MOBİL İÇİN KART GÖRÜNÜMÜ (Yatay Scroll'u Engeller) */}
         <div className="md:hidden flex flex-col gap-3">
           {filteredData.length > 0 ? filteredData.map((f: any) => {
             const relatedJob = localJobs.find((j: any) => f.type === 'Gelir' && j.status === 'Tamamlandı' && f.description.includes(j.customer_name));
@@ -357,29 +352,51 @@ export default function FinanceTab({ data }: any) {
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8 relative pb-10">
+    <div className={`relative pb-10 ${userRole === 'Yönetici' ? 'flex flex-col items-center justify-center min-h-[70vh] px-4' : 'space-y-6 sm:space-y-8'}`}>
        
-       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 sm:p-0 sm:bg-transparent rounded-3xl border sm:border-none border-slate-200 shadow-sm sm:shadow-none">
-         <div>
-           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Finans ve Kasa Yönetimi</h2>
-           <p className="text-xs font-medium text-slate-500 mt-1">Tüm gelir ve gider hareketlerini buradan takip edebilirsiniz.</p>
+       {userRole === 'Yönetici' ? (
+         <div className="w-full max-w-lg bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xl text-center flex flex-col items-center gap-6 mt-10">
+            <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center shadow-inner border border-blue-100">
+               <Wallet size={32} />
+            </div>
+            <div>
+               <h2 className="text-2xl font-black text-slate-900 tracking-tight">Finans Bildirimi</h2>
+               <p className="text-sm font-medium text-slate-500 mt-2 leading-relaxed">
+                  Sahadaki veya işletmedeki gelir/gider harcamalarını buradan patron hesabına direkt olarak işleyebilirsiniz. Raporları sadece Patron görebilir.
+               </p>
+            </div>
+            <div className="flex flex-col w-full gap-3 mt-2">
+               <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gelir' })} className="w-full bg-emerald-500 text-white border border-emerald-600 px-4 py-4 rounded-xl text-base font-black flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition-all active:scale-95">
+                 <Plus size={20} strokeWidth={3} /> Gelir Bildir (Kasaya Ekle)
+               </button>
+               <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gider' })} className="w-full bg-rose-50 text-rose-600 border border-rose-200 px-4 py-4 rounded-xl text-base font-black flex items-center justify-center gap-2 shadow-sm hover:bg-rose-100 transition-all active:scale-95">
+                 <Plus size={20} strokeWidth={3} /> Gider Fişi Bildir (Kasadan Düş)
+               </button>
+            </div>
          </div>
-         <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2.5">
-           <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gelir' })} className="w-full sm:w-auto bg-emerald-500 text-white border border-emerald-600 px-4 py-3 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold flex items-center justify-center gap-2 shadow-sm shadow-emerald-200 hover:bg-emerald-600 transition-all active:scale-95">
-             <Plus size={16} strokeWidth={3} /> Gelir İşle
-           </button>
-           <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gider' })} className="w-full sm:w-auto bg-rose-50 text-rose-600 border border-rose-200 px-4 py-3 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold flex items-center justify-center gap-2 shadow-sm hover:bg-rose-100 transition-all active:scale-95">
-             <Plus size={16} strokeWidth={3} /> Gider / Fiş İşle
-           </button>
-         </div>
-       </div>
+       ) : (
+         <>
+           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 sm:p-0 sm:bg-transparent rounded-3xl border sm:border-none border-slate-200 shadow-sm sm:shadow-none">
+             <div>
+               <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Finans ve Kasa Yönetimi</h2>
+               <p className="text-xs font-medium text-slate-500 mt-1">Tüm gelir ve gider hareketlerini buradan takip edebilirsiniz.</p>
+             </div>
+             <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2.5">
+               <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gelir' })} className="w-full sm:w-auto bg-emerald-500 text-white border border-emerald-600 px-4 py-3 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold flex items-center justify-center gap-2 shadow-sm shadow-emerald-200 hover:bg-emerald-600 transition-all active:scale-95">
+                 <Plus size={16} strokeWidth={3} /> Gelir İşle
+               </button>
+               <button onClick={() => setFinanceModal({ isOpen: true, type: 'Gider' })} className="w-full sm:w-auto bg-rose-50 text-rose-600 border border-rose-200 px-4 py-3 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold flex items-center justify-center gap-2 shadow-sm hover:bg-rose-100 transition-all active:scale-95">
+                 <Plus size={16} strokeWidth={3} /> Gider / Fiş İşle
+               </button>
+             </div>
+           </div>
 
-       {/* TABLOLAR BÖLÜMÜ */}
-       {renderFinanceTable("Tüm Hesap Hareketleri", localFinances)}
-       {renderFinanceTable("Sadece Gelirler", localFinances.filter((f: any) => f.type === 'Gelir'))}
-       {renderFinanceTable("Sadece Giderler", localFinances.filter((f: any) => f.type === 'Gider'))}
+           {renderFinanceTable("Tüm Hesap Hareketleri", localFinances)}
+           {renderFinanceTable("Sadece Gelirler", localFinances.filter((f: any) => f.type === 'Gelir'))}
+           {renderFinanceTable("Sadece Giderler", localFinances.filter((f: any) => f.type === 'Gider'))}
+         </>
+       )}
 
-       {/* DİNAMİK GELİR / GİDER EKLEME MODALI */}
        {financeModal.isOpen && (
          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
             <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar flex flex-col">
@@ -457,8 +474,7 @@ export default function FinanceTab({ data }: any) {
          </div>
        )}
 
-       {/* İŞ DETAYI GÖSTERİM MODALI */}
-       {selectedJobDetail && (
+       {selectedJobDetail && userRole === 'Patron' && (
          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
             <div className="bg-white w-full max-w-sm rounded-2xl p-0 shadow-2xl relative overflow-hidden flex flex-col">
               

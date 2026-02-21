@@ -316,14 +316,10 @@ export default function ManagerDashboard() {
     handleAction('resolve-fault', { id: faultId }, null, null);
   };
 
-  // Yönetici ayarlara ve finans sekmesine giremez!
+  // Yönetici ayarlara giremez, finans sekmesine GİREBİLİR (ancak role ile kısıtlı görecek)
   useEffect(() => {
       if (activeTab === 'settings') {
           alert("Yetkisiz Erişim: Sadece Patron firma ayarlarını görüntüleyebilir.");
-          setActiveTab('home');
-      }
-      if (activeTab === 'finance') {
-          alert("Yetkisiz Erişim: Kasa ve finans raporları sadece Patrona açıktır.");
           setActiveTab('home');
       }
   }, [activeTab]);
@@ -352,14 +348,12 @@ export default function ManagerDashboard() {
   return (
     <div className={`min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 manager-scope ${hasEmergency ? 'bg-rose-950' : 'bg-[#F8FAFC] text-slate-900'}`}>
       
-      {/* EFSANEVİ CSS HİLESİ: Yönetici ekranında finans kutularını, sil butonlarını ve sekmeleri yok eder */}
+      {/* Yönetici için genel UI gizleme hileleri (Sil butonları vb.) */}
       <style dangerouslySetInnerHTML={{__html: `
         .manager-scope button:has(svg.lucide-trash-2),
         .manager-scope button:has(svg.lucide-trash2),
         .manager-scope button:has(svg.lucide-trash) { display: none !important; }
         .manager-scope nav button:has(svg.lucide-settings) { display: none !important; }
-        .manager-scope nav button:has(svg.lucide-wallet) { display: none !important; }
-        .finance-block { display: none !important; } 
       `}} />
 
       <AnimatePresence>
@@ -455,6 +449,10 @@ export default function ManagerDashboard() {
             </div>
           )}
           {activeTab === 'assets' && <AssetsTab data={data} setShowAssetModal={setShowAssetModal} setShowAssetDetail={setShowAssetDetail} setShowQRModal={setShowQRModal} setSelectedQRAsset={setSelectedQRAsset} />}
+          
+          {/* YÖNETİCİ FİNANS SEKMESİ (SADECE GELİR/GİDER BUTONLARI) */}
+          {activeTab === 'finance' && <FinanceTab data={data} userRole="Yönetici" />}
+
         </div>
       </main>
 
