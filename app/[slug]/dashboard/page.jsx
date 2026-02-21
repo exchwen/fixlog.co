@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, AlertTriangle, ArrowRight, Settings, Filter, ShieldAlert, Info, MapPin, Check, WifiOff, Download, Share } from 'lucide-react';
 
@@ -28,6 +28,7 @@ const API_URL = 'https://backend.isdokumu.workers.dev';
 
 export default function PatronDashboard() {
   const { slug } = useParams();
+  const router = useRouter(); // Yönlendirme için eklendi
   
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
@@ -40,11 +41,10 @@ export default function PatronDashboard() {
   const [isOffline, setIsOffline] = useState(false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
-  // YENİ: PWA YÜKLEME DURUMU STATE'LERİ EKLENDİ
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showPwaPrompt, setShowPwaPrompt] = useState(false);
   const [isIos, setIsIos] = useState(false);
-  const [installState, setInstallState] = useState('idle'); // 'idle' | 'success'
+  const [installState, setInstallState] = useState('idle');
 
   const [stockCategory, setStockCategory] = useState('Tümü');
 
@@ -84,25 +84,17 @@ export default function PatronDashboard() {
   const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', landlinePhone: '', emergencyPhone: '', whatsappPhone: '', website: '', logo: '' });
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '', username: '', password: '', is_active: 1 });
 
-  // YENİ: ZORUNLU VE GERİ BİLDİRİMLİ PWA YAKALAMA SİSTEMİ
   useEffect(() => {
-    // Sadece PWA (uygulama) içinden açılmışsa durdur ve balonu gösterme.
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-    
-    if (isStandalone) {
-      return;
-    }
+    if (isStandalone) return;
 
-    // Cihazın Apple (iOS) olup olmadığını tespit et
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
 
     if (isIOSDevice) {
       setIsIos(true);
-      // Apple cihazda buton çıkmaz, sadece yönerge balonu 2 sn sonra açılır
       setTimeout(() => setShowPwaPrompt(true), 2000);
     } else {
-      // Android / Masaüstü Chrome vb.
       const handler = (e) => {
         e.preventDefault();
         setDeferredPrompt(e);
@@ -110,7 +102,6 @@ export default function PatronDashboard() {
       };
       window.addEventListener('beforeinstallprompt', handler);
 
-      // YENİ: Tarayıcı menüsünden kurulursa dahi algılayıp "Başarılı" diyen dinleyici
       const handleInstalled = () => {
         setInstallState('success');
         setTimeout(() => setShowPwaPrompt(false), 3000);
@@ -126,24 +117,37 @@ export default function PatronDashboard() {
 
   const handleInstallPwa = async () => {
     if (deferredPrompt) {
-      // Yükle der demez balonu gizlemiyoruz! Native onay penceresi açılacak.
       deferredPrompt.prompt(); 
       const { outcome } = await deferredPrompt.userChoice;
-      
-      // Kullanıcı native ekranda "Kabul Et" dediyse:
       if (outcome === 'accepted') {
         setInstallState('success');
-        setTimeout(() => setShowPwaPrompt(false), 3000); // 3 saniye yeşil tik gösterip yok eder
-      } else {
-        // İptal ederse balon ekranda kalmaya devam eder, çünkü "Geç" opsiyonu yok
+        setTimeout(() => setShowPwaPrompt(false), 3000); 
       }
       setDeferredPrompt(null);
     }
   };
 
+  // ZIRH EKLENDİ: fetchData artık cüzdanında Token taşıyor
   const fetchData = async (isInitial = false) => {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        window.location.href = `/${slug}/login`; // Bilet yoksa dışarı
+        return;
+    }
+
     try {
-      const res = await fetch(`${API_URL}/dashboard-data?slug=${slug}`);
+      const res = await fetch(`${API_URL}/dashboard-data?slug=${slug}`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (res.status === 401 || res.status === 403) {
+          localStorage.clear();
+          window.location.href = `/${slug}/login`;
+          return;
+      }
+      
       if (!res.ok) throw new Error("Ağ hatası");
       const result = await res.json();
       
@@ -178,14 +182,19 @@ export default function PatronDashboard() {
     }
   };
 
+  // ZIRH EKLENDİ: fetchMessages
   const fetchMessages = async () => {
     if (!activeChatId) return;
+    const token = localStorage.getItem('authToken');
     try {
-      const res = await fetch(`${API_URL}/get-messages?slug=${slug}&staffId=${activeChatId}`);
+      const res = await fetch(`${API_URL}/get-messages?slug=${slug}&staffId=${activeChatId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       setMessages(await res.json() || []);
     } catch (err) {}
   };
 
+  // ZIRH EKLENDİ: syncOfflineActions
   const syncOfflineActions = async () => {
     const pending = JSON.parse(localStorage.getItem(`offline_actions_${slug}`) || '[]');
     if (pending.length === 0) {
@@ -193,12 +202,17 @@ export default function PatronDashboard() {
       return;
     }
     
+    const token = localStorage.getItem('authToken');
     const remaining = [];
+    
     for (const item of pending) {
       try {
         const res = await fetch(`${API_URL}/${item.endpoint}`, { 
           method: 'POST', 
-          headers: { 'Content-Type': 'application/json' }, 
+          headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+          }, 
           body: JSON.stringify({ ...item.body, slug }) 
         });
         if (!res.ok) remaining.push(item);
@@ -285,17 +299,26 @@ export default function PatronDashboard() {
   
   useEffect(() => { if (isChatOpen && activeChatId) { fetchMessages(); const cInt = setInterval(fetchMessages, 4000); return () => clearInterval(cInt); } }, [isChatOpen, activeChatId]);
 
+  // ZIRH EKLENDİ: handleAction
   const handleAction = async (endpoint, body, closeFn, resetFn) => {
     setIsSaving(true);
+    const token = localStorage.getItem('authToken');
     try {
-      const res = await fetch(`${API_URL}/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, slug }) });
+      const res = await fetch(`${API_URL}/${endpoint}`, { 
+          method: 'POST', 
+          headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+          }, 
+          body: JSON.stringify({ ...body, slug }) 
+      });
       if (res.ok) { 
         if(closeFn) closeFn(false); 
         if(resetFn) resetFn(); 
         await fetchData(true); 
         return true; 
       } else { 
-        if (endpoint !== 'update-settings' && endpoint !== 'add-support-ticket') alert("Veritabanı kayıt hatası."); 
+        if (endpoint !== 'update-settings' && endpoint !== 'add-support-ticket') alert("Veritabanı kayıt hatası. Yetkiniz olmayabilir."); 
         return false; 
       }
     } catch (err) { 
@@ -318,21 +341,35 @@ export default function PatronDashboard() {
     }
   };
 
+  // ZIRH EKLENDİ: sendMessage
   const sendMessage = async () => {
     if (!messageInput.trim() || !activeChatId) return;
-    await fetch(`${API_URL}/send-message`, { method: 'POST', body: JSON.stringify({ slug, senderId: 'PATRON', receiverId: activeChatId, message: messageInput }) });
+    const token = localStorage.getItem('authToken');
+    await fetch(`${API_URL}/send-message`, { 
+        method: 'POST', 
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ slug, senderId: 'PATRON', receiverId: activeChatId, message: messageInput }) 
+    });
     setMessageInput(''); fetchMessages();
   };
 
   const activeEmergencies = data?.activeEmergencies || [];
   const hasEmergency = activeEmergencies.length > 0;
 
+  // ZIRH EKLENDİ: handleResolveEmergency
   const handleResolveEmergency = async (emergencyId) => {
     setIsSaving(true);
+    const token = localStorage.getItem('authToken');
     try {
       await fetch(`${API_URL}/resolve-emergency`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ id: emergencyId, slug })
       });
       await fetchData(false); 
@@ -346,12 +383,17 @@ export default function PatronDashboard() {
   const pendingFaults = data?.pendingFaults || [];
   const hasFault = pendingFaults.length > 0;
 
+  // ZIRH EKLENDİ: handleResolveFault
   const handleResolveFault = async (faultId) => {
     setIsSaving(true);
+    const token = localStorage.getItem('authToken');
     try {
       await fetch(`${API_URL}/resolve-fault`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ id: faultId, slug })
       });
       await fetchData(false); 
@@ -419,7 +461,6 @@ export default function PatronDashboard() {
   return (
     <div className={`min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 ${hasEmergency ? 'bg-rose-950' : 'bg-[#F8FAFC] text-slate-900'}`}>
       
-      {/* ZORUNLU PWA ANA EKRANA EKLE MODALI ("Geç" butonu tamamen kaldırıldı, Başarı Animasyonu Eklendi) */}
       <AnimatePresence>
         {showPwaPrompt && !hasEmergency && (
           <motion.div 
@@ -429,7 +470,6 @@ export default function PatronDashboard() {
             className="fixed bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[420px] bg-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-2xl z-[9999] flex flex-row items-center justify-between border border-slate-700"
           >
             {installState === 'success' ? (
-              // BAŞARILI YÜKLEME EKRANI
               <div className="flex items-center gap-3 w-full justify-center py-1">
                 <div className="bg-emerald-500 p-2 rounded-full shrink-0">
                   <Check size={20} className="text-white" />
@@ -440,7 +480,6 @@ export default function PatronDashboard() {
                 </div>
               </div>
             ) : (
-              // STANDART YÜKLEME ÇAĞRISI
               <>
                 <div className="flex items-center gap-3 w-full">
                   <div className="bg-blue-500 p-2.5 rounded-xl shrink-0">
@@ -449,18 +488,15 @@ export default function PatronDashboard() {
                   <div className="flex flex-col flex-1 min-w-0 pr-2">
                     <span className="font-bold text-sm">Uygulamayı Yükle</span>
                     {isIos ? (
-                       // iOS Safari için özel talimat metni
                        <span className="text-[11px] text-slate-400 mt-0.5 leading-tight">
                          Yüklemek için <Share size={12} className="inline-block mx-0.5 mb-0.5" /> <b>Paylaş</b> ikonuna basıp <br/> <b>Ana Ekrana Ekle</b>'yi seçin.
                        </span>
                     ) : (
-                       // Android / Masaüstü metni
                        <span className="text-xs text-slate-400 mt-0.5">Daha hızlı ve kolay erişim</span>
                     )}
                   </div>
                 </div>
                 <div className="flex gap-2 shrink-0 items-center">
-                  {/* Sadece Android/Masaüstü ise Yükle Butonunu göster */}
                   {!isIos && (
                      <button onClick={handleInstallPwa} className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95">
                        Yükle
