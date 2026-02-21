@@ -67,7 +67,6 @@ export default function DashboardModals({
   const [previewPdfJob, setPreviewPdfJob] = useState<any>(null);
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
 
-  // YENİ: Mobilde yan yana açılmayı engellemek için ekran genişliği kontrolü
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024);
@@ -433,7 +432,7 @@ export default function DashboardModals({
                             {selectedJob.asset_id && (
                                 <div className="text-xs font-semibold text-blue-600 mt-1.5 flex items-center gap-1.5">
                                     <Box size={14} className="opacity-70" />
-                                    {(data?.assets || []).find((a:any) => a.id === selectedJob.asset_id)?.name || 'Bilinmeyen Cihaz'}
+                                    {(data?.assets || []).find((a:any) => String(a.id) === String(selectedJob.asset_id))?.name || 'Bilinmeyen Cihaz'}
                                 </div>
                             )}
                         </div>
@@ -452,7 +451,7 @@ export default function DashboardModals({
                              <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Sorumlu Personel</div>
                              <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
                                 <User size={16} className="text-amber-500"/>
-                                {(data?.staff || []).find((s:any) => s.id === selectedJob.staff_id)?.name || 'Atanmamış'}
+                                {(data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.staff_id))?.name || 'Atanmamış'}
                              </div>
                         </div>
                     </div>
@@ -561,7 +560,6 @@ export default function DashboardModals({
                       )}
                     </div>
 
-                    {/* DÜZENLENEN ALAN: AKILLI HEDEF SEÇİMİ (EDIT MODU İÇİN) */}
                     {editJobDetailForm.workCategory !== 'Genel İş Atama' && (
                       <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 shadow-sm">
                         <div className="flex flex-col sm:flex-row gap-2 mb-2">
@@ -582,7 +580,7 @@ export default function DashboardModals({
                             
                             {editJobDetailForm.customerName && (() => {
                                const selectedCustomer = (data?.customers || []).find((c:any) => c.name === editJobDetailForm.customerName);
-                               const customerAssets = (data?.assets || []).filter((a:any) => a.customer_id === selectedCustomer?.id);
+                               const customerAssets = (data?.assets || []).filter((a:any) => String(a.customer_id) === String(selectedCustomer?.id));
                                
                                return (
                                  <div className="pt-2 border-t border-slate-100">
@@ -616,7 +614,7 @@ export default function DashboardModals({
                             </select>
                             {editJobDetailForm.assetId && (
                                 <div className="mt-3 text-[10px] font-bold text-blue-700 bg-blue-50/80 p-2.5 rounded-lg border border-blue-100 flex items-center gap-1.5">
-                                    <CheckCircle size={14} className="text-blue-500"/> Otomatik Eşleşen Müşteri: <span className="text-slate-800">{editJobDetailForm.customerName || 'Bağımsız Varlık (Müşteri Yok)'}</span>
+                                    <CheckCircle size={14} className="text-blue-500 shrink-0"/> Müşteri Eşleşti: <span className="text-slate-800 truncate">{editJobDetailForm.customerName || 'Bağımsız Varlık'}</span>
                                 </div>
                             )}
                           </motion.div>
@@ -774,7 +772,6 @@ export default function DashboardModals({
                       </div>
                     </>
                  ) : (
-                    // DÜZELTİLEN YER: MOBİL EKRANDA TAŞMAYAN PERSONEL FORMU
                     <div className="space-y-4 bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div className="col-span-1 sm:col-span-2">
@@ -1184,7 +1181,7 @@ export default function DashboardModals({
                         {/* AKILLANDIRMA: Seçilen Müşterinin Varlıklarını Getir */}
                         {jobForm.customerName && (() => {
                            const selectedCustomer = (data?.customers || []).find((c:any) => c.name === jobForm.customerName);
-                           const customerAssets = (data?.assets || []).filter((a:any) => a.customer_id === selectedCustomer?.id);
+                           const customerAssets = (data?.assets || []).filter((a:any) => String(a.customer_id) === String(selectedCustomer?.id));
                            
                            return (
                              <div className="pt-2 border-t border-slate-100">
