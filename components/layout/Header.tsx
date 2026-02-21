@@ -6,7 +6,7 @@ import { Menu, Search, Bell, Building2 } from 'lucide-react';
 export default function Header({ data, searchTerm, setSearchTerm, setIsMobileMenuOpen }: any) {
   const [isOffline, setIsOffline] = useState(false);
   
-  // YENİ: Kullanıcı Adı, Rolü ve Branşını tutan State
+  // Kullanıcı Adı, Rolü ve Branşını tutan State
   const [userInfo, setUserInfo] = useState({ name: '', role: '', branch: '' });
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export default function Header({ data, searchTerm, setSearchTerm, setIsMobileMen
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [data]); // data değiştiğinde (personel listesi vs gelince) tekrar hesaplar
+  }, [data]);
 
   const notificationCount = (data?.activeEmergencies?.length || 0) + (data?.pendingFaults?.length || 0);
 
