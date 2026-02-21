@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
-import { UserPlus, Activity, MapPin, CheckCircle, Plus, ChevronRight, KeyRound, X, MessageCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { UserPlus, Activity, MapPin, CheckCircle, Plus, ChevronRight, KeyRound, X, MessageCircle, Send } from 'lucide-react';
 import { useParams } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- TİP TANIMLAMALARI (INTERFACES) ---
 
@@ -76,6 +77,10 @@ export default function TeamTab({
   
   const { slug } = useParams(); 
 
+  // YENİ: WhatsApp Şifre Gönderim Modalı İçin State'ler
+  const [waModalStaff, setWaModalStaff] = useState<Staff | null>(null);
+  const [waPassword, setWaPassword] = useState('');
+
   const getAutoStatus = (staffId: string | number): StatusResult => {
     if (!data || !data.jobs) {
        return { 
@@ -134,20 +139,21 @@ export default function TeamTab({
     };
   };
 
-  const handleSendWhatsApp = (staff: Staff) => {
+  // WhatsApp Butonuna Tıklayınca Modalı Aç
+  const openWhatsAppModal = (staff: Staff) => {
     if (!staff.phone) {
       alert("Bu personelin kayıtlı bir telefon numarası bulunmuyor.");
       return;
     }
+    setWaModalStaff(staff);
+    setWaPassword(''); // Önceki yazılanları temizle
+  };
 
-    const tempPassword = window.prompt(
-      `${staff.name} adlı personelin şifresini biliyorsanız (veya yeni belirlediyseniz) buraya yazın, WhatsApp mesajına otomatik eklensin.\n\n* Sistem güvenlik gereği şifreleri çözemez, sadece siz bilebilirsiniz.\n* Boş bırakıp 'Tamam' diyebilirsiniz.`,
-      ""
-    );
+  // Modaldan Gönder Butonuna Basılınca WhatsApp'ı Aç
+  const executeWhatsAppSend = () => {
+    if (!waModalStaff || !waModalStaff.phone) return;
 
-    if (tempPassword === null) return;
-    
-    let formattedPhone = staff.phone.replace(/\s+/g, '');
+    let formattedPhone = waModalStaff.phone.replace(/\s+/g, '');
     if (formattedPhone.startsWith('0')) {
       formattedPhone = '90' + formattedPhone.substring(1);
     } else if (!formattedPhone.startsWith('90')) {
@@ -155,17 +161,84 @@ export default function TeamTab({
     }
 
     const loginUrl = `${window.location.origin}/${slug}/login`;
-    const passwordText = tempPassword.trim() !== '' ? tempPassword.trim() : '(Daha önce belirlediğiniz şifre)';
+    const passwordText = waPassword.trim() !== '' ? waPassword.trim() : '(Daha önce belirlediğiniz şifre)';
     
-    const message = `Merhaba ${staff.name.split(' ')[0]},\n\nİşlem sistemimize ait giriş bilgilerin aşağıdadır:\n\n🌐 Giriş Linki: ${loginUrl}\n👤 Kullanıcı Adı: ${staff.username || 'Belirtilmedi'}\n🔑 Şifre: *${passwordText}*\n\nLinke tıkladıktan sonra 'Uygulamayı Yükle' butonuna basarak sistemi telefonuna kurabilirsin.`;
+    const message = `Merhaba ${waModalStaff.name.split(' ')[0]},\n\nİşlem sistemimize ait giriş bilgilerin aşağıdadır:\n\n🌐 Giriş Linki: ${loginUrl}\n👤 Kullanıcı Adı: ${waModalStaff.username || 'Belirtilmedi'}\n🔑 Şifre: *${passwordText}*\n\nLinke tıkladıktan sonra 'Uygulamayı Yükle' butonuna basarak sistemi telefonuna kurabilirsin.`;
     
     const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
+    
+    setWaModalStaff(null); // Modalı Kapat
   };
 
   return (
     <div className="space-y-4 sm:space-y-6">
       
+      {/* YENİ: WHATSAPP ŞİFRE GÖNDERİM MODALI */}
+      <AnimatePresence>
+        {waModalStaff && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.95, y: 20 }} 
+              className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative flex flex-col overflow-hidden"
+            >
+              <div className="flex justify-between items-center p-5 border-b border-slate-100 bg-emerald-50">
+                <div className="flex items-center gap-2 text-emerald-800">
+                  <div className="bg-emerald-500 text-white p-2 rounded-xl shadow-sm">
+                    <MessageCircle size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-sm leading-tight">Giriş Bilgilerini İlet</h3>
+                    <p className="text-[10px] font-bold opacity-80">{waModalStaff.name}</p>
+                  </div>
+                </div>
+                <button onClick={() => setWaModalStaff(null)} className="p-2 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-all active:scale-95"><X size={20} /></button>
+              </div>
+
+              <div className="p-5 sm:p-6 space-y-4">
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                    Sistem güvenlik gereği şifreleri saklamaz/çözemez. Personelinizin şifresini biliyorsanız (veya yeni belirlediyseniz) aşağıya yazabilirsiniz. <strong>Boş bırakırsanız</strong> "(Daha önce belirlediğiniz şifre)" olarak iletilecektir.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Gönderilecek Şifre (Opsiyonel)</label>
+                  <div className="relative">
+                    <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+                    <input 
+                      type="text" 
+                      value={waPassword} 
+                      onChange={(e) => setWaPassword(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all placeholder:text-slate-400"
+                      placeholder="Personelin şifresini girin..."
+                      autoFocus
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50 flex gap-3">
+                <button 
+                  onClick={() => setWaModalStaff(null)} 
+                  className="flex-1 bg-white border-2 border-slate-200 text-slate-700 py-3.5 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95"
+                >
+                  İptal
+                </button>
+                <button 
+                  onClick={executeWhatsAppSend} 
+                  className="flex-[2] bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 transition-all active:scale-95"
+                >
+                  <Send size={16} /> WhatsApp'a Git
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
         <div className="w-full sm:w-auto">
            <h3 className="text-lg font-black text-slate-800 tracking-tight">Saha Operasyon Ekibi</h3>
@@ -244,8 +317,8 @@ export default function TeamTab({
 
               <div className="grid grid-cols-3 gap-1.5 w-full pt-4 border-t border-slate-100 mt-auto">
                  <button 
-                   onClick={() => handleSendWhatsApp(s)} 
-                   title="Giriş Linkini WhatsApp'tan Gönder"
+                   onClick={() => openWhatsAppModal(s)} 
+                   title="Giriş Linkini ve Şifreyi WhatsApp'tan Gönder"
                    className="flex items-center justify-center bg-emerald-50 border border-emerald-200 text-emerald-600 py-2.5 rounded-xl hover:bg-emerald-100 hover:text-emerald-700 transition-all active:scale-95 shadow-sm"
                  >
                    <MessageCircle size={16} />
