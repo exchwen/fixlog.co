@@ -605,8 +605,8 @@ export default function DashboardModals({
                               <input type="text" placeholder="Cihaz Adı Ara..." className="w-full pl-9 pr-3 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 bg-white" value={searchAsset} onChange={e => setSearchAsset(e.target.value)} />
                             </div>
                             <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500 custom-scrollbar" size={4} value={editJobDetailForm.assetId} onChange={e => {
-                              const selectedAsset = (data?.assets || []).find((a:any) => a.id === e.target.value);
-                              const parentCust = (data?.customers || []).find((c:any) => c.id === selectedAsset?.customer_id);
+                              const selectedAsset = (data?.assets || []).find((a:any) => String(a.id) === String(e.target.value));
+                              const parentCust = (data?.customers || []).find((c:any) => String(c.id) === String(selectedAsset?.customer_id));
                               setEditJobDetailForm({...editJobDetailForm, assetId: e.target.value, customerName: parentCust?.name || ''});
                             }}>
                               <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- Listeden Varlık Seçin --</option>
@@ -1207,8 +1207,8 @@ export default function DashboardModals({
                           <input type="text" placeholder="Cihaz Adı Ara..." className="w-full pl-9 pr-3 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 bg-white" value={searchAsset} onChange={e => setSearchAsset(e.target.value)} />
                         </div>
                         <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500 custom-scrollbar" size={4} value={jobForm.assetId} onChange={e => {
-                          const selectedAsset = (data?.assets || []).find((a:any) => a.id === e.target.value);
-                          const parentCust = (data?.customers || []).find((c:any) => c.id === selectedAsset?.customer_id);
+                          const selectedAsset = (data?.assets || []).find((a:any) => String(a.id) === String(e.target.value));
+                          const parentCust = (data?.customers || []).find((c:any) => String(c.id) === String(selectedAsset?.customer_id));
                           setJobForm({...jobForm, assetId: e.target.value, customerName: parentCust?.name || ''});
                         }}>
                           <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- Listeden Varlık Seçin --</option>
