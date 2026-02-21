@@ -8,12 +8,17 @@ export default function Header({ data, searchTerm, setSearchTerm, setIsMobileMen
   
   // Kullanıcı Adı, Rolü ve Branşını tutan State
   const [userInfo, setUserInfo] = useState({ name: '', role: '', branch: '' });
+  const [logoBgColor, setLogoBgColor] = useState<string>('#ffffff');
 
   useEffect(() => {
-    // İlk yüklemede internet durumunu kontrol et
+    // 1. İNTERNET DURUMU
     setIsOffline(!navigator.onLine);
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
-    // Tarayıcıdan giriş yapan kişinin bilgilerini alıyoruz
+    // 2. KULLANICI BİLGİLERİ
     const storedRole = localStorage.getItem('userRole') || '';
     const storedName = localStorage.getItem('userName') || '';
     let currentBranch = '';
@@ -22,7 +27,7 @@ export default function Header({ data, searchTerm, setSearchTerm, setIsMobileMen
     // Eğer Patron girdiyse:
     if (storedRole === 'Patron') {
         currentName = data?.ownerName || storedName || 'Firma Sahibi';
-        currentBranch = data?.sector || 'Merkez Yönetim';
+        currentBranch = ''; // DÜZELTME: Patronun branşı olmaz, gizliyoruz.
     } 
     // Eğer Personel (Yönetici veya Usta) girdiyse:
     else if (data?.staff) {
@@ -34,11 +39,69 @@ export default function Header({ data, searchTerm, setSearchTerm, setIsMobileMen
 
     setUserInfo({ name: currentName, role: storedRole, branch: currentBranch });
 
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
-    
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    // 3. LOGO RENK ANALİZİ
+    if (data?.logo) {
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      
+      img.onerror = () => {
+        setLogoBgColor('#ffffff');
+      };
+
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        
+        try {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const pixelData = imageData.data;
+          let r = 0, g = 0, b = 0, count = 0;
+          
+          for (let i = 0; i < pixelData.length; i += 4) {
+            if (pixelData[i + 3] < 128) continue; 
+            r += pixelData[i];
+            g += pixelData[i + 1];
+            b += pixelData[i + 2];
+            count++;
+          }
+          
+          if (count > 0) {
+            r = Math.floor(r / count);
+            g = Math.floor(g / count);
+            b = Math.floor(b / count);
+
+            const palette = [
+              { name: 'white', rgb: [255, 255, 255], hex: '#ffffff' },
+              { name: 'black', rgb: [15, 23, 42], hex: '#0f172a' }, 
+              { name: 'blue', rgb: [37, 99, 235], hex: '#2563eb' }
+            ];
+
+            let maxDist = -1;
+            let selectedColor = '#ffffff';
+
+            for (const color of palette) {
+              const dist = Math.sqrt(Math.pow(r - color.rgb[0], 2) + Math.pow(g - color.rgb[1], 2) + Math.pow(b - color.rgb[2], 2));
+              if (dist > maxDist) {
+                maxDist = dist;
+                selectedColor = color.hex;
+              }
+            }
+            setLogoBgColor(selectedColor);
+          }
+        } catch (e) {
+          console.error("Renk analizi yapılamadı:", e);
+        }
+      };
+      img.src = data.logo;
+    } else {
+      setLogoBgColor('#ffffff');
+    }
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
@@ -59,18 +122,23 @@ export default function Header({ data, searchTerm, setSearchTerm, setIsMobileMen
 
         {/* FİRMA LOGOSU VEYA VARSAYILAN İKON */}
         {data?.logo ? (
-          <img 
-            src={data.logo} 
-            alt="Firma Logo" 
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg object-contain bg-slate-50 border border-slate-200 p-1 shadow-sm shrink-0" 
-          />
+          <div 
+             className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shadow-sm shrink-0 border border-slate-200/50 p-1.5 overflow-hidden"
+             style={{ backgroundColor: logoBgColor }}
+          >
+             <img 
+               src={data.logo} 
+               alt="Firma Logo" 
+               className="w-full h-full object-contain drop-shadow-sm" 
+             />
+          </div>
         ) : (
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
-            <Building2 size={18} />
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+            <Building2 size={20} />
           </div>
         )}
 
-        <div className="flex flex-col justify-center">
+        <div className="flex flex-col justify-center ml-1">
           <h1 className="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2 tracking-tight max-w-[150px] sm:max-w-xs">
             <span className="truncate">{data?.name || 'Yükleniyor...'}</span>
             
@@ -106,25 +174,12 @@ export default function Header({ data, searchTerm, setSearchTerm, setIsMobileMen
       </div>
 
       <div className="flex items-center gap-3 sm:gap-5 shrink-0">
-        
-        <div className="relative hidden sm:block">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input 
-            type="text" 
-            placeholder="Hızlı ara..." 
-            value={searchTerm || ''}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-48 lg:w-64 pl-9 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-full text-xs font-bold outline-none focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400 text-slate-700 shadow-inner"
-          />
-        </div>
-        
         <button className="relative p-2.5 sm:p-2 bg-slate-50 border border-slate-100 rounded-full text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all active:scale-95 shadow-sm">
           <Bell size={18} />
           {notificationCount > 0 && (
             <span className="absolute top-0 right-0 w-3 h-3 bg-rose-500 rounded-full border-2 border-white animate-pulse"></span>
           )}
         </button>
-
       </div>
     </header>
   );
