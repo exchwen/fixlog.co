@@ -22,6 +22,7 @@ interface AssetQRModalProps {
 export default function AssetQRModal({ isOpen, onClose, asset, companyName, companyLogo, landlinePhone, whatsappPhone, companyWebsite }: AssetQRModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
+  const [idCopied, setIdCopied] = useState(false); // YENİ: ID kopyalama durumu için
   const [logoBgColor, setLogoBgColor] = useState<string>('#ffffff');
   
   const [showPrintModeSelection, setShowPrintModeSelection] = useState(false);
@@ -164,6 +165,8 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
             color: black !important;
             fill: black !important;
         }
+
+        .print-id-text { color: black !important; font-weight: bold !important; }
         
         ::-webkit-scrollbar { display: none; }
       }
@@ -282,13 +285,28 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
               </div>
 
               {/* 2. QR KOD */}
-              <div className="flex-1 flex flex-col items-center justify-center w-full my-1">
+              <div className="flex-1 flex flex-col items-center justify-center w-full my-1 relative">
                 <QRCodeSVG 
                   value={qrUrl} 
-                  size={100} 
+                  size={90} 
                   level="Q"
                   includeMargin={false}
                 />
+                {/* YENİ: SİSTEM KODU (ID) VE KOPYALA BUTONU EKLENDİ */}
+                <div 
+                   onClick={() => {
+                     navigator.clipboard.writeText(uniqueId);
+                     setIdCopied(true);
+                     setTimeout(() => setIdCopied(false), 2000);
+                   }}
+                   className={`mt-2 flex items-center gap-1.5 text-[9px] font-bold tracking-widest uppercase px-3 py-1 rounded-md border border-slate-200 cursor-pointer print-id-text transition-colors print:border-none print:bg-transparent ${printMode === 'bw' ? 'text-black' : 'text-slate-600 bg-slate-50 hover:bg-slate-100'}`}
+                   title="Kodu Kopyalamak İçin Tıklayın"
+                >
+                   ID: {asset.id}
+                   <span className="print:hidden">
+                     {idCopied ? <Check size={10} className="text-emerald-500" /> : <Copy size={10} className="text-slate-400" />}
+                   </span>
+                </div>
               </div>
 
               {/* 3. ALT BİLGİLER VE İLETİŞİM */}

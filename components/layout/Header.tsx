@@ -4,14 +4,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Menu, Bell, Building2, ScanLine, X, Camera, ArrowRight, QrCode, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// DİKKAT: setSelectedJob prop'unu ekledik. Dashboardlardan buraya aktarılması gerekiyor.
 export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: any) {
   const [isOffline, setIsOffline] = useState(false);
   
   const [userInfo, setUserInfo] = useState({ name: '', role: '', branch: '' });
   const [logoBgColor, setLogoBgColor] = useState<string>('#ffffff');
 
-  // YENİ: Akıllı QR Tarayıcı State'leri
+  // Akıllı QR Tarayıcı State'leri
   const [showScanner, setShowScanner] = useState(false);
   const [manualCode, setManualCode] = useState('');
   const [scanLoading, setScanLoading] = useState(false);
@@ -93,22 +92,23 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
   const notificationCount = (data?.activeEmergencies?.length || 0) + (data?.pendingFaults?.length || 0);
 
   // ==========================================
-  // YENİ: AKILLI QR YÖNLENDİRME (SMART ROUTING)
+  // AKILLI QR YÖNLENDİRME (SMART ROUTING)
   // ==========================================
   const processQRData = (code: string) => {
     if (!code.trim()) return;
     
-    // 1. Temizleme: Eğer tam URL geldiyse (örn: isdokumu.com/q/123), sadece UUID'yi çıkar.
-    let extractedUuid = code.trim();
-    if (extractedUuid.includes('/q/')) {
-        extractedUuid = extractedUuid.split('/q/')[1].split('?')[0].split('/')[0];
+    // 1. Temizleme: Eğer tam URL geldiyse (örn: isdokumu.com/q/123), sadece UUID'yi veya ID'yi çıkar.
+    let extractedId = code.trim();
+    if (extractedId.includes('/q/')) {
+        extractedId = extractedId.split('/q/')[1].split('?')[0].split('/')[0];
     }
 
     const isUsta = userInfo.role === 'Usta';
     
     // 2. Eğer USTA ise ve cihaz sisteme kayıtlıysa "Bana atanmış iş var mı?" diye kontrol et
     if (isUsta && setSelectedJob && data?.assets) {
-        const foundAsset = data.assets.find((a: any) => a.uuid === extractedUuid);
+        // Varlığı UUID veya ID'ye göre bul
+        const foundAsset = data.assets.find((a: any) => a.uuid === extractedId || String(a.id) === String(extractedId));
         
         if (foundAsset && data?.jobs) {
             // Ustanın bu cihaza ait tamamlanmamış bir işi var mı?
@@ -127,21 +127,20 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
     }
 
     // 3. Eğer Usta değilse VEYA Usta ama üzerine o cihaza atanmış iş yoksa -> Cihaz Profiline Git
-    window.open(`/q/${extractedUuid}`, '_blank');
+    window.open(`/q/${extractedId}`, '_blank');
     setShowScanner(false);
     setManualCode('');
   };
 
-  // NATIVE KAMERA BARKOD OKUMA (Extra kütüphane gerektirmez, Android/Chrome/iOS Safari destekler)
+  // NATIVE KAMERA BARKOD OKUMA (Extra kütüphane gerektirmez)
   const handleCameraScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setScanLoading(true);
 
-    // Modern tarayıcı barkod okuyucu API kontrolü
     if (!('BarcodeDetector' in window)) {
-        alert("Tarayıcınız çevrimdışı barkod okumayı desteklemiyor. Lütfen kodu manuel girin veya cihazınızın kendi kamerasından linke tıklayın.");
+        alert("Cihazınız görselden barkod okumayı desteklemiyor. Lütfen sistem kodunu (ID veya UUID) manuel olarak giriniz.");
         setScanLoading(false);
         return;
     }
@@ -154,7 +153,7 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
         if (barcodes.length > 0) {
             processQRData(barcodes[0].rawValue);
         } else {
-            alert("QR Kod tespit edilemedi. Lütfen daha net bir fotoğraf çekin veya manuel kod girin.");
+            alert("QR Kod tespit edilemedi. Lütfen daha net bir fotoğraf çekin veya alt kısımdan manuel kod girin.");
         }
     } catch (err) {
         console.error(err);
@@ -221,7 +220,6 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
 
         <div className="flex items-center gap-3 shrink-0">
           
-          {/* YENİ: QR OKUTMA BUTONU */}
           <button 
              onClick={() => setShowScanner(true)}
              className="relative flex items-center gap-2 p-2 sm:px-3 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all active:scale-95 shadow-md shadow-blue-600/20 group"
@@ -239,42 +237,43 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
         </div>
       </header>
 
-      {/* YENİ: AKILLI QR OKUMA MODALI */}
+      {/* AKILLI QR OKUMA MODALI - (MOBİLDE TAM EKRAN, MASAÜSTÜNDE KUTU) */}
       <AnimatePresence>
          {showScanner && (
-            <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-slate-900/90 sm:bg-slate-900/80 backdrop-blur-md z-[200] flex items-center justify-center p-0 sm:p-4">
                <motion.div 
-                  initial={{ scale: 0.95, opacity: 0 }} 
-                  animate={{ scale: 1, opacity: 1 }} 
-                  exit={{ scale: 0.95, opacity: 0 }}
-                  className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+                  initial={{ scale: 0.95, opacity: 0, y: 20 }} 
+                  animate={{ scale: 1, opacity: 1, y: 0 }} 
+                  exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                  className="bg-white w-full h-full sm:h-auto sm:max-w-sm sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
                >
-                  <div className="bg-slate-900 p-6 flex flex-col items-center text-center text-white relative overflow-hidden">
+                  {/* MOBİL UYUMLU HEADER KISMI */}
+                  <div className="bg-slate-900 pt-16 pb-8 sm:pt-6 sm:pb-6 px-6 flex flex-col items-center text-center text-white relative overflow-hidden shrink-0">
                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-500/20 via-transparent to-transparent opacity-50"></div>
-                     <button onClick={() => setShowScanner(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors bg-white/10 rounded-full p-1"><X size={20}/></button>
+                     <button onClick={() => setShowScanner(false)} className="absolute top-6 sm:top-4 right-6 sm:right-4 text-slate-400 hover:text-white transition-colors bg-white/10 rounded-full p-2 sm:p-1 active:scale-95 z-20"><X size={20}/></button>
                      
-                     <div className="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center mb-4 border border-blue-400/30 relative z-10">
-                        <QrCode size={32} className="text-blue-400" />
+                     <div className="w-20 h-20 sm:w-16 sm:h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center mb-4 border border-blue-400/30 relative z-10">
+                        <QrCode size={40} className="text-blue-400 sm:w-8 sm:h-8" />
                      </div>
-                     <h3 className="text-xl font-black mb-1 relative z-10 tracking-tight">Akıllı QR Tarayıcı</h3>
-                     <p className="text-xs text-slate-400 font-medium relative z-10">
+                     <h3 className="text-2xl sm:text-xl font-black mb-1 relative z-10 tracking-tight">Cihaz / Varlık Okut</h3>
+                     <p className="text-sm sm:text-xs text-slate-400 font-medium relative z-10 max-w-[250px]">
                         {userInfo.role === 'Usta' ? 'Kayıtlı cihazın aktif iş formuna veya profiline atlayın.' : 'Cihaz detaylarına ve geçmişine anında ulaşın.'}
                      </p>
                   </div>
 
-                  <div className="p-6 space-y-6">
+                  <div className="p-6 sm:p-6 space-y-8 sm:space-y-6 flex-1 flex flex-col justify-center sm:justify-start">
                      
-                     <div className="space-y-3">
-                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block text-center">Kamera İle Oku</label>
+                     <div className="space-y-4 sm:space-y-3">
+                         <label className="text-xs sm:text-[10px] font-black text-slate-400 uppercase tracking-widest block text-center">Kamerayı Kullan</label>
                          <button 
                             disabled={scanLoading}
                             onClick={() => fileInputRef.current?.click()}
-                            className="w-full flex items-center justify-center gap-3 bg-blue-50 hover:bg-blue-100 text-blue-700 border-2 border-dashed border-blue-200 py-4 rounded-2xl font-bold transition-all active:scale-95 group disabled:opacity-50"
+                            className="w-full flex items-center justify-center gap-3 bg-blue-50 hover:bg-blue-100 text-blue-700 border-2 border-dashed border-blue-200 py-6 sm:py-4 rounded-2xl font-bold transition-all active:scale-95 group disabled:opacity-50 text-base sm:text-sm"
                          >
-                            {scanLoading ? <Loader2 size={24} className="animate-spin" /> : <Camera size={24} className="group-hover:scale-110 transition-transform" />}
-                            {scanLoading ? 'İşleniyor...' : 'Fotoğraf Çek / Yükle'}
+                            {scanLoading ? <Loader2 size={28} className="animate-spin sm:w-6 sm:h-6" /> : <Camera size={28} className="group-hover:scale-110 transition-transform sm:w-6 sm:h-6" />}
+                            {scanLoading ? 'QR Aranıyor...' : 'Fotoğraf Çek / Okut'}
                          </button>
-                         {/* Gizli Dosya Seçici (Kamerayı tetikler) */}
+                         {/* Gizli Dosya Seçici (Mobil Cihazda Doğrudan Kamerayı Açar) */}
                          <input 
                             type="file" 
                             accept="image/*" 
@@ -287,26 +286,26 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
 
                      <div className="flex items-center gap-4 w-full">
                         <div className="h-px bg-slate-200 flex-1"></div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase">VEYA</span>
+                        <span className="text-xs sm:text-[10px] font-black text-slate-400 uppercase">VEYA</span>
                         <div className="h-px bg-slate-200 flex-1"></div>
                      </div>
 
-                     <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block text-center">Manuel Kod / Link</label>
-                        <div className="flex gap-2">
+                     <div className="space-y-4 sm:space-y-3">
+                        <label className="text-xs sm:text-[10px] font-black text-slate-400 uppercase tracking-widest block text-center">Sistem Kodu (ID) Gir</label>
+                        <div className="flex gap-2 h-14 sm:h-auto">
                            <input 
                               type="text" 
                               value={manualCode}
                               onChange={(e) => setManualCode(e.target.value)}
-                              placeholder="Kısa kod veya linki yapıştır" 
-                              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:border-blue-400 focus:bg-white transition-all text-slate-700"
+                              placeholder="Kodu buraya yazın..." 
+                              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-5 sm:px-4 py-3 text-base sm:text-sm font-semibold outline-none focus:border-blue-400 focus:bg-white transition-all text-slate-700 placeholder:text-slate-400"
                            />
                            <button 
                               onClick={() => processQRData(manualCode)}
                               disabled={!manualCode.trim()}
-                              className="bg-slate-900 hover:bg-slate-800 text-white px-4 rounded-xl font-bold transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center"
+                              className="bg-slate-900 hover:bg-slate-800 text-white px-6 sm:px-4 rounded-xl font-bold transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center"
                            >
-                              <ArrowRight size={20} />
+                              <ArrowRight size={24} className="sm:w-5 sm:h-5" />
                            </button>
                         </div>
                      </div>

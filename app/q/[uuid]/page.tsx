@@ -48,7 +48,6 @@ export default function AssetScanPage() {
         setStaffRole(role);
     }
 
-    // DÜZELTME: (window.navigator as any).standalone ile TypeScript hatası giderildi.
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
     if (isStandalone) return;
 
@@ -526,7 +525,7 @@ export default function AssetScanPage() {
           <div className="space-y-3">
             <button 
               onClick={() => setShowFaultModal(true)}
-              className="w-full flex items-center justify-center gap-3 bg-amber-400 hover:bg-amber-500 text-amber-950 py-4 rounded-xl font-bold text-lg shadow-lg shadow-amber-200/50 transition-all active:scale-95"
+              className="w-full flex items-center justify-center gap-3 bg-amber-400 hover:bg-amber-50 text-amber-950 py-4 rounded-xl font-bold text-lg shadow-lg shadow-amber-200/50 transition-all active:scale-95"
             >
               <AlertTriangle size={24} /> Arıza Bildir
             </button>
