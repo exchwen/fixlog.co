@@ -8,7 +8,10 @@ import * as XLSX from 'xlsx';
 export default function FinanceTab({ data, userRole = 'Patron' }: any) {
   const params = useParams();
   const router = useRouter();
-  const activeSlug = params?.slug || localStorage.getItem('companySlug');
+  
+  // YENİ: URL'ye göre 100% güvenilir yol ve slug tespiti (Bilet İzolasyonu)
+  const isPatronPath = typeof window !== 'undefined' && window.location.pathname.includes('/dashboard');
+  const activeSlug = params?.slug || (typeof window !== 'undefined' ? localStorage.getItem(isPatronPath ? 'patron_userSlug' : 'staff_userSlug') : '');
   
   // Gelir / Gider Modalı State'leri
   const [financeModal, setFinanceModal] = useState<{isOpen: boolean, type: 'Gelir' | 'Gider'}>({ isOpen: false, type: 'Gider' });
@@ -87,7 +90,8 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
         created_at: new Date().toISOString()
     };
 
-    const token = localStorage.getItem(userRole === 'Patron' ? 'patron_authToken' : 'staff_authToken');
+    // YENİ: Prop yerine URL'ye dayalı kusursuz Token bulucu
+    const token = localStorage.getItem(isPatronPath ? 'patron_authToken' : 'staff_authToken');
 
     try {
       const res = await fetch(`https://backend.isdokumu.workers.dev/${endpoint}`, {
@@ -102,7 +106,7 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
       if (res.ok) {
         setLocalFinances([newRecord, ...localFinances]);
         closeFinanceModal();
-        if (userRole === 'Yönetici') {
+        if (!isPatronPath) { // URL'den Yönetici/Usta olduğunu anlar
             alert('İşlem başarıyla kaydedildi. Patron hesabına aktarıldı.');
         }
         router.refresh(); 
@@ -352,9 +356,9 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
   };
 
   return (
-    <div className={`relative pb-10 ${userRole === 'Yönetici' ? 'flex flex-col items-center justify-center min-h-[70vh] px-4' : 'space-y-6 sm:space-y-8'}`}>
+    <div className={`relative pb-10 ${!isPatronPath && userRole === 'Yönetici' ? 'flex flex-col items-center justify-center min-h-[70vh] px-4' : 'space-y-6 sm:space-y-8'}`}>
        
-       {userRole === 'Yönetici' ? (
+       {!isPatronPath && userRole === 'Yönetici' ? (
          <div className="w-full max-w-lg bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xl text-center flex flex-col items-center gap-6 mt-10">
             <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center shadow-inner border border-blue-100">
                <Wallet size={32} />
@@ -474,7 +478,7 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
          </div>
        )}
 
-       {selectedJobDetail && userRole === 'Patron' && (
+       {selectedJobDetail && isPatronPath && (
          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
             <div className="bg-white w-full max-w-sm rounded-2xl p-0 shadow-2xl relative overflow-hidden flex flex-col">
               
