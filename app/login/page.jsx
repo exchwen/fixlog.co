@@ -18,7 +18,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
 } from '../../lib/firebase';
-import { setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { setPersistence, browserLocalPersistence, onAuthStateChanged } from 'firebase/auth';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
@@ -27,15 +27,41 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // YENİ: OTOMATİK GİRİŞ ZEKASI
-  // Sayfa açılır açılmaz tarayıcı hafızasına bakar, bilet varsa direkt içeri atar!
+  // YENİ: KUSURSUZ OTOMATİK GİRİŞ ZEKASI
+  // Patron ve Usta rollerini ayırarak doğru sayfaya fırlatır!
   useEffect(() => {
-    const token = localStorage.getItem('patron_authToken');
-    const slug = localStorage.getItem('patron_userSlug');
-    if (token && slug) {
-       router.push(`/${slug}/manager`); // Yada dashboard, senin yapıya göre ayarladım
-    }
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Tarayıcıdaki tokenleri ve rolleri oku
+        const patronToken = localStorage.getItem('patron_authToken');
+        const patronSlug = localStorage.getItem('patron_userSlug');
+        
+        const staffToken = localStorage.getItem('staff_authToken');
+        const staffSlug = localStorage.getItem('staff_userSlug');
+
+        // ÖNCELİK 1: Eğer Patron tokeni varsa kesinlikle Manager'a at
+        if (patronToken && patronSlug) {
+          router.replace(`/${patronSlug}/manager`);
+          return;
+        }
+
+        // ÖNCELİK 2: Eğer Usta tokeni varsa Dashboard'a at
+        if (staffToken && staffSlug) {
+          router.replace(`/${staffSlug}/dashboard`);
+          return;
+        }
+
+        // Token yok ama Firebase Auth varsa (yeni giriş/senkronizasyon anı), beklet (aşağıdaki login fonskiyonları devralacak)
+        setIsCheckingAuth(false);
+      } else {
+        // Firebase'de giriş yoksa normal login ekranını göster
+        setIsCheckingAuth(false);
+      }
+    });
+
+    return () => unsubscribe();
   }, [router]);
 
   const handleChange = (e) => {
@@ -61,13 +87,12 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (data.slug && data.token) {
-        // DÜZELTME: İsimlendirmeyi Google Login ile AYNI YAPTIM.
         localStorage.setItem('patron_authToken', data.token);
         localStorage.setItem('patron_userRole', data.role || 'Patron');
         localStorage.setItem('patron_userName', data.name || 'Patron');
         localStorage.setItem('patron_userSlug', data.slug);
         
-        router.push(`/${data.slug}/manager`); // Patronun gittiği asıl sayfa manager'dır
+        router.push(`/${data.slug}/manager`); 
       } else {
         router.push('/register');
       }
@@ -104,6 +129,15 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center font-sans">
+        <ShieldCheck className="w-12 h-12 text-blue-500 mb-4 animate-pulse" />
+        <span className="font-black tracking-widest text-[11px] text-gray-400 uppercase">Oturum Kontrol Ediliyor...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[100dvh] bg-[#F8FAFC] flex items-center justify-center p-4 sm:p-6 relative font-sans">
