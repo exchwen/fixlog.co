@@ -7,7 +7,7 @@ import {
   ClipboardList, Users, Box, Wallet, Plus, ArrowUpRight, 
   CheckCircle, Clock, Calendar, TrendingUp, TrendingDown, 
   Package, AlertTriangle, ShieldCheck, Activity, User, Lock, 
-  Settings, X, Wrench, Link as LinkIcon, Check, Database, Image as ImageIcon, ShoppingCart, PlayCircle, MapPin
+  Settings, X, Wrench, Link as LinkIcon, Check, Database, Image as ImageIcon, ShoppingCart
 } from 'lucide-react';
 
 export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob, setActiveTab, userRole: propRole }: any) {
@@ -18,29 +18,16 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const isPatronPath = typeof window !== 'undefined' && window.location.pathname.includes('/dashboard');
   const userRole = propRole || (isPatronPath ? 'Patron' : 'Yönetici');
 
-  // Gerçek Kullanıcı Adını Ekranda Göstermek İçin State
+  // YENİ: Gerçek Kullanıcı Adını Ekranda Göstermek İçin State
   const [currentUserName, setCurrentUserName] = useState<string>('Yönetici');
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    // URL'ye göre ilgili kullanıcının adını ve ID'sini localStorage'dan çek
+    // URL'ye göre ilgili kullanıcının adını localStorage'dan çek
     const prefix = isPatronPath ? 'patron_' : 'staff_';
     const savedName = localStorage.getItem(`${prefix}userName`);
     
-    // JWT Token'dan ID'yi çöz (Sana atanan işleri bulmak için)
-    const token = localStorage.getItem(`${prefix}authToken`);
-    if (token) {
-        try {
-            const base64Url = token.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-            const payload = JSON.parse(jsonPayload);
-            setCurrentUserId(String(payload.id));
-        } catch(e) {}
-    }
-    
     if (savedName) {
-      setCurrentUserName(savedName.split(' ')[0]); 
+      setCurrentUserName(savedName.split(' ')[0]); // Sadece ilk adını al
     } else if (data?.ownerName && isPatronPath) {
       setCurrentUserName(data.ownerName.split(' ')[0]);
     }
@@ -62,15 +49,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const completedJobs = jobs.filter((j: any) => j.status === 'Tamamlandı').length;
   const pendingJobs = jobs.filter((j: any) => j.status === 'Beklemede' || j.status === 'Devam Ediyor').length;
   const plannedJobs = jobs.filter((j: any) => j.status === 'Gelecek').length;
-
-  // YENİ: Bana Atanan İşler (Yönetici de olsan sana iş atanmış olabilir)
-  const myActiveJobs = useMemo(() => {
-     if (!currentUserId || userRole === 'Patron') return [];
-     return jobs.filter((j: any) => 
-        (String(j.staff_id) === String(currentUserId) || String(j.details?.worker_id) === String(currentUserId)) && 
-        (j.status === 'Beklemede' || j.status === 'Gelecek' || j.status === 'Devam Ediyor' || j.status === 'Sahada')
-     );
-  }, [jobs, currentUserId, userRole]);
 
   const { currentMonthJobs, lastMonthJobs, growthPercent, isGrowthPositive, monthlyPhotos } = useMemo(() => {
     const now = new Date();
@@ -256,6 +234,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
         <div>
+          {/* YENİ: Dinamik İsim Gösterimi */}
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             Hoş Geldin, {currentUserName} 👋
           </h2>
@@ -278,40 +257,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
             </div>
         </div>
       </div>
-
-      {/* YENİ: YÖNETİCİ/PERSONELE ATANMIŞ AKTİF İŞLER (BANA ATANANLAR) */}
-      {myActiveJobs.length > 0 && (
-        <div className="bg-blue-600 rounded-3xl p-5 shadow-xl shadow-blue-600/20 text-white relative overflow-hidden">
-           <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-           <div className="relative z-10">
-              <h2 className="text-xs font-black text-blue-200 uppercase tracking-widest mb-4 flex items-center gap-2">
-                 <PlayCircle size={16} /> Size Atanan Sahadaki İşleriniz
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                 {myActiveJobs.map((job: any) => (
-                   <div 
-                      key={job.id} 
-                      onClick={() => setSelectedJob && setSelectedJob(job)} 
-                      className="bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl p-4 cursor-pointer transition-colors active:scale-95"
-                   >
-                      <div className="flex justify-between items-start mb-2">
-                         <span className="bg-white/20 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider backdrop-blur-md">
-                            {job.status}
-                         </span>
-                         <span className="text-[10px] font-bold opacity-80 flex items-center gap-1">
-                            <Clock size={10}/> {job.scheduled_date || 'Anlık'}
-                         </span>
-                      </div>
-                      <h3 className="text-base font-black leading-tight mb-1 line-clamp-1">{job.customer_name}</h3>
-                      <p className="text-blue-100 text-xs font-medium flex items-center gap-1.5 truncate">
-                         <MapPin size={12} className="shrink-0"/> {job.work_type}
-                      </p>
-                   </div>
-                 ))}
-              </div>
-           </div>
-        </div>
-      )}
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-blue-300 transition-colors group cursor-pointer active:scale-95">
