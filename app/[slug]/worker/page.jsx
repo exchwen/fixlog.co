@@ -29,14 +29,14 @@ export default function WorkerDashboard() {
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
   const [jobs, setJobs] = useState([]);
-  const [data, setData] = useState(null); // Header için ham veriyi tutar
+  const [data, setData] = useState(null); 
   
   const [companyName, setCompanyName] = useState('İşletme');
   const [companySector, setCompanySector] = useState('');
   const [staffBranch, setStaffBranch] = useState(''); 
   
   const [activeTab, setActiveTab] = useState('jobs'); 
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Header menüsü için
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
   
   const [selectedJob, setSelectedJob] = useState(null);
   const [jobNote, setJobNote] = useState('');
@@ -104,7 +104,7 @@ export default function WorkerDashboard() {
     }
     
     const remaining = [];
-    const token = localStorage.getItem('staff_authToken'); // ZIRH EKLENDİ
+    const token = localStorage.getItem('staff_authToken'); 
 
     for (const item of pending) {
       try {
@@ -143,10 +143,9 @@ export default function WorkerDashboard() {
     };
   }, [slug]);
 
-
   const fetchData = async (isInitial = false) => {
-    const token = localStorage.getItem('staff_authToken'); // ZIRH EKLENDİ
-    const role = localStorage.getItem('staff_userRole'); // ZIRH EKLENDİ
+    const token = localStorage.getItem('staff_authToken'); 
+    const role = localStorage.getItem('staff_userRole'); 
 
     if (!token || role !== 'Usta') {
       localStorage.removeItem('staff_authToken');
@@ -160,6 +159,27 @@ export default function WorkerDashboard() {
     const decoded = parseJwt(token);
     setUserData(decoded);
 
+    // ==========================================
+    // YENİ: PUSHER BEAMS CİHAZ KAYIT İŞLEMİ (USTA İÇİN)
+    // Sadece kendisine atanan işleri ve mesajları dinler
+    // ==========================================
+    if (isInitial && typeof window !== 'undefined') {
+        import('@pusher/push-notifications-web').then((PusherPushNotifications) => {
+            const beamsClient = new PusherPushNotifications.Client({
+                instanceId: "6a47ebc2-0c89-48f1-81a3-80a4e003dd41",
+            });
+            beamsClient.start()
+                .then(async () => {
+                    // Ustanın özel ID'sine sahip kanal
+                    const userInterest = `user-${slug}-${decoded.id}`;
+                    
+                    await beamsClient.clearDeviceInterests();
+                    await beamsClient.addDeviceInterest(userInterest);
+                })
+                .catch(console.error);
+        }).catch(console.error);
+    }
+
     try {
       const res = await fetch(`${API_URL}/dashboard-data?slug=${slug}`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -167,20 +187,20 @@ export default function WorkerDashboard() {
 
       if (res.ok) {
         const result = await res.json();
-        setData(result); // Ham veriyi Header için set ediyoruz
+        setData(result); 
         
         localStorage.setItem(`worker_cache_${slug}`, JSON.stringify(result));
         setIsOffline(false);
 
         setCompanyName(result.name);
-        setCompanySector(data.sector || '');
+        setCompanySector(result.sector || '');
         
-        const myStaffRecord = data.staff.find(s => String(s.id) === String(decoded.id));
+        const myStaffRecord = result.staff.find(s => String(s.id) === String(decoded.id));
         if (myStaffRecord) {
             setStaffBranch(myStaffRecord.branch);
         }
         
-        const myJobs = data.jobs.filter(j => String(j.staff_id) === String(decoded.id));
+        const myJobs = result.jobs.filter(j => String(j.staff_id) === String(decoded.id));
         setJobs(myJobs);
       } else if (res.status === 401 || res.status === 403) {
         handleLogout();
@@ -217,9 +237,9 @@ export default function WorkerDashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem('staff_authToken');
-localStorage.removeItem('staff_userRole');
-localStorage.removeItem('staff_userName');
-localStorage.removeItem('staff_userSlug');
+    localStorage.removeItem('staff_userRole');
+    localStorage.removeItem('staff_userName');
+    localStorage.removeItem('staff_userSlug');
     router.push(`/${slug}/login`);
   };
 
@@ -270,7 +290,7 @@ localStorage.removeItem('staff_userSlug');
 
   const handleStatusUpdate = async (newStatus) => {
     setIsSaving(true);
-    const token = localStorage.getItem('staff_authToken'); // ZIRH EKLENDİ
+    const token = localStorage.getItem('staff_authToken'); 
 
     let formText = '';
     const targetStatus = newStatus === 'Tamamlandı' ? 'Onay Bekliyor' : newStatus;

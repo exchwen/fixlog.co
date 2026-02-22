@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -18,7 +18,6 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
 } from '../../lib/firebase';
-// YENİ EKLENEN FIREBASE MODÜLLERİ (Kalıcılık İçin)
 import { setPersistence, browserLocalPersistence } from 'firebase/auth';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
@@ -29,6 +28,16 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({ email: '', password: '' });
 
+  // YENİ: OTOMATİK GİRİŞ ZEKASI
+  // Sayfa açılır açılmaz tarayıcı hafızasına bakar, bilet varsa direkt içeri atar!
+  useEffect(() => {
+    const token = localStorage.getItem('patron_authToken');
+    const slug = localStorage.getItem('patron_userSlug');
+    if (token && slug) {
+       router.push(`/${slug}/manager`); // Yada dashboard, senin yapıya göre ayarladım
+    }
+  }, [router]);
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     if (error) setError('');
@@ -38,7 +47,6 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      // YENİ: Firebase oturumunu tarayıcıda (localStorage) KALICI hale getirir
       await setPersistence(auth, browserLocalPersistence);
 
       const userCredential = await signInWithEmailAndPassword(
@@ -53,13 +61,13 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (data.slug && data.token) {
-        // DÜZELTME: Worker'dan gelen güvenlik biletini, rolü ve ismi tarayıcıya KAZIYORUZ!
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userRole', data.role || 'Patron');
-        localStorage.setItem('userName', data.name || 'Patron');
-        localStorage.setItem('userSlug', data.slug);
+        // DÜZELTME: İsimlendirmeyi Google Login ile AYNI YAPTIM.
+        localStorage.setItem('patron_authToken', data.token);
+        localStorage.setItem('patron_userRole', data.role || 'Patron');
+        localStorage.setItem('patron_userName', data.name || 'Patron');
+        localStorage.setItem('patron_userSlug', data.slug);
         
-        router.push(`/${data.slug}/dashboard`);
+        router.push(`/${data.slug}/manager`); // Patronun gittiği asıl sayfa manager'dır
       } else {
         router.push('/register');
       }
@@ -73,7 +81,6 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     try {
-      // YENİ: Firebase oturumunu tarayıcıda (localStorage) KALICI hale getirir
       await setPersistence(auth, browserLocalPersistence);
 
       const result = await signInWithPopup(auth, googleProvider);
@@ -82,13 +89,12 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (data.slug && data.token) {
-        // DÜZELTME: Worker'dan gelen güvenlik biletini, rolü ve ismi tarayıcıya KAZIYORUZ!
         localStorage.setItem('patron_authToken', data.token);
         localStorage.setItem('patron_userRole', data.role || 'Patron');
         localStorage.setItem('patron_userName', data.name || 'Patron');
         localStorage.setItem('patron_userSlug', data.slug);
         
-        router.push(`/${data.slug}/dashboard`);
+        router.push(`/${data.slug}/manager`);
       } else {
         router.push('/register');
       }

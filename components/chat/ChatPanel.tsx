@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Send, X, MessageSquare, ArrowLeft, WifiOff, CheckCheck, Clock, Lock, Bell } from 'lucide-react';
 import Pusher from 'pusher-js';
@@ -18,6 +18,9 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // YENİ: Tüm personellerin en son mesaj saatini tutmak için genel mesaj listesini çekeceğiz
+  const [allMessages, setAllMessages] = useState<any[]>([]);
 
   useEffect(() => {
     const isPatronPath = window.location.pathname.includes('/dashboard');
@@ -42,8 +45,63 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     }
   }, []);
 
+  // YENİ: Kullanıcının genel mesaj geçmişini çek (Sıralama yapabilmek için)
+  useEffect(() => {
+    const fetchAllMessages = async () => {
+        if (!data?.slug || !currentUserId) return;
+        const isPatronPath = window.location.pathname.includes('/dashboard');
+        const prefix = isPatronPath ? 'patron_' : 'staff_';
+        const token = localStorage.getItem(`${prefix}authToken`);
+        const API_URL = 'https://backend.isdokumu.workers.dev';
+        
+        try {
+            // Sadece kendi ID'mizi yollayıp bizimle ilgili tüm mesajları alıyoruz
+            const myId = currentUserRole === 'Patron' ? 'PATRON' : currentUserId;
+            const res = await fetch(`${API_URL}/get-messages?slug=${data.slug}&staffId=${myId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const msgs = await res.json();
+            if (msgs) setAllMessages(msgs);
+        } catch (e) {}
+    };
+    
+    if (isChatOpen && !activeChatId) {
+        fetchAllMessages();
+    }
+  }, [isChatOpen, activeChatId, data?.slug, currentUserId, currentUserRole]);
+
+  // YENİ: Personel listesini "En Son Mesaj" (WhatsApp) mantığıyla sırala
+  const sortedStaffList = useMemo(() => {
+    if (!data?.staff) return [];
+
+    // Her personelin en son mesaj atma/alma saatini bulalım
+    const staffWithLastMsg = data.staff.map((staff: any) => {
+        const staffIdStr = String(staff.id);
+        const myIdStr = currentUserRole === 'Patron' ? 'PATRON' : String(currentUserId);
+        
+        // Bu personel ile benim aramdaki mesajları bul
+        const chatHistory = allMessages.filter(m => 
+            (String(m.sender_id) === staffIdStr && String(m.receiver_id) === myIdStr) || 
+            (String(m.sender_id) === myIdStr && String(m.receiver_id) === staffIdStr)
+        );
+
+        // En son mesajın tarihini al, yoksa çok eski bir tarih koy ki en alta düşsün
+        const lastMsgTime = chatHistory.length > 0 
+            ? new Date(chatHistory[chatHistory.length - 1].created_at).getTime() 
+            : 0;
+
+        return { ...staff, lastMsgTime };
+    });
+
+    // Saate göre büyükten küçüğe (yeniden eskiye) sırala
+    staffWithLastMsg.sort((a: any, b: any) => b.lastMsgTime - a.lastMsgTime);
+    
+    return staffWithLastMsg;
+  }, [data?.staff, allMessages, currentUserId, currentUserRole]);
+
+
   // ===============================================
-  // PUSHER WEBSOCKET BAĞLANTISI (Gerçek Zamanlı Motor)
+  // PUSHER WEBSOCKET BAĞLANTISI
   // ===============================================
   useEffect(() => {
     if (!data?.slug || !currentUserId) return;
@@ -54,15 +112,16 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
     const channel = pusher.subscribe(`chat-${data.slug}`);
 
-    // 1. Olay: Biri yeni mesaj attı
     channel.bind('new-message', (newMsg: any) => {
         const isForMe = String(newMsg.receiver_id) === String(currentUserId) || (currentUserRole === 'Patron' && newMsg.receiver_id === 'PATRON');
         const isFromMe = String(newMsg.sender_id) === String(currentUserId) || (currentUserRole === 'Patron' && newMsg.sender_id === 'PATRON');
 
         if (!isForMe && !isFromMe) return;
 
+        // Anlık gelen mesajı "allMessages" listesine de ekle ki sıralama anında değişsin
+        setAllMessages(prev => [...prev, newMsg]);
+
         setMessages((prev: any) => {
-            // Optimistik gönderilen mesajın ID'sini ve saatini güncelle (Gri Çift Tik'e dönüşür)
             if (isFromMe && newMsg._tempId) {
                 return prev.map((p: any) => p._tempId === newMsg._tempId ? { ...newMsg, _tempId: undefined } : p);
             }
@@ -73,7 +132,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         });
 
         if (isForMe) {
-            // Sohbet açıksa ve doğru kişiyle konuşuyorsak anında okundu yap
             if (isChatOpen && (String(activeChatId) === String(newMsg.sender_id) || (activeChatId === 'PATRON' && newMsg.sender_id === 'PATRON'))) {
                 markMessagesAsRead(newMsg.sender_id);
             } else {
@@ -99,12 +157,10 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         }
     });
 
-    // 2. Olay: Karşı taraf mesajları okudu (Mavi Tik)
     channel.bind('messages-read', (readData: any) => {
         const iAmSender = String(readData.senderId) === String(currentUserId) || (currentUserRole === 'Patron' && readData.senderId === 'PATRON');
         if (iAmSender) {
             setMessages((prev: any) => prev.map((m: any) => {
-                // Eğer benim yolladığım mesaj ise ve karşı taraf (readerId) okumuşsa mavi tik (1) yap
                 if (String(m.sender_id) === String(readData.senderId) && String(m.receiver_id) === String(readData.readerId)) {
                     return { ...m, is_read: 1 };
                 }
@@ -113,7 +169,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         }
     });
 
-    // 3. Olay: Yazıyor... Animasyonu
     channel.bind('typing', (typeData: any) => {
         const iAmReceiver = String(typeData.receiverId) === String(currentUserId) || (currentUserRole === 'Patron' && typeData.receiverId === 'PATRON');
         const isFromActiveChat = String(typeData.senderId) === String(activeChatId) || (typeData.senderId === 'PATRON' && activeChatId === 'PATRON');
@@ -133,7 +188,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     };
   }, [data?.slug, currentUserId, currentUserRole, activeChatId, isChatOpen]);
 
-  // Okundu Olarak İşaretleme Fonksiyonu
   const markMessagesAsRead = async (targetSenderId: string | null = activeChatId) => {
     if (!targetSenderId || !currentUserId) return;
     
@@ -156,7 +210,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             })
         });
         
-        // Ekranda hemen okundu göster
         setMessages((prev: any) => prev.map((m: any) => 
             (String(m.sender_id) === String(targetSenderId) && m.is_read === 0) ? { ...m, is_read: 1 } : m
         ));
@@ -233,6 +286,9 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     if (setMessages) {
         setMessages((prev: any) => [...prev, newMessage]);
     }
+    
+    // Mesaj attığımızda, listeyi anında güncellemek için allMessages'a da ekleyelim
+    setAllMessages(prev => [...prev, newMessage]);
 
     const isPatronPath = window.location.pathname.includes('/dashboard');
     const prefix = isPatronPath ? 'patron_' : 'staff_';
@@ -381,7 +437,25 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
             {!activeChatId ? (
               <div className="flex-1 p-2 space-y-1.5 overflow-y-auto bg-slate-50 custom-scrollbar">
-                 {data?.staff?.map((m: any) => {
+                 
+                 {/* YENİ: PATRON DAİMA EN ÜSTTE */}
+                 {currentUserRole !== 'Patron' && (
+                     <div onClick={() => setActiveChatId('PATRON')} className="p-3 bg-blue-50 hover:bg-blue-100 rounded-xl cursor-pointer flex items-center gap-3 shadow-sm border border-blue-200 transition-colors group mb-2">
+                       <div className="relative">
+                           <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm group-hover:scale-105 transition-transform shadow-md">
+                             P
+                           </div>
+                           <span className="absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full bg-slate-400"></span>
+                       </div>
+                       <div className="flex-1 min-w-0">
+                         <div className="text-sm font-black text-blue-900 truncate">{data?.ownerName || 'Firma Sahibi'}</div>
+                         <div className="text-[11px] text-blue-700 font-bold truncate mt-1">YÖNETİM KADEMESİ</div>
+                       </div>
+                     </div>
+                 )}
+
+                 {/* YENİ: DİĞER PERSONELLER ZAMANA GÖRE SIRALI */}
+                 {sortedStaffList.map((m: any) => {
                    if (currentUserRole !== 'Patron' && String(m.id) === String(currentUserId)) return null;
 
                    const status = getDynamicStaffStatus(m.id);
@@ -406,21 +480,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                      </div>
                    );
                  })}
-                 
-                 {currentUserRole !== 'Patron' && (
-                     <div onClick={() => setActiveChatId('PATRON')} className="p-3 bg-blue-50 hover:bg-blue-100 rounded-xl cursor-pointer flex items-center gap-3 shadow-sm border border-blue-200 transition-colors group">
-                       <div className="relative">
-                           <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm group-hover:scale-105 transition-transform shadow-md">
-                             P
-                           </div>
-                           <span className="absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full bg-slate-400"></span>
-                       </div>
-                       <div className="flex-1 min-w-0">
-                         <div className="text-sm font-black text-blue-900 truncate">{data?.ownerName || 'Firma Sahibi'}</div>
-                         <div className="text-[11px] text-blue-700 font-bold truncate mt-1">YÖNETİM KADEMESİ</div>
-                       </div>
-                     </div>
-                 )}
 
                  {(!data?.staff || data?.staff.length === 0) && currentUserRole === 'Patron' && (
                    <div className="text-center p-8 text-slate-400 text-xs font-medium flex flex-col items-center justify-center h-full gap-2">

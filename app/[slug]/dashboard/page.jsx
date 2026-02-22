@@ -26,12 +26,26 @@ import AssetQRModal from '@/components/modals/AssetQRModal';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
+const parseJwt = (token) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+};
+
 export default function PatronDashboard() {
   const { slug } = useParams();
   const router = useRouter(); 
   
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
+  const [userData, setUserData] = useState(null);
   
   const [data, setData] = useState(null); 
   
@@ -127,10 +141,35 @@ export default function PatronDashboard() {
   };
 
   const fetchData = async (isInitial = false) => {
-    const token = localStorage.getItem('patron_authToken'); // ZIRH EKLENDİ
+    const token = localStorage.getItem('patron_authToken'); 
     if (!token) {
         window.location.href = `/${slug}/login`; 
         return;
+    }
+
+    const decoded = parseJwt(token);
+    setUserData(decoded);
+
+    // ==========================================
+    // YENİ: PUSHER BEAMS CİHAZ KAYIT İŞLEMİ 
+    // Patronlara Acil Durum/Stok vb. tüm bildirimler gelir.
+    // ==========================================
+    if (isInitial && typeof window !== 'undefined') {
+        import('@pusher/push-notifications-web').then((PusherPushNotifications) => {
+            const beamsClient = new PusherPushNotifications.Client({
+                instanceId: "6a47ebc2-0c89-48f1-81a3-80a4e003dd41",
+            });
+            beamsClient.start()
+                .then(async () => {
+                    const userInterest = `user-${slug}-PATRON`;
+                    const adminInterest = `role-${slug}-ADMIN`;
+                    
+                    await beamsClient.clearDeviceInterests();
+                    await beamsClient.addDeviceInterest(userInterest);
+                    await beamsClient.addDeviceInterest(adminInterest);
+                })
+                .catch(console.error);
+        }).catch(console.error);
     }
 
     try {
@@ -141,12 +180,9 @@ export default function PatronDashboard() {
       });
       
       if (res.status === 401 || res.status === 403) {
-        localStorage.removeItem('staff_authToken');
-        localStorage.removeItem('staff_userRole');
-        localStorage.removeItem('staff_userName');
-        localStorage.removeItem('staff_userSlug');
-          window.location.href = `/${slug}/login`;
-          return;
+        localStorage.removeItem('patron_authToken');
+        window.location.href = `/${slug}/login`;
+        return;
       }
       
       if (!res.ok) throw new Error("Ağ hatası");
@@ -298,9 +334,9 @@ export default function PatronDashboard() {
   
   useEffect(() => { 
     if (isChatOpen && activeChatId) { 
-        fetchMessages(); // Sadece sohbet ilk açıldığında geçmişi 1 kere çeksin
+        fetchMessages(); 
     } 
-}, [isChatOpen, activeChatId]);
+  }, [isChatOpen, activeChatId]);
 
   const handleAction = async (endpoint, body, closeFn, resetFn) => {
     setIsSaving(true);
