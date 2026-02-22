@@ -181,14 +181,15 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
         setAllMessages(prev => {
             if (newMsg._tempId) {
-                const tempIdx = prev.findIndex((p: any) => p._tempId === newMsg._tempId);
+                // Eşleşme sorununu engellemek için String'e çevirip karşılaştırıyoruz
+                const tempIdx = prev.findIndex((p: any) => String(p._tempId) === String(newMsg._tempId));
                 if (tempIdx !== -1) {
                     const arr = [...prev];
                     arr[tempIdx] = { ...newMsg, _tempId: undefined };
                     return arr;
                 }
             }
-            if (!prev.some((p: any) => p.id === newMsg.id)) {
+            if (!prev.some((p: any) => String(p.id) === String(newMsg.id))) {
                 return [...prev, newMsg];
             }
             return prev;
@@ -350,7 +351,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     
     // YENİ: Varsa üst component'in local mesaj listesini de güncelle
     if (setMessages) {
-        setMessages((prev: any) => [...prev, newMessage]);
+        setMessages((prev: any) => [...(prev || []), newMessage]);
     }
     
     setMessageInput(''); 
@@ -371,6 +372,12 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             message: newMessage.message,
             tempId: tempId 
         }) 
+    }).then(res => {
+        if (!res.ok) {
+            setAllMessages(prev => prev.filter(m => String(m._tempId) !== String(tempId)));
+        }
+    }).catch(err => {
+        setAllMessages(prev => prev.filter(m => String(m._tempId) !== String(tempId)));
     });
     
     if (activeChatId) {
