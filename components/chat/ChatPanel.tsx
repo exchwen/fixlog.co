@@ -4,26 +4,23 @@ import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Send, X, MessageSquare, ArrowLeft, WifiOff } from 'lucide-react';
 
-export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, setActiveChatId, data, messages, messageInput, setMessageInput, sendMessage }: any) {
+export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, setActiveChatId, data, messages, setMessages, messageInput, setMessageInput, sendMessage }: any) {
   const chatEndRef = useRef<HTMLDivElement>(null);
   
   const [isOffline, setIsOffline] = useState(false);
   
-  // YENİ: Oturum açan kullanıcının kimliğini ve rolünü bilmeliyiz
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
 
   useEffect(() => {
-    // Sayfa Patron sayfası mı? Değilse Personel mi?
+    // Sayfa Patron sayfası mı?
     const isPatronPath = window.location.pathname.includes('/dashboard');
     const prefix = isPatronPath ? 'patron_' : 'staff_';
     
-    // YENİ: Token okurken de localStorage'dan güvenle çekiyoruz
-    // (Ayrıca parseJwt falan yapmaya gerek yok çünkü id göndermek yeterli)
     const storedRole = localStorage.getItem(`${prefix}userRole`);
     setCurrentUserRole(storedRole);
-    // Not: Worker'da send-message endpointine userData.id atılıyor ama biz 'PATRON' veya Usta ID'si atacağız.
-    // Dashboard'larda (Patron/Manager/Worker) sendMessage çağrılırken bu ayarı yaptık zaten.
+    // Patron ise sender_id genelde 'PATRON' atılır. Değilse kendi ID'sidir.
+    // Ancak Optimistic Update (anında gösterme) için role yeterli.
   }, []);
   
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
@@ -86,10 +83,28 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
   const handleSendMessage = () => {
     if (!messageInput.trim() || isOffline) return;
+    
+    // 1. Optimistic UI Update: Mesajı anında ekrana ekle! (Beklemeden)
+    // Eğer setMessages prop'u geliyorsa doğrudan diziye ekleriz.
+    const newMessage = {
+      message: messageInput,
+      sender_id: currentUserRole === 'Patron' ? 'PATRON' : 'STAFF', // Geçici ID, ekranda sağda çıksın diye
+      created_at: new Date().toISOString()
+    };
+    
+    if (setMessages) {
+        setMessages((prev: any) => [...prev, newMessage]);
+    }
+
+    // 2. Gerçek isteği at
     sendMessage();
+    
+    // 3. Temizlik
     if (activeChatId) {
       localStorage.removeItem(`chat_draft_${activeChatId}`);
     }
+    // Mesaj kutusu temizlenir (sendMessage içinde yapılıyordu ama garanti olsun)
+    setMessageInput('');
   };
 
   const activeStaff = activeChatId ? data?.staff?.find((s: any) => s.id === activeChatId) : null;
@@ -124,11 +139,13 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   const activeStatus = activeStaff ? getDynamicStaffStatus(activeStaff.id) : null;
 
   // Hangi kullanıcının mesaj attığını ve balon rengini belirleriz
-  // Yönetici ve Usta ekranlarında mesaj listelenirken, Patron mavi olurdu. 
-  // Şimdi ise "Ben kimim?" mantığını (currentUserRole) kullanarak sağda veya solda gösteriyoruz.
   const isMessageFromMe = (m: any) => {
+    // Eğer Patron ekranındaysak, sender_id 'PATRON' olanlar sağda çıksın
     if (currentUserRole === 'Patron' && m.sender_id === 'PATRON') return true;
+    
+    // Eğer Personel ekranındaysak, sender_id 'PATRON' OLMAYANLAR (kendisi) sağda çıksın
     if (currentUserRole !== 'Patron' && m.sender_id !== 'PATRON') return true;
+    
     return false;
   };
 
@@ -211,7 +228,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                     </div>
                   )}
 
-                  {messages.map((m: any, i: number) => {
+                  {messages?.map((m: any, i: number) => {
                     const fromMe = isMessageFromMe(m);
                     return (
                       <div key={i} className={`flex flex-col ${fromMe ? 'items-end' : 'items-start'}`}>

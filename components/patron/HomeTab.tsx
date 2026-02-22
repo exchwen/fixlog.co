@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -14,9 +14,24 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   
   const { slug } = useParams(); 
 
-  // YENİ: Garantili Yetki Kontrolü (URL'den anlar)
+  // Garantili Yetki Kontrolü
   const isPatronPath = typeof window !== 'undefined' && window.location.pathname.includes('/dashboard');
   const userRole = propRole || (isPatronPath ? 'Patron' : 'Yönetici');
+
+  // YENİ: Gerçek Kullanıcı Adını Ekranda Göstermek İçin State
+  const [currentUserName, setCurrentUserName] = useState<string>('Yönetici');
+
+  useEffect(() => {
+    // URL'ye göre ilgili kullanıcının adını localStorage'dan çek
+    const prefix = isPatronPath ? 'patron_' : 'staff_';
+    const savedName = localStorage.getItem(`${prefix}userName`);
+    
+    if (savedName) {
+      setCurrentUserName(savedName.split(' ')[0]); // Sadece ilk adını al
+    } else if (data?.ownerName && isPatronPath) {
+      setCurrentUserName(data.ownerName.split(' ')[0]);
+    }
+  }, [isPatronPath, data]);
 
   const [copied, setCopied] = useState(false);
 
@@ -219,8 +234,9 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
         <div>
+          {/* YENİ: Dinamik İsim Gösterimi */}
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            Hoş Geldin, {data?.ownerName?.split(' ')[0] || 'Yönetici'} 👋
+            Hoş Geldin, {currentUserName} 👋
           </h2>
           <p className="text-slate-500 text-xs mt-1">Sistem üzerindeki anlık özetin aşağıdadır.</p>
         </div>
