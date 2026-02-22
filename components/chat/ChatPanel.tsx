@@ -13,14 +13,23 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
 
   useEffect(() => {
-    // Sayfa Patron sayfası mı?
     const isPatronPath = window.location.pathname.includes('/dashboard');
     const prefix = isPatronPath ? 'patron_' : 'staff_';
     
     const storedRole = localStorage.getItem(`${prefix}userRole`);
     setCurrentUserRole(storedRole);
-    // Patron ise sender_id genelde 'PATRON' atılır. Değilse kendi ID'sidir.
-    // Ancak Optimistic Update (anında gösterme) için role yeterli.
+    
+    // YENİ: Token'ın içinden giriş yapan kişinin kendi ID'sini çözümlüyoruz (Mesaj balonlarının sağ/sol ayrımı için)
+    const token = localStorage.getItem(`${prefix}authToken`);
+    if (token) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+            const payload = JSON.parse(jsonPayload);
+            setCurrentUserId(String(payload.id));
+        } catch(e) {}
+    }
   }, []);
   
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
@@ -84,11 +93,10 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   const handleSendMessage = () => {
     if (!messageInput.trim() || isOffline) return;
     
-    // 1. Optimistic UI Update: Mesajı anında ekrana ekle! (Beklemeden)
-    // Eğer setMessages prop'u geliyorsa doğrudan diziye ekleriz.
+    // Optimistic UI Update: API'yi beklemeden mesajı anında ekranda göster
     const newMessage = {
       message: messageInput,
-      sender_id: currentUserRole === 'Patron' ? 'PATRON' : 'STAFF', // Geçici ID, ekranda sağda çıksın diye
+      sender_id: currentUserRole === 'Patron' ? 'PATRON' : currentUserId, 
       created_at: new Date().toISOString()
     };
     
@@ -96,15 +104,12 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         setMessages((prev: any) => [...prev, newMessage]);
     }
 
-    // 2. Gerçek isteği at
     sendMessage();
     
-    // 3. Temizlik
     if (activeChatId) {
       localStorage.removeItem(`chat_draft_${activeChatId}`);
     }
-    // Mesaj kutusu temizlenir (sendMessage içinde yapılıyordu ama garanti olsun)
-    setMessageInput('');
+    setMessageInput(''); // Kutuyu anında temizle
   };
 
   const activeStaff = activeChatId ? data?.staff?.find((s: any) => s.id === activeChatId) : null;
@@ -138,14 +143,10 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
   const activeStatus = activeStaff ? getDynamicStaffStatus(activeStaff.id) : null;
 
-  // Hangi kullanıcının mesaj attığını ve balon rengini belirleriz
+  // YENİ: Hangi kullanıcının mesaj attığını net şekilde belirleriz
   const isMessageFromMe = (m: any) => {
-    // Eğer Patron ekranındaysak, sender_id 'PATRON' olanlar sağda çıksın
     if (currentUserRole === 'Patron' && m.sender_id === 'PATRON') return true;
-    
-    // Eğer Personel ekranındaysak, sender_id 'PATRON' OLMAYANLAR (kendisi) sağda çıksın
-    if (currentUserRole !== 'Patron' && m.sender_id !== 'PATRON') return true;
-    
+    if (currentUserRole !== 'Patron' && String(m.sender_id) === String(currentUserId)) return true;
     return false;
   };
 
