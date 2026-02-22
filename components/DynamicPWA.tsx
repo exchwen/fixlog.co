@@ -99,8 +99,6 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
           const x = (size - drawWidth) / 2;
           const y = (size - drawHeight) / 2;
 
-          // Siyah arkaplana denk geldiyse ve logo siyahsa görünmez olur. 
-          // (İsteğe bağlı: CSS filter benzeri bir kontrol eklenebilir ama şu an orijinal hali korundu)
           iconCtx.drawImage(img, x, y, drawWidth, drawHeight);
 
           return iconCanvas.toDataURL('image/png');
@@ -157,7 +155,6 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
   // --- YARDIMCI FONKSİYONLAR ---
 
   const updateManifestTag = (url: string) => {
-    // Mevcut manifesti bul veya yeni yarat
     let linkTag = document.querySelector('link[rel="manifest"]');
     if (!linkTag) {
       linkTag = document.createElement('link');
@@ -177,11 +174,11 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
     metaTag.setAttribute('content', color);
   };
 
+
   const resetToDefaultManifest = () => {
-    updateManifestTag('/manifest.json'); // public klasöründeki orijinal statik manifestin yolu
+    updateManifestTag('/manifest.json');
     updateThemeColorMeta('#0f172a');
   };
 
-  // Bu bileşen arayüzde yer kaplamayacak, sadece arka planda çalışacak
   return null;
 }
