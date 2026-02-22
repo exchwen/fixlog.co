@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Send, X, MessageSquare, ArrowLeft, WifiOff, CheckCheck, Clock, Lock, Bell, Building2 } from 'lucide-react';
+import { ChevronDown, Send, X, MessageSquare, ArrowLeft, WifiOff, CheckCheck, Clock, Lock, Bell } from 'lucide-react';
 import Pusher from 'pusher-js';
 
 export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, setActiveChatId, data, messages, setMessages, messageInput, setMessageInput, sendMessage }: any) {
@@ -21,8 +21,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
   const [allMessages, setAllMessages] = useState<any[]>([]);
   
-  // YENİ: Logo Arka Plan Rengi İçin State
-  const [logoBgColor, setLogoBgColor] = useState<string>('#2563eb'); // Varsayılan mavi renk
+  const [logoBgColor, setLogoBgColor] = useState<string>('#2563eb');
 
   useEffect(() => {
     const isPatronPath = window.location.pathname.includes('/dashboard');
@@ -47,10 +46,9 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     }
   }, []);
 
-  // YENİ: Patronun logosunun baskın rengini bulma zekası
   useEffect(() => {
     if (!data?.logo) {
-      setLogoBgColor('#2563eb'); // Logo yoksa varsayılan mavi
+      setLogoBgColor('#2563eb'); 
       return;
     }
 
@@ -105,7 +103,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             }
           }
           
-          // Eğer seçilen renk beyazsa (çok açık renkli logolarda okunabilirliği bozmamak için) hafif grimsi veya standart maviye çek
           if (selectedColor === '#ffffff') {
               setLogoBgColor('#f1f5f9');
           } else {
@@ -167,10 +164,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     return staffWithLastMsg;
   }, [data?.staff, allMessages, currentUserId, currentUserRole]);
 
-
-  // ===============================================
-  // PUSHER WEBSOCKET BAĞLANTISI
-  // ===============================================
   useEffect(() => {
     if (!data?.slug || !currentUserId) return;
 
@@ -189,9 +182,11 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         setAllMessages(prev => [...prev, newMsg]);
 
         setMessages((prev: any) => {
+            // Eğer benim gönderdiğim ve optimistik olarak eklediğim bir mesajsa, Worker'dan gelen gerçek ID ile güncelle
             if (isFromMe && newMsg._tempId) {
                 return prev.map((p: any) => p._tempId === newMsg._tempId ? { ...newMsg, _tempId: undefined } : p);
             }
+            // Değilse ve listede yoksa, yeni gelmiş demektir, listeye ekle
             if (!prev.find((p: any) => p.id === newMsg.id)) {
                 return [...prev, newMsg];
             }
@@ -341,21 +336,25 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     if (!messageInput.trim() || isOffline) return;
     
     const tempId = Date.now();
+    
+    // Mesaj objesini oluştururken saati mutlaka string yapıyoruz
     const newMessage = {
       _tempId: tempId, 
       message: messageInput,
       sender_id: currentUserRole === 'Patron' ? 'PATRON' : currentUserId, 
       receiver_id: activeChatId,
-      created_at: new Date().toISOString(),
+      created_at: new Date().toISOString(), // <-- Burası çok kritik
       is_read: 0
     };
     
+    // 🚀 DÜZELTİLDİ: Mesajı anında kendi ekranına (UI) ekle
     if (setMessages) {
         setMessages((prev: any) => [...prev, newMessage]);
     }
     
-    setAllMessages(prev => [...prev, newMessage]);
+    setAllMessages((prev: any) => [...prev, newMessage]);
 
+    // Arka plana fırlat
     const isPatronPath = window.location.pathname.includes('/dashboard');
     const prefix = isPatronPath ? 'patron_' : 'staff_';
     const token = localStorage.getItem(`${prefix}authToken`);
@@ -516,7 +515,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             {!activeChatId ? (
               <div className="flex-1 p-2 space-y-1.5 overflow-y-auto bg-slate-50 custom-scrollbar">
                  
-                 {/* PATRON DAİMA EN ÜSTTE VE LOGOLU */}
                  {currentUserRole !== 'Patron' && (
                      <div onClick={() => setActiveChatId('PATRON')} className="p-3 bg-blue-50 hover:bg-blue-100 rounded-xl cursor-pointer flex items-center gap-3 shadow-sm border border-blue-200 transition-colors group mb-2">
                        <div className="relative">
@@ -539,7 +537,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                      </div>
                  )}
 
-                 {/* DİĞER PERSONELLER */}
                  {sortedStaffList.map((m: any) => {
                    if (currentUserRole !== 'Patron' && String(m.id) === String(currentUserId)) return null;
 
@@ -589,6 +586,15 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                     const isPending = !!m._tempId; 
                     const isDelivered = !!m.id;
                     const isRead = m.is_read === 1; 
+                    
+                    // Saati güvenli şekilde parse etmek için try-catch
+                    let msgTime = '';
+                    try {
+                        const dateObj = new Date(m.created_at);
+                        if (!isNaN(dateObj.getTime())) {
+                            msgTime = dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        }
+                    } catch(e) {}
 
                     return (
                       <div key={i} className={`flex flex-col ${fromMe ? 'items-end' : 'items-start'} group`}>
@@ -601,7 +607,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                           </div>
                           
                           <div className="absolute bottom-1 right-2 flex items-center gap-1 text-[10px] text-slate-500 font-medium">
-                            {new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            {msgTime}
                             
                             {fromMe && (
                                 <span className="ml-0.5">
