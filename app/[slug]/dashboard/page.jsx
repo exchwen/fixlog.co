@@ -728,10 +728,13 @@ export default function PatronDashboard() {
 
       <ChatPanel isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} activeChatId={activeChatId} setActiveChatId={setActiveChatId} data={data} messages={messages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} />
 
-      <DynamicPWA 
-        companyName={companyData.name !== fallbackName ? companyData.name : undefined} 
-        companyLogo={companyData.logo} 
-      />
+      {/* 🚀 DÜZELTİLEN VE DOĞRU YERE ALINAN KISIM */}
+      {data && (
+        <DynamicPWA 
+          companyName={data?.name} 
+          companyLogo={data?.logo} 
+        />
+      )}
 
       <DashboardModals 
         showStaffDetail={showStaffDetail} setShowStaffDetail={setShowStaffDetail} isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff} editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}
