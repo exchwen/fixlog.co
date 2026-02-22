@@ -7,7 +7,7 @@ import {
   ClipboardList, Users, Box, Wallet, Plus, ArrowUpRight, 
   CheckCircle, Clock, Calendar, TrendingUp, TrendingDown, 
   Package, AlertTriangle, ShieldCheck, Activity, User, Lock, 
-  Settings, X, Wrench, Link as LinkIcon, Check, Database, Image as ImageIcon, ShoppingCart, Layers
+  Settings, X, Wrench, Link as LinkIcon, Check, Database, Image as ImageIcon, ShoppingCart
 } from 'lucide-react';
 
 export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob, setActiveTab, userRole: propRole }: any) {
@@ -23,7 +23,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const isProfileComplete = data?.name && data?.ownerName && data?.sector && data?.address && data?.phone && data?.taxInfo;
 
   const [showLowStockModal, setShowLowStockModal] = useState(false);
-  const [showOrderMenu, setShowOrderMenu] = useState(false); // YENİ: Sipariş Menüsü State'i
+  const [showOrderMenu, setShowOrderMenu] = useState(false); // Sadece tekil sipariş menüsünü açar
 
   const jobs = data?.jobs || [];
   const finances = data?.finances || [];
@@ -133,20 +133,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
     navigator.clipboard.writeText(loginUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  // YENİ: Toplu Sipariş Fonksiyonu
-  const handleBulkOrder = () => {
-    if (lowStockItems.length === 0) return;
-    
-    let message = "Merhaba, aşağıdaki ürünlerden sipariş vermek istiyorum:\n\n";
-    lowStockItems.forEach((item: any) => {
-      message += `- ${item.item_name} (${item.supplier_name || 'Genel Tedarikçi'})\n`;
-    });
-    
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-    setShowOrderMenu(false);
   };
 
   if (!isProfileComplete) {
@@ -411,7 +397,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                  <h3 className="font-bold text-slate-900 text-sm">Stok Uyarıları</h3>
               </div>
               
-              {/* YENİ: SİPARİŞ MENÜSÜ */}
+              {/* SADECE TEKİL SİPARİŞ MENÜSÜ */}
               {lowStockItems.length > 0 && (
                 <div className="relative">
                   <button 
@@ -441,13 +427,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                             }} 
                             className="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors"
                           >
-                            <ShoppingCart size={14} className="text-slate-400" /> Özel Sipariş Oluştur
-                          </button>
-                          <button 
-                            onClick={handleBulkOrder}
-                            className="w-full text-left px-4 py-2.5 text-xs font-bold text-blue-700 hover:bg-blue-50 flex items-center gap-2 transition-colors"
-                          >
-                            <Layers size={14} className="text-blue-500" /> Eksikleri Toplu Sipariş Et
+                            <ShoppingCart size={14} className="text-slate-400" /> Sipariş Oluştur
                           </button>
                         </motion.div>
                       </>
