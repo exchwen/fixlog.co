@@ -22,7 +22,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   
   const [isApproving, setIsApproving] = useState<string | null>(null);
 
-  // Yeni İş Bildirimi State'i ve Ref'i
   const [newJobNotification, setNewJobNotification] = useState<{show: boolean, jobName: string}>({show: false, jobName: ''});
   const prevJobIds = useRef<string[]>([]);
 
@@ -47,7 +46,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
       setCurrentUserName(data.ownerName.split(' ')[0]);
     }
 
-    // Tarayıcı bildirimi izni iste (ilk girişte)
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
         Notification.requestPermission();
     }
@@ -78,21 +76,17 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
      );
   }, [jobs, currentUserId, userRole]);
 
-  // Arka planda iş atandığında algılayıp bildirim verme zekası (TypeScript Hatası Çözüldü: id: string yapıldı)
   useEffect(() => {
     if (myAssignedJobs.length > 0) {
         const currentIds = myAssignedJobs.map((j: any) => String(j.id));
         
-        // Eğer daha önceden ID listesi varsa ve mevcut ID'ler öncekinden farklı bir ID içeriyorsa
         if (prevJobIds.current.length > 0) {
             const newIds = currentIds.filter((id: string) => !prevJobIds.current.includes(id));
             if (newIds.length > 0) {
                 const newlyAddedJob = myAssignedJobs.find((j: any) => String(j.id) === newIds[0]);
                 if (newlyAddedJob) {
-                    // Uygulama içi toast bildirimi göster
                     setNewJobNotification({ show: true, jobName: newlyAddedJob.customer_name || 'Yeni İş' });
                     
-                    // Tarayıcı native push bildirimi yolla
                     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
                         new Notification('Yeni İş Atandı!', {
                             body: `${newlyAddedJob.customer_name} müşterisi için size yeni bir görev atandı.`,
@@ -278,7 +272,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 relative">
       
-      {/* Anlık Yeni İş Bildirimi (Toast) */}
       <AnimatePresence>
         {newJobNotification.show && (
             <motion.div 
@@ -356,11 +349,9 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                {copied ? <Check size={14} className="text-emerald-400" /> : <LinkIcon size={14} className="text-blue-400" />}
                {copied ? 'Bağlantı Kopyalandı' : 'Personel Giriş Linkini Kopyala'}
             </button>
-            {/* BULUT SENKRONİZASYONU KUTUSU İSTEK ÜZERİNE KALDIRILDI */}
         </div>
       </div>
 
-      {/* YÖNETİCİYE ATANAN BEKLEYEN İŞLER KUTUSU */}
       {myAssignedJobs.length > 0 && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-indigo-600 rounded-3xl p-5 shadow-xl shadow-indigo-600/20 text-white relative overflow-hidden">
            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
@@ -408,7 +399,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         </motion.div>
       )}
 
-      {/* İSTATİSTİK KUTULARI EĞER "SADECE BANA ATANANLAR" SEKME DEĞİLSE GÖRÜNSÜN */}
       {!isMyJobsTab && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-blue-300 transition-colors group cursor-pointer active:scale-95">
@@ -463,11 +453,9 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
           </div>
       )}
 
-      {/* FİNANS VE BÜYÜME HIZI (SADECE HOME TAB İÇİN) */}
       {!isMyJobsTab && (
           <div className={`grid grid-cols-1 gap-4 sm:gap-6 ${userRole === 'Patron' ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
             
-            {/* SADECE PATRON GÖREBİLİR: KASA ÖZETİ */}
             {userRole === 'Patron' && (
               <div className="lg:col-span-2 bg-slate-900 rounded-2xl p-5 sm:p-6 shadow-lg border border-slate-800 flex flex-col relative overflow-hidden finance-block">
                  <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 blur-3xl rounded-full pointer-events-none"></div>
@@ -534,7 +522,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
               </div>
             )}
 
-            {/* İSTATİSTİKLER KUTULARI (Patron ise yanda durur, Yönetici ise yana yayılır) */}
             <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6 ${userRole !== 'Patron' ? 'lg:col-span-2 lg:grid-cols-2' : ''}`}>
               
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden h-auto min-h-[140px] sm:h-[192px] flex flex-col justify-center group hover:shadow-md transition-shadow">
@@ -568,7 +555,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                      <h3 className="font-bold text-slate-900 text-sm">Stok Uyarıları</h3>
                   </div>
                   
-                  {/* SADECE TEKİL SİPARİŞ MENÜSÜ */}
                   {lowStockItems.length > 0 && (
                     <div className="relative">
                       <button 
@@ -662,13 +648,17 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
               {jobs.slice(0, 10).map((j: any) => {
                 
                 const assignedManager = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
-                const assignedWorker = j.details?.worker_id ? staff.find((s:any) => String(s.id) === String(j.details?.worker_id)) : null; // DÜZELTİLDİ: id'ler string'e çevrilerek arandı
-                const actionBy = j.details?.lastEditedBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
+                const assignedWorker = j.details?.worker_id ? staff.find((s:any) => String(s.id) === String(j.details?.worker_id)) : null; 
                 
+                // Mimarinin Kalbi: İşi kim açtıysa o daima en tepedeki Atayan/Patron olarak görünür
+                const createdBy = j.details?.createdBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
+                const isPatronCreated = createdBy === (data?.ownerName?.split(' ')[0] || 'Yönetici');
+
                 const isApproved = j.status === 'Tamamlandı';
                 const staffColor = isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200';
                 
-                const isSamePerson = assignedManager && assignedManager.name === actionBy;
+                // Eğer işi açan kişi atanan yöneticiyle aynıysa "Sorumlu/Atayan" diye sadeleştir.
+                const isManagerCreatedOwnJob = !isPatronCreated && assignedManager && assignedManager.name === createdBy;
                 
                 return (
                   <tr 
@@ -686,7 +676,9 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                     <td className="px-5 py-4 align-middle">
                       <div className="flex flex-col gap-2">
                         
-                        {isSamePerson ? (
+                        {/* HİYERARŞİ KONTROLÜ BAŞLIYOR */}
+                        {isManagerCreatedOwnJob ? (
+                          // 1. DURUM: Yönetici işi kendisi açtı ve kendine/ustaya atadı (2 Katman: Yönetici -> Usta)
                           <div className="flex items-center gap-1.5">
                             <ShieldCheck size={14} className={isApproved ? 'text-emerald-500' : 'text-amber-500'} />
                             <span className="text-[9px] font-black text-slate-400 uppercase w-[100px] tracking-wider">Atayan & Sorumlu:</span>
@@ -695,12 +687,13 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                             </span>
                           </div>
                         ) : (
+                          // 2. DURUM: Patron işi açtı, Yöneticiye Atadı (3 Katman: Patron -> Yönetici -> Usta)
                           <>
                             <div className="flex items-center gap-1.5">
                               <ShieldCheck size={14} className={isApproved ? 'text-emerald-500' : 'text-slate-400'} />
                               <span className="text-[9px] font-black text-slate-400 uppercase w-[56px] tracking-wider">Atayan:</span>
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200 shadow-sm' : 'text-slate-600 bg-slate-50 border-slate-200 shadow-sm'} whitespace-nowrap`}>
-                                {actionBy}
+                                {createdBy}
                               </span>
                             </div>
 
@@ -733,6 +726,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                             </span>
                           )}
                         </div>
+                        {/* HİYERARŞİ KONTROLÜ BİTTİ */}
 
                       </div>
                     </td>
@@ -764,16 +758,19 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
           </table>
         </div>
 
+        {/* MOBİL GÖRÜNÜM KARTLARI */}
         <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50/50 max-h-[500px] overflow-y-auto custom-scrollbar">
           {jobs.slice(0, 10).map((j: any) => {
              const assignedManager = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
-             const assignedWorker = j.details?.worker_id ? staff.find((s:any) => String(s.id) === String(j.details?.worker_id)) : null; // DÜZELTİLDİ
-             const actionBy = j.details?.lastEditedBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
+             const assignedWorker = j.details?.worker_id ? staff.find((s:any) => String(s.id) === String(j.details?.worker_id)) : null;
              
+             const createdBy = j.details?.createdBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
+             const isPatronCreated = createdBy === (data?.ownerName?.split(' ')[0] || 'Yönetici');
+
              const isApproved = j.status === 'Tamamlandı';
              const staffColor = isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200';
              
-             const isSamePerson = assignedManager && assignedManager.name === actionBy;
+             const isManagerCreatedOwnJob = !isPatronCreated && assignedManager && assignedManager.name === createdBy;
 
              return (
                <div 
@@ -792,7 +789,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                  </div>
 
                  <div className="flex flex-col gap-2.5">
-                    {isSamePerson ? (
+                    {isManagerCreatedOwnJob ? (
                       <div className="flex items-center gap-2">
                         <ShieldCheck size={14} className={isApproved ? 'text-emerald-500 shrink-0' : 'text-amber-500 shrink-0'} />
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0 w-[105px]">Atayan & Sorumlu:</span>
@@ -806,7 +803,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                           <ShieldCheck size={14} className={isApproved ? 'text-emerald-500 shrink-0' : 'text-slate-400 shrink-0'} />
                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0 w-[55px]">Atayan:</span>
                           <span className={`text-[10px] font-bold px-2 py-1 rounded-md border truncate ${isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-slate-600 bg-slate-50 border-slate-200'}`}>
-                            {actionBy}
+                            {createdBy}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -857,7 +854,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         </div>
       </div>
 
-      {/* EN ALT: ÖMÜR BOYU VERİLER VE YATIRIM GETİRİSİ (ROI) - FİNANS KİLİDİ DAHİL */}
       <div className="bg-slate-900 rounded-2xl p-5 sm:p-6 shadow-xl border border-slate-800 relative overflow-hidden finance-block mt-8">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-emerald-500 to-amber-500"></div>
         
@@ -866,7 +862,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                 <Database size={16} className="text-blue-400" /> Başlangıçtan Bugüne Sistem Verileri
             </h3>
             
-            {/* SADECE PATRON GÖREBİLİR: Sabit Lisans Ücreti */}
             {userRole === 'Patron' && (
               <div className="bg-blue-500/10 border border-blue-500/20 px-3 py-2 rounded-lg flex items-center gap-2">
                   <ShieldCheck size={14} className="text-blue-400" />
@@ -903,7 +898,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
 
         <div className={`grid grid-cols-1 gap-3 sm:gap-4 pt-5 border-t border-white/10 ${userRole === 'Patron' ? 'lg:grid-cols-3' : ''}`}>
             
-            {/* HERKESE AÇIK KÂR KUTUSU (Yöneticiyse Tüm Alanı Kaplar) */}
             <div className={`${userRole === 'Patron' ? 'lg:col-span-2' : ''} bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-5 sm:p-6 flex flex-col justify-center relative overflow-hidden`}>
                <div className="absolute right-0 bottom-0 opacity-10 translate-x-4 translate-y-4"><TrendingUp size={120} /></div>
                <div className="text-xs text-emerald-400 font-black uppercase tracking-widest mb-1 flex items-center gap-1.5 z-10"><TrendingUp size={16}/> Önlenen Gizli Operasyon Maliyeti (Tüm Zamanlar)</div>
@@ -911,7 +905,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                <div className="text-[10px] sm:text-xs text-emerald-400/70 font-medium z-10 max-w-lg">Kasa haricinde; tüm zamanlar boyunca zaman, kağıt, telefon trafiği ve personel mesaisinden elde edilen tahmini tasarruf miktarıdır.</div>
             </div>
             
-            {/* SADECE PATRON GÖREBİLİR: KULLANIM MALİYETİ KUTUSU */}
             {userRole === 'Patron' && (
               <div className="bg-white/5 border border-white/10 rounded-xl p-5 sm:p-6 flex flex-col justify-center relative">
                  <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1 flex items-center gap-1.5"><Activity size={14}/> Bu Ayki İşlem (Kullanım) Ücreti</div>

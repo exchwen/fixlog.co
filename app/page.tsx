@@ -38,9 +38,8 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 
-// YENİ: Firebase Oturum Kontrolü İçin Gereken İçe Aktarmalar
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '@/lib/firebase'; // Not: Projendeki firebase dosyasının yoluna göre burayı ayarlayabilirsin (örn: '../../lib/firebase')
+import { auth } from '@/lib/firebase'; 
 
 // Sabit veriler
 const SECTORS = [
@@ -148,23 +147,34 @@ export default function LandingPage() {
 
   const [mockupTab, setMockupTab] = useState('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // PWA Açılış Ekranı Yükleniyor Kontrolü
+  const [isChecking, setIsChecking] = useState(true);
 
-  // YENİ: OTOMATİK GİRİŞ (AUTO-REDIRECT) ZEKASI
+  // YENİ: PWA AKILLI YÖNLENDİRİCİ (TRAFİK POLİSİ)
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // Firebase kullanıcıyı tanıdı, localStorage'dan slug bilgisini alıp panele fırlat!
-        const savedSlug = localStorage.getItem('userSlug');
-        if (savedSlug) {
-          router.push(`/${savedSlug}/dashboard`);
-        }
-      }
-    });
+    const patronToken = localStorage.getItem('patron_authToken');
+    const patronSlug = localStorage.getItem('patron_userSlug');
 
-    return () => unsubscribe();
+    const staffToken = localStorage.getItem('staff_authToken');
+    const staffSlug = localStorage.getItem('staff_userSlug');
+
+    // 1. Patron ise direkt Manager paneline fırlat
+    if (patronToken && patronSlug) {
+      router.replace(`/${patronSlug}/manager`);
+      return;
+    }
+
+    // 2. Personel (Usta) ise direkt Dashboard'a fırlat
+    if (staffToken && staffSlug) {
+      router.replace(`/${staffSlug}/dashboard`);
+      return;
+    }
+
+    // İkisi de yoksa (yani yeni girmişse) landing page'i göster
+    setIsChecking(false);
   }, [router]);
 
-  // Yorumlar için zamanlayıcı
   useEffect(() => {
     const timer = setInterval(
       () => setReviewIndex((prev) => (prev + 1) % REVIEWS.length),
@@ -178,6 +188,16 @@ export default function LandingPage() {
     REVIEWS[(reviewIndex + 1) % REVIEWS.length],
     REVIEWS[(reviewIndex + 2) % REVIEWS.length],
   ];
+
+  // Uygulama PWA olarak açılırken kim olduğunu bulana kadar beyaz ekran çıkmasın diye şık bir yükleyici
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white">
+        <ShieldCheck className="w-12 h-12 text-blue-500 mb-4 animate-pulse" />
+        <span className="font-black tracking-widest text-[11px] uppercase opacity-50">Uygulama Hazırlanıyor...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[100dvh] bg-white text-gray-900 font-sans selection:bg-blue-100 selection:text-blue-900 overflow-x-hidden flex flex-col relative">
@@ -585,7 +605,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* EKSİK OLAN "NEDEN BİZ" (ÖZELLİKLER) KISMI */}
+        {/* ÖZELLİKLER */}
         <section id="features" className="relative py-16 md:py-24 bg-gray-50/50 border-y border-gray-100 overflow-hidden">
           
           <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-100/40 rounded-full blur-3xl mix-blend-multiply pointer-events-none hidden md:block"></div>
