@@ -153,25 +153,49 @@ export default function LandingPage() {
 
   // YENİ: PWA AKILLI YÖNLENDİRİCİ (TRAFİK POLİSİ)
   useEffect(() => {
+    // 🚀 BUG FIX: Token'ın süresinin dolup dolmadığını ve gerçek bir token olup olmadığını kontrol eden fonksiyon
+    const isTokenValid = (token: string | null) => {
+      if (!token || token === 'null' || token === 'undefined') return false;
+      try {
+        const base64Url = token.split('.')[1];
+        if (!base64Url) return false;
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+        const payload = JSON.parse(jsonPayload);
+        
+        // Token süresi dolmuşsa (Backend milisaniye olarak exp gönderiyor)
+        if (payload.exp && Date.now() > payload.exp) {
+          return false;
+        }
+        return true;
+      } catch (error) {
+        return false;
+      }
+    };
+
     const patronToken = localStorage.getItem('patron_authToken');
     const patronSlug = localStorage.getItem('patron_userSlug');
 
     const staffToken = localStorage.getItem('staff_authToken');
     const staffSlug = localStorage.getItem('staff_userSlug');
 
-    // 1. Patron ise direkt Manager paneline fırlat
-    if (patronToken && patronSlug) {
+    // 1. Patron ise ve token GÜNCELSE direkt Manager paneline fırlat
+    if (isTokenValid(patronToken) && patronSlug && patronSlug !== 'null' && patronSlug !== 'undefined') {
       router.replace(`/${patronSlug}/manager`);
       return;
     }
 
-    // 2. Personel (Usta) ise direkt Dashboard'a fırlat
-    if (staffToken && staffSlug) {
+    // 2. Personel (Usta) ise ve token GÜNCELSE direkt Dashboard'a fırlat
+    if (isTokenValid(staffToken) && staffSlug && staffSlug !== 'null' && staffSlug !== 'undefined') {
       router.replace(`/${staffSlug}/dashboard`);
       return;
     }
 
-    // İkisi de yoksa (yani yeni girmişse) landing page'i göster
+    // Çöp olmuş, süresi geçmiş veya bozuk tokenları localStorage'dan temizle ki arka planda bug yaratmasın
+    if (patronToken && !isTokenValid(patronToken)) localStorage.removeItem('patron_authToken');
+    if (staffToken && !isTokenValid(staffToken)) localStorage.removeItem('staff_authToken');
+
+    // İkisi de yoksa veya geçersizse (yani yeni girmişse) landing page'i göster
     setIsChecking(false);
   }, [router]);
 
