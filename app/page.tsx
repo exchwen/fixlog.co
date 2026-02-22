@@ -164,7 +164,7 @@ export default function LandingPage() {
         const payload = JSON.parse(jsonPayload);
         
         // Token süresi dolmuşsa (Backend milisaniye olarak exp gönderiyor)
-        if (payload.exp && Date.now() > payload.exp) {
+        if (payload.exp && Date.now() > payload.exp * 1000) {
           return false;
         }
         return true;

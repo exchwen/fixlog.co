@@ -23,6 +23,7 @@ import CompletedJobsTab from '@/components/patron/CompletedJobsTab';
 import AlertsTab from '@/components/patron/AlertsTab';
 import SupportTab from '@/components/patron/SupportTab'; 
 import AssetQRModal from '@/components/modals/AssetQRModal';
+import DynamicPWA from '@/components/DynamicPWA';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
@@ -726,6 +727,11 @@ export default function PatronDashboard() {
       </main>
 
       <ChatPanel isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} activeChatId={activeChatId} setActiveChatId={setActiveChatId} data={data} messages={messages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} />
+
+      <DynamicPWA 
+        companyName={companyData.name !== fallbackName ? companyData.name : undefined} 
+        companyLogo={companyData.logo} 
+      />
 
       <DashboardModals 
         showStaffDetail={showStaffDetail} setShowStaffDetail={setShowStaffDetail} isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff} editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}

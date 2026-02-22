@@ -19,9 +19,18 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
 
   // Çıkış yapma fonksiyonu
   const handleLogout = () => {
-    // Tarayıcıdaki oturum geçmişini/çerezleri temizle
-    localStorage.clear();
-    sessionStorage.clear();
+    // SADECE aktif kullanıcının yetkilerini temizle, tarayıcıdaki her şeyi silme
+    if (userRole === 'Patron') {
+       localStorage.removeItem('patron_authToken');
+       localStorage.removeItem('patron_userRole');
+       localStorage.removeItem('patron_userName');
+       localStorage.removeItem('patron_userSlug');
+    } else {
+       localStorage.removeItem('staff_authToken');
+       localStorage.removeItem('staff_userRole');
+       localStorage.removeItem('staff_userName');
+       localStorage.removeItem('staff_userSlug');
+    }
     // Kullanıcıyı giriş ekranına yönlendir
     window.location.href = '/'; 
   };

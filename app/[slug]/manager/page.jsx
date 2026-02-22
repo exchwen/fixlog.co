@@ -148,7 +148,11 @@ export default function ManagerDashboard() {
     }
 
     if (!token || (role !== 'Patron' && role !== 'Yönetici')) {
-      localStorage.clear(); // Temizlik yap
+      // Sadece bu panele ait tokenleri temizle, her şeyi silme
+      localStorage.removeItem('patron_authToken');
+      localStorage.removeItem('patron_userRole');
+      localStorage.removeItem('staff_authToken');
+      localStorage.removeItem('staff_userRole');
       router.push(`/${slug}/login`);
       return;
     }
@@ -180,12 +184,15 @@ export default function ManagerDashboard() {
       });
       
       if (!res.ok) {
-          if (res.status === 401 || res.status === 403) {
-            localStorage.clear();
-            router.push(`/${slug}/login`); return;
-          }
-          throw new Error("Ağ hatası");
-      }
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem('patron_authToken');
+          localStorage.removeItem('patron_userRole');
+          localStorage.removeItem('staff_authToken');
+          localStorage.removeItem('staff_userRole');
+          router.push(`/${slug}/login`); return;
+        }
+        throw new Error("Ağ hatası");
+    }
       
       const result = await res.json();
       localStorage.setItem(`manager_cache_${slug}`, JSON.stringify(result));

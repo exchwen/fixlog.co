@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, User, Lock, Loader2, ArrowRight, AlertCircle, Building2, Download, Share, Check, ArrowLeft } from 'lucide-react';
+import DynamicPWA from '@/components/DynamicPWA';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
@@ -172,6 +173,11 @@ export default function StaffLoginPage() {
 
   return (
     <div className="min-h-[100dvh] bg-[#F8FAFC] flex flex-col items-center justify-center p-4 sm:p-6 relative font-sans selection:bg-blue-100">
+      
+      <DynamicPWA 
+        companyName={companyData.name !== fallbackName ? companyData.name : undefined} 
+        companyLogo={companyData.logo} 
+      />
       
       <AnimatePresence>
          {hasPatronSession && (

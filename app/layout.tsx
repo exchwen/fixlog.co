@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   title: 'İş Dökümü | Profesyonel İş Takip Sistemi',
   description:
     'Global, ölçeklenebilir ve sürdürülebilir yeni nesil iş takip SaaS platformu.',
-  manifest: "/manifest.json",
+
   appleWebApp: {
     // capable: true, -> Konsoldaki sarı uyarının sebebi buydu, kaldırıldı.
     statusBarStyle: "default",

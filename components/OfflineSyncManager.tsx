@@ -1,19 +1,32 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, CheckCircle, AlertTriangle, Wifi } from 'lucide-react';
 
 export default function OfflineSyncManager() {
-  const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
+  const [syncState, setSyncState] = useState('idle');
   const [syncedCount, setSyncedCount] = useState(0);
+  const params = useParams();
 
   // Senkronizasyon (Eşitleme) Fonksiyonu
   const processOfflineQueue = async () => {
-    const slug = localStorage.getItem('companySlug');
-    if (!slug) return;
+    // 🚀 DÜZELTME: Token ve Slug'ı güncel yetki yapımıza göre alıyoruz
+    let token = localStorage.getItem('patron_authToken');
+    let slug = localStorage.getItem('patron_userSlug');
 
-    const queueKey = `offline_actions_${slug}`;
+    if (!token) {
+      token = localStorage.getItem('staff_authToken');
+      slug = localStorage.getItem('staff_userSlug');
+    }
+
+    // Parametredeki slug varsa onu öncelikli kullan
+    const currentSlug = params?.slug || slug;
+
+    if (!currentSlug || !token) return;
+
+    const queueKey = `offline_actions_${currentSlug}`;
     const pendingActions = JSON.parse(localStorage.getItem(queueKey) || '[]');
 
     if (pendingActions.length === 0) return;
@@ -22,7 +35,6 @@ export default function OfflineSyncManager() {
     setSyncState('syncing');
     setSyncedCount(pendingActions.length);
     
-    // YENİ: Worker URL'si doğrudan entegre edildi
     const WORKER_URL = 'https://backend.isdokumu.workers.dev'; 
 
     let remainingQueue = [];
@@ -32,8 +44,11 @@ export default function OfflineSyncManager() {
       try {
         const response = await fetch(`${WORKER_URL}/${action.endpoint}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(action.body),
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` // 🚀 DÜZELTME: Kimlik doğrulama eklendi!
+          },
+          body: JSON.stringify({ ...action.body, slug: currentSlug }), // 🚀 DÜZELTME: Slug verisini içeriğe gömdük
         });
 
         if (response.ok) {
@@ -55,6 +70,9 @@ export default function OfflineSyncManager() {
     } else {
       localStorage.removeItem(queueKey);
       setSyncState('success');
+      
+      // Sayfadaki verileri tazelemek için bir event fırlatabiliriz (opsiyonel)
+      window.dispatchEvent(new Event('offlineSyncComplete'));
     }
 
     // 4 Saniye sonra bildirimi ekrandan kaldır
@@ -76,7 +94,7 @@ export default function OfflineSyncManager() {
 
     window.addEventListener('online', handleOnline);
     return () => window.removeEventListener('online', handleOnline);
-  }, []);
+  }, [params?.slug]); // Params değiştiğinde tetiklenmesi için bağımlılık eklendi
 
   // Eğer hiçbir işlem yoksa ekranda yer kaplama
   if (syncState === 'idle') return null;
