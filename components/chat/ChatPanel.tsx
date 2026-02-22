@@ -24,6 +24,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   const [logoBgColor, setLogoBgColor] = useState<string>('#2563eb');
 
   useEffect(() => {
+    console.log("--- CHAT PANEL BAŞLATILDI ---");
     const isPatronPath = window.location.pathname.includes('/dashboard');
     const prefix = isPatronPath ? 'patron_' : 'staff_';
     
@@ -38,7 +39,10 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
             const payload = JSON.parse(jsonPayload);
             setCurrentUserId(String(payload.id));
-        } catch(e) {}
+            console.log("Aktif Kullanıcı ID:", payload.id, "Rol:", storedRole);
+        } catch(e) {
+            console.error("Token çözümlenemedi:", e);
+        }
     }
 
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
@@ -127,12 +131,17 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         
         try {
             const myId = currentUserRole === 'Patron' ? 'PATRON' : currentUserId;
+            console.log(`Geçmiş Mesajlar Çekiliyor... API: /get-messages?slug=${data.slug}&staffId=${myId}`);
+            
             const res = await fetch(`${API_URL}/get-messages?slug=${data.slug}&staffId=${myId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const msgs = await res.json();
+            console.log("Gelen Tüm Mesaj Geçmişi:", msgs);
             if (msgs) setAllMessages(msgs);
-        } catch (e) {}
+        } catch (e) {
+            console.error("Geçmiş mesajları çekerken hata:", e);
+        }
     };
     
     if (isChatOpen && !activeChatId) {
@@ -167,28 +176,42 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   useEffect(() => {
     if (!data?.slug || !currentUserId) return;
 
+    // PUSHER DEBUG MODU AKTİF EDİLDİ (Sadece tarayıcı konsoluna yazar)
+    Pusher.logToConsole = true;
+
+    console.log("Pusher'a bağlanılıyor... Kanal:", `chat-${data.slug}`);
     const pusher = new Pusher('75dfed44245e16eaea0a', {
       cluster: 'eu',
+    });
+
+    pusher.connection.bind('connected', () => {
+        console.log("✅ Pusher WebSocket Bağlantısı Başarılı!");
     });
 
     const channel = pusher.subscribe(`chat-${data.slug}`);
 
     channel.bind('new-message', (newMsg: any) => {
+        console.log("Pusher'dan YENİ MESAJ geldi:", newMsg);
         const isForMe = String(newMsg.receiver_id) === String(currentUserId) || (currentUserRole === 'Patron' && newMsg.receiver_id === 'PATRON');
         const isFromMe = String(newMsg.sender_id) === String(currentUserId) || (currentUserRole === 'Patron' && newMsg.sender_id === 'PATRON');
 
-        if (!isForMe && !isFromMe) return;
+        if (!isForMe && !isFromMe) {
+            console.log("Bu mesaj bana ait değil, yok sayılıyor.");
+            return;
+        }
 
         setAllMessages(prev => {
             if (newMsg._tempId) {
                 const tempIdx = prev.findIndex((p: any) => String(p._tempId) === String(newMsg._tempId));
                 if (tempIdx !== -1) {
+                    console.log("Pusher: Temp ID eşleşti, mesaj güncelleniyor (Saat İkonu Kalkıyor)");
                     const arr = [...prev];
                     arr[tempIdx] = { ...newMsg, _tempId: undefined };
                     return arr;
                 }
             }
             if (!prev.some((p: any) => String(p.id) === String(newMsg.id))) {
+                console.log("Pusher: Yeni mesaj listeye eklendi.");
                 return [...prev, newMsg];
             }
             return prev;
@@ -221,6 +244,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     });
 
     channel.bind('messages-read', (readData: any) => {
+        console.log("Pusher'dan MESAJ OKUNDU bilgisi geldi:", readData);
         const iAmSender = String(readData.senderId) === String(currentUserId) || (currentUserRole === 'Patron' && readData.senderId === 'PATRON');
         if (iAmSender) {
             setAllMessages((prev: any) => prev.map((m: any) => {
@@ -233,6 +257,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     });
 
     channel.bind('typing', (typeData: any) => {
+        console.log("Pusher'dan YAZIYOR bilgisi geldi:", typeData);
         const iAmReceiver = String(typeData.receiverId) === String(currentUserId) || (currentUserRole === 'Patron' && typeData.receiverId === 'PATRON');
         const isFromActiveChat = String(typeData.senderId) === String(activeChatId) || (typeData.senderId === 'PATRON' && activeChatId === 'PATRON');
         
@@ -246,6 +271,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     });
 
     return () => {
+        console.log("Pusher aboneliği iptal ediliyor...");
         pusher.unsubscribe(`chat-${data.slug}`);
         pusher.disconnect();
     };
@@ -276,7 +302,9 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         setAllMessages((prev: any) => prev.map((m: any) => 
             (String(m.sender_id) === String(targetSenderId) && m.is_read === 0) ? { ...m, is_read: 1 } : m
         ));
-    } catch (e) {}
+    } catch (e) {
+        console.error("Mesajları okundu işaretlerken hata:", e);
+    }
   };
 
   useEffect(() => {
@@ -331,6 +359,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     };
   }, [isChatOpen, setIsChatOpen]);
 
+  // 🚀 ZIRHLANDIRILMIŞ MESAJ GÖNDERME SİSTEMİ 🚀
   const handleSendMessage = () => {
     if (!messageInput.trim() || isOffline) return;
     
@@ -344,6 +373,8 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
       is_read: 0
     };
     
+    console.log("Giden Mesaj Objesi:", newMessage);
+
     setAllMessages(prev => [...prev, newMessage]);
     
     if (setMessages) {
@@ -357,7 +388,8 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     const token = localStorage.getItem(`${prefix}authToken`);
     const API_URL = 'https://backend.isdokumu.workers.dev';
     
-    // ÇİFT ZIRH: Eğer Pusher çökerse diye HTTP yanıtından ID'yi alıp saati gizliyoruz
+    console.log("Backend'e istek atılıyor: /send-message");
+
     fetch(`${API_URL}/send-message`, { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -368,16 +400,27 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             message: newMessage.message,
             tempId: tempId 
         }) 
-    }).then(async res => {
-        if (res.ok) {
-            const data = await res.json();
-            if (data.id) {
-                setAllMessages(prev => prev.map(m => String(m._tempId) === String(tempId) ? { ...m, _tempId: undefined, id: data.id } : m));
-            }
-        } else {
-            setAllMessages(prev => prev.filter(m => String(m._tempId) !== String(tempId)));
+    })
+    .then(res => res.json())
+    .then(responseData => {
+        console.log("Backend'den Gelen Yanıt:", responseData);
+        
+        // PUSHER ÇÖKSE BİLE SAAT İKONUNU KALDIRAN GÜVENLİK AĞI!
+        if (responseData.success && responseData.data) {
+             setAllMessages(prev => prev.map(m => {
+                 if (String(m._tempId) === String(tempId)) {
+                     console.log("REST API: Saat ikonu tike dönüştürülüyor!");
+                     return { ...m, _tempId: undefined, id: responseData.data.id, created_at: responseData.data.created_at };
+                 }
+                 return m;
+             }));
+        } else if (!responseData.success) {
+             console.error("Backend Hata Döndürdü:", responseData);
+             setAllMessages(prev => prev.filter(m => String(m._tempId) !== String(tempId)));
         }
-    }).catch(err => {
+    })
+    .catch(err => {
+        console.error("Mesaj Gönderiminde Ağ Hatası:", err);
         setAllMessages(prev => prev.filter(m => String(m._tempId) !== String(tempId)));
     });
     
@@ -427,10 +470,12 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
   const displayMessages = useMemo(() => {
     if (!activeChatId) return [];
-    return allMessages.filter(m => 
+    const filtered = allMessages.filter(m => 
       (String(m.sender_id) === String(activeChatId) && (m.receiver_id === 'PATRON' || String(m.receiver_id) === String(currentUserId))) || 
       (String(m.receiver_id) === String(activeChatId) && (m.sender_id === 'PATRON' || String(m.sender_id) === String(currentUserId)))
     );
+    console.log(`Ekranda Gösterilen Filtrelenmiş Mesajlar (${activeChatId} için):`, filtered);
+    return filtered;
   }, [allMessages, activeChatId, currentUserId, currentUserRole]);
 
   return (
