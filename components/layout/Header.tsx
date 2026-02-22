@@ -3,10 +3,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Menu, Bell, Building2, ScanLine, X, ArrowRight, QrCode, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-// YENİ: Kütüphaneyi dahil ettik
 import { Html5Qrcode } from 'html5-qrcode';
+// YENİ: Next.js Router eklendi (Pop-up engeline takılmamak için)
+import { useRouter } from 'next/navigation';
 
 export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: any) {
+  const router = useRouter(); // YENİ: Yönlendirme için tanımlandı
   const [isOffline, setIsOffline] = useState(false);
   
   const [userInfo, setUserInfo] = useState({ name: '', role: '', branch: '' });
@@ -15,7 +17,6 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
   const [showScanner, setShowScanner] = useState(false);
   const [manualCode, setManualCode] = useState('');
   
-  // YENİ: Canlı Kamera State'leri
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState('');
   const qrRef = useRef<Html5Qrcode | null>(null);
@@ -101,7 +102,7 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
   const processQRData = (code: string) => {
     if (!code.trim()) return;
     
-    stopCamera(); // Barkod okunur okunmaz kamerayı anında kapat!
+    stopCamera(); 
     
     let extractedId = code.trim();
     if (extractedId.includes('/q/')) {
@@ -128,36 +129,32 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
         }
     }
 
-    window.open(`/q/${extractedId}`, '_blank');
+    // YENİ: Pop-up engelleyiciyi aşmak için yeni sekme yerine mevcut sekmede (router.push ile) yönlendiriyoruz
+    router.push(`/q/${extractedId}`);
     setShowScanner(false);
     setManualCode('');
   };
 
-  // YENİ: KÜTÜPHANE İLE KAMERA BAŞLATMA
   const startCamera = () => {
     setIsCameraActive(true);
     setCameraError('');
 
-    // DOM'un render olması için kısa bir gecikme veriyoruz
     setTimeout(() => {
       try {
         const html5QrCode = new Html5Qrcode("qr-reader-container");
         qrRef.current = html5QrCode;
 
         html5QrCode.start(
-          { facingMode: "environment" }, // Arka kamerayı zorla
+          { facingMode: "environment" }, 
           {
-            fps: 10,    // Saniyede 10 kare tara (Performans için ideal)
-            qrbox: { width: 250, height: 250 }, // Tarama alanı kutusu
+            fps: 10,    
+            qrbox: { width: 250, height: 250 }, 
             aspectRatio: 1.0
           },
           (decodedText) => {
-            // BAŞARILI OKUMA!
             processQRData(decodedText);
           },
-          (errorMessage) => {
-            // Sürekli okuma denemesi hataları (Boş geçiyoruz, log kirliliği yapmasın)
-          }
+          (errorMessage) => {}
         ).catch((err) => {
           console.error(err);
           setCameraError("Kameraya erişilemedi. Tarayıcı izinlerini kontrol edin.");
@@ -171,7 +168,6 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
     }, 150);
   };
 
-  // YENİ: KAMERAYI GÜVENLİ BİR ŞEKİLDE DURDURMA
   const stopCamera = () => {
     setIsCameraActive(false);
     if (qrRef.current) {
@@ -186,13 +182,12 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
     }
   };
 
-  // Modal kapandığında kamera arkada açık kalmasın diye temizlik yapıyoruz
   useEffect(() => {
     if (!showScanner) {
         stopCamera();
     }
     return () => {
-        stopCamera(); // Component unmount olursa kamerayı bırak
+        stopCamera(); 
     };
   }, [showScanner]);
 
@@ -283,7 +278,6 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
                   <div className="bg-slate-900 h-[50vh] sm:h-64 relative flex flex-col items-center justify-center overflow-hidden shrink-0">
                      {isCameraActive ? (
                         <div className="w-full h-full bg-black relative flex items-center justify-center">
-                           {/* HTML5-QRCode'un kendi elementini render edeceği div */}
                            <div id="qr-reader-container" className="w-full h-full [&_video]:object-cover [&_video]:w-full [&_video]:h-full"></div>
                         </div>
                      ) : (
