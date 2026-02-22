@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Send, X, MessageSquare, ArrowLeft, WifiOff, CheckCheck, Clock, Lock, Bell } from 'lucide-react';
+import { ChevronDown, Send, X, MessageSquare, ArrowLeft, WifiOff, CheckCheck, Clock, Lock, Bell, Building2 } from 'lucide-react';
 import Pusher from 'pusher-js';
 
 export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, setActiveChatId, data, messages, setMessages, messageInput, setMessageInput, sendMessage }: any) {
@@ -19,8 +19,10 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // YENİ: Tüm personellerin en son mesaj saatini tutmak için genel mesaj listesini çekeceğiz
   const [allMessages, setAllMessages] = useState<any[]>([]);
+  
+  // YENİ: Logo Arka Plan Rengi İçin State
+  const [logoBgColor, setLogoBgColor] = useState<string>('#2563eb'); // Varsayılan mavi renk
 
   useEffect(() => {
     const isPatronPath = window.location.pathname.includes('/dashboard');
@@ -45,7 +47,79 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     }
   }, []);
 
-  // YENİ: Kullanıcının genel mesaj geçmişini çek (Sıralama yapabilmek için)
+  // YENİ: Patronun logosunun baskın rengini bulma zekası
+  useEffect(() => {
+    if (!data?.logo) {
+      setLogoBgColor('#2563eb'); // Logo yoksa varsayılan mavi
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    
+    img.onerror = () => {
+      setLogoBgColor('#2563eb');
+    };
+
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      
+      try {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const pixelData = imageData.data;
+        let r = 0, g = 0, b = 0, count = 0;
+        
+        for (let i = 0; i < pixelData.length; i += 4) {
+          if (pixelData[i + 3] < 128) continue; 
+          r += pixelData[i];
+          g += pixelData[i + 1];
+          b += pixelData[i + 2];
+          count++;
+        }
+        
+        if (count > 0) {
+          r = Math.floor(r / count);
+          g = Math.floor(g / count);
+          b = Math.floor(b / count);
+
+          const palette = [
+            { name: 'white', rgb: [255, 255, 255], hex: '#ffffff' },
+            { name: 'black', rgb: [15, 23, 42], hex: '#0f172a' }, 
+            { name: 'blue', rgb: [37, 99, 235], hex: '#2563eb' }
+          ];
+
+          let maxDist = -1;
+          let selectedColor = '#2563eb';
+
+          for (const color of palette) {
+            const dist = Math.sqrt(Math.pow(r - color.rgb[0], 2) + Math.pow(g - color.rgb[1], 2) + Math.pow(b - color.rgb[2], 2));
+            if (dist > maxDist) {
+              maxDist = dist;
+              selectedColor = color.hex;
+            }
+          }
+          
+          // Eğer seçilen renk beyazsa (çok açık renkli logolarda okunabilirliği bozmamak için) hafif grimsi veya standart maviye çek
+          if (selectedColor === '#ffffff') {
+              setLogoBgColor('#f1f5f9');
+          } else {
+              setLogoBgColor(selectedColor);
+          }
+        }
+      } catch (e) {
+        console.error("Renk analizi yapılamadı:", e);
+      }
+    };
+    img.src = data.logo;
+  }, [data?.logo]);
+
+
   useEffect(() => {
     const fetchAllMessages = async () => {
         if (!data?.slug || !currentUserId) return;
@@ -55,7 +129,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         const API_URL = 'https://backend.isdokumu.workers.dev';
         
         try {
-            // Sadece kendi ID'mizi yollayıp bizimle ilgili tüm mesajları alıyoruz
             const myId = currentUserRole === 'Patron' ? 'PATRON' : currentUserId;
             const res = await fetch(`${API_URL}/get-messages?slug=${data.slug}&staffId=${myId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -70,22 +143,18 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     }
   }, [isChatOpen, activeChatId, data?.slug, currentUserId, currentUserRole]);
 
-  // YENİ: Personel listesini "En Son Mesaj" (WhatsApp) mantığıyla sırala
   const sortedStaffList = useMemo(() => {
     if (!data?.staff) return [];
 
-    // Her personelin en son mesaj atma/alma saatini bulalım
     const staffWithLastMsg = data.staff.map((staff: any) => {
         const staffIdStr = String(staff.id);
         const myIdStr = currentUserRole === 'Patron' ? 'PATRON' : String(currentUserId);
         
-        // Bu personel ile benim aramdaki mesajları bul
         const chatHistory = allMessages.filter(m => 
             (String(m.sender_id) === staffIdStr && String(m.receiver_id) === myIdStr) || 
             (String(m.sender_id) === myIdStr && String(m.receiver_id) === staffIdStr)
         );
 
-        // En son mesajın tarihini al, yoksa çok eski bir tarih koy ki en alta düşsün
         const lastMsgTime = chatHistory.length > 0 
             ? new Date(chatHistory[chatHistory.length - 1].created_at).getTime() 
             : 0;
@@ -93,7 +162,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         return { ...staff, lastMsgTime };
     });
 
-    // Saate göre büyükten küçüğe (yeniden eskiye) sırala
     staffWithLastMsg.sort((a: any, b: any) => b.lastMsgTime - a.lastMsgTime);
     
     return staffWithLastMsg;
@@ -118,7 +186,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
         if (!isForMe && !isFromMe) return;
 
-        // Anlık gelen mesajı "allMessages" listesine de ekle ki sıralama anında değişsin
         setAllMessages(prev => [...prev, newMsg]);
 
         setMessages((prev: any) => {
@@ -287,7 +354,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         setMessages((prev: any) => [...prev, newMessage]);
     }
     
-    // Mesaj attığımızda, listeyi anında güncellemek için allMessages'a da ekleyelim
     setAllMessages(prev => [...prev, newMessage]);
 
     const isPatronPath = window.location.pathname.includes('/dashboard');
@@ -411,18 +477,30 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                     <button onClick={() => setActiveChatId(null)} className="p-1.5 bg-slate-800/50 hover:bg-slate-700 rounded-md transition-colors active:scale-95">
                       <ArrowLeft size={16} />
                     </button>
-                    <div className="flex flex-col">
-                      <span className="font-bold text-[13px] leading-none mb-0.5">{data?.ownerName || 'Firma Sahibi'}</span>
-                      {isTyping ? (
-                          <span className="text-[10px] text-emerald-400 font-bold italic tracking-wide animate-pulse">
-                              yazıyor...
-                          </span>
-                      ) : (
-                          <span className="text-[10px] text-slate-400 flex items-center gap-1.5 font-bold tracking-wide">
-                             <span className="w-1.5 h-1.5 rounded-full bg-slate-500 shadow-[0_0_4px_rgba(0,0,0,0.5)]"></span>
-                             Son görülme: Yakınlarda
-                          </span>
-                      )}
+                    <div className="flex items-center gap-2.5">
+                      <div 
+                         className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden border border-slate-700 shrink-0"
+                         style={{ backgroundColor: logoBgColor }}
+                      >
+                         {data?.logo ? (
+                            <img src={data.logo} alt="Logo" className="w-5 h-5 object-contain" />
+                         ) : (
+                            <span className="text-white font-black text-xs">P</span>
+                         )}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-bold text-[13px] leading-none mb-0.5">{data?.ownerName || 'Firma Sahibi'}</span>
+                        {isTyping ? (
+                            <span className="text-[10px] text-emerald-400 font-bold italic tracking-wide animate-pulse">
+                                yazıyor...
+                            </span>
+                        ) : (
+                            <span className="text-[10px] text-slate-400 flex items-center gap-1.5 font-bold tracking-wide">
+                               <span className="w-1.5 h-1.5 rounded-full bg-slate-500 shadow-[0_0_4px_rgba(0,0,0,0.5)]"></span>
+                               Son görülme: Yakınlarda
+                            </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -438,14 +516,21 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             {!activeChatId ? (
               <div className="flex-1 p-2 space-y-1.5 overflow-y-auto bg-slate-50 custom-scrollbar">
                  
-                 {/* YENİ: PATRON DAİMA EN ÜSTTE */}
+                 {/* PATRON DAİMA EN ÜSTTE VE LOGOLU */}
                  {currentUserRole !== 'Patron' && (
                      <div onClick={() => setActiveChatId('PATRON')} className="p-3 bg-blue-50 hover:bg-blue-100 rounded-xl cursor-pointer flex items-center gap-3 shadow-sm border border-blue-200 transition-colors group mb-2">
                        <div className="relative">
-                           <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm group-hover:scale-105 transition-transform shadow-md">
-                             P
+                           <div 
+                             className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm group-hover:scale-105 transition-transform shadow-md overflow-hidden border-2 border-white"
+                             style={{ backgroundColor: logoBgColor }}
+                           >
+                             {data?.logo ? (
+                                <img src={data.logo} alt="Logo" className="w-6 h-6 object-contain" />
+                             ) : (
+                                <span className="text-white">P</span>
+                             )}
                            </div>
-                           <span className="absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full bg-slate-400"></span>
+                           <span className="absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full bg-emerald-500 shadow-sm"></span>
                        </div>
                        <div className="flex-1 min-w-0">
                          <div className="text-sm font-black text-blue-900 truncate">{data?.ownerName || 'Firma Sahibi'}</div>
@@ -454,7 +539,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                      </div>
                  )}
 
-                 {/* YENİ: DİĞER PERSONELLER ZAMANA GÖRE SIRALI */}
+                 {/* DİĞER PERSONELLER */}
                  {sortedStaffList.map((m: any) => {
                    if (currentUserRole !== 'Patron' && String(m.id) === String(currentUserId)) return null;
 

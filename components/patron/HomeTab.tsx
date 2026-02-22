@@ -647,49 +647,28 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
             <tbody className="divide-y divide-slate-50">
               {jobs.slice(0, 10).map((j: any) => {
                 
+                // MÜKEMMEL DEDEKTİF KODU: JSON içindeki mühürleri okur
                 const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
                 const createdBy = j.details?.createdBy || ownerName;
-                const lastEditedBy = j.details?.lastEditedBy;
+                const creatorRole = j.details?.creatorRole || (createdBy === ownerName ? 'Patron' : 'Yönetici');
+                const isPatronCreated = creatorRole === 'Patron' || createdBy === ownerName;
                 
+                let managerName = j.details?.managerName || null;
+                let workerName = null;
+
                 const assignedStaff = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
-                const detailsWorker = j.details?.worker_id ? staff.find((s:any) => String(s.id) === String(j.details?.worker_id)) : null; 
-                
-                const isPatronCreated = createdBy === ownerName || createdBy === 'Yönetici' || !staff.some((s:any) => s.name === createdBy);
+
+                if (assignedStaff) {
+                    if (assignedStaff.role === 'Yönetici') {
+                        if (!managerName) managerName = assignedStaff.name; 
+                    } else {
+                        workerName = assignedStaff.name; 
+                    }
+                }
 
                 const isApproved = j.status === 'Tamamlandı';
                 const staffColor = isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200';
                 
-                let atayanAd = createdBy;
-                let sorumluAd = null;
-                let ustaAd = null;
-
-                if (isPatronCreated) {
-                    if (assignedStaff) {
-                        if (assignedStaff.role === 'Yönetici') {
-                            sorumluAd = assignedStaff.name;
-                            if (detailsWorker) ustaAd = detailsWorker.name;
-                        } else {
-                            ustaAd = assignedStaff.name;
-                            if (lastEditedBy && lastEditedBy !== ownerName && lastEditedBy !== ustaAd) {
-                                const editor = staff.find((s:any) => s.name === lastEditedBy);
-                                if (editor && editor.role === 'Yönetici') {
-                                    sorumluAd = editor.name;
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    atayanAd = createdBy;
-                    if (assignedStaff) {
-                        if (assignedStaff.role !== 'Yönetici') {
-                            ustaAd = assignedStaff.name;
-                        } else if (assignedStaff.name !== createdBy) {
-                            sorumluAd = assignedStaff.name; 
-                        }
-                    }
-                    if (detailsWorker) ustaAd = detailsWorker.name;
-                }
-
                 return (
                   <tr 
                     key={j.id} 
@@ -712,16 +691,16 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                               <ShieldCheck size={14} className={isApproved ? 'text-emerald-500' : 'text-slate-400'} />
                               <span className="text-[9px] font-black text-slate-400 uppercase w-[56px] tracking-wider">Atayan:</span>
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-slate-600 bg-slate-50 border-slate-200'} whitespace-nowrap shadow-sm`}>
-                                {atayanAd}
+                                {createdBy}
                               </span>
                             </div>
                     
                             <div className="flex items-center gap-1.5">
-                              <User size={14} className={sorumluAd ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
+                              <User size={14} className={managerName ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
                               <span className="text-[9px] font-black text-slate-400 uppercase w-[56px] tracking-wider">Sorumlu:</span>
-                              {sorumluAd ? (
+                              {managerName ? (
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
-                                  {sorumluAd}
+                                  {managerName}
                                 </span>
                               ) : (
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-100 text-slate-400 whitespace-nowrap">
@@ -731,11 +710,11 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                             </div>
                     
                             <div className="flex items-center gap-1.5">
-                              <Wrench size={14} className={ustaAd ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
+                              <Wrench size={14} className={workerName ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
                               <span className="text-[9px] font-black text-slate-400 uppercase w-[56px] tracking-wider">Usta:</span>
-                              {ustaAd ? (
+                              {workerName ? (
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
-                                  {ustaAd}
+                                  {workerName}
                                 </span>
                               ) : (
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-100 text-slate-400 whitespace-nowrap">
@@ -750,16 +729,16 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                               <ShieldCheck size={14} className={isApproved ? 'text-emerald-500' : 'text-amber-500'} />
                               <span className="text-[9px] font-black text-slate-400 uppercase w-[100px] tracking-wider">Sorumlu (Atayan):</span>
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
-                                {atayanAd}
+                                {createdBy}
                               </span>
                             </div>
                     
                             <div className="flex items-center gap-1.5">
-                              <Wrench size={14} className={ustaAd ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
+                              <Wrench size={14} className={workerName ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
                               <span className="text-[9px] font-black text-slate-400 uppercase w-[100px] tracking-wider">Saha Ustası:</span>
-                              {ustaAd ? (
+                              {workerName ? (
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
-                                  {ustaAd}
+                                  {workerName}
                                 </span>
                               ) : (
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-100 text-slate-400 whitespace-nowrap">
@@ -805,46 +784,24 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
           {jobs.slice(0, 10).map((j: any) => {
              const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
              const createdBy = j.details?.createdBy || ownerName;
-             const lastEditedBy = j.details?.lastEditedBy;
+             const creatorRole = j.details?.creatorRole || (createdBy === ownerName ? 'Patron' : 'Yönetici');
+             const isPatronCreated = creatorRole === 'Patron' || createdBy === ownerName;
              
+             let managerName = j.details?.managerName || null;
+             let workerName = null;
+
              const assignedStaff = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
-             const detailsWorker = j.details?.worker_id ? staff.find((s:any) => String(s.id) === String(j.details?.worker_id)) : null; 
-             
-             const isPatronCreated = createdBy === ownerName || createdBy === 'Yönetici' || !staff.some((s:any) => s.name === createdBy);
+
+             if (assignedStaff) {
+                 if (assignedStaff.role === 'Yönetici') {
+                     if (!managerName) managerName = assignedStaff.name; 
+                 } else {
+                     workerName = assignedStaff.name; 
+                 }
+             }
 
              const isApproved = j.status === 'Tamamlandı';
              const staffColor = isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200';
-             
-             let atayanAd = createdBy;
-             let sorumluAd = null;
-             let ustaAd = null;
-
-             if (isPatronCreated) {
-                 if (assignedStaff) {
-                     if (assignedStaff.role === 'Yönetici') {
-                         sorumluAd = assignedStaff.name;
-                         if (detailsWorker) ustaAd = detailsWorker.name;
-                     } else {
-                         ustaAd = assignedStaff.name;
-                         if (lastEditedBy && lastEditedBy !== ownerName && lastEditedBy !== ustaAd) {
-                             const editor = staff.find((s:any) => s.name === lastEditedBy);
-                             if (editor && editor.role === 'Yönetici') {
-                                 sorumluAd = editor.name;
-                             }
-                         }
-                     }
-                 }
-             } else {
-                 atayanAd = createdBy;
-                 if (assignedStaff) {
-                     if (assignedStaff.role !== 'Yönetici') {
-                         ustaAd = assignedStaff.name;
-                     } else if (assignedStaff.name !== createdBy) {
-                         sorumluAd = assignedStaff.name; 
-                     }
-                 }
-                 if (detailsWorker) ustaAd = detailsWorker.name;
-             }
 
              return (
                <div 
@@ -869,15 +826,15 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                           <ShieldCheck size={14} className={isApproved ? 'text-emerald-500 shrink-0' : 'text-slate-400 shrink-0'} />
                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0 w-[55px]">Atayan:</span>
                           <span className={`text-[10px] font-bold px-2 py-1 rounded-md border truncate ${isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-slate-600 bg-slate-50 border-slate-200'}`}>
-                            {atayanAd}
+                            {createdBy}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <User size={14} className={sorumluAd ? (isApproved ? 'text-emerald-500 shrink-0' : 'text-amber-500 shrink-0') : 'text-slate-300 shrink-0'} />
+                          <User size={14} className={managerName ? (isApproved ? 'text-emerald-500 shrink-0' : 'text-amber-500 shrink-0') : 'text-slate-300 shrink-0'} />
                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0 w-[55px]">Sorumlu:</span>
-                          {sorumluAd ? (
+                          {managerName ? (
                             <span className={`text-[10px] font-bold px-2 py-1 rounded-md border truncate ${staffColor}`}>
-                              {sorumluAd}
+                              {managerName}
                             </span>
                           ) : (
                             <span className="text-[10px] font-bold px-2 py-1 rounded-md border border-slate-200 bg-slate-100 text-slate-400 truncate">
@@ -886,11 +843,11 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <Wrench size={14} className={ustaAd ? (isApproved ? 'text-emerald-500 shrink-0' : 'text-amber-500 shrink-0') : 'text-slate-300 shrink-0'} />
+                          <Wrench size={14} className={workerName ? (isApproved ? 'text-emerald-500 shrink-0' : 'text-amber-500 shrink-0') : 'text-slate-300 shrink-0'} />
                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0 w-[55px]">Usta:</span>
-                          {ustaAd ? (
+                          {workerName ? (
                             <span className={`text-[10px] font-bold px-2 py-1 rounded-md border truncate ${staffColor}`}>
-                              {ustaAd}
+                              {workerName}
                             </span>
                           ) : (
                             <span className="text-[10px] font-bold px-2 py-1 rounded-md border border-slate-200 bg-slate-100 text-slate-400 truncate">
@@ -905,15 +862,15 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                           <ShieldCheck size={14} className={isApproved ? 'text-emerald-500 shrink-0' : 'text-amber-500 shrink-0'} />
                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0 w-[105px]">Sorumlu (Atayan):</span>
                           <span className={`text-[10px] font-bold px-2 py-1 rounded-md border truncate ${staffColor}`}>
-                            {atayanAd}
+                            {createdBy}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Wrench size={14} className={ustaAd ? (isApproved ? 'text-emerald-500 shrink-0' : 'text-amber-500 shrink-0') : 'text-slate-300 shrink-0'} />
+                          <Wrench size={14} className={workerName ? (isApproved ? 'text-emerald-500 shrink-0' : 'text-amber-500 shrink-0') : 'text-slate-300 shrink-0'} />
                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0 w-[105px]">Saha Ustası:</span>
-                          {ustaAd ? (
+                          {workerName ? (
                             <span className={`text-[10px] font-bold px-2 py-1 rounded-md border truncate ${staffColor}`}>
-                              {ustaAd}
+                              {workerName}
                             </span>
                           ) : (
                             <span className="text-[10px] font-bold px-2 py-1 rounded-md border border-slate-200 bg-slate-100 text-slate-400 truncate">
