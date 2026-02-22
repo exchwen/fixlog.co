@@ -146,7 +146,10 @@ export default function ManagerDashboard() {
 
     // Güvenlik: Token yoksa veya Yönetici değilse kapı dışarı!
     if (!token || role !== 'Yönetici') {
-        localStorage.clear();
+      localStorage.removeItem('staff_authToken');
+      localStorage.removeItem('staff_userRole');
+      localStorage.removeItem('staff_userName');
+      localStorage.removeItem('staff_userSlug');
         router.push(`/${slug}/login`);
         return;
     }
@@ -161,7 +164,11 @@ export default function ManagerDashboard() {
       
       if (!res.ok) {
           if (res.status === 401 || res.status === 403) {
-             localStorage.clear(); router.push(`/${slug}/login`); return;
+            localStorage.removeItem('staff_authToken');
+            localStorage.removeItem('staff_userRole');
+            localStorage.removeItem('staff_userName');
+            localStorage.removeItem('staff_userSlug'); 
+            router.push(`/${slug}/login`); return;
           }
           throw new Error("Ağ hatası");
       }

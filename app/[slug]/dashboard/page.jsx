@@ -141,7 +141,10 @@ export default function PatronDashboard() {
       });
       
       if (res.status === 401 || res.status === 403) {
-          localStorage.clear();
+        localStorage.removeItem('staff_authToken');
+        localStorage.removeItem('staff_userRole');
+        localStorage.removeItem('staff_userName');
+        localStorage.removeItem('staff_userSlug');
           window.location.href = `/${slug}/login`;
           return;
       }

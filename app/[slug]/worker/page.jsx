@@ -149,7 +149,10 @@ export default function WorkerDashboard() {
     const role = localStorage.getItem('staff_userRole'); // ZIRH EKLENDİ
 
     if (!token || role !== 'Usta') {
-        localStorage.clear();
+      localStorage.removeItem('staff_authToken');
+      localStorage.removeItem('staff_userRole');
+      localStorage.removeItem('staff_userName');
+      localStorage.removeItem('staff_userSlug');
         router.push(`/${slug}/login`);
         return;
     }
@@ -213,7 +216,10 @@ export default function WorkerDashboard() {
   }, [selectedJob]);
 
   const handleLogout = () => {
-    localStorage.clear();
+    localStorage.removeItem('staff_authToken');
+localStorage.removeItem('staff_userRole');
+localStorage.removeItem('staff_userName');
+localStorage.removeItem('staff_userSlug');
     router.push(`/${slug}/login`);
   };
 
