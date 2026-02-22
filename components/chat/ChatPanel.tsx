@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Send, X, MessageSquare, ArrowLeft, WifiOff } from 'lucide-react';
+import { ChevronDown, Send, X, MessageSquare, ArrowLeft, WifiOff, Check, CheckCheck, Clock, Lock, Bell } from 'lucide-react';
 
 export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, setActiveChatId, data, messages, setMessages, messageInput, setMessageInput, sendMessage }: any) {
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -12,6 +12,11 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
 
+  // YENİ: Bildirim Zekası İçin State ve Referanslar
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [msgToast, setMsgToast] = useState<{show: boolean, senderName: string, text: string}>({show: false, senderName: '', text: ''});
+  const prevMsgCount = useRef(0);
+
   useEffect(() => {
     const isPatronPath = window.location.pathname.includes('/dashboard');
     const prefix = isPatronPath ? 'patron_' : 'staff_';
@@ -19,7 +24,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     const storedRole = localStorage.getItem(`${prefix}userRole`);
     setCurrentUserRole(storedRole);
     
-    // JWT Token içinden giriş yapan kişinin ID'sini güvenle çözelim
     const token = localStorage.getItem(`${prefix}authToken`);
     if (token) {
         try {
@@ -30,9 +34,60 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             setCurrentUserId(String(payload.id));
         } catch(e) {}
     }
+
+    // YENİ: Bildirim izni iste
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+        Notification.requestPermission();
+    }
   }, []);
   
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  // YENİ: Mesaj geldiğini algılayan ve bildirim fırlatan zeka
+  useEffect(() => {
+    if (messages && messages.length > 0) {
+      if (prevMsgCount.current > 0 && messages.length > prevMsgCount.current) {
+        const latestMsg = messages[messages.length - 1];
+        
+        // Gelen son mesajı "ben" göndermediysem bildirimi tetikle
+        if (!isMessageFromMe(latestMsg) && !latestMsg._tempId) {
+           
+           // Gönderenin adını bulalım
+           let senderName = 'Bilinmeyen Kullanıcı';
+           if (latestMsg.sender_id === 'PATRON') {
+               senderName = data?.ownerName || 'Firma Sahibi';
+           } else {
+               const foundStaff = data?.staff?.find((s:any) => String(s.id) === String(latestMsg.sender_id));
+               if (foundStaff) senderName = foundStaff.name;
+           }
+
+           // Eğer sohbet kapalıysa veya kullanıcının o an açık olan sohbeti değilse kırmızı rozeti artır
+           if (!isChatOpen) {
+               setUnreadCount(prev => prev + 1);
+           }
+
+           // Uygulama İçi Şık Balon (Toast)
+           setMsgToast({ show: true, senderName: senderName, text: latestMsg.message });
+           setTimeout(() => setMsgToast({ show: false, senderName: '', text: '' }), 4000);
+
+           // Cihazın Kendi (Native) Push Bildirimi
+           if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+               new Notification(`Yeni Mesaj: ${senderName}`, {
+                   body: latestMsg.message.length > 30 ? latestMsg.message.substring(0, 30) + '...' : latestMsg.message,
+                   icon: '/favicon.ico'
+               });
+           }
+        }
+      }
+      prevMsgCount.current = messages.length;
+    }
+  }, [messages, isChatOpen, data]);
+
+  // Sohbet açıldığında okunmamış mesaj rozetini (kırmızı sayıyı) sıfırla
+  useEffect(() => {
+    if (isChatOpen) {
+      setUnreadCount(0);
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [isChatOpen, messages]);
 
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
@@ -93,11 +148,12 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   const handleSendMessage = () => {
     if (!messageInput.trim() || isOffline) return;
     
-    // Optimistic UI Update: API'yi beklemeden mesajı anında ekranda göster
     const newMessage = {
+      _tempId: Date.now(), 
       message: messageInput,
       sender_id: currentUserRole === 'Patron' ? 'PATRON' : currentUserId, 
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      is_read: 0
     };
     
     if (setMessages) {
@@ -112,7 +168,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     setMessageInput(''); 
   };
 
-  const activeStaff = activeChatId ? data?.staff?.find((s: any) => String(s.id) === String(activeChatId)) : null;
+  const activeStaff = activeChatId && activeChatId !== 'PATRON' ? data?.staff?.find((s: any) => String(s.id) === String(activeChatId)) : null;
 
   const getDynamicStaffStatus = (staffId: string) => {
     const staffJobs = data?.jobs?.filter((j: any) => String(j.staff_id) === String(staffId) || String(j.details?.worker_id) === String(staffId)) || [];
@@ -143,18 +199,41 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
   const activeStatus = activeStaff ? getDynamicStaffStatus(activeStaff.id) : null;
 
-  // DÜZELTİLDİ: Mesajın sağda mı solda mı çıkacağını belirleyen asıl zeka.
   const isMessageFromMe = (m: any) => {
     if (currentUserRole === 'Patron') {
        return m.sender_id === 'PATRON';
     } else {
-       // Personel (Yönetici/Usta) ise ve mesajın göndereni kendi ID'si ise SAĞDA çıkar.
        return String(m.sender_id) === String(currentUserId);
     }
   };
 
+  // Yazıyor animasyonu için placeholder
+  const isTyping = false; 
+
   return (
     <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[100] flex flex-col items-end gap-3 pointer-events-none">
+      
+      {/* YENİ: Anlık Mesaj Bildirimi (Toast Balonu) */}
+      <AnimatePresence>
+        {msgToast.show && !isChatOpen && (
+            <motion.div 
+                initial={{ opacity: 0, y: 20, scale: 0.9 }} 
+                animate={{ opacity: 1, y: 0, scale: 1 }} 
+                exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                className="bg-slate-900 text-white p-3.5 rounded-2xl shadow-2xl flex flex-col gap-1 border border-slate-700 pointer-events-auto cursor-pointer max-w-[250px] sm:max-w-xs"
+                onClick={() => setIsChatOpen(true)}
+            >
+                <div className="flex items-center gap-2">
+                   <div className="bg-emerald-500/20 p-1.5 rounded-full animate-pulse">
+                      <MessageSquare size={14} className="text-emerald-400" />
+                   </div>
+                   <h4 className="text-[11px] font-black tracking-wide text-slate-200 uppercase truncate">{msgToast.senderName}</h4>
+                </div>
+                <p className="text-xs text-slate-300 font-medium line-clamp-2 pl-8">{msgToast.text}</p>
+            </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {isChatOpen && (
           <motion.div 
@@ -164,7 +243,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             className="w-[calc(100vw-32px)] sm:w-[340px] h-[70vh] max-h-[550px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden origin-bottom-right pointer-events-auto"
           >
             
-            <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between font-medium text-xs shadow-md z-10 shrink-0">
+            <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between shadow-md z-10 shrink-0">
               <div className="flex items-center gap-2">
                 {activeStaff && activeStatus ? (
                   <div className="flex items-center gap-2.5">
@@ -172,17 +251,37 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                       <ArrowLeft size={16} />
                     </button>
                     <div className="flex flex-col">
-                      <span className="font-bold text-[13px]">{activeStaff.name}</span>
-                      <span className="text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5 font-semibold tracking-wide">
-                         <span className={`w-1.5 h-1.5 rounded-full ${activeStatus.dot} shadow-[0_0_4px_rgba(0,0,0,0.5)]`}></span>
-                         {activeStaff.role}
+                      <span className="font-bold text-[13px] leading-none mb-0.5">{activeStaff.name}</span>
+                      
+                      {isTyping ? (
+                          <span className="text-[10px] text-emerald-400 font-bold italic tracking-wide animate-pulse">
+                              yazıyor...
+                          </span>
+                      ) : (
+                          <span className="text-[10px] text-slate-400 flex items-center gap-1.5 font-medium tracking-wide">
+                             <span className={`w-1.5 h-1.5 rounded-full ${activeStatus.label === 'Müsait' ? 'bg-emerald-500' : 'bg-slate-500'} shadow-[0_0_4px_rgba(0,0,0,0.5)]`}></span>
+                             {activeStatus.label === 'Müsait' ? 'Çevrimiçi' : 'Son görülme: az önce'}
+                          </span>
+                      )}
+                    </div>
+                  </div>
+                ) : activeChatId === 'PATRON' ? (
+                  <div className="flex items-center gap-2.5">
+                    <button onClick={() => setActiveChatId(null)} className="p-1.5 bg-slate-800/50 hover:bg-slate-700 rounded-md transition-colors active:scale-95">
+                      <ArrowLeft size={16} />
+                    </button>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-[13px] leading-none mb-0.5">{data?.ownerName || 'Firma Sahibi'}</span>
+                      <span className="text-[10px] text-emerald-400 flex items-center gap-1.5 font-bold tracking-wide">
+                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_4px_rgba(0,0,0,0.5)] animate-pulse"></span>
+                         Çevrimiçi
                       </span>
                     </div>
                   </div>
                 ) : (
                   <div className="flex flex-col pl-1">
-                    <span className="text-[14px] font-black tracking-wide">Saha Ekibi İletişim</span>
-                    <span className="text-[10px] font-medium text-slate-400 mt-0.5">Personel seçip mesajlaşmaya başlayın</span>
+                    <span className="text-[14px] font-black tracking-wide leading-none mb-0.5">Saha Ekibi İletişim</span>
+                    <span className="text-[10px] font-medium text-slate-400">Personel seçip mesajlaşmaya başlayın</span>
                   </div>
                 )}
               </div>
@@ -192,7 +291,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             {!activeChatId ? (
               <div className="flex-1 p-2 space-y-1.5 overflow-y-auto bg-slate-50 custom-scrollbar">
                  {data?.staff?.map((m: any) => {
-                   // Kendisi hariç diğerlerini listele (Patron hariç)
                    if (currentUserRole !== 'Patron' && String(m.id) === String(currentUserId)) return null;
 
                    const status = getDynamicStaffStatus(m.id);
@@ -217,11 +315,14 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                      </div>
                    );
                  })}
-                 {/* YENİ: Personel için Patron ile konuşma butonu Eklendi */}
+                 
                  {currentUserRole !== 'Patron' && (
                      <div onClick={() => setActiveChatId('PATRON')} className="p-3 bg-blue-50 hover:bg-blue-100 rounded-xl cursor-pointer flex items-center gap-3 shadow-sm border border-blue-200 transition-colors group">
-                       <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm group-hover:scale-105 transition-transform shadow-md">
-                         P
+                       <div className="relative">
+                           <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm group-hover:scale-105 transition-transform shadow-md">
+                             P
+                           </div>
+                           <span className="absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full bg-emerald-500"></span>
                        </div>
                        <div className="flex-1 min-w-0">
                          <div className="text-sm font-black text-blue-900 truncate">{data?.ownerName || 'Firma Sahibi'}</div>
@@ -239,51 +340,86 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
               </div>
             ) : (
               <>
-                <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-slate-50/50 text-xs custom-scrollbar">
-                  {activeStatus && activeChatId !== 'PATRON' && (
-                    <div className="flex justify-center mb-4">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold border ${activeStatus.badge} shadow-sm opacity-80`}>
-                        Şu anki durumu: {activeStatus.label}
-                      </span>
-                    </div>
-                  )}
+                <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-[#E5E7EB] text-xs custom-scrollbar">
+                  
+                  <div className="flex justify-center mb-6">
+                    <span className="px-3 py-1.5 bg-yellow-100 text-yellow-800 rounded-lg text-[10px] font-medium shadow-sm flex items-center gap-1.5 max-w-[85%] text-center leading-tight">
+                        <Lock size={10} /> Bu sohbetteki mesajlar uçtan uca şifrelenmektedir.
+                    </span>
+                  </div>
 
                   {messages?.map((m: any, i: number) => {
                     const fromMe = isMessageFromMe(m);
+                    
+                    const isPending = !!m._tempId; 
+                    const isDelivered = !!m.id;
+                    const isRead = m.is_read === 1; 
+
                     return (
-                      <div key={i} className={`flex flex-col ${fromMe ? 'items-end' : 'items-start'}`}>
-                        <div className={`px-3.5 py-2.5 rounded-2xl max-w-[85%] shadow-sm text-[13px] leading-relaxed break-words ${fromMe ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-white text-slate-700 border border-slate-200 rounded-tl-sm'}`}>
-                          {m.message}
-                        </div>
-                        <div className="text-[10px] text-slate-400 mt-1 font-medium px-1">
-                          {new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      <div key={i} className={`flex flex-col ${fromMe ? 'items-end' : 'items-start'} group`}>
+                        <div 
+                           className={`px-3 py-2 rounded-2xl max-w-[85%] shadow-sm text-[13px] leading-relaxed break-words relative
+                           ${fromMe ? 'bg-[#DCF8C6] text-slate-800 rounded-tr-sm' : 'bg-white text-slate-800 border border-slate-200 rounded-tl-sm'}`}
+                        >
+                          <div className="pr-12"> 
+                             {m.message}
+                          </div>
+                          
+                          <div className="absolute bottom-1 right-2 flex items-center gap-1 text-[10px] text-slate-500 font-medium">
+                            {new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            
+                            {fromMe && (
+                                <span className="ml-0.5">
+                                    {isPending && <Clock size={10} className="text-slate-400" />}
+                                    {!isPending && isDelivered && !isRead && <CheckCheck size={14} className="text-slate-400" />}
+                                    {!isPending && isDelivered && isRead && <CheckCheck size={14} className="text-blue-500" />}
+                                </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )
                   })}
+                  
+                  {isTyping && (
+                      <div className="flex items-start">
+                         <div className="bg-white px-4 py-3 rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-1">
+                            <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0 }} className="w-1.5 h-1.5 bg-slate-400 rounded-full"></motion.div>
+                            <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }} className="w-1.5 h-1.5 bg-slate-400 rounded-full"></motion.div>
+                            <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }} className="w-1.5 h-1.5 bg-slate-400 rounded-full"></motion.div>
+                         </div>
+                      </div>
+                  )}
+
                   {(!messages || messages.length === 0) && (
-                    <div className="text-center mt-12 text-slate-400 text-[11px] font-medium px-4">
-                      Henüz mesajlaşma yok. Tüm görüşmeler uçtan uca güvenli bir şekilde saklanır.
+                    <div className="text-center mt-12 text-slate-500 text-[11px] font-medium px-4">
+                      Sohbet geçmişi bulunamadı. İlk mesajı siz gönderin.
                     </div>
                   )}
                   <div ref={chatEndRef} />
                 </div>
                 
-                <div className="p-3 bg-white border-t border-slate-100 flex flex-col sm:flex-row gap-2 items-stretch sm:items-center shrink-0">
-                  <input 
+                <div className="p-2 sm:p-3 bg-[#F0F2F5] flex gap-2 items-end shrink-0">
+                  <textarea 
                     value={messageInput} 
                     onChange={e => setMessageInput(e.target.value)} 
-                    onKeyDown={e => e.key === 'Enter' && !isOffline && handleSendMessage()} 
+                    onKeyDown={e => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            if (!isOffline) handleSendMessage();
+                        }
+                    }} 
                     disabled={isOffline}
-                    placeholder={isOffline ? "İnternet bağlantısı yok..." : "Mesaj yazın..."} 
-                    className="flex-1 bg-slate-50 px-4 py-3 sm:py-2.5 rounded-xl text-[13px] outline-none border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all placeholder:text-slate-400 disabled:opacity-50 disabled:bg-slate-100" 
+                    placeholder={isOffline ? "İnternet bağlantısı bekleniyor..." : "Mesaj yazın..."} 
+                    className="flex-1 bg-white px-4 py-3 rounded-2xl text-[13px] outline-none border border-white focus:border-blue-400 transition-all placeholder:text-slate-400 disabled:opacity-50 resize-none overflow-hidden max-h-24 min-h-[44px]"
+                    rows={1}
                   />
                   <button 
                     onClick={handleSendMessage} 
                     disabled={!messageInput.trim() || isOffline}
-                    className="bg-blue-600 text-white p-3 sm:p-2.5 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center shrink-0 active:scale-95"
+                    className="w-11 h-11 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center shrink-0 active:scale-95 mb-0.5"
                   >
-                    {isOffline ? <WifiOff size={18} /> : <Send size={18} />}
+                    {isOffline ? <WifiOff size={18} /> : <Send size={18} className="ml-1" />}
                   </button>
                 </div>
               </>
@@ -291,11 +427,20 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* YENİ: Kırmızı Bildirim Noktası (Unread Badge) */}
       <button 
         onClick={() => setIsChatOpen(!isChatOpen)} 
-        className="w-14 h-14 bg-slate-900 text-white rounded-full shadow-xl flex items-center justify-center hover:bg-slate-800 transition-all hover:scale-105 active:scale-95 relative border-2 border-white pointer-events-auto"
+        className="w-14 h-14 bg-emerald-500 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-emerald-600 transition-all hover:scale-105 active:scale-95 relative border-2 border-white pointer-events-auto"
       >
         {isChatOpen ? <X size={24} /> : <MessageSquare size={24} />}
+        
+        {/* Okunmamış Mesaj Rozeti */}
+        {!isChatOpen && unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-bounce shadow-md">
+                {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+        )}
       </button>
     </div>
   );
