@@ -181,7 +181,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
         setAllMessages(prev => {
             if (newMsg._tempId) {
-                // Eşleşme sorununu engellemek için String'e çevirip karşılaştırıyoruz
                 const tempIdx = prev.findIndex((p: any) => String(p._tempId) === String(newMsg._tempId));
                 if (tempIdx !== -1) {
                     const arr = [...prev];
@@ -332,7 +331,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     };
   }, [isChatOpen, setIsChatOpen]);
 
-  // 🚀 YENİ EKLENEN UI OPTİMİSTİK YÜKLEME ZIRHI 🚀
   const handleSendMessage = () => {
     if (!messageInput.trim() || isOffline) return;
     
@@ -346,10 +344,8 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
       is_read: 0
     };
     
-    // ANINDA ekrana yansıtmak için allMessages state'ine ekle
     setAllMessages(prev => [...prev, newMessage]);
     
-    // YENİ: Varsa üst component'in local mesaj listesini de güncelle
     if (setMessages) {
         setMessages((prev: any) => [...(prev || []), newMessage]);
     }
@@ -361,7 +357,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     const token = localStorage.getItem(`${prefix}authToken`);
     const API_URL = 'https://backend.isdokumu.workers.dev';
     
-    // Worker'a gönder, o 200 dönecek, Pusher ve Beams işlemlerini kendi arka planında halledecek
+    // ÇİFT ZIRH: Eğer Pusher çökerse diye HTTP yanıtından ID'yi alıp saati gizliyoruz
     fetch(`${API_URL}/send-message`, { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -372,8 +368,13 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             message: newMessage.message,
             tempId: tempId 
         }) 
-    }).then(res => {
-        if (!res.ok) {
+    }).then(async res => {
+        if (res.ok) {
+            const data = await res.json();
+            if (data.id) {
+                setAllMessages(prev => prev.map(m => String(m._tempId) === String(tempId) ? { ...m, _tempId: undefined, id: data.id } : m));
+            }
+        } else {
             setAllMessages(prev => prev.filter(m => String(m._tempId) !== String(tempId)));
         }
     }).catch(err => {
@@ -424,7 +425,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     return String(m.sender_id) === String(currentUserId);
   };
 
-  // Ekranda SADECE o an konuşulan kişinin mesajlarını gösterme filtresi
   const displayMessages = useMemo(() => {
     if (!activeChatId) return [];
     return allMessages.filter(m => 
