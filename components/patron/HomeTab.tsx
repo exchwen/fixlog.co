@@ -1,16 +1,16 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClipboardList, Users, Box, Wallet, Plus, ArrowUpRight, 
   CheckCircle, Clock, Calendar, TrendingUp, TrendingDown, 
   Package, AlertTriangle, ShieldCheck, Activity, User, Lock, 
-  Settings, X, Wrench, Link as LinkIcon, Check, Database, Image as ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2
+  Settings, X, Wrench, Link as LinkIcon, Check, Database, Image as ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2, Bell
 } from 'lucide-react';
 
-export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob, setActiveTab, userRole: propRole, handleAction }: any) {
+export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob, setActiveTab, userRole: propRole, handleAction, isMyJobsTab }: any) {
   
   const { slug } = useParams(); 
 
@@ -21,6 +21,10 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   
   const [isApproving, setIsApproving] = useState<string | null>(null);
+
+  // Yeni İş Bildirimi State'i ve Ref'i
+  const [newJobNotification, setNewJobNotification] = useState<{show: boolean, jobName: string}>({show: false, jobName: ''});
+  const prevJobIds = useRef<string[]>([]);
 
   useEffect(() => {
     const prefix = isPatronPath ? 'patron_' : 'staff_';
@@ -42,6 +46,11 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
     } else if (data?.ownerName && isPatronPath) {
       setCurrentUserName(data.ownerName.split(' ')[0]);
     }
+
+    // Tarayıcı bildirimi izni iste (ilk girişte)
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+        Notification.requestPermission();
+    }
   }, [isPatronPath, data]);
 
   const [copied, setCopied] = useState(false);
@@ -61,7 +70,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const pendingJobs = jobs.filter((j: any) => j.status === 'Beklemede' || j.status === 'Devam Ediyor').length;
   const plannedJobs = jobs.filter((j: any) => j.status === 'Gelecek').length;
 
-  // YENİ: Yöneticinin KENDİSİNE ATANMIŞ OLAN bekleyen işleri bulma
   const myAssignedJobs = useMemo(() => {
      if (!currentUserId || userRole === 'Patron') return [];
      return jobs.filter((j: any) => 
@@ -70,7 +78,36 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
      );
   }, [jobs, currentUserId, userRole]);
 
-  // YENİ: Yönetici İş Onaylama ("Gördüm, Onaylıyorum" & Usta Atamaya Geçiş)
+  // Arka planda iş atandığında algılayıp bildirim verme zekası (TypeScript Hatası Çözüldü: id: string yapıldı)
+  useEffect(() => {
+    if (myAssignedJobs.length > 0) {
+        const currentIds = myAssignedJobs.map((j: any) => String(j.id));
+        
+        // Eğer daha önceden ID listesi varsa ve mevcut ID'ler öncekinden farklı bir ID içeriyorsa
+        if (prevJobIds.current.length > 0) {
+            const newIds = currentIds.filter((id: string) => !prevJobIds.current.includes(id));
+            if (newIds.length > 0) {
+                const newlyAddedJob = myAssignedJobs.find((j: any) => String(j.id) === newIds[0]);
+                if (newlyAddedJob) {
+                    // Uygulama içi toast bildirimi göster
+                    setNewJobNotification({ show: true, jobName: newlyAddedJob.customer_name || 'Yeni İş' });
+                    
+                    // Tarayıcı native push bildirimi yolla
+                    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                        new Notification('Yeni İş Atandı!', {
+                            body: `${newlyAddedJob.customer_name} müşterisi için size yeni bir görev atandı.`,
+                            icon: '/favicon.ico'
+                        });
+                    }
+
+                    setTimeout(() => setNewJobNotification({ show: false, jobName: '' }), 5000);
+                }
+            }
+        }
+        prevJobIds.current = currentIds;
+    }
+  }, [myAssignedJobs]);
+
   const handleApproveJob = async (job: any) => {
     if (!handleAction) {
         alert("Sistem hatası: İşlem fonksiyonu bulunamadı.");
@@ -90,11 +127,9 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
 
         if (success) {
             if (!isGeneralJob) {
-                // Normal İş -> Modalı açıp ustaya sevk işlemi
                 setSelectedJob({ ...job, status: 'Devam Ediyor' });
                 setShowJobModal(true);
             } else {
-                // Genel Görev -> Usta atama yok, kendi üstünde kalır
                 alert("Genel Görev başarıyla onaylandı ve üzerinize alındı.");
             }
         }
@@ -241,8 +276,28 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 relative">
       
+      {/* Anlık Yeni İş Bildirimi (Toast) */}
+      <AnimatePresence>
+        {newJobNotification.show && (
+            <motion.div 
+                initial={{ opacity: 0, y: -50, x: '-50%' }} 
+                animate={{ opacity: 1, y: 0, x: '-50%' }} 
+                exit={{ opacity: 0, y: -50, x: '-50%' }}
+                className="fixed top-6 left-1/2 z-[200] bg-blue-600 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-blue-500"
+            >
+                <div className="bg-white/20 p-2 rounded-full animate-pulse">
+                    <Bell size={18} className="text-white" />
+                </div>
+                <div>
+                    <h4 className="text-sm font-black tracking-wide">Yeni Görev Atandı!</h4>
+                    <p className="text-[11px] text-blue-100 font-medium">"{newJobNotification.jobName}" için atama yapıldı.</p>
+                </div>
+            </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {showLowStockModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
@@ -301,17 +356,11 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                {copied ? <Check size={14} className="text-emerald-400" /> : <LinkIcon size={14} className="text-blue-400" />}
                {copied ? 'Bağlantı Kopyalandı' : 'Personel Giriş Linkini Kopyala'}
             </button>
-            <div className="px-3 py-2 sm:py-2.5 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100 flex items-center justify-center gap-1.5 font-bold text-[10px] sm:text-xs uppercase tracking-wide shadow-sm">
-                <span className="relative flex h-2 w-2 shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                Bulut Senkronizasyonu Aktif
-            </div>
+            {/* BULUT SENKRONİZASYONU KUTUSU İSTEK ÜZERİNE KALDIRILDI */}
         </div>
       </div>
 
-      {/* YENİ: YÖNETİCİYE ATANAN BEKLEYEN İŞLER KUTUSU */}
+      {/* YÖNETİCİYE ATANAN BEKLEYEN İŞLER KUTUSU */}
       {myAssignedJobs.length > 0 && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-indigo-600 rounded-3xl p-5 shadow-xl shadow-indigo-600/20 text-white relative overflow-hidden">
            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
@@ -323,26 +372,30 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                  {myAssignedJobs.map((job: any) => {
                     const isGeneral = job.work_type === 'Genel Görev';
                     return (
-                        <div key={job.id} className="bg-indigo-950/40 border border-indigo-500/30 rounded-2xl p-4 flex flex-col justify-between">
-                            <div>
+                        <div key={job.id} className="bg-indigo-950/40 border border-indigo-500/30 rounded-2xl p-4 flex flex-col justify-between hover:bg-indigo-950/60 transition-colors">
+                            <div 
+                                className="cursor-pointer mb-2 group" 
+                                onClick={() => { setSelectedJob(job); setShowJobModal(true); }}
+                                title="İş Detayını Görüntüle"
+                            >
                                 <div className="flex justify-between items-start mb-2">
                                     <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${isGeneral ? 'bg-purple-500/30 text-purple-200' : 'bg-blue-500/30 text-blue-200'}`}>
                                         {isGeneral ? 'GENEL GÖREV' : 'NORMAL İŞ'}
                                     </span>
-                                    <span className="text-[10px] font-bold opacity-70 flex items-center gap-1">
-                                        <Clock size={10}/> {job.scheduled_date || 'Anlık'}
+                                    <span className="text-[10px] font-bold opacity-70 flex items-center gap-1 group-hover:opacity-100 transition-opacity">
+                                        <ArrowUpRight size={14} className="text-indigo-300"/> Detay
                                     </span>
                                 </div>
-                                <h3 className="text-sm font-black leading-tight mb-1 truncate" title={job.customer_name}>{job.customer_name}</h3>
+                                <h3 className="text-sm font-black leading-tight mb-1 truncate">{job.customer_name}</h3>
                                 <p className="text-indigo-200 text-[11px] font-medium flex items-center gap-1.5 truncate">
                                     <Briefcase size={12} className="shrink-0 opacity-70"/> {job.work_type}
                                 </p>
                             </div>
                             
                             <button 
-                                onClick={() => handleApproveJob(job)}
+                                onClick={(e) => { e.stopPropagation(); handleApproveJob(job); }}
                                 disabled={isApproving === job.id}
-                                className="mt-4 w-full bg-indigo-500 hover:bg-indigo-400 text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                                className="mt-2 w-full bg-indigo-500 hover:bg-indigo-400 text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 {isApproving === job.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
                                 {isApproving === job.id ? 'İşleniyor...' : (isGeneral ? 'Gördüm, İşleme Al' : 'Onayla & Ustaya Ata')}
@@ -355,227 +408,233 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         </motion.div>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-        <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-blue-300 transition-colors group cursor-pointer active:scale-95">
-          <div className="w-10 h-10 bg-blue-50/80 rounded-xl flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform shrink-0">
-            <ClipboardList size={18} />
-          </div>
-          <div>
-            <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none mb-1">{totalJobs}</div>
-            <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Toplam İş</div>
-          </div>
-        </div>
-
-        <div onClick={() => setActiveTab('completed')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-emerald-300 transition-colors group cursor-pointer active:scale-95">
-          <div className="w-10 h-10 bg-emerald-50/80 rounded-xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform shrink-0">
-            <CheckCircle size={18} />
-          </div>
-          <div>
-            <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none mb-1">{completedJobs}</div>
-            <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Tamamlanan</div>
-          </div>
-        </div>
-
-        <div onClick={() => setActiveTab('pending')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-amber-300 transition-colors group cursor-pointer active:scale-95">
-          <div className="w-10 h-10 bg-amber-50/80 rounded-xl flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform shrink-0">
-            <Clock size={18} />
-          </div>
-          <div>
-            <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none mb-1">{pendingJobs}</div>
-            <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Bekleyen İşler</div>
-          </div>
-        </div>
-
-        <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-purple-300 transition-colors group cursor-pointer active:scale-95">
-          <div className="w-10 h-10 bg-purple-50/80 rounded-xl flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform shrink-0">
-            <Calendar size={18} />
-          </div>
-          <div>
-            <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none mb-1">{plannedJobs}</div>
-            <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Planlanan</div>
-          </div>
-        </div>
-
-        <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-indigo-300 transition-colors group cursor-pointer active:scale-95 sm:col-span-2 md:col-span-1 lg:col-span-1">
-          <div className="w-10 h-10 bg-indigo-50/80 rounded-xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform shrink-0">
-            <ImageIcon size={18} />
-          </div>
-          <div>
-            <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none mb-1">{monthlyPhotos}</div>
-            <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Bu Ayki Foto</div>
-          </div>
-        </div>
-      </div>
-
-      <div className={`grid grid-cols-1 gap-4 sm:gap-6 ${userRole === 'Patron' ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
-        
-        {/* SADECE PATRON GÖREBİLİR: KASA ÖZETİ */}
-        {userRole === 'Patron' && (
-          <div className="lg:col-span-2 bg-slate-900 rounded-2xl p-5 sm:p-6 shadow-lg border border-slate-800 flex flex-col relative overflow-hidden finance-block">
-             <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 blur-3xl rounded-full pointer-events-none"></div>
-             
-             <div className="flex justify-between items-start mb-6 z-10 relative">
-               <div>
-                 <div className="flex items-center gap-2 mb-1">
-                   <Wallet size={16} className="text-blue-400" />
-                   <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Kasa Özeti</span>
-                 </div>
-                 <div className="text-[10px] text-slate-500 mb-1 font-semibold">Net Bakiye</div>
-                 <div className="text-2xl sm:text-3xl font-black text-white tracking-tight break-all">₺{netCash.toLocaleString('tr-TR')}</div>
-               </div>
-               
-               <div className="h-10 sm:h-12 w-20 sm:w-32 opacity-80 flex items-center justify-end shrink-0">
-                 {miniChartPoints ? (
-                   <svg viewBox="-5 -5 110 50" className="w-full h-full overflow-visible">
-                     <polyline
-                       fill="none"
-                       stroke="#3b82f6"
-                       strokeWidth="4"
-                       strokeLinecap="round"
-                       strokeLinejoin="round"
-                       points={miniChartPoints}
-                     />
-                   </svg>
-                 ) : (
-                   <div className="text-slate-600 text-[10px] font-bold">Veri Yok</div>
-                 )}
-               </div>
-             </div>
-
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-auto z-10">
-               <div className="space-y-3">
-                 <div className="p-3 bg-white/5 rounded-xl flex items-center justify-between border border-white/5 shadow-sm">
-                   <div className="flex items-center gap-2"><ArrowUpRight size={14} className="text-emerald-400" /><span className="text-xs text-slate-300 font-bold">Toplam Gelir</span></div>
-                   <span className="text-sm font-black text-emerald-400">₺{totalIncome.toLocaleString('tr-TR')}</span>
-                 </div>
-                 <div className="p-3 bg-white/5 rounded-xl flex items-center justify-between border border-white/5 shadow-sm">
-                   <div className="flex items-center gap-2"><ArrowUpRight size={14} className="text-rose-400 rotate-90" /><span className="text-xs text-slate-300 font-bold">Toplam Gider</span></div>
-                   <span className="text-sm font-black text-rose-400">₺{totalExpense.toLocaleString('tr-TR')}</span>
-                 </div>
-               </div>
-
-               <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 flex flex-col shadow-sm">
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Son İşlemler</h4>
-                  <div className="space-y-3 flex-1">
-                    {recentFinances.length > 0 ? recentFinances.map((f: any) => (
-                      <div key={f.id} className="flex justify-between items-center gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${f.type === 'Gelir' ? 'bg-emerald-400' : 'bg-rose-400'}`}></div>
-                          <div className="text-xs font-semibold text-slate-200 truncate">{f.description.split('\n')[0]}</div>
-                        </div>
-                        <div className={`text-[11px] font-black shrink-0 ${f.type === 'Gelir' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                          {f.type === 'Gelir' ? '+' : '-'}₺{Number(f.amount).toLocaleString('tr-TR')}
-                        </div>
-                      </div>
-                    )) : (
-                      <div className="text-center text-slate-500 text-[10px] py-4 font-semibold">Henüz işlem yok.</div>
-                    )}
-                  </div>
-               </div>
-             </div>
-          </div>
-        )}
-
-        {/* İSTATİSTİKLER KUTULARI (Patron ise yanda durur, Yönetici ise yana yayılır) */}
-        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6 ${userRole !== 'Patron' ? 'lg:col-span-2 lg:grid-cols-2' : ''}`}>
-          
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden h-auto min-h-[140px] sm:h-[192px] flex flex-col justify-center group hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center gap-2.5">
-                 <div className={`p-2 rounded-lg ${isGrowthPositive ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
-                    {isGrowthPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                 </div>
-                 <h3 className="font-bold text-slate-900 text-sm">İş Büyüme Hızı</h3>
+      {/* İSTATİSTİK KUTULARI EĞER "SADECE BANA ATANANLAR" SEKME DEĞİLSE GÖRÜNSÜN */}
+      {!isMyJobsTab && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+            <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-blue-300 transition-colors group cursor-pointer active:scale-95">
+              <div className="w-10 h-10 bg-blue-50/80 rounded-xl flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform shrink-0">
+                <ClipboardList size={18} />
+              </div>
+              <div>
+                <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none mb-1">{totalJobs}</div>
+                <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Toplam İş</div>
               </div>
             </div>
-            <div>
-               <div className="flex items-baseline gap-2">
-                 <span className="text-3xl font-black text-slate-900">%{growthPercent}</span>
-                 <span className={`text-xs font-bold uppercase tracking-wider ${isGrowthPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
-                   {isGrowthPositive ? 'Artış' : 'Düşüş'}
-                 </span>
-               </div>
-               <p className="text-[11px] text-slate-500 mt-2.5 font-medium leading-relaxed">
-                 Geçen ay <b className="text-slate-700">{lastMonthJobs} iş</b> yapmıştınız. Bu ay şu ana kadar <b className="text-slate-700">{currentMonthJobs} iş</b> kaydı açıldı.
-               </p>
+
+            <div onClick={() => setActiveTab('completed')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-emerald-300 transition-colors group cursor-pointer active:scale-95">
+              <div className="w-10 h-10 bg-emerald-50/80 rounded-xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform shrink-0">
+                <CheckCircle size={18} />
+              </div>
+              <div>
+                <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none mb-1">{completedJobs}</div>
+                <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Tamamlanan</div>
+              </div>
+            </div>
+
+            <div onClick={() => setActiveTab('pending')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-amber-300 transition-colors group cursor-pointer active:scale-95">
+              <div className="w-10 h-10 bg-amber-50/80 rounded-xl flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform shrink-0">
+                <Clock size={18} />
+              </div>
+              <div>
+                <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none mb-1">{pendingJobs}</div>
+                <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Bekleyen İşler</div>
+              </div>
+            </div>
+
+            <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-purple-300 transition-colors group cursor-pointer active:scale-95">
+              <div className="w-10 h-10 bg-purple-50/80 rounded-xl flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform shrink-0">
+                <Calendar size={18} />
+              </div>
+              <div>
+                <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none mb-1">{plannedJobs}</div>
+                <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Planlanan</div>
+              </div>
+            </div>
+
+            <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-indigo-300 transition-colors group cursor-pointer active:scale-95 sm:col-span-2 md:col-span-1 lg:col-span-1">
+              <div className="w-10 h-10 bg-indigo-50/80 rounded-xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform shrink-0">
+                <ImageIcon size={18} />
+              </div>
+              <div>
+                <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none mb-1">{monthlyPhotos}</div>
+                <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Bu Ayki Foto</div>
+              </div>
             </div>
           </div>
+      )}
 
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-visible h-auto min-h-[140px] sm:h-[192px] flex flex-col justify-center group hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center gap-2.5">
-                 <div className={`p-2 rounded-lg ${lowStockItems.length > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-600'}`}>
-                    <Package size={16} />
-                 </div>
-                 <h3 className="font-bold text-slate-900 text-sm">Stok Uyarıları</h3>
-              </div>
-              
-              {/* SADECE TEKİL SİPARİŞ MENÜSÜ */}
-              {lowStockItems.length > 0 && (
-                <div className="relative">
-                  <button 
-                    onClick={() => setShowOrderMenu(!showOrderMenu)} 
-                    className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-100"
-                  >
-                    <Plus size={20} />
-                  </button>
-                  
-                  <AnimatePresence>
-                    {showOrderMenu && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={() => setShowOrderMenu(false)}></div>
-                        <motion.div 
-                          initial={{ opacity: 0, scale: 0.9, y: 5 }} 
-                          animate={{ opacity: 1, scale: 1, y: 0 }} 
-                          exit={{ opacity: 0, scale: 0.9, y: 5 }}
-                          className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 overflow-hidden"
-                        >
-                          <div className="px-3 py-2 border-b border-slate-100 mb-1">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sipariş İşlemleri</span>
-                          </div>
-                          <button 
-                            onClick={() => {
-                              setShowOrderMenu(false);
-                              if (setActiveTab) setActiveTab('stock');
-                            }} 
-                            className="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors"
-                          >
-                            <ShoppingCart size={14} className="text-slate-400" /> Sipariş Oluştur
-                          </button>
-                        </motion.div>
-                      </>
-                    )}
-                  </AnimatePresence>
-                </div>
-              )}
-            </div>
-
-            <div>
-               {lowStockItems.length > 0 ? (
-                 <>
-                   <div className="text-3xl font-black text-slate-900">{lowStockItems.length} Parça</div>
-                   <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-2.5 gap-2">
-                     <p className="text-[11px] text-amber-600 font-bold flex items-center gap-1.5">
-                       <AlertTriangle size={14} className="shrink-0" /> Kritik seviyenin altında.
-                     </p>
-                     <button onClick={() => setShowLowStockModal(true)} className="bg-amber-100 hover:bg-amber-200 text-amber-700 px-3 py-2 sm:py-1.5 rounded-lg text-[10px] font-bold transition-all active:scale-95 text-center w-full sm:w-auto">
-                       Detayları Gör
-                     </button>
+      {/* FİNANS VE BÜYÜME HIZI (SADECE HOME TAB İÇİN) */}
+      {!isMyJobsTab && (
+          <div className={`grid grid-cols-1 gap-4 sm:gap-6 ${userRole === 'Patron' ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
+            
+            {/* SADECE PATRON GÖREBİLİR: KASA ÖZETİ */}
+            {userRole === 'Patron' && (
+              <div className="lg:col-span-2 bg-slate-900 rounded-2xl p-5 sm:p-6 shadow-lg border border-slate-800 flex flex-col relative overflow-hidden finance-block">
+                 <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 blur-3xl rounded-full pointer-events-none"></div>
+                 
+                 <div className="flex justify-between items-start mb-6 z-10 relative">
+                   <div>
+                     <div className="flex items-center gap-2 mb-1">
+                       <Wallet size={16} className="text-blue-400" />
+                       <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Kasa Özeti</span>
+                     </div>
+                     <div className="text-[10px] text-slate-500 mb-1 font-semibold">Net Bakiye</div>
+                     <div className="text-2xl sm:text-3xl font-black text-white tracking-tight break-all">₺{netCash.toLocaleString('tr-TR')}</div>
                    </div>
-                 </>
-               ) : (
-                 <>
-                   <div className="text-2xl font-black text-emerald-600">Sorun Yok</div>
+                   
+                   <div className="h-10 sm:h-12 w-20 sm:w-32 opacity-80 flex items-center justify-end shrink-0">
+                     {miniChartPoints ? (
+                       <svg viewBox="-5 -5 110 50" className="w-full h-full overflow-visible">
+                         <polyline
+                           fill="none"
+                           stroke="#3b82f6"
+                           strokeWidth="4"
+                           strokeLinecap="round"
+                           strokeLinejoin="round"
+                           points={miniChartPoints}
+                         />
+                       </svg>
+                     ) : (
+                       <div className="text-slate-600 text-[10px] font-bold">Veri Yok</div>
+                     )}
+                   </div>
+                 </div>
+
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-auto z-10">
+                   <div className="space-y-3">
+                     <div className="p-3 bg-white/5 rounded-xl flex items-center justify-between border border-white/5 shadow-sm">
+                       <div className="flex items-center gap-2"><ArrowUpRight size={14} className="text-emerald-400" /><span className="text-xs text-slate-300 font-bold">Toplam Gelir</span></div>
+                       <span className="text-sm font-black text-emerald-400">₺{totalIncome.toLocaleString('tr-TR')}</span>
+                     </div>
+                     <div className="p-3 bg-white/5 rounded-xl flex items-center justify-between border border-white/5 shadow-sm">
+                       <div className="flex items-center gap-2"><ArrowUpRight size={14} className="text-rose-400 rotate-90" /><span className="text-xs text-slate-300 font-bold">Toplam Gider</span></div>
+                       <span className="text-sm font-black text-rose-400">₺{totalExpense.toLocaleString('tr-TR')}</span>
+                     </div>
+                   </div>
+
+                   <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 flex flex-col shadow-sm">
+                      <h4 className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Son İşlemler</h4>
+                      <div className="space-y-3 flex-1">
+                        {recentFinances.length > 0 ? recentFinances.map((f: any) => (
+                          <div key={f.id} className="flex justify-between items-center gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${f.type === 'Gelir' ? 'bg-emerald-400' : 'bg-rose-400'}`}></div>
+                              <div className="text-xs font-semibold text-slate-200 truncate">{f.description.split('\n')[0]}</div>
+                            </div>
+                            <div className={`text-[11px] font-black shrink-0 ${f.type === 'Gelir' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                              {f.type === 'Gelir' ? '+' : '-'}₺{Number(f.amount).toLocaleString('tr-TR')}
+                            </div>
+                          </div>
+                        )) : (
+                          <div className="text-center text-slate-500 text-[10px] py-4 font-semibold">Henüz işlem yok.</div>
+                        )}
+                      </div>
+                   </div>
+                 </div>
+              </div>
+            )}
+
+            {/* İSTATİSTİKLER KUTULARI (Patron ise yanda durur, Yönetici ise yana yayılır) */}
+            <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6 ${userRole !== 'Patron' ? 'lg:col-span-2 lg:grid-cols-2' : ''}`}>
+              
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden h-auto min-h-[140px] sm:h-[192px] flex flex-col justify-center group hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-2.5">
+                     <div className={`p-2 rounded-lg ${isGrowthPositive ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                        {isGrowthPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                     </div>
+                     <h3 className="font-bold text-slate-900 text-sm">İş Büyüme Hızı</h3>
+                  </div>
+                </div>
+                <div>
+                   <div className="flex items-baseline gap-2">
+                     <span className="text-3xl font-black text-slate-900">%{growthPercent}</span>
+                     <span className={`text-xs font-bold uppercase tracking-wider ${isGrowthPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                       {isGrowthPositive ? 'Artış' : 'Düşüş'}
+                     </span>
+                   </div>
                    <p className="text-[11px] text-slate-500 mt-2.5 font-medium leading-relaxed">
-                     Stoğu azalan (5 adetin altında) kritik parçanız yok.
+                     Geçen ay <b className="text-slate-700">{lastMonthJobs} iş</b> yapmıştınız. Bu ay şu ana kadar <b className="text-slate-700">{currentMonthJobs} iş</b> kaydı açıldı.
                    </p>
-                 </>
-               )}
+                </div>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-visible h-auto min-h-[140px] sm:h-[192px] flex flex-col justify-center group hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-2.5">
+                     <div className={`p-2 rounded-lg ${lowStockItems.length > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-600'}`}>
+                        <Package size={16} />
+                     </div>
+                     <h3 className="font-bold text-slate-900 text-sm">Stok Uyarıları</h3>
+                  </div>
+                  
+                  {/* SADECE TEKİL SİPARİŞ MENÜSÜ */}
+                  {lowStockItems.length > 0 && (
+                    <div className="relative">
+                      <button 
+                        onClick={() => setShowOrderMenu(!showOrderMenu)} 
+                        className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-100"
+                      >
+                        <Plus size={20} />
+                      </button>
+                      
+                      <AnimatePresence>
+                        {showOrderMenu && (
+                          <>
+                            <div className="fixed inset-0 z-40" onClick={() => setShowOrderMenu(false)}></div>
+                            <motion.div 
+                              initial={{ opacity: 0, scale: 0.9, y: 5 }} 
+                              animate={{ opacity: 1, scale: 1, y: 0 }} 
+                              exit={{ opacity: 0, scale: 0.9, y: 5 }}
+                              className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 overflow-hidden"
+                            >
+                              <div className="px-3 py-2 border-b border-slate-100 mb-1">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sipariş İşlemleri</span>
+                              </div>
+                              <button 
+                                onClick={() => {
+                                  setShowOrderMenu(false);
+                                  if (setActiveTab) setActiveTab('stock');
+                                }} 
+                                className="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors"
+                              >
+                                <ShoppingCart size={14} className="text-slate-400" /> Sipariş Oluştur
+                              </button>
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                   {lowStockItems.length > 0 ? (
+                     <>
+                       <div className="text-3xl font-black text-slate-900">{lowStockItems.length} Parça</div>
+                       <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-2.5 gap-2">
+                         <p className="text-[11px] text-amber-600 font-bold flex items-center gap-1.5">
+                           <AlertTriangle size={14} className="shrink-0" /> Kritik seviyenin altında.
+                         </p>
+                         <button onClick={() => setShowLowStockModal(true)} className="bg-amber-100 hover:bg-amber-200 text-amber-700 px-3 py-2 sm:py-1.5 rounded-lg text-[10px] font-bold transition-all active:scale-95 text-center w-full sm:w-auto">
+                           Detayları Gör
+                         </button>
+                       </div>
+                     </>
+                   ) : (
+                     <>
+                       <div className="text-2xl font-black text-emerald-600">Sorun Yok</div>
+                       <p className="text-[11px] text-slate-500 mt-2.5 font-medium leading-relaxed">
+                         Stoğu azalan (5 adetin altında) kritik parçanız yok.
+                       </p>
+                     </>
+                   )}
+                </div>
+              </div>
+
             </div>
           </div>
-
-        </div>
-      </div>
+      )}
 
       {/* ALT BÖLÜM: YENİLENMİŞ SON İŞLER TABLOSU VE MOBİL KARTLARI */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
@@ -602,8 +661,8 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
             <tbody className="divide-y divide-slate-50">
               {jobs.slice(0, 10).map((j: any) => {
                 
-                const assignedManager = j.staff_id ? staff.find((s:any) => s.id === j.staff_id) : null;
-                const assignedWorker = j.details?.worker_id ? staff.find((s:any) => s.id === j.details?.worker_id) : null;
+                const assignedManager = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
+                const assignedWorker = j.details?.worker_id ? staff.find((s:any) => String(s.id) === String(j.details?.worker_id)) : null; // DÜZELTİLDİ: id'ler string'e çevrilerek arandı
                 const actionBy = j.details?.lastEditedBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
                 
                 const isApproved = j.status === 'Tamamlandı';
@@ -707,8 +766,8 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
 
         <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50/50 max-h-[500px] overflow-y-auto custom-scrollbar">
           {jobs.slice(0, 10).map((j: any) => {
-             const assignedManager = j.staff_id ? staff.find((s:any) => s.id === j.staff_id) : null;
-             const assignedWorker = j.details?.worker_id ? staff.find((s:any) => s.id === j.details?.worker_id) : null;
+             const assignedManager = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
+             const assignedWorker = j.details?.worker_id ? staff.find((s:any) => String(s.id) === String(j.details?.worker_id)) : null; // DÜZELTİLDİ
              const actionBy = j.details?.lastEditedBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
              
              const isApproved = j.status === 'Tamamlandı';

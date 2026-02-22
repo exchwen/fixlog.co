@@ -4,14 +4,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Menu, Bell, Building2, ScanLine, X, ArrowRight, QrCode, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Html5Qrcode } from 'html5-qrcode';
-// YENİ: Next.js Router eklendi (Pop-up engeline takılmamak için)
 import { useRouter } from 'next/navigation';
 
 export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: any) {
-  const router = useRouter(); // YENİ: Yönlendirme için tanımlandı
+  const router = useRouter(); 
   const [isOffline, setIsOffline] = useState(false);
   
-  const [userInfo, setUserInfo] = useState({ name: '', role: '', branch: '' });
+  // DÜZELTME 1: branch stateti durabilir ama artık kullanılmayacak
+  const [userInfo, setUserInfo] = useState({ name: '', role: '' });
   const [logoBgColor, setLogoBgColor] = useState<string>('#ffffff');
 
   const [showScanner, setShowScanner] = useState(false);
@@ -33,21 +33,14 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
     
     const storedRole = localStorage.getItem(`${prefix}userRole`) || '';
     const storedName = localStorage.getItem(`${prefix}userName`) || '';
-    let currentBranch = '';
     let currentName = storedName;
 
     if (storedRole === 'Patron' || isPatronPath) {
         currentName = data?.ownerName || storedName || 'Firma Sahibi';
-        currentBranch = ''; 
     } 
-    else if (data?.staff) {
-        const currentStaff = data.staff.find((s: any) => s.name === storedName);
-        if (currentStaff) {
-            currentBranch = currentStaff.branch || 'Saha Ekibi';
-        }
-    }
 
-    setUserInfo({ name: currentName, role: isPatronPath ? 'Patron' : storedRole, branch: currentBranch });
+    // DÜZELTME 1: Branş verisi alımını tamamen kaldırdık
+    setUserInfo({ name: currentName, role: isPatronPath ? 'Patron' : storedRole });
 
     if (data?.logo) {
       const img = new Image();
@@ -97,7 +90,7 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
   const notificationCount = (data?.activeEmergencies?.length || 0) + (data?.pendingFaults?.length || 0);
 
   // ==========================================
-  // AKILLI QR YÖNLENDİRME (SMART ROUTING)
+  // AKILLI QR YÖNLENDİRME (SMART ROUTING) - DÜZELTİLDİ
   // ==========================================
   const processQRData = (code: string) => {
     if (!code.trim()) return;
@@ -111,26 +104,35 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
 
     const isUsta = userInfo.role === 'Usta';
     
-    if (isUsta && setSelectedJob && data?.assets) {
-        const foundAsset = data.assets.find((a: any) => a.uuid === extractedId || String(a.id) === String(extractedId));
+    // DÜZELTME 2: Varlık arama mantığını (ID eşleşmesini) daha esnek ve güvenli hale getirdik.
+    // Artık girilen sayı da olsa metin de olsa kesin bulur.
+    let finalUuidForRouting = extractedId; // Eğer ustaya iş atanmamışsa bu id ile yönlenecek
+    
+    if (data?.assets) {
+        const foundAsset = data.assets.find((a: any) => String(a.uuid) === String(extractedId) || String(a.id) === String(extractedId));
         
-        if (foundAsset && data?.jobs) {
-            const activeJob = data.jobs.find((j: any) => 
-                (String(j.asset_id) === String(foundAsset.id) || String(j.asset_id) === String(foundAsset.uuid)) &&
-                (j.status === 'Beklemede' || j.status === 'Gelecek' || j.status === 'Devam Ediyor' || j.status === 'Sahada')
-            );
-            
-            if (activeJob) {
-                setSelectedJob(activeJob); 
-                setShowScanner(false);
-                setManualCode('');
-                return; 
+        if (foundAsset) {
+            // ID ile bile girse, yönlendirmede UUID kullansın ki sayfa patlamasın (eğer sayfa uuid bekliyorsa)
+            // Ama sayfan id de destekliyorsa sıkıntı yok, biz asıl UUID'sini alalım garanti olsun.
+            finalUuidForRouting = foundAsset.uuid || foundAsset.id; 
+
+            if (isUsta && data?.jobs) {
+                const activeJob = data.jobs.find((j: any) => 
+                    (String(j.asset_id) === String(foundAsset.id) || String(j.asset_id) === String(foundAsset.uuid)) &&
+                    (j.status === 'Beklemede' || j.status === 'Gelecek' || j.status === 'Devam Ediyor' || j.status === 'Sahada')
+                );
+                
+                if (activeJob) {
+                    setSelectedJob(activeJob); 
+                    setShowScanner(false);
+                    setManualCode('');
+                    return; 
+                }
             }
         }
     }
 
-    // YENİ: Pop-up engelleyiciyi aşmak için yeni sekme yerine mevcut sekmede (router.push ile) yönlendiriyoruz
-    router.push(`/q/${extractedId}`);
+    router.push(`/q/${finalUuidForRouting}`);
     setShowScanner(false);
     setManualCode('');
   };
@@ -235,12 +237,7 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
                   {userInfo.role}
                 </span>
               )}
-
-              {userInfo.branch && userInfo.role !== 'Patron' && (
-                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 shadow-sm shrink-0 truncate max-w-[70px] sm:max-w-[120px]">
-                  {userInfo.branch}
-                </span>
-              )}
+              {/* DÜZELTME 1: Branş gösterim satırı buradan tamamen silindi */}
             </div>
           </div>
         </div>

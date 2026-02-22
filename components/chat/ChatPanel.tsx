@@ -19,7 +19,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     const storedRole = localStorage.getItem(`${prefix}userRole`);
     setCurrentUserRole(storedRole);
     
-    // YENİ: Token'ın içinden giriş yapan kişinin kendi ID'sini çözümlüyoruz (Mesaj balonlarının sağ/sol ayrımı için)
+    // JWT Token içinden giriş yapan kişinin ID'sini güvenle çözelim
     const token = localStorage.getItem(`${prefix}authToken`);
     if (token) {
         try {
@@ -109,13 +109,13 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     if (activeChatId) {
       localStorage.removeItem(`chat_draft_${activeChatId}`);
     }
-    setMessageInput(''); // Kutuyu anında temizle
+    setMessageInput(''); 
   };
 
-  const activeStaff = activeChatId ? data?.staff?.find((s: any) => s.id === activeChatId) : null;
+  const activeStaff = activeChatId ? data?.staff?.find((s: any) => String(s.id) === String(activeChatId)) : null;
 
   const getDynamicStaffStatus = (staffId: string) => {
-    const staffJobs = data?.jobs?.filter((j: any) => j.staff_id === staffId || j.details?.worker_id === staffId) || [];
+    const staffJobs = data?.jobs?.filter((j: any) => String(j.staff_id) === String(staffId) || String(j.details?.worker_id) === String(staffId)) || [];
     
     const isWorking = staffJobs.some((j: any) => j.status === 'Devam Ediyor');
     const isAssigned = staffJobs.some((j: any) => j.status === 'Beklemede' || j.status === 'Gelecek');
@@ -143,11 +143,14 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
   const activeStatus = activeStaff ? getDynamicStaffStatus(activeStaff.id) : null;
 
-  // YENİ: Hangi kullanıcının mesaj attığını net şekilde belirleriz
+  // DÜZELTİLDİ: Mesajın sağda mı solda mı çıkacağını belirleyen asıl zeka.
   const isMessageFromMe = (m: any) => {
-    if (currentUserRole === 'Patron' && m.sender_id === 'PATRON') return true;
-    if (currentUserRole !== 'Patron' && String(m.sender_id) === String(currentUserId)) return true;
-    return false;
+    if (currentUserRole === 'Patron') {
+       return m.sender_id === 'PATRON';
+    } else {
+       // Personel (Yönetici/Usta) ise ve mesajın göndereni kendi ID'si ise SAĞDA çıkar.
+       return String(m.sender_id) === String(currentUserId);
+    }
   };
 
   return (
@@ -189,6 +192,9 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             {!activeChatId ? (
               <div className="flex-1 p-2 space-y-1.5 overflow-y-auto bg-slate-50 custom-scrollbar">
                  {data?.staff?.map((m: any) => {
+                   // Kendisi hariç diğerlerini listele (Patron hariç)
+                   if (currentUserRole !== 'Patron' && String(m.id) === String(currentUserId)) return null;
+
                    const status = getDynamicStaffStatus(m.id);
                    
                    return (
@@ -211,7 +217,20 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                      </div>
                    );
                  })}
-                 {(!data?.staff || data?.staff.length === 0) && (
+                 {/* YENİ: Personel için Patron ile konuşma butonu Eklendi */}
+                 {currentUserRole !== 'Patron' && (
+                     <div onClick={() => setActiveChatId('PATRON')} className="p-3 bg-blue-50 hover:bg-blue-100 rounded-xl cursor-pointer flex items-center gap-3 shadow-sm border border-blue-200 transition-colors group">
+                       <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm group-hover:scale-105 transition-transform shadow-md">
+                         P
+                       </div>
+                       <div className="flex-1 min-w-0">
+                         <div className="text-sm font-black text-blue-900 truncate">{data?.ownerName || 'Firma Sahibi'}</div>
+                         <div className="text-[11px] text-blue-700 font-bold truncate mt-1">YÖNETİM KADEMESİ</div>
+                       </div>
+                     </div>
+                 )}
+
+                 {(!data?.staff || data?.staff.length === 0) && currentUserRole === 'Patron' && (
                    <div className="text-center p-8 text-slate-400 text-xs font-medium flex flex-col items-center justify-center h-full gap-2">
                      <MessageSquare size={32} className="opacity-20" />
                      Kayıtlı personel bulunamadı.
@@ -221,7 +240,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             ) : (
               <>
                 <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-slate-50/50 text-xs custom-scrollbar">
-                  {activeStatus && (
+                  {activeStatus && activeChatId !== 'PATRON' && (
                     <div className="flex justify-center mb-4">
                       <span className={`px-3 py-1 rounded-full text-[10px] font-bold border ${activeStatus.badge} shadow-sm opacity-80`}>
                         Şu anki durumu: {activeStatus.label}
