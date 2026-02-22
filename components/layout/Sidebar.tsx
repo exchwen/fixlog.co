@@ -1,13 +1,23 @@
 'use client';
 
-import React, { useEffect } from 'react';
-// YENİ: X ikonu eklendi (Mobil menüyü kapatmak için)
-import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, ShieldCheck, CheckSquare, Bell, HelpCircle, X, CheckCircle2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+// YENİ: X ikonu ve UserCircle eklendi
+import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, ShieldCheck, CheckSquare, Bell, HelpCircle, X, CheckCircle2, UserCircle } from 'lucide-react';
 
-// YENİ: isMobileMenuOpen ve setIsMobileMenuOpen propları eklendi
 export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen }: any) {
   
-  // Çıkış yapma fonksiyonu EKLENDİ
+  // YENİ: Menüleri yetkiye göre filtrelemek için kullanıcı rolünü tutuyoruz
+  const [userRole, setUserRole] = useState<string>('');
+
+  useEffect(() => {
+    // Component yüklendiğinde oturum açan kişinin rolünü bul
+    const isPatronPath = window.location.pathname.includes('/dashboard');
+    const prefix = isPatronPath ? 'patron_' : 'staff_';
+    const role = localStorage.getItem(`${prefix}userRole`) || (isPatronPath ? 'Patron' : '');
+    setUserRole(role);
+  }, []);
+
+  // Çıkış yapma fonksiyonu
   const handleLogout = () => {
     // Tarayıcıdaki oturum geçmişini/çerezleri temizle
     localStorage.clear();
@@ -16,7 +26,7 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
     window.location.href = '/'; 
   };
 
-  // YENİ: Mobilde kaydırma (Swipe) hareketlerini algılayan zeka
+  // Mobilde kaydırma (Swipe) hareketlerini algılayan zeka
   useEffect(() => {
     let touchStartX = 0;
     let touchEndX = 0;
@@ -34,20 +44,16 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
       const swipeDistance = touchEndX - touchStartX;
       
       // Soldan sağa kaydırma (Menüyü Açma) 
-      // DÜZELTME: touchStartX 50'den 120'ye çıkarıldı (Daha geniş alandan tutulabilir)
-      // swipeDistance 50'den 40'a düşürüldü (Daha kısa kaydırmayla açılır)
       if (swipeDistance > 40 && touchStartX < 120) {
         if (setIsMobileMenuOpen) setIsMobileMenuOpen(true);
       }
       
       // Sağdan sola kaydırma (Menüyü Kapatma)
-      // Menü zaten açıksa ve sağdan sola doğru net bir kaydırma yapıldıysa
       if (swipeDistance < -40 && isMobileMenuOpen) {
         if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
       }
     };
 
-    // Passive true ayarı, scroll performansını düşürmemek için eklendi (Sıfır maliyet & Yüksek performans)
     window.addEventListener('touchstart', handleTouchStart, { passive: true });
     window.addEventListener('touchend', handleTouchEnd, { passive: true });
 
@@ -57,9 +63,27 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
     };
   }, [isMobileMenuOpen, setIsMobileMenuOpen]);
 
+  // YENİ: Dinamik Menü Listesi (Sadece Yönetici İse 'my-jobs' sekmesini ekler)
+  const navItems = [
+    { id: 'home', label: 'Genel Bakış', icon: LayoutDashboard },
+    // SADECE YÖNETİCİYE ÖZEL SEKME:
+    ...(userRole === 'Yönetici' ? [{ id: 'my-jobs', label: 'Bana Atananlar', icon: UserCircle }] : []),
+    { id: 'jobs', label: 'İş Emirleri', icon: ClipboardList },
+    { id: 'pending', label: 'Onay Bekleyenler', icon: CheckSquare },
+    { id: 'completed', label: 'Tamamlanan İşler', icon: CheckCircle2 },
+    { id: 'alerts', label: 'Kayıt Geçmişi', icon: Bell },
+    { id: 'team', label: 'Saha Ekibi', icon: Users },
+    { id: 'customers', label: 'Müşteriler', icon: UserPlus },
+    { id: 'assets', label: 'Varlıklar', icon: Box },
+    { id: 'stock', label: 'Stok Takibi', icon: Package },
+    { id: 'finance', label: 'Finans', icon: CreditCard },
+    { id: 'settings', label: 'Firma Ayarları', icon: Settings },
+    { id: 'support', label: 'Destek & Bildirim', icon: HelpCircle },
+  ];
+
   return (
     <>
-      {/* YENİ: Mobilde arka planı karartan overlay (Menü dışına tıklayınca menünün kapanması için) */}
+      {/* Mobilde arka planı karartan overlay */}
       {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[90] lg:hidden" 
@@ -67,7 +91,7 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
         />
       )}
 
-      {/* DÜZENLENDİ: Mobil tarayıcılarda alt kısmı kesilmemesi için h-screen yerine h-[100dvh] eklendi */}
+      {/* Mobil tarayıcılarda alt kısmı kesilmemesi için h-[100dvh] */}
       <aside className={`fixed lg:sticky top-0 left-0 h-[100dvh] z-[100] lg:z-50 bg-slate-900 text-slate-400 flex flex-col border-r border-slate-800 transition-transform duration-300 w-64 lg:w-56 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         
         <div className="p-5 flex items-center justify-between border-b border-slate-800 bg-slate-900/50 shrink-0">
@@ -75,7 +99,7 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg"><ShieldCheck size={18} /></div>
             <span className="font-bold text-sm text-white tracking-tight uppercase">İŞ DÖKÜMÜ</span>
           </div>
-          {/* YENİ: Mobil görünümde çarpı (kapatma) butonu */}
+          {/* Mobil görünümde çarpı (kapatma) butonu */}
           <button 
             onClick={() => setIsMobileMenuOpen && setIsMobileMenuOpen(false)} 
             className="lg:hidden p-1 text-slate-400 hover:text-white transition-colors"
@@ -85,33 +109,19 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
         </div>
 
         <nav className="flex-1 p-3 space-y-1 mt-2 overflow-y-auto custom-scrollbar">
-          {[
-            { id: 'home', label: 'Genel Bakış', icon: LayoutDashboard },
-            { id: 'jobs', label: 'İş Emirleri', icon: ClipboardList },
-            { id: 'pending', label: 'Onay Bekleyenler', icon: CheckSquare },
-            { id: 'completed', label: 'Tamamlanan İşler', icon: CheckCircle2 },
-            { id: 'alerts', label: 'Kayıt Geçmişi', icon: Bell }, // YENİ EKLENEN SEKME
-            { id: 'team', label: 'Saha Ekibi', icon: Users },
-            { id: 'customers', label: 'Müşteriler', icon: UserPlus },
-            { id: 'assets', label: 'Varlıklar', icon: Box },
-            { id: 'stock', label: 'Stok Takibi', icon: Package },
-            { id: 'finance', label: 'Finans', icon: CreditCard },
-            { id: 'settings', label: 'Firma Ayarları', icon: Settings },
-            // YENİ EKLENEN SEKME
-            { id: 'support', label: 'Destek & Bildirim', icon: HelpCircle },
-          ].map(item => (
+          {navItems.map(item => (
             <button 
               key={item.id} 
               onClick={() => {
                 setActiveTab(item.id);
-                // YENİ: Mobilde bir sekmeye tıklandığında ekranı işgal etmemesi için menüyü otomatik kapat
+                // Mobilde bir sekmeye tıklandığında menüyü otomatik kapat
                 if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
               }} 
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all relative ${activeTab === item.id ? 'bg-blue-600/10 text-blue-500' : 'hover:bg-slate-800 hover:text-white'}`}
             >
               <item.icon size={16} /> 
               <span className="text-[13px]">{item.label}</span>
-              {/* Onay Bekleyenler sekmesine ufak bir dikkat çekici nokta koyduk */}
+              {/* Onay Bekleyenler sekmesine ufak bir dikkat çekici nokta */}
               {item.id === 'pending' && (
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
               )}

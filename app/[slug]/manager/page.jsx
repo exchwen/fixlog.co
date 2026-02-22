@@ -11,6 +11,7 @@ import ChatPanel from '@/components/chat/ChatPanel';
 import DashboardModals from '@/components/modals/DashboardModals';
 
 import HomeTab from '@/components/patron/HomeTab';
+import MyJobsTab from '@/components/patron/MyJobsTab'; // YENİ EKLENDİ
 import JobsTab from '@/components/patron/JobsTab';
 import TeamTab from '@/components/patron/TeamTab';
 import CustomersTab from '@/components/patron/CustomersTab';
@@ -440,7 +441,8 @@ export default function ManagerDashboard() {
              <ShieldCheck size={14} /> Yönetici Yetkisi
           </div>
 
-          {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} />}
+          {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} handleAction={handleAction} />}
+          {activeTab === 'my-jobs' && <MyJobsTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} handleAction={handleAction} />}
           {activeTab === 'jobs' && <JobsTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} />}
           {activeTab === 'pending' && <PendingJobsTab data={data} setSelectedJob={setSelectedJob} />}
           {activeTab === 'completed' && <CompletedJobsTab data={data} setSelectedJob={setSelectedJob} statusColors={statusColors} />}
@@ -456,13 +458,12 @@ export default function ManagerDashboard() {
           )}
           {activeTab === 'assets' && <AssetsTab data={data} setShowAssetModal={setShowAssetModal} setShowAssetDetail={setShowAssetDetail} setShowQRModal={setShowQRModal} setSelectedQRAsset={setSelectedQRAsset} />}
           
-          {/* YÖNETİCİ FİNANS SEKMESİ (SADECE GELİR/GİDER BUTONLARI) */}
           {activeTab === 'finance' && <FinanceTab data={data} userRole="Yönetici" />}
 
         </div>
       </main>
 
-      <ChatPanel isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} activeChatId={activeChatId} setActiveChatId={setActiveChatId} data={data} messages={messages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} />
+      <ChatPanel isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} activeChatId={activeChatId} setActiveChatId={setActiveChatId} data={data} messages={messages} setMessages={setMessages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} />
 
       <DashboardModals 
         showStaffDetail={showStaffDetail} setShowStaffDetail={setShowStaffDetail} isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff} editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}

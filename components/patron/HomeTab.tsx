@@ -7,27 +7,38 @@ import {
   ClipboardList, Users, Box, Wallet, Plus, ArrowUpRight, 
   CheckCircle, Clock, Calendar, TrendingUp, TrendingDown, 
   Package, AlertTriangle, ShieldCheck, Activity, User, Lock, 
-  Settings, X, Wrench, Link as LinkIcon, Check, Database, Image as ImageIcon, ShoppingCart
+  Settings, X, Wrench, Link as LinkIcon, Check, Database, Image as ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2
 } from 'lucide-react';
 
-export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob, setActiveTab, userRole: propRole }: any) {
+export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob, setActiveTab, userRole: propRole, handleAction }: any) {
   
   const { slug } = useParams(); 
 
-  // Garantili Yetki Kontrolü
   const isPatronPath = typeof window !== 'undefined' && window.location.pathname.includes('/dashboard');
   const userRole = propRole || (isPatronPath ? 'Patron' : 'Yönetici');
 
-  // YENİ: Gerçek Kullanıcı Adını Ekranda Göstermek İçin State
   const [currentUserName, setCurrentUserName] = useState<string>('Yönetici');
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  
+  const [isApproving, setIsApproving] = useState<string | null>(null);
 
   useEffect(() => {
-    // URL'ye göre ilgili kullanıcının adını localStorage'dan çek
     const prefix = isPatronPath ? 'patron_' : 'staff_';
     const savedName = localStorage.getItem(`${prefix}userName`);
     
+    const token = localStorage.getItem(`${prefix}authToken`);
+    if (token) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+            const payload = JSON.parse(jsonPayload);
+            setCurrentUserId(String(payload.id));
+        } catch(e) {}
+    }
+
     if (savedName) {
-      setCurrentUserName(savedName.split(' ')[0]); // Sadece ilk adını al
+      setCurrentUserName(savedName.split(' ')[0]); 
     } else if (data?.ownerName && isPatronPath) {
       setCurrentUserName(data.ownerName.split(' ')[0]);
     }
@@ -38,7 +49,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const isProfileComplete = data?.name && data?.ownerName && data?.sector && data?.address && data?.phone && data?.taxInfo;
 
   const [showLowStockModal, setShowLowStockModal] = useState(false);
-  const [showOrderMenu, setShowOrderMenu] = useState(false); // Sadece tekil sipariş menüsünü açar
+  const [showOrderMenu, setShowOrderMenu] = useState(false); 
 
   const jobs = data?.jobs || [];
   const finances = data?.finances || [];
@@ -49,6 +60,51 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const completedJobs = jobs.filter((j: any) => j.status === 'Tamamlandı').length;
   const pendingJobs = jobs.filter((j: any) => j.status === 'Beklemede' || j.status === 'Devam Ediyor').length;
   const plannedJobs = jobs.filter((j: any) => j.status === 'Gelecek').length;
+
+  // YENİ: Yöneticinin KENDİSİNE ATANMIŞ OLAN bekleyen işleri bulma
+  const myAssignedJobs = useMemo(() => {
+     if (!currentUserId || userRole === 'Patron') return [];
+     return jobs.filter((j: any) => 
+        (String(j.staff_id) === String(currentUserId) || String(j.details?.worker_id) === String(currentUserId)) && 
+        (j.status === 'Beklemede' || j.status === 'Gelecek')
+     );
+  }, [jobs, currentUserId, userRole]);
+
+  // YENİ: Yönetici İş Onaylama ("Gördüm, Onaylıyorum" & Usta Atamaya Geçiş)
+  const handleApproveJob = async (job: any) => {
+    if (!handleAction) {
+        alert("Sistem hatası: İşlem fonksiyonu bulunamadı.");
+        return;
+    }
+    
+    setIsApproving(job.id);
+    
+    try {
+        const isGeneralJob = job.work_type === 'Genel Görev';
+
+        const success = await handleAction('update-job', {
+            id: job.id,
+            status: 'Devam Ediyor',
+            lastEditedBy: currentUserName,
+        }, null, null);
+
+        if (success) {
+            if (!isGeneralJob) {
+                // Normal İş -> Modalı açıp ustaya sevk işlemi
+                setSelectedJob({ ...job, status: 'Devam Ediyor' });
+                setShowJobModal(true);
+            } else {
+                // Genel Görev -> Usta atama yok, kendi üstünde kalır
+                alert("Genel Görev başarıyla onaylandı ve üzerinize alındı.");
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Bir hata oluştu.");
+    } finally {
+        setIsApproving(null);
+    }
+  };
 
   const { currentMonthJobs, lastMonthJobs, growthPercent, isGrowthPositive, monthlyPhotos } = useMemo(() => {
     const now = new Date();
@@ -88,7 +144,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const totalAssetsCount = data?.assets?.length || 0;
   const totalStockTypes = stock.length;
 
-  // --- SAAS FİYATLANDIRMA VE PSİKOLOJİK ROI ZEKASI ---
   const { usagePaid, totalSystemProfit, currentUsageBill, baseMonthlyFee } = useMemo(() => {
     const earliestDate = jobs.length > 0 
       ? new Date(Math.min(...jobs.map((j: any) => new Date(j.created_at || new Date()).getTime()))) 
@@ -116,7 +171,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         baseMonthlyFee: baseFee 
     };
   }, [jobs, totalJobs, totalLifetimePhotos, totalAssetsCount, monthlyPhotos, currentMonthJobs]);
-  // --------------------------------------------------------
 
   const totalIncome = data?.finSummary?.income || 0;
   const totalExpense = data?.finSummary?.expense || 0;
@@ -234,7 +288,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
         <div>
-          {/* YENİ: Dinamik İsim Gösterimi */}
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             Hoş Geldin, {currentUserName} 👋
           </h2>
@@ -257,6 +310,50 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
             </div>
         </div>
       </div>
+
+      {/* YENİ: YÖNETİCİYE ATANAN BEKLEYEN İŞLER KUTUSU */}
+      {myAssignedJobs.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-indigo-600 rounded-3xl p-5 shadow-xl shadow-indigo-600/20 text-white relative overflow-hidden">
+           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+           <div className="relative z-10">
+              <h2 className="text-xs font-black text-indigo-200 uppercase tracking-widest mb-4 flex items-center gap-2">
+                 <UserCircle size={16} /> Size Atanan Bekleyen İşler ({myAssignedJobs.length})
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                 {myAssignedJobs.map((job: any) => {
+                    const isGeneral = job.work_type === 'Genel Görev';
+                    return (
+                        <div key={job.id} className="bg-indigo-950/40 border border-indigo-500/30 rounded-2xl p-4 flex flex-col justify-between">
+                            <div>
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${isGeneral ? 'bg-purple-500/30 text-purple-200' : 'bg-blue-500/30 text-blue-200'}`}>
+                                        {isGeneral ? 'GENEL GÖREV' : 'NORMAL İŞ'}
+                                    </span>
+                                    <span className="text-[10px] font-bold opacity-70 flex items-center gap-1">
+                                        <Clock size={10}/> {job.scheduled_date || 'Anlık'}
+                                    </span>
+                                </div>
+                                <h3 className="text-sm font-black leading-tight mb-1 truncate" title={job.customer_name}>{job.customer_name}</h3>
+                                <p className="text-indigo-200 text-[11px] font-medium flex items-center gap-1.5 truncate">
+                                    <Briefcase size={12} className="shrink-0 opacity-70"/> {job.work_type}
+                                </p>
+                            </div>
+                            
+                            <button 
+                                onClick={() => handleApproveJob(job)}
+                                disabled={isApproving === job.id}
+                                className="mt-4 w-full bg-indigo-500 hover:bg-indigo-400 text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {isApproving === job.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+                                {isApproving === job.id ? 'İşleniyor...' : (isGeneral ? 'Gördüm, İşleme Al' : 'Onayla & Ustaya Ata')}
+                            </button>
+                        </div>
+                    );
+                 })}
+              </div>
+           </div>
+        </motion.div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-blue-300 transition-colors group cursor-pointer active:scale-95">
