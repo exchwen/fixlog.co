@@ -20,8 +20,11 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [allMessages, setAllMessages] = useState<any[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
   
   const [logoBgColor, setLogoBgColor] = useState<string>('#2563eb');
+  
+  const [pusherChannel, setPusherChannel] = useState<any>(null);
 
   // URL'den veya data üzerinden slug bilgisini %100 garantili şekilde alıyoruz.
   const actualSlug = data?.slug || (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '');
@@ -52,6 +55,33 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         Notification.requestPermission();
     }
   }, []);
+
+  useEffect(() => {
+    if (!currentUserId || !actualSlug) return;
+    
+    const script = document.createElement("script");
+    script.src = "https://js.pusher.com/beams/1.0/push-notifications-web.js";
+    script.async = true;
+    script.onload = () => {
+        if (typeof window !== 'undefined' && (window as any).PusherPushNotifications) {
+            const beamsClient = new (window as any).PusherPushNotifications.Client({
+                instanceId: '6a47ebc2-0c89-48f1-81a3-80a4e003dd41',
+            });
+            beamsClient.start()
+                .then(() => {
+                    const interest = currentUserRole === 'Patron' ? `user-${actualSlug}-PATRON` : `user-${actualSlug}-${currentUserId}`;
+                    beamsClient.addDeviceInterest(interest);
+                    console.log("✅ Pusher Beams Cihaz Kaydı Başarılı! Bildirimler Gelecek. İlgi Alanı:", interest);
+                })
+                .catch(console.error);
+        }
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      if (document.body.contains(script)) document.body.removeChild(script);
+    };
+  }, [currentUserId, actualSlug, currentUserRole]);
 
   useEffect(() => {
     if (!data?.logo) {
@@ -179,18 +209,51 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   useEffect(() => {
     if (!actualSlug || !currentUserId) return;
 
+    const isPatronPath = window.location.pathname.includes('/dashboard');
+    const prefix = isPatronPath ? 'patron_' : 'staff_';
+    const token = localStorage.getItem(`${prefix}authToken`);
+    const API_URL = 'https://backend.isdokumu.workers.dev';
+
     Pusher.logToConsole = true;
 
-    console.log("Pusher'a bağlanılıyor... Kanal:", `chat-${actualSlug}`);
+    console.log("Pusher'a bağlanılıyor... Kanal:", `presence-chat-${actualSlug}`);
     const pusher = new Pusher('75dfed44245e16eaea0a', {
       cluster: 'eu',
+      authEndpoint: `${API_URL}/pusher/auth`,
+      auth: {
+          headers: { 'Authorization': `Bearer ${token}` }
+      }
     });
 
     pusher.connection.bind('connected', () => {
         console.log("✅ Pusher WebSocket Bağlantısı Başarılı!");
     });
 
-    const channel = pusher.subscribe(`chat-${actualSlug}`);
+    const channelName = `presence-chat-${actualSlug}`;
+    const channel = pusher.subscribe(channelName);
+    setPusherChannel(channel);
+
+    channel.bind('pusher:subscription_succeeded', (members: any) => {
+        const online = new Set<string>();
+        members.each((member: any) => online.add(member.id));
+        setOnlineUsers(online);
+    });
+
+    channel.bind('pusher:member_added', (member: any) => {
+        setOnlineUsers(prev => {
+            const newSet = new Set(prev);
+            newSet.add(member.id);
+            return newSet;
+        });
+    });
+
+    channel.bind('pusher:member_removed', (member: any) => {
+        setOnlineUsers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(member.id);
+            return newSet;
+        });
+    });
 
     channel.bind('new-message', (newMsg: any) => {
         console.log("Pusher'dan YENİ MESAJ geldi:", newMsg);
@@ -220,7 +283,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         });
 
         if (isForMe) {
-            if (isChatOpen && (String(activeChatId) === String(newMsg.sender_id) || (activeChatId === 'PATRON' && newMsg.sender_id === 'PATRON'))) {
+            if (isChatOpen && document.hasFocus() && (String(activeChatId) === String(newMsg.sender_id) || (activeChatId === 'PATRON' && newMsg.sender_id === 'PATRON'))) {
                 markMessagesAsRead(newMsg.sender_id);
             } else {
                 let senderName = 'Bilinmeyen Kullanıcı';
@@ -258,7 +321,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         }
     });
 
-    channel.bind('typing', (typeData: any) => {
+    channel.bind('client-typing', (typeData: any) => {
         console.log("Pusher'dan YAZIYOR bilgisi geldi:", typeData);
         const iAmReceiver = String(typeData.receiverId) === String(currentUserId) || (currentUserRole === 'Patron' && typeData.receiverId === 'PATRON');
         const isFromActiveChat = String(typeData.senderId) === String(activeChatId) || (typeData.senderId === 'PATRON' && activeChatId === 'PATRON');
@@ -274,13 +337,13 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
     return () => {
         console.log("Pusher aboneliği iptal ediliyor...");
-        pusher.unsubscribe(`chat-${actualSlug}`);
+        pusher.unsubscribe(channelName);
         pusher.disconnect();
     };
   }, [actualSlug, currentUserId, currentUserRole, activeChatId, isChatOpen]);
 
   const markMessagesAsRead = async (targetSenderId: string | null = activeChatId) => {
-    if (!targetSenderId || !currentUserId) return;
+    if (!targetSenderId || !currentUserId || !document.hasFocus()) return;
     
     const isPatronPath = window.location.pathname.includes('/dashboard');
     const prefix = isPatronPath ? 'patron_' : 'staff_';
@@ -431,21 +494,15 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
      setMessageInput(e.target.value);
-     if (!isOffline && activeChatId) {
-         const isPatronPath = window.location.pathname.includes('/dashboard');
-         const prefix = isPatronPath ? 'patron_' : 'staff_';
-         const token = localStorage.getItem(`${prefix}authToken`);
-         const API_URL = 'https://backend.isdokumu.workers.dev';
-         
-         fetch(`${API_URL}/typing`, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ 
-                slug: actualSlug, 
-                senderId: currentUserRole === 'Patron' ? 'PATRON' : currentUserId, 
-                receiverId: activeChatId
-            }) 
-         }).catch(()=>{});
+     if (!isOffline && activeChatId && pusherChannel) {
+         try {
+             pusherChannel.trigger('client-typing', {
+                 senderId: currentUserRole === 'Patron' ? 'PATRON' : currentUserId,
+                 receiverId: activeChatId
+             });
+         } catch(err) {
+             console.error("Typing event trigger hatası:", err);
+         }
      }
   };
 
@@ -462,6 +519,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   };
 
   const activeStatus = activeStaff ? getDynamicStaffStatus(activeStaff.id) : null;
+  const isUserReallyOnline = activeChatId === 'PATRON' ? onlineUsers.has('PATRON') : onlineUsers.has(String(activeChatId));
 
   const isMessageFromMe = (m: any) => {
     if (currentUserRole === 'Patron') return m.sender_id === 'PATRON';
@@ -524,6 +582,11 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                           <span className="text-[10px] text-emerald-400 font-bold italic tracking-wide animate-pulse">
                               yazıyor...
                           </span>
+                      ) : isUserReallyOnline ? (
+                          <span className="text-[10px] text-emerald-500 flex items-center gap-1.5 font-bold tracking-wide">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.8)] animate-pulse"></span>
+                              Çevrimiçi
+                          </span>
                       ) : (
                           <span className="text-[10px] text-slate-400 flex items-center gap-1.5 font-medium tracking-wide">
                              <span className={`w-1.5 h-1.5 rounded-full ${activeStatus.label === 'Müsait' ? 'bg-emerald-500' : 'bg-slate-500'} shadow-[0_0_4px_rgba(0,0,0,0.5)]`}></span>
@@ -553,6 +616,11 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                         {isTyping ? (
                             <span className="text-[10px] text-emerald-400 font-bold italic tracking-wide animate-pulse">
                                 yazıyor...
+                            </span>
+                        ) : isUserReallyOnline ? (
+                            <span className="text-[10px] text-emerald-500 flex items-center gap-1.5 font-bold tracking-wide">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.8)] animate-pulse"></span>
+                                Çevrimiçi
                             </span>
                         ) : (
                             <span className="text-[10px] text-slate-400 flex items-center gap-1.5 font-bold tracking-wide">
@@ -589,11 +657,13 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                                 <span className="text-white">P</span>
                              )}
                            </div>
-                           <span className="absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full bg-emerald-500 shadow-sm"></span>
+                           <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full shadow-sm ${onlineUsers.has('PATRON') ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
                        </div>
                        <div className="flex-1 min-w-0">
                          <div className="text-sm font-black text-blue-900 truncate">{data?.ownerName || 'Firma Sahibi'}</div>
-                         <div className="text-[11px] text-blue-700 font-bold truncate mt-1">YÖNETİM KADEMESİ</div>
+                         <div className="text-[11px] text-blue-700 font-bold truncate mt-1">
+                             {onlineUsers.has('PATRON') ? <span className="text-emerald-600">Çevrimiçi</span> : 'YÖNETİM KADEMESİ'}
+                         </div>
                        </div>
                      </div>
                  )}
@@ -602,6 +672,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                    if (currentUserRole !== 'Patron' && String(m.id) === String(currentUserId)) return null;
 
                    const status = getDynamicStaffStatus(m.id);
+                   const isStaffOnline = onlineUsers.has(String(m.id));
                    
                    return (
                      <div key={m.id} onClick={() => setActiveChatId(m.id)} className="p-3 bg-white hover:bg-slate-100 rounded-xl cursor-pointer flex items-center gap-3 shadow-sm border border-slate-100 transition-colors group">
@@ -609,14 +680,14 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                          <div className="w-10 h-10 bg-slate-100 text-slate-700 border border-slate-200 rounded-full flex items-center justify-center font-bold text-sm group-hover:bg-slate-200 transition-colors">
                            {m.name.charAt(0)}
                          </div>
-                         <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${status.dot}`}></span>
+                         <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${isStaffOnline ? 'bg-emerald-500' : status.dot}`}></span>
                        </div>
                        <div className="flex-1 min-w-0">
                          <div className="text-sm font-bold text-slate-800 truncate">{m.name}</div>
                          <div className="text-[11px] text-slate-500 font-medium truncate mt-1 flex items-center justify-between gap-2">
                            <span className="uppercase tracking-wider font-bold text-[9px] truncate">{m.role}</span>
-                           <span className={`px-2 py-0.5 rounded text-[9px] font-bold border shrink-0 ${status.badge}`}>
-                             {status.label}
+                           <span className={`px-2 py-0.5 rounded text-[9px] font-bold border shrink-0 ${isStaffOnline ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : status.badge}`}>
+                             {isStaffOnline ? 'Çevrimiçi' : status.label}
                            </span>
                          </div>
                        </div>
