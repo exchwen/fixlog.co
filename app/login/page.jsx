@@ -18,7 +18,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
 } from '../../lib/firebase';
-import { setPersistence, browserLocalPersistence, onAuthStateChanged } from 'firebase/auth';
+import { setPersistence, browserLocalPersistence, onAuthStateChanged, signOut } from 'firebase/auth'; // 🚀 BUG FIX: signOut eklendi
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
@@ -29,7 +29,7 @@ export default function LoginPage() {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // YENİ: SADECE PATRON (FİREBASE) KONTROLÜ (Personel mantığı tamamen kaldırıldı)
+  // YENİ: SADECE PATRON (FİREBASE) KONTROLÜ
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -39,8 +39,11 @@ export default function LoginPage() {
         if (patronToken && patronSlug) {
           router.replace(`/${patronSlug}/manager`);
           return;
+        } else {
+          // 🚀 BUG FIX: Kullanıcı localStorage.clear() ile çıkış yapmış ama Firebase açık kalmışsa onu da temizle!
+          await signOut(auth);
+          setIsCheckingAuth(false);
         }
-        setIsCheckingAuth(false);
       } else {
         setIsCheckingAuth(false);
       }

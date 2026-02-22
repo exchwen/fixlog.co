@@ -138,22 +138,24 @@ export default function ManagerDashboard() {
   };
 
   const fetchData = async (isInitial = false) => {
-    const token = localStorage.getItem('staff_authToken'); 
-    const role = localStorage.getItem('staff_userRole');
+    // 🚀 BUG FIX: Yönlendirme döngüsünü kıran ana kontrol noktası (Patron ve Yönetici ayrı arandı)
+    let token = localStorage.getItem('patron_authToken');
+    let role = localStorage.getItem('patron_userRole');
 
-    if (!token || role !== 'Yönetici') {
-      localStorage.removeItem('staff_authToken');
-      localStorage.removeItem('staff_userRole');
-      localStorage.removeItem('staff_userName');
-      localStorage.removeItem('staff_userSlug');
-        router.push(`/${slug}/login`);
-        return;
+    if (!token) {
+        token = localStorage.getItem('staff_authToken');
+        role = localStorage.getItem('staff_userRole');
+    }
+
+    if (!token || (role !== 'Patron' && role !== 'Yönetici')) {
+      localStorage.clear(); // Temizlik yap
+      router.push(`/${slug}/login`);
+      return;
     }
 
     const decoded = parseJwt(token);
     setUserData(decoded);
 
-    // YENİ: PUSHER BEAMS CİHAZ KAYIT İŞLEMİ (Arka plan bildirimleri için)
     if (isInitial && typeof window !== 'undefined') {
       import('@pusher/push-notifications-web').then((PusherPushNotifications) => {
           const beamsClient = new PusherPushNotifications.Client({
@@ -161,11 +163,9 @@ export default function ManagerDashboard() {
           });
           beamsClient.start()
               .then(async () => {
-                  // Yöneticilerin dinleyeceği kanallar (Kendisine gelen mesajlar ve Yönetici bildirimleri)
                   const userInterest = decoded.role === 'Patron' ? `user-${slug}-PATRON` : `user-${slug}-${decoded.id}`;
-                  const adminInterest = `role-${slug}-ADMIN`; // Arıza, Stok ve Acil Durumlar buraya düşer
+                  const adminInterest = `role-${slug}-ADMIN`; 
                   
-                  // Önce mevcutları sil ki temiz başlasın, sonra yeni kanalları ekle
                   await beamsClient.clearDeviceInterests();
                   await beamsClient.addDeviceInterest(userInterest);
                   await beamsClient.addDeviceInterest(adminInterest);
@@ -181,10 +181,7 @@ export default function ManagerDashboard() {
       
       if (!res.ok) {
           if (res.status === 401 || res.status === 403) {
-            localStorage.removeItem('staff_authToken');
-            localStorage.removeItem('staff_userRole');
-            localStorage.removeItem('staff_userName');
-            localStorage.removeItem('staff_userSlug'); 
+            localStorage.clear();
             router.push(`/${slug}/login`); return;
           }
           throw new Error("Ağ hatası");
@@ -207,7 +204,7 @@ export default function ManagerDashboard() {
 
   const fetchMessages = async () => {
     if (!activeChatId) return;
-    const token = localStorage.getItem('staff_authToken'); 
+    const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken'); 
     try {
       const res = await fetch(`${API_URL}/get-messages?slug=${slug}&staffId=${activeChatId}`, {
          headers: { 'Authorization': `Bearer ${token}` }
@@ -224,7 +221,7 @@ export default function ManagerDashboard() {
     }
     
     const remaining = [];
-    const token = localStorage.getItem('staff_authToken'); 
+    const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken'); 
 
     for (const item of pending) {
       try {
@@ -279,7 +276,7 @@ export default function ManagerDashboard() {
     }
 
     setIsSaving(true);
-    const token = localStorage.getItem('staff_authToken'); 
+    const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken'); 
 
     try {
       const res = await fetch(`${API_URL}/${endpoint}`, { 
@@ -318,11 +315,11 @@ export default function ManagerDashboard() {
 
   const sendMessage = async () => {
     if (!messageInput.trim() || !activeChatId) return;
-    const token = localStorage.getItem('staff_authToken'); 
+    const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken'); 
     await fetch(`${API_URL}/send-message`, { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ slug, senderId: userData?.id, receiverId: activeChatId, message: messageInput }) 
+        body: JSON.stringify({ slug, senderId: userData?.role === 'Patron' ? 'PATRON' : userData?.id, receiverId: activeChatId, message: messageInput }) 
     });
     setMessageInput(''); fetchMessages();
   };

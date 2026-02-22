@@ -144,14 +144,12 @@ export default function WorkerDashboard() {
   }, [slug]);
 
   const fetchData = async (isInitial = false) => {
+    // 🚀 BUG FIX: Sadece 'Usta' olanlar için net yetki kontrolü
     const token = localStorage.getItem('staff_authToken'); 
     const role = localStorage.getItem('staff_userRole'); 
 
     if (!token || role !== 'Usta') {
-      localStorage.removeItem('staff_authToken');
-      localStorage.removeItem('staff_userRole');
-      localStorage.removeItem('staff_userName');
-      localStorage.removeItem('staff_userSlug');
+        localStorage.clear();
         router.push(`/${slug}/login`);
         return;
     }
@@ -159,10 +157,6 @@ export default function WorkerDashboard() {
     const decoded = parseJwt(token);
     setUserData(decoded);
 
-    // ==========================================
-    // YENİ: PUSHER BEAMS CİHAZ KAYIT İŞLEMİ (USTA İÇİN)
-    // Sadece kendisine atanan işleri ve mesajları dinler
-    // ==========================================
     if (isInitial && typeof window !== 'undefined') {
         import('@pusher/push-notifications-web').then((PusherPushNotifications) => {
             const beamsClient = new PusherPushNotifications.Client({
@@ -170,7 +164,6 @@ export default function WorkerDashboard() {
             });
             beamsClient.start()
                 .then(async () => {
-                    // Ustanın özel ID'sine sahip kanal
                     const userInterest = `user-${slug}-${decoded.id}`;
                     
                     await beamsClient.clearDeviceInterests();
@@ -236,10 +229,7 @@ export default function WorkerDashboard() {
   }, [selectedJob]);
 
   const handleLogout = () => {
-    localStorage.removeItem('staff_authToken');
-    localStorage.removeItem('staff_userRole');
-    localStorage.removeItem('staff_userName');
-    localStorage.removeItem('staff_userSlug');
+    localStorage.clear();
     router.push(`/${slug}/login`);
   };
 

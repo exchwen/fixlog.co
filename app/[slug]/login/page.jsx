@@ -16,7 +16,7 @@ export default function StaffLoginPage() {
   const [formData, setFormData] = useState({ username: '', password: '' });
   
   const [companyData, setCompanyData] = useState({ name: '', logo: '' });
-  const [logoBgColor, setLogoBgColor] = useState('#ffffff'); // YENİ: Dinamik Logo Arkaplan Rengi
+  const [logoBgColor, setLogoBgColor] = useState('#ffffff'); 
 
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showPwaPrompt, setShowPwaPrompt] = useState(false);
@@ -25,13 +25,14 @@ export default function StaffLoginPage() {
 
   const fallbackName = slug ? slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : 'Firma';
 
-  // YENİ: Patron daha önce girmiş mi kontrolü (Sıkışmayı Önler)
   const [hasPatronSession, setHasPatronSession] = useState(false);
 
   useEffect(() => {
-    // Tarayıcıda Patron/Yönetici token'ı varsa acil çıkış butonunu göster
-    const role = localStorage.getItem('userRole');
-    if (role && role !== 'Usta') {
+    // 🚀 BUG FIX: Eski 'userRole' yerine güncel 'patron_userRole' ve 'staff_userRole' kontrolü
+    const patronRole = localStorage.getItem('patron_userRole');
+    const staffRole = localStorage.getItem('staff_userRole');
+    
+    if (patronRole === 'Patron' || staffRole === 'Yönetici') {
         setHasPatronSession(true);
     }
 
@@ -85,7 +86,6 @@ export default function StaffLoginPage() {
              const data = await res.json();
              setCompanyData({ name: data.company_name, logo: data.logo });
              
-             // YENİ: Logo Rengi Analiz Motoru
              if (data.logo) {
                  const img = new Image();
                  img.crossOrigin = "Anonymous";
@@ -173,15 +173,17 @@ export default function StaffLoginPage() {
   return (
     <div className="min-h-[100dvh] bg-[#F8FAFC] flex flex-col items-center justify-center p-4 sm:p-6 relative font-sans selection:bg-blue-100">
       
-      {/* YENİ: PATRON/YÖNETİCİ ACİL ÇIKIŞ (PWA KİLİT KIRICI) */}
       <AnimatePresence>
          {hasPatronSession && (
             <motion.button 
               initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
               onClick={() => {
-                  const role = localStorage.getItem('userRole');
-                  if(role === 'Patron') router.push(`/${slug}/dashboard`);
-                  else if(role === 'Yönetici') router.push(`/${slug}/manager`);
+                  // 🚀 BUG FIX: Acil çıkış butonu prefixli keyleri kullanacak şekilde güncellendi
+                  const patronRole = localStorage.getItem('patron_userRole');
+                  const staffRole = localStorage.getItem('staff_userRole');
+                  
+                  if(patronRole === 'Patron') router.push(`/${slug}/manager`);
+                  else if(staffRole === 'Yönetici') router.push(`/${slug}/manager`);
                   else router.push(`/login`);
               }}
               className="absolute top-6 right-6 flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-lg hover:bg-slate-800 transition-all active:scale-95 z-50"
@@ -229,7 +231,6 @@ export default function StaffLoginPage() {
         className="max-w-[400px] w-full bg-white rounded-[2.5rem] shadow-2xl shadow-blue-900/5 p-6 sm:p-10 border border-slate-100 relative z-10"
       >
         <div className="flex flex-col items-center mb-8 mt-2">
-          {/* YENİ: LOGO ARKAPLANI DINAMIK YAPILDI */}
           {companyData.logo ? (
              <div 
                className="w-20 h-20 rounded-2xl flex items-center justify-center mb-4 shadow-sm border border-slate-200/50 p-2 overflow-hidden"
