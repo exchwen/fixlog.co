@@ -18,7 +18,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
 } from '../../lib/firebase';
-import { setPersistence, browserLocalPersistence, onAuthStateChanged, signOut } from 'firebase/auth'; // 🚀 BUG FIX: signOut eklendi
+import { setPersistence, browserLocalPersistence, onAuthStateChanged, signOut } from 'firebase/auth'; 
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
@@ -37,10 +37,9 @@ export default function LoginPage() {
         const patronSlug = localStorage.getItem('patron_userSlug');
         
         if (patronToken && patronSlug) {
-          router.replace(`/${patronSlug}/manager`);
+          router.replace(`/${patronSlug}/dashboard`); // 🚀 DÜZELTME: manager yerine dashboard
           return;
         } else {
-          // 🚀 BUG FIX: Kullanıcı localStorage.clear() ile çıkış yapmış ama Firebase açık kalmışsa onu da temizle!
           await signOut(auth);
           setIsCheckingAuth(false);
         }
@@ -80,7 +79,7 @@ export default function LoginPage() {
         localStorage.setItem('patron_userName', data.name || 'Patron');
         localStorage.setItem('patron_userSlug', data.slug);
         
-        router.push(`/${data.slug}/manager`); 
+        router.push(`/${data.slug}/dashboard`); // 🚀 DÜZELTME: manager yerine dashboard
       } else {
         router.push('/register');
       }
@@ -107,7 +106,7 @@ export default function LoginPage() {
         localStorage.setItem('patron_userName', data.name || 'Patron');
         localStorage.setItem('patron_userSlug', data.slug);
         
-        router.push(`/${data.slug}/manager`);
+        router.push(`/${data.slug}/dashboard`); // 🚀 DÜZELTME: manager yerine dashboard
       } else {
         router.push('/register');
       }
