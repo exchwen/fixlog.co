@@ -1,5 +1,7 @@
 const CACHE_NAME = 'isdokumu-cache-v1';
-importScripts("https://js.pusher.com/beams/1.0/push-notifications-web.js");
+
+// 🚀 İŞTE DÜZELTİLEN SATIR BURASI: Web SDK değil, arka plan Service Worker linki olmalı!
+importScripts("https://js.pusher.com/beams/service-worker.js");
 
 // Uygulama kurulduğunda Service Worker'ı hemen aktif et
 self.addEventListener('install', (event) => {
