@@ -2,7 +2,8 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Send, X, MessageSquare, ArrowLeft, WifiOff, Check, CheckCheck, Clock, Lock, Bell } from 'lucide-react';
+import { ChevronDown, Send, X, MessageSquare, ArrowLeft, WifiOff, CheckCheck, Clock, Lock, Bell } from 'lucide-react';
+import Pusher from 'pusher-js';
 
 export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, setActiveChatId, data, messages, setMessages, messageInput, setMessageInput, sendMessage }: any) {
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -12,10 +13,11 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
 
-  // YENİ: Bildirim Zekası İçin State ve Referanslar
   const [unreadCount, setUnreadCount] = useState(0);
   const [msgToast, setMsgToast] = useState<{show: boolean, senderName: string, text: string}>({show: false, senderName: '', text: ''});
-  const prevMsgCount = useRef(0);
+  
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const isPatronPath = window.location.pathname.includes('/dashboard');
@@ -35,59 +37,143 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         } catch(e) {}
     }
 
-    // YENİ: Bildirim izni iste
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
         Notification.requestPermission();
     }
   }, []);
-  
-  // YENİ: Mesaj geldiğini algılayan ve bildirim fırlatan zeka
+
+  // ===============================================
+  // PUSHER WEBSOCKET BAĞLANTISI (Gerçek Zamanlı Motor)
+  // ===============================================
   useEffect(() => {
-    if (messages && messages.length > 0) {
-      if (prevMsgCount.current > 0 && messages.length > prevMsgCount.current) {
-        const latestMsg = messages[messages.length - 1];
-        
-        // Gelen son mesajı "ben" göndermediysem bildirimi tetikle
-        if (!isMessageFromMe(latestMsg) && !latestMsg._tempId) {
-           
-           // Gönderenin adını bulalım
-           let senderName = 'Bilinmeyen Kullanıcı';
-           if (latestMsg.sender_id === 'PATRON') {
-               senderName = data?.ownerName || 'Firma Sahibi';
-           } else {
-               const foundStaff = data?.staff?.find((s:any) => String(s.id) === String(latestMsg.sender_id));
-               if (foundStaff) senderName = foundStaff.name;
-           }
+    if (!data?.slug || !currentUserId) return;
 
-           // Eğer sohbet kapalıysa veya kullanıcının o an açık olan sohbeti değilse kırmızı rozeti artır
-           if (!isChatOpen) {
-               setUnreadCount(prev => prev + 1);
-           }
+    const pusher = new Pusher('75dfed44245e16eaea0a', {
+      cluster: 'eu',
+    });
 
-           // Uygulama İçi Şık Balon (Toast)
-           setMsgToast({ show: true, senderName: senderName, text: latestMsg.message });
-           setTimeout(() => setMsgToast({ show: false, senderName: '', text: '' }), 4000);
+    const channel = pusher.subscribe(`chat-${data.slug}`);
 
-           // Cihazın Kendi (Native) Push Bildirimi
-           if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-               new Notification(`Yeni Mesaj: ${senderName}`, {
-                   body: latestMsg.message.length > 30 ? latestMsg.message.substring(0, 30) + '...' : latestMsg.message,
-                   icon: '/favicon.ico'
-               });
-           }
+    // 1. Olay: Biri yeni mesaj attı
+    channel.bind('new-message', (newMsg: any) => {
+        const isForMe = String(newMsg.receiver_id) === String(currentUserId) || (currentUserRole === 'Patron' && newMsg.receiver_id === 'PATRON');
+        const isFromMe = String(newMsg.sender_id) === String(currentUserId) || (currentUserRole === 'Patron' && newMsg.sender_id === 'PATRON');
+
+        if (!isForMe && !isFromMe) return;
+
+        setMessages((prev: any) => {
+            // Optimistik gönderilen mesajın ID'sini ve saatini güncelle (Gri Çift Tik'e dönüşür)
+            if (isFromMe && newMsg._tempId) {
+                return prev.map((p: any) => p._tempId === newMsg._tempId ? { ...newMsg, _tempId: undefined } : p);
+            }
+            if (!prev.find((p: any) => p.id === newMsg.id)) {
+                return [...prev, newMsg];
+            }
+            return prev;
+        });
+
+        if (isForMe) {
+            // Sohbet açıksa ve doğru kişiyle konuşuyorsak anında okundu yap
+            if (isChatOpen && (String(activeChatId) === String(newMsg.sender_id) || (activeChatId === 'PATRON' && newMsg.sender_id === 'PATRON'))) {
+                markMessagesAsRead(newMsg.sender_id);
+            } else {
+                let senderName = 'Bilinmeyen Kullanıcı';
+                if (newMsg.sender_id === 'PATRON') {
+                    senderName = data?.ownerName || 'Firma Sahibi';
+                } else {
+                    const foundStaff = data?.staff?.find((s:any) => String(s.id) === String(newMsg.sender_id));
+                    if (foundStaff) senderName = foundStaff.name;
+                }
+
+                setUnreadCount(prev => prev + 1);
+                setMsgToast({ show: true, senderName: senderName, text: newMsg.message });
+                setTimeout(() => setMsgToast({ show: false, senderName: '', text: '' }), 4000);
+
+                if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                    new Notification(`Yeni Mesaj: ${senderName}`, {
+                        body: newMsg.message.length > 30 ? newMsg.message.substring(0, 30) + '...' : newMsg.message,
+                        icon: '/favicon.ico'
+                    });
+                }
+            }
         }
-      }
-      prevMsgCount.current = messages.length;
-    }
-  }, [messages, isChatOpen, data]);
+    });
 
-  // Sohbet açıldığında okunmamış mesaj rozetini (kırmızı sayıyı) sıfırla
+    // 2. Olay: Karşı taraf mesajları okudu (Mavi Tik)
+    channel.bind('messages-read', (readData: any) => {
+        const iAmSender = String(readData.senderId) === String(currentUserId) || (currentUserRole === 'Patron' && readData.senderId === 'PATRON');
+        if (iAmSender) {
+            setMessages((prev: any) => prev.map((m: any) => {
+                // Eğer benim yolladığım mesaj ise ve karşı taraf (readerId) okumuşsa mavi tik (1) yap
+                if (String(m.sender_id) === String(readData.senderId) && String(m.receiver_id) === String(readData.readerId)) {
+                    return { ...m, is_read: 1 };
+                }
+                return m;
+            }));
+        }
+    });
+
+    // 3. Olay: Yazıyor... Animasyonu
+    channel.bind('typing', (typeData: any) => {
+        const iAmReceiver = String(typeData.receiverId) === String(currentUserId) || (currentUserRole === 'Patron' && typeData.receiverId === 'PATRON');
+        const isFromActiveChat = String(typeData.senderId) === String(activeChatId) || (typeData.senderId === 'PATRON' && activeChatId === 'PATRON');
+        
+        if (iAmReceiver && isFromActiveChat) {
+            setIsTyping(true);
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+            typingTimeoutRef.current = setTimeout(() => {
+                setIsTyping(false);
+            }, 3000);
+        }
+    });
+
+    return () => {
+        pusher.unsubscribe(`chat-${data.slug}`);
+        pusher.disconnect();
+    };
+  }, [data?.slug, currentUserId, currentUserRole, activeChatId, isChatOpen]);
+
+  // Okundu Olarak İşaretleme Fonksiyonu
+  const markMessagesAsRead = async (targetSenderId: string | null = activeChatId) => {
+    if (!targetSenderId || !currentUserId) return;
+    
+    const isPatronPath = window.location.pathname.includes('/dashboard');
+    const prefix = isPatronPath ? 'patron_' : 'staff_';
+    const token = localStorage.getItem(`${prefix}authToken`);
+    const API_URL = 'https://backend.isdokumu.workers.dev';
+    
+    try {
+        await fetch(`${API_URL}/read-messages`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ 
+                slug: data?.slug || window.location.pathname.split('/')[1], 
+                readerId: currentUserRole === 'Patron' ? 'PATRON' : currentUserId, 
+                senderId: targetSenderId 
+            })
+        });
+        
+        // Ekranda hemen okundu göster
+        setMessages((prev: any) => prev.map((m: any) => 
+            (String(m.sender_id) === String(targetSenderId) && m.is_read === 0) ? { ...m, is_read: 1 } : m
+        ));
+    } catch (e) {
+        console.error("Okundu bilgisi gönderilemedi", e);
+    }
+  };
+
   useEffect(() => {
-    if (isChatOpen) {
+    if (isChatOpen && activeChatId) {
       setUnreadCount(0);
+      markMessagesAsRead(activeChatId);
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [isChatOpen, messages]);
+  }, [isChatOpen, activeChatId]);
+
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
@@ -131,27 +217,15 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     };
   }, [isChatOpen, setIsChatOpen]);
 
-  useEffect(() => {
-    if (activeChatId) {
-      const draftKey = `chat_draft_${activeChatId}`;
-      if (messageInput) {
-        localStorage.setItem(draftKey, messageInput);
-      } else {
-        const savedDraft = localStorage.getItem(draftKey);
-        if (savedDraft) {
-          setMessageInput(savedDraft);
-        }
-      }
-    }
-  }, [messageInput, activeChatId, setMessageInput]);
-
   const handleSendMessage = () => {
     if (!messageInput.trim() || isOffline) return;
     
+    const tempId = Date.now();
     const newMessage = {
-      _tempId: Date.now(), 
+      _tempId: tempId, 
       message: messageInput,
       sender_id: currentUserRole === 'Patron' ? 'PATRON' : currentUserId, 
+      receiver_id: activeChatId,
       created_at: new Date().toISOString(),
       is_read: 0
     };
@@ -160,7 +234,22 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         setMessages((prev: any) => [...prev, newMessage]);
     }
 
-    sendMessage();
+    const isPatronPath = window.location.pathname.includes('/dashboard');
+    const prefix = isPatronPath ? 'patron_' : 'staff_';
+    const token = localStorage.getItem(`${prefix}authToken`);
+    const API_URL = 'https://backend.isdokumu.workers.dev';
+    
+    fetch(`${API_URL}/send-message`, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ 
+            slug: data?.slug || window.location.pathname.split('/')[1], 
+            senderId: currentUserRole === 'Patron' ? 'PATRON' : currentUserId, 
+            receiverId: activeChatId, 
+            message: messageInput,
+            tempId: tempId 
+        }) 
+    });
     
     if (activeChatId) {
       localStorage.removeItem(`chat_draft_${activeChatId}`);
@@ -168,52 +257,48 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     setMessageInput(''); 
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+     setMessageInput(e.target.value);
+     if (!isOffline && activeChatId) {
+         const isPatronPath = window.location.pathname.includes('/dashboard');
+         const prefix = isPatronPath ? 'patron_' : 'staff_';
+         const token = localStorage.getItem(`${prefix}authToken`);
+         const API_URL = 'https://backend.isdokumu.workers.dev';
+         
+         fetch(`${API_URL}/typing`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ 
+                slug: data?.slug || window.location.pathname.split('/')[1], 
+                senderId: currentUserRole === 'Patron' ? 'PATRON' : currentUserId, 
+                receiverId: activeChatId
+            }) 
+         }).catch(()=>{});
+     }
+  };
+
   const activeStaff = activeChatId && activeChatId !== 'PATRON' ? data?.staff?.find((s: any) => String(s.id) === String(activeChatId)) : null;
 
   const getDynamicStaffStatus = (staffId: string) => {
     const staffJobs = data?.jobs?.filter((j: any) => String(j.staff_id) === String(staffId) || String(j.details?.worker_id) === String(staffId)) || [];
-    
     const isWorking = staffJobs.some((j: any) => j.status === 'Devam Ediyor');
     const isAssigned = staffJobs.some((j: any) => j.status === 'Beklemede' || j.status === 'Gelecek');
     
-    if (isWorking) {
-      return { 
-        label: 'Çalışıyor', 
-        dot: 'bg-amber-500', 
-        badge: 'bg-amber-50 text-amber-600 border-amber-100' 
-      };
-    } else if (isAssigned) {
-      return { 
-        label: 'İş Atandı', 
-        dot: 'bg-blue-500', 
-        badge: 'bg-blue-50 text-blue-600 border-blue-100' 
-      };
-    } else {
-      return { 
-        label: 'Müsait', 
-        dot: 'bg-emerald-500', 
-        badge: 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-      };
-    }
+    if (isWorking) return { label: 'Çalışıyor', dot: 'bg-amber-500', badge: 'bg-amber-50 text-amber-600 border-amber-100' };
+    if (isAssigned) return { label: 'İş Atandı', dot: 'bg-blue-500', badge: 'bg-blue-50 text-blue-600 border-blue-100' };
+    return { label: 'Müsait', dot: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-600 border-emerald-100' };
   };
 
   const activeStatus = activeStaff ? getDynamicStaffStatus(activeStaff.id) : null;
 
   const isMessageFromMe = (m: any) => {
-    if (currentUserRole === 'Patron') {
-       return m.sender_id === 'PATRON';
-    } else {
-       return String(m.sender_id) === String(currentUserId);
-    }
+    if (currentUserRole === 'Patron') return m.sender_id === 'PATRON';
+    return String(m.sender_id) === String(currentUserId);
   };
-
-  // Yazıyor animasyonu için placeholder
-  const isTyping = false; 
 
   return (
     <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[100] flex flex-col items-end gap-3 pointer-events-none">
       
-      {/* YENİ: Anlık Mesaj Bildirimi (Toast Balonu) */}
       <AnimatePresence>
         {msgToast.show && !isChatOpen && (
             <motion.div 
@@ -260,7 +345,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                       ) : (
                           <span className="text-[10px] text-slate-400 flex items-center gap-1.5 font-medium tracking-wide">
                              <span className={`w-1.5 h-1.5 rounded-full ${activeStatus.label === 'Müsait' ? 'bg-emerald-500' : 'bg-slate-500'} shadow-[0_0_4px_rgba(0,0,0,0.5)]`}></span>
-                             {activeStatus.label === 'Müsait' ? 'Çevrimiçi' : 'Son görülme: az önce'}
+                             {activeStatus.label}
                           </span>
                       )}
                     </div>
@@ -272,10 +357,16 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                     </button>
                     <div className="flex flex-col">
                       <span className="font-bold text-[13px] leading-none mb-0.5">{data?.ownerName || 'Firma Sahibi'}</span>
-                      <span className="text-[10px] text-emerald-400 flex items-center gap-1.5 font-bold tracking-wide">
-                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_4px_rgba(0,0,0,0.5)] animate-pulse"></span>
-                         Çevrimiçi
-                      </span>
+                      {isTyping ? (
+                          <span className="text-[10px] text-emerald-400 font-bold italic tracking-wide animate-pulse">
+                              yazıyor...
+                          </span>
+                      ) : (
+                          <span className="text-[10px] text-slate-400 flex items-center gap-1.5 font-bold tracking-wide">
+                             <span className="w-1.5 h-1.5 rounded-full bg-slate-500 shadow-[0_0_4px_rgba(0,0,0,0.5)]"></span>
+                             Son görülme: Yakınlarda
+                          </span>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -322,7 +413,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                            <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm group-hover:scale-105 transition-transform shadow-md">
                              P
                            </div>
-                           <span className="absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full bg-emerald-500"></span>
+                           <span className="absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full bg-slate-400"></span>
                        </div>
                        <div className="flex-1 min-w-0">
                          <div className="text-sm font-black text-blue-900 truncate">{data?.ownerName || 'Firma Sahibi'}</div>
@@ -402,7 +493,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                 <div className="p-2 sm:p-3 bg-[#F0F2F5] flex gap-2 items-end shrink-0">
                   <textarea 
                     value={messageInput} 
-                    onChange={e => setMessageInput(e.target.value)} 
+                    onChange={handleInputChange} 
                     onKeyDown={e => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
@@ -428,14 +519,12 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         )}
       </AnimatePresence>
       
-      {/* YENİ: Kırmızı Bildirim Noktası (Unread Badge) */}
       <button 
         onClick={() => setIsChatOpen(!isChatOpen)} 
         className="w-14 h-14 bg-emerald-500 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-emerald-600 transition-all hover:scale-105 active:scale-95 relative border-2 border-white pointer-events-auto"
       >
         {isChatOpen ? <X size={24} /> : <MessageSquare size={24} />}
         
-        {/* Okunmamış Mesaj Rozeti */}
         {!isChatOpen && unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-bounce shadow-md">
                 {unreadCount > 9 ? '9+' : unreadCount}

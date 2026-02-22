@@ -11,7 +11,7 @@ import ChatPanel from '@/components/chat/ChatPanel';
 import DashboardModals from '@/components/modals/DashboardModals';
 
 import HomeTab from '@/components/patron/HomeTab';
-import MyJobsTab from '@/components/patron/MyJobsTab'; // YENİ EKLENDİ
+import MyJobsTab from '@/components/patron/MyJobsTab'; 
 import JobsTab from '@/components/patron/JobsTab';
 import TeamTab from '@/components/patron/TeamTab';
 import CustomersTab from '@/components/patron/CustomersTab';
@@ -26,7 +26,6 @@ import AssetQRModal from '@/components/modals/AssetQRModal';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
-// JWT (Bilet) Çözücü
 const parseJwt = (token) => {
   try {
     const base64Url = token.split('.')[1];
@@ -55,7 +54,6 @@ export default function ManagerDashboard() {
   const [isOffline, setIsOffline] = useState(false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
-  // PWA YÜKLEME DURUMU
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showPwaPrompt, setShowPwaPrompt] = useState(false);
   const [isIos, setIsIos] = useState(false);
@@ -96,7 +94,6 @@ export default function ManagerDashboard() {
   const [supplierForm, setSupplierForm] = useState({ name: '', phone: '' });
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '', username: '', password: '', is_active: 1 });
 
-  // PWA YAKALAMA SİSTEMİ
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     if (isStandalone) return;
@@ -140,12 +137,10 @@ export default function ManagerDashboard() {
     }
   };
 
-  // YÖNETİCİ VERİ ÇEKME (ZIRHLI JWT)
   const fetchData = async (isInitial = false) => {
-    const token = localStorage.getItem('staff_authToken'); // ZIRH EKLENDİ (PERSONEL BİLETİ)
+    const token = localStorage.getItem('staff_authToken'); 
     const role = localStorage.getItem('staff_userRole');
 
-    // Güvenlik: Token yoksa veya Yönetici değilse kapı dışarı!
     if (!token || role !== 'Yönetici') {
       localStorage.removeItem('staff_authToken');
       localStorage.removeItem('staff_userRole');
@@ -157,6 +152,27 @@ export default function ManagerDashboard() {
 
     const decoded = parseJwt(token);
     setUserData(decoded);
+
+    // YENİ: PUSHER BEAMS CİHAZ KAYIT İŞLEMİ (Arka plan bildirimleri için)
+    if (isInitial && typeof window !== 'undefined') {
+      import('@pusher/push-notifications-web').then((PusherPushNotifications) => {
+          const beamsClient = new PusherPushNotifications.Client({
+              instanceId: "6a47ebc2-0c89-48f1-81a3-80a4e003dd41",
+          });
+          beamsClient.start()
+              .then(async () => {
+                  // Yöneticilerin dinleyeceği kanallar (Kendisine gelen mesajlar ve Yönetici bildirimleri)
+                  const userInterest = decoded.role === 'Patron' ? `user-${slug}-PATRON` : `user-${slug}-${decoded.id}`;
+                  const adminInterest = `role-${slug}-ADMIN`; // Arıza, Stok ve Acil Durumlar buraya düşer
+                  
+                  // Önce mevcutları sil ki temiz başlasın, sonra yeni kanalları ekle
+                  await beamsClient.clearDeviceInterests();
+                  await beamsClient.addDeviceInterest(userInterest);
+                  await beamsClient.addDeviceInterest(adminInterest);
+              })
+              .catch(console.error);
+      }).catch(console.error);
+  }
 
     try {
       const res = await fetch(`${API_URL}/dashboard-data?slug=${slug}`, {
@@ -191,7 +207,7 @@ export default function ManagerDashboard() {
 
   const fetchMessages = async () => {
     if (!activeChatId) return;
-    const token = localStorage.getItem('staff_authToken'); // ZIRH EKLENDİ
+    const token = localStorage.getItem('staff_authToken'); 
     try {
       const res = await fetch(`${API_URL}/get-messages?slug=${slug}&staffId=${activeChatId}`, {
          headers: { 'Authorization': `Bearer ${token}` }
@@ -208,7 +224,7 @@ export default function ManagerDashboard() {
     }
     
     const remaining = [];
-    const token = localStorage.getItem('staff_authToken'); // ZIRH EKLENDİ
+    const token = localStorage.getItem('staff_authToken'); 
 
     for (const item of pending) {
       try {
@@ -250,18 +266,20 @@ export default function ManagerDashboard() {
     return () => clearInterval(int); 
   }, [slug]);
   
-  useEffect(() => { if (isChatOpen && activeChatId) { fetchMessages(); const cInt = setInterval(fetchMessages, 4000); return () => clearInterval(cInt); } }, [isChatOpen, activeChatId]);
+  useEffect(() => { 
+      if (isChatOpen && activeChatId) { 
+          fetchMessages(); 
+      } 
+  }, [isChatOpen, activeChatId]);
 
-  // YÖNETİCİ AKSİYON ENGELLEYİCİ
   const handleAction = async (endpoint, body, closeFn, resetFn) => {
-    // 1. ZIRH: Silme veya Ayar değiştirme işlemleri kesinlikle engellenir.
     if (endpoint.startsWith('delete-') || endpoint === 'update-settings') {
         alert("Yetkisiz İşlem: Yöneticiler veri silemez veya firma ayarlarını değiştiremez. Lütfen Patron ile iletişime geçin.");
         return false;
     }
 
     setIsSaving(true);
-    const token = localStorage.getItem('staff_authToken'); // ZIRH EKLENDİ
+    const token = localStorage.getItem('staff_authToken'); 
 
     try {
       const res = await fetch(`${API_URL}/${endpoint}`, { 
@@ -300,7 +318,7 @@ export default function ManagerDashboard() {
 
   const sendMessage = async () => {
     if (!messageInput.trim() || !activeChatId) return;
-    const token = localStorage.getItem('staff_authToken'); // ZIRH EKLENDİ
+    const token = localStorage.getItem('staff_authToken'); 
     await fetch(`${API_URL}/send-message`, { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -323,7 +341,6 @@ export default function ManagerDashboard() {
     handleAction('resolve-fault', { id: faultId }, null, null);
   };
 
-  // Yönetici ayarlara giremez, finans sekmesine GİREBİLİR (ancak role ile kısıtlı görecek)
   useEffect(() => {
       if (activeTab === 'settings') {
           alert("Yetkisiz Erişim: Sadece Patron firma ayarlarını görüntüleyebilir.");
@@ -355,7 +372,6 @@ export default function ManagerDashboard() {
   return (
     <div className={`min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 manager-scope ${hasEmergency ? 'bg-rose-950' : 'bg-[#F8FAFC] text-slate-900'}`}>
       
-      {/* Yönetici için genel UI gizleme hileleri (Sil butonları vb.) */}
       <style dangerouslySetInnerHTML={{__html: `
         .manager-scope button:has(svg.lucide-trash-2),
         .manager-scope button:has(svg.lucide-trash2),

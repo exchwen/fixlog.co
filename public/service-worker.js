@@ -1,4 +1,5 @@
 const CACHE_NAME = 'isdokumu-cache-v1';
+importScripts("https://js.pusher.com/beams/1.0/push-notifications-web.js");
 
 // Uygulama kurulduğunda Service Worker'ı hemen aktif et
 self.addEventListener('install', (event) => {

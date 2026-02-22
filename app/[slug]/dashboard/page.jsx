@@ -296,7 +296,11 @@ export default function PatronDashboard() {
     return () => clearInterval(int); 
   }, [slug]);
   
-  useEffect(() => { if (isChatOpen && activeChatId) { fetchMessages(); const cInt = setInterval(fetchMessages, 4000); return () => clearInterval(cInt); } }, [isChatOpen, activeChatId]);
+  useEffect(() => { 
+    if (isChatOpen && activeChatId) { 
+        fetchMessages(); // Sadece sohbet ilk açıldığında geçmişi 1 kere çeksin
+    } 
+}, [isChatOpen, activeChatId]);
 
   const handleAction = async (endpoint, body, closeFn, resetFn) => {
     setIsSaving(true);
