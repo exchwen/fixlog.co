@@ -62,8 +62,8 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
       }
     };
     // 🚀 KESİN ÇÖZÜM: CDN Cache'ini atlamak için Date.now() eklendi
-    img.src = companyLogo.startsWith('http') ? `${companyLogo}?t=${Date.now()}` : companyLogo;
-  }, [data?.logo]);
+    img.src = companyLogo;
+    }, [data?.logo]);
   // --- RENK ANALİZ BİTİŞ ---
 
   const getMapsUrl = (location: string, apartmentName: string) => {

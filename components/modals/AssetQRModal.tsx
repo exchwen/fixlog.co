@@ -107,8 +107,8 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
       }
     };
     // 🚀 KESİN ÇÖZÜM: CDN Cache'ini atlamak için Date.now() eklendi
-    img.src = companyLogo.startsWith('http') ? `${companyLogo}?t=${Date.now()}` : companyLogo;
-  }, [companyLogo]);
+    img.src = companyLogo;
+    }, [companyLogo]);
 
   const handlePrint = useReactToPrint({
     contentRef: printRef, 
