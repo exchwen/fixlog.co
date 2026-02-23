@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Send, X, MessageSquare, ArrowLeft, WifiOff, CheckCheck, Clock, Lock } from 'lucide-react';
 import Pusher from 'pusher-js';
 
-// 🚀 ÇÖZÜM: Pusher Beams kütüphanesini dinamik olarak import edeceğiz
 import * as PusherPushNotifications from '@pusher/push-notifications-web';
 
 export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, setActiveChatId, data, messages, setMessages, messageInput, setMessageInput, sendMessage }: any) {
@@ -29,10 +28,18 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   
   const [pusherChannel, setPusherChannel] = useState<any>(null);
 
-  // 🚀 YENİ: Hangi personelden kaç okunmamış mesaj var? (Örn: { "3": 2, "PATRON": 1 })
   const [unreadMap, setUnreadMap] = useState<Record<string, number>>({});
 
   const actualSlug = data?.slug || (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '');
+
+  // 🚀 REFERANSLAR: Pusher bağlantısını koparmadan güncel verilere erişmek için
+  const activeChatIdRef = useRef(activeChatId);
+  const isChatOpenRef = useRef(isChatOpen);
+  const dataRef = useRef(data);
+
+  useEffect(() => { activeChatIdRef.current = activeChatId; }, [activeChatId]);
+  useEffect(() => { isChatOpenRef.current = isChatOpen; }, [isChatOpen]);
+  useEffect(() => { dataRef.current = data; }, [data]);
 
   useEffect(() => {
     const isPatronPath = window.location.pathname.includes('/dashboard');
@@ -53,7 +60,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     }
   }, []);
 
-  // 🚀 DÜZELTİLDİ: 404 Hatası çözüldü! Eski script ekleme yöntemi yerine resmi NPM paketi kullanıldı.
   useEffect(() => {
     if (!currentUserId || !actualSlug || !currentUserRole) return;
     
@@ -76,7 +82,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             await beamsClient.clearDeviceInterests();
             await beamsClient.addDeviceInterest(interest);
             
-            // Eğer Yönetici ise fazladan role-ADMIN kanalını da dinlesin (Acil Durumlar vs için)
             if (currentUserRole === 'Yönetici') {
                 await beamsClient.addDeviceInterest(`role-${actualSlug}-ADMIN`);
             }
@@ -154,7 +159,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     img.src = data.logo;
   }, [data?.logo]);
 
-
   useEffect(() => {
     const fetchAllMessages = async () => {
         if (!actualSlug || !currentUserId) return;
@@ -172,7 +176,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             if (msgs) {
                 setAllMessages(msgs);
                 
-                // 🚀 YENİ: Başlangıçta okunmamış mesajları say (bana gelen ve is_read = 0 olanlar)
                 const newUnreadMap: Record<string, number> = {};
                 let totalUnread = 0;
                 
@@ -191,10 +194,9 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         } catch (e) {}
     };
     
-    if (isChatOpen && !activeChatId && allMessages.length === 0) {
-        fetchAllMessages();
-    }
-  }, [isChatOpen, activeChatId, actualSlug, currentUserId, currentUserRole, allMessages.length]);
+    // Yükleme şartını esnettik, bileşen mount olunca mesajları çeksin
+    fetchAllMessages();
+  }, [actualSlug, currentUserId, currentUserRole]);
 
   const sortedStaffList = useMemo(() => {
     if (!data?.staff) return [];
@@ -220,6 +222,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     return staffWithLastMsg;
   }, [data?.staff, allMessages, currentUserId, currentUserRole]);
 
+  // 🚀 DÜZELTİLDİ: Pusher Channels (WebSocket) Bağlantısı (Artık UI state'lerine bağlı değil!)
   useEffect(() => {
     if (!actualSlug || !currentUserId) return;
 
@@ -228,7 +231,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     const token = localStorage.getItem(`${prefix}authToken`);
     const API_URL = 'https://backend.isdokumu.workers.dev';
 
-    Pusher.logToConsole = false; // Tüm Pusher logları kapatıldı
+    Pusher.logToConsole = false;
 
     const pusher = new Pusher('75dfed44245e16eaea0a', {
       cluster: 'eu',
@@ -286,20 +289,25 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         });
 
         if (isForMe) {
-            const isTargetChatOpen = isChatOpen && document.hasFocus() && (String(activeChatId) === String(newMsg.sender_id) || (activeChatId === 'PATRON' && newMsg.sender_id === 'PATRON'));
+            // Ref'leri kullanarak o anki güncel UI durumunu kontrol ediyoruz
+            const currentActiveChatId = activeChatIdRef.current;
+            const currentIsChatOpen = isChatOpenRef.current;
+            const currentData = dataRef.current;
+
+            const isTargetChatOpen = currentIsChatOpen && document.hasFocus() && 
+                (String(currentActiveChatId) === String(newMsg.sender_id) || (currentActiveChatId === 'PATRON' && newMsg.sender_id === 'PATRON'));
             
             if (isTargetChatOpen) {
-                markMessagesAsRead(newMsg.sender_id);
+                markMessagesAsReadInternal(newMsg.sender_id, currentActiveChatId);
             } else {
                 let senderName = 'Bilinmeyen Kullanıcı';
                 if (newMsg.sender_id === 'PATRON') {
-                    senderName = data?.ownerName || 'Firma Sahibi';
+                    senderName = currentData?.ownerName || 'Firma Sahibi';
                 } else {
-                    const foundStaff = data?.staff?.find((s:any) => String(s.id) === String(newMsg.sender_id));
+                    const foundStaff = currentData?.staff?.find((s:any) => String(s.id) === String(newMsg.sender_id));
                     if (foundStaff) senderName = foundStaff.name;
                 }
 
-                // 🚀 YENİ: Okunmamış mesajları listede göstermek için map'i güncelle
                 const senderIdStr = String(newMsg.sender_id);
                 setUnreadMap(prev => ({
                     ...prev,
@@ -333,8 +341,9 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     });
 
     channel.bind('client-typing', (typeData: any) => {
+        const currentActiveChatId = activeChatIdRef.current;
         const iAmReceiver = String(typeData.receiverId) === String(currentUserId) || (currentUserRole === 'Patron' && typeData.receiverId === 'PATRON');
-        const isFromActiveChat = String(typeData.senderId) === String(activeChatId) || (typeData.senderId === 'PATRON' && activeChatId === 'PATRON');
+        const isFromActiveChat = String(typeData.senderId) === String(currentActiveChatId) || (typeData.senderId === 'PATRON' && currentActiveChatId === 'PATRON');
         
         if (iAmReceiver && isFromActiveChat) {
             setIsTyping(true);
@@ -349,9 +358,10 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         pusher.unsubscribe(channelName);
         pusher.disconnect();
     };
-  }, [actualSlug, currentUserId, currentUserRole, activeChatId, isChatOpen]);
+  }, [actualSlug, currentUserId, currentUserRole]); // Sadece temel kimlik bilgilerine bağlı!
 
-  const markMessagesAsRead = async (targetSenderId: string | null = activeChatId) => {
+  // Ref kullanan dahili işaretleme fonksiyonu
+  const markMessagesAsReadInternal = async (targetSenderId: string | null, currentActiveId: string | null) => {
     if (!targetSenderId || !currentUserId || !document.hasFocus()) return;
     
     const isPatronPath = window.location.pathname.includes('/dashboard');
@@ -362,37 +372,29 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     try {
         await fetch(`${API_URL}/read-messages`, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ 
-                slug: actualSlug, 
-                readerId: currentUserRole === 'Patron' ? 'PATRON' : currentUserId, 
-                senderId: targetSenderId 
-            })
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ slug: actualSlug, readerId: currentUserRole === 'Patron' ? 'PATRON' : currentUserId, senderId: targetSenderId })
         });
         
         setAllMessages((prev: any) => prev.map((m: any) => 
             (String(m.sender_id) === String(targetSenderId) && m.is_read === 0) ? { ...m, is_read: 1 } : m
         ));
 
-        // 🚀 YENİ: Okunmuş olarak işaretlenen sohbetin balonunu sıfırla
         const senderIdStr = String(targetSenderId);
-        if (unreadMap[senderIdStr]) {
-             setUnreadCount(prev => Math.max(0, prev - unreadMap[senderIdStr]));
-             setUnreadMap(prev => {
-                 const newMap = { ...prev };
-                 delete newMap[senderIdStr];
-                 return newMap;
-             });
-        }
+        setUnreadMap(prev => {
+             const newMap = { ...prev };
+             const countToSubtract = newMap[senderIdStr] || 0;
+             delete newMap[senderIdStr];
+             setUnreadCount(currentTotal => Math.max(0, currentTotal - countToSubtract));
+             return newMap;
+        });
     } catch (e) {}
   };
 
+  // Kullanıcı UI'dan tıklayıp tetiklediğinde çalışan fonksiyon
   useEffect(() => {
     if (isChatOpen && activeChatId) {
-      markMessagesAsRead(activeChatId);
+      markMessagesAsReadInternal(activeChatId, activeChatId);
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [isChatOpen, activeChatId]);
@@ -666,7 +668,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                        <div className="flex-1 min-w-0">
                          <div className="flex justify-between items-center">
                             <div className="text-sm font-black text-blue-900 truncate">{data?.ownerName || 'Firma Sahibi'}</div>
-                            {/* 🚀 YENİ: PATRON İÇİN OKUNMAMIŞ MESAJ BALONU */}
                             {unreadMap['PATRON'] > 0 && (
                                 <div className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
                                     {unreadMap['PATRON']}
@@ -699,7 +700,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                        <div className="flex-1 min-w-0">
                          <div className="flex justify-between items-center">
                             <div className={`text-sm font-bold truncate ${unreadMsgs > 0 ? 'text-slate-900' : 'text-slate-800'}`}>{m.name}</div>
-                            {/* 🚀 YENİ: PERSONEL İÇİN OKUNMAMIŞ MESAJ BALONU */}
                             {unreadMsgs > 0 && (
                                 <div className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
                                     {unreadMsgs}
