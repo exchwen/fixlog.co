@@ -95,6 +95,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
         const ctx = canvas.getContext('2d');
         if(ctx) {
             ctx.drawImage(img, 0, 0, width, height);
+            // Optimizasyon: Frontend küçük boyutta çevirir, Backend (worker.js) bunu yakalayıp R2'ye yükler
             const dataUrl = canvas.toDataURL('image/png');
             setSettingsForm({ ...(settingsForm || {}), logo: dataUrl });
         }
@@ -108,7 +109,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
     // Çevrimdışı/Offline Kuyruk Koruması Entegrasyonu
     if (isOffline) {
        console.warn("İnternet bağlantısı yok. Ayarlarınız kuyruğa alındı.");
-       const activeSlug = localStorage.getItem('companySlug') || ''; // Eğer parametreyle gelmiyorsa lokalden çek
+       const activeSlug = localStorage.getItem('companySlug') || ''; 
        const pending = JSON.parse(localStorage.getItem(`offline_actions_${activeSlug}`) || '[]');
        pending.push({ endpoint: 'update-settings', body: settingsForm, timestamp: new Date().toISOString() });
        localStorage.setItem(`offline_actions_${activeSlug}`, JSON.stringify(pending));
@@ -185,18 +186,15 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
         )}
       </AnimatePresence>
 
-      {/* YENİ: Mobilde Dikey Hiyerarşi, Esnek Başlık Yapısı */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 pb-4 gap-4">
         <div>
           <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 tracking-tight">
              İşletme Ayarları
-             {/* Offline durumu için küçük ikon. Span içine alındı. */}
              {isOffline && <span title="Çevrimdışı Mod"><WifiOff size={16} className="text-amber-500" /></span>}
           </h3>
           <p className="text-xs font-medium text-slate-500 mt-1">Firma bilgilerinizi buradan güncelleyebilirsiniz.</p>
         </div>
         
-        {/* YENİ: Mobilde buton her zaman altta (Sticky) görünecek şekilde kurgulandı, masaüstünde normal yerinde. */}
         <div className="fixed bottom-4 left-4 right-4 sm:static sm:bottom-auto sm:left-auto sm:right-auto z-50 flex sm:block justify-center pointer-events-none sm:pointer-events-auto">
           <button 
             disabled={isSaving || !isFormValid} 
@@ -212,7 +210,6 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 space-y-6">
         
         {/* Logo Yükleme Alanı */}
-        {/* YENİ: Mobilde daralmayı önlemek için flex-col yapısı iyileştirildi */}
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-center sm:items-start bg-slate-50 p-4 border border-slate-200 rounded-xl">
           <div className="w-20 h-20 bg-white border border-slate-200 rounded-xl flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
             {settingsForm?.logo ? (
@@ -267,7 +264,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
           </div>
         </div>
 
-        {/* Sektör (KİLİTLİ) & Web Sitesi */}
+        {/* Sektör & Web Sitesi */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
           <div>
             <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center justify-between sm:justify-start sm:gap-2">
