@@ -87,13 +87,7 @@ export default function StaffLoginPage() {
              const data = await res.json();
              
              if (data.logo) {
-                 // 🚀 KESİN ÇÖZÜM: İki Soru İşareti Bug'ı ve Mobil Senkronizasyon Engeli Çözüldü
-                 const safeLogoUrl = data.logo.startsWith('http') 
-                      ? data.logo + (data.logo.includes('?') ? '&' : '?') + 't=' + Date.now() 
-                      : data.logo;
-                      
-                 // URL'yi hem Canvas hem HTML img etiketi kullansın diye state'e kaydediyoruz
-                 setCompanyData({ name: data.company_name, logo: safeLogoUrl });
+                 setCompanyData({ name: data.company_name, logo: data.logo });
                  
                  const img = new Image();
                  img.crossOrigin = "Anonymous";
@@ -125,7 +119,7 @@ export default function StaffLoginPage() {
                          }
                      } catch (e) { setLogoBgColor('#ffffff'); }
                  };
-                 img.src = safeLogoUrl;
+                 img.src = data.logo;
              } else {
                  setCompanyData({ name: data.company_name, logo: '' });
              }
