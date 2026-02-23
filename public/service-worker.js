@@ -1,3 +1,5 @@
+importScripts("https://js.pusher.com/beams/service-worker.js");
+
 const CACHE_NAME = 'isdokumu-cache-v1';
 
 // Uygulama kurulduğunda Service Worker'ı hemen aktif et

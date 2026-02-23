@@ -32,7 +32,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
   const actualSlug = data?.slug || (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '');
 
-  // 🚀 REFERANSLAR: Pusher bağlantısını koparmadan güncel verilere erişmek için
+  // 🚀 REFERANSLAR: UI state'leri Pusher bağlantısını koparmasın diye
   const activeChatIdRef = useRef(activeChatId);
   const isChatOpenRef = useRef(isChatOpen);
   const dataRef = useRef(data);
@@ -60,35 +60,47 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     }
   }, []);
 
+  // 🚀 PUSHER BEAMS BAŞLATMA (SERVICE WORKER ENTEGRASYONU)
   useEffect(() => {
+    // Tüm bilgiler hazır olana kadar bekle
     if (!currentUserId || !actualSlug || !currentUserRole) return;
     
     const registerBeams = async () => {
-        if (typeof window !== 'undefined' && 'Notification' in window) {
+        // Tarayıcının özellikleri destekleyip desteklemediğini kontrol et
+        if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'Notification' in window) {
+            
+            // Eğer daha önce izin istenmemişse, izin iste
             if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
                 await Notification.requestPermission();
             }
-        }
 
-        try {
-            const beamsClient = new PusherPushNotifications.Client({
-                instanceId: '6a47ebc2-0c89-48f1-81a3-80a4e003dd41',
-            });
+            try {
+                // 1. MEVCUT SERVICE WORKER'IN HAZIR OLMASINI BEKLE (PWA Uyumu)
+                const registration = await navigator.serviceWorker.ready;
 
-            await beamsClient.start();
-            
-            const interest = currentUserRole === 'Patron' ? `user-${actualSlug}-PATRON` : `user-${actualSlug}-${currentUserId}`;
-            
-            await beamsClient.clearDeviceInterests();
-            await beamsClient.addDeviceInterest(interest);
-            
-            if (currentUserRole === 'Yönetici') {
-                await beamsClient.addDeviceInterest(`role-${actualSlug}-ADMIN`);
+                // 2. PUSHER'A SENİN SERVICE WORKER'INI KULLANMASINI SÖYLE
+                const beamsClient = new PusherPushNotifications.Client({
+                    instanceId: '6a47ebc2-0c89-48f1-81a3-80a4e003dd41',
+                    serviceWorkerRegistration: registration, // PWA'nın beyni olan dosyanı buraya bağlıyoruz
+                });
+
+                await beamsClient.start();
+                
+                const interest = currentUserRole === 'Patron' ? `user-${actualSlug}-PATRON` : `user-${actualSlug}-${currentUserId}`;
+                
+                // Eski kanalları temizle ve yenisine abone ol
+                await beamsClient.clearDeviceInterests();
+                await beamsClient.addDeviceInterest(interest);
+                
+                // Yönetici ise tüm acil durumlardan haberdar olsun
+                if (currentUserRole === 'Yönetici') {
+                    await beamsClient.addDeviceInterest(`role-${actualSlug}-ADMIN`);
+                }
+
+                console.log("✅ [BEAMS] Service Worker ile Kayıt Başarılı. Kanal:", interest);
+            } catch (err) {
+                console.error("❌ [BEAMS] Kayıt Hatası:", err);
             }
-
-            console.log("✅ [BEAMS BİLDİRİM] Cihaz Kaydı Başarılı. İlgi Alanı:", interest);
-        } catch (err) {
-            console.error("❌ [BEAMS BİLDİRİM] Kayıt Hatası:", err);
         }
     };
 
@@ -194,7 +206,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         } catch (e) {}
     };
     
-    // Yükleme şartını esnettik, bileşen mount olunca mesajları çeksin
     fetchAllMessages();
   }, [actualSlug, currentUserId, currentUserRole]);
 
@@ -222,7 +233,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     return staffWithLastMsg;
   }, [data?.staff, allMessages, currentUserId, currentUserRole]);
 
-  // 🚀 DÜZELTİLDİ: Pusher Channels (WebSocket) Bağlantısı (Artık UI state'lerine bağlı değil!)
+  // 🚀 PUSHER CHANNELS (WEBSOCKET) SADECE KİMLİK BİLGİLERİNE BAĞLI
   useEffect(() => {
     if (!actualSlug || !currentUserId) return;
 
@@ -289,7 +300,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         });
 
         if (isForMe) {
-            // Ref'leri kullanarak o anki güncel UI durumunu kontrol ediyoruz
             const currentActiveChatId = activeChatIdRef.current;
             const currentIsChatOpen = isChatOpenRef.current;
             const currentData = dataRef.current;
@@ -358,9 +368,8 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         pusher.unsubscribe(channelName);
         pusher.disconnect();
     };
-  }, [actualSlug, currentUserId, currentUserRole]); // Sadece temel kimlik bilgilerine bağlı!
+  }, [actualSlug, currentUserId, currentUserRole]); 
 
-  // Ref kullanan dahili işaretleme fonksiyonu
   const markMessagesAsReadInternal = async (targetSenderId: string | null, currentActiveId: string | null) => {
     if (!targetSenderId || !currentUserId || !document.hasFocus()) return;
     
@@ -391,7 +400,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     } catch (e) {}
   };
 
-  // Kullanıcı UI'dan tıklayıp tetiklediğinde çalışan fonksiyon
   useEffect(() => {
     if (isChatOpen && activeChatId) {
       markMessagesAsReadInternal(activeChatId, activeChatId);

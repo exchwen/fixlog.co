@@ -161,23 +161,6 @@ export default function ManagerDashboard() {
     const decoded = parseJwt(token);
     setUserData(decoded);
 
-    if (isInitial && typeof window !== 'undefined') {
-      import('@pusher/push-notifications-web').then((PusherPushNotifications) => {
-          const beamsClient = new PusherPushNotifications.Client({
-              instanceId: "6a47ebc2-0c89-48f1-81a3-80a4e003dd41",
-          });
-          beamsClient.start()
-              .then(async () => {
-                  const userInterest = decoded.role === 'Patron' ? `user-${slug}-PATRON` : `user-${slug}-${decoded.id}`;
-                  const adminInterest = `role-${slug}-ADMIN`; 
-                  
-                  await beamsClient.clearDeviceInterests();
-                  await beamsClient.addDeviceInterest(userInterest);
-                  await beamsClient.addDeviceInterest(adminInterest);
-              })
-              .catch(console.error);
-      }).catch(console.error);
-  }
 
     try {
       const res = await fetch(`${API_URL}/dashboard-data?slug=${slug}`, {
