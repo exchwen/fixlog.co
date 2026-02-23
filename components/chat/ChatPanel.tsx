@@ -60,44 +60,59 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     }
   }, []);
 
-  // 🚀 PUSHER BEAMS BAŞLATMA (SERVICE WORKER ENTEGRASYONU)
+  // 🚀 PUSHER BEAMS BAŞLATMA VE ARAYA GİRME (INTERCEPT)
   useEffect(() => {
-    // Tüm bilgiler hazır olana kadar bekle
     if (!currentUserId || !actualSlug || !currentUserRole) return;
     
     const registerBeams = async () => {
-        // Tarayıcının özellikleri destekleyip desteklemediğini kontrol et
         if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'Notification' in window) {
             
-            // Eğer daha önce izin istenmemişse, izin iste
             if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
                 await Notification.requestPermission();
             }
 
             try {
-                // 1. MEVCUT SERVICE WORKER'IN HAZIR OLMASINI BEKLE (PWA Uyumu)
+                // ZORUNLU GÜNCELLEME EMRİ (CACHE ATLATMA)
+                const reg = await navigator.serviceWorker.register('/service-worker.js', { updateViaCache: 'none' });
+                await reg.update();
+                
                 const registration = await navigator.serviceWorker.ready;
 
-                // 2. PUSHER'A SENİN SERVICE WORKER'INI KULLANMASINI SÖYLE
                 const beamsClient = new PusherPushNotifications.Client({
                     instanceId: '6a47ebc2-0c89-48f1-81a3-80a4e003dd41',
-                    serviceWorkerRegistration: registration, // PWA'nın beyni olan dosyanı buraya bağlıyoruz
+                    serviceWorkerRegistration: registration,
                 });
 
                 await beamsClient.start();
                 
                 const interest = currentUserRole === 'Patron' ? `user-${actualSlug}-PATRON` : `user-${actualSlug}-${currentUserId}`;
                 
-                // Eski kanalları temizle ve yenisine abone ol
                 await beamsClient.clearDeviceInterests();
                 await beamsClient.addDeviceInterest(interest);
                 
-                // Yönetici ise tüm acil durumlardan haberdar olsun
-                if (currentUserRole === 'Yönetici') {
+                if (currentUserRole === 'Yönetici' || currentUserRole === 'Patron') {
                     await beamsClient.addDeviceInterest(`role-${actualSlug}-ADMIN`);
                 }
 
-                console.log("✅ [BEAMS] Service Worker ile Kayıt Başarılı. Kanal:", interest);
+                const deviceId = await beamsClient.getDeviceId();
+                console.log("✅ [BEAMS] KESİN KAYIT BAŞARILI. Cihaz ID:", deviceId);
+
+                // 🚨 ZORUNLU GÖSTERİM KODU BURADA (Araya giriyoruz)
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.addEventListener('message', (event) => {
+                       // Pusher'ın gönderdiği paketi havada yakalıyoruz
+                       if (event.data && event.data.pusher) {
+                           // "Uygulama açıksa gizle" ayarını zorla KAPAT!
+                           event.data.notification.hide_notification_if_site_has_focus = false;
+                       }
+                    });
+                }
+                
+                if (!localStorage.getItem('beams_success_alert')) {
+                    alert("✅ BAŞARILI! Telefon Pusher'a bağlandı.\n\nArtık bildirimler açıkken de, kapalıyken de gelecek!");
+                    localStorage.setItem('beams_success_alert', 'true');
+                }
+                
             } catch (err) {
                 console.error("❌ [BEAMS] Kayıt Hatası:", err);
             }
@@ -233,7 +248,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     return staffWithLastMsg;
   }, [data?.staff, allMessages, currentUserId, currentUserRole]);
 
-  // 🚀 PUSHER CHANNELS (WEBSOCKET) SADECE KİMLİK BİLGİLERİNE BAĞLI
   useEffect(() => {
     if (!actualSlug || !currentUserId) return;
 
@@ -328,12 +342,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                 setMsgToast({ show: true, senderName: senderName, text: newMsg.message });
                 setTimeout(() => setMsgToast({ show: false, senderName: '', text: '' }), 4000);
 
-                if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-                    new Notification(`Yeni Mesaj: ${senderName}`, {
-                        body: newMsg.message.length > 30 ? newMsg.message.substring(0, 30) + '...' : newMsg.message,
-                        icon: '/favicon.ico'
-                    });
-                }
             }
         }
     });
