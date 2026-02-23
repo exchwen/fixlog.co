@@ -118,6 +118,7 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
           background_color: finalColor,
           theme_color: finalColor,
           orientation: "portrait-primary",
+          gcm_sender_id: "103953800507",
           icons: [
             {
               src: icon192,
