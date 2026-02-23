@@ -20,6 +20,16 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
   const [cameraError, setCameraError] = useState('');
   const qrRef = useRef<Html5Qrcode | null>(null);
 
+  // 🚀 GÜVENLİ LİNK DÖNÜŞÜTÜRÜCÜ (PROXY)
+  const getSafeImageUrl = (url: string) => {
+    if (!url) return '';
+    // Eğer link bizim R2 bucket ise, onu Vercel proxy'sine çevir
+    if (url.includes('pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev')) {
+       return url.replace('https://pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev', '/dosya-deposu');
+    }
+    return url;
+  };
+
   useEffect(() => {
     setIsOffline(!navigator.onLine);
     const handleOnline = () => setIsOffline(false);
@@ -41,6 +51,9 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
     setUserInfo({ name: currentName, role: isPatronPath ? 'Patron' : storedRole });
 
     if (data?.logo) {
+      // 🔥 Linki güvenli hale getiriyoruz
+      const safeLogoUrl = getSafeImageUrl(data.logo);
+
       const img = new Image();
       img.crossOrigin = "Anonymous";
       img.onerror = () => setLogoBgColor('#ffffff');
@@ -74,8 +87,8 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
           }
         } catch (e) { console.error(e); }
       };
-      // 🚀 KESİN ÇÖZÜM: CDN Cache'ini atlamak için Date.now() eklendi
-      img.src = data.logo + (data.logo.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
+      // 🚀 Güvenli linki kullanıyoruz
+      img.src = safeLogoUrl + (safeLogoUrl.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
     } else {
       setLogoBgColor('#ffffff');
     }
@@ -201,7 +214,7 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shadow-sm shrink-0 border border-slate-200/50 p-1.5 overflow-hidden"
                style={{ backgroundColor: logoBgColor }}
             >
-               <img src={data.logo} alt="Firma Logo" crossOrigin="anonymous" className="w-full h-full object-contain drop-shadow-sm" />
+               <img src={getSafeImageUrl(data.logo)} alt="Firma Logo" crossOrigin="anonymous" className="w-full h-full object-contain drop-shadow-sm" />
             </div>
           ) : (
             <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm shrink-0">

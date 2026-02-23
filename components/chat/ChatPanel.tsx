@@ -36,6 +36,16 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   const isChatOpenRef = useRef(isChatOpen);
   const dataRef = useRef(data);
 
+  // 🚀 GÜVENLİ LİNK DÖNÜŞÜTÜRÜCÜ (PROXY)
+  const getSafeImageUrl = (url: string) => {
+    if (!url) return '';
+    // Eğer link bizim R2 bucket ise, onu Vercel proxy'sine çevir
+    if (url.includes('pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev')) {
+       return url.replace('https://pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev', '/dosya-deposu');
+    }
+    return url;
+  };
+
   useEffect(() => { activeChatIdRef.current = activeChatId; }, [activeChatId]);
   useEffect(() => { isChatOpenRef.current = isChatOpen; }, [isChatOpen]);
   useEffect(() => { dataRef.current = data; }, [data]);
@@ -106,11 +116,15 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
   }, [currentUserId, actualSlug, currentUserRole]);
 
+  // LOGO RENK ANALİZİ (Güvenli Link İle)
   useEffect(() => {
     if (!data?.logo) {
       setLogoBgColor('#2563eb'); 
       return;
     }
+
+    // 🔥 Linki güvenli hale getiriyoruz
+    const safeLogoUrl = getSafeImageUrl(data.logo);
 
     const img = new Image();
     img.crossOrigin = "Anonymous";
@@ -166,8 +180,8 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         }
       } catch (e) {}
     };
-    // 🚀 KESİN ÇÖZÜM: CDN Cache'ini atlamak için Date.now() eklendi
-    img.src = data.logo + (data.logo.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
+    // 🚀 Güvenli linki kullanıyoruz
+    img.src = safeLogoUrl + (safeLogoUrl.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
     }, [data?.logo]);
 
   useEffect(() => {
@@ -621,7 +635,8 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                          style={{ backgroundColor: logoBgColor }}
                       >
                          {data?.logo ? (
-                            <img src={data.logo} alt="Logo" crossOrigin="anonymous" className="w-5 h-5 object-contain" />
+                            // 🚀 GÜVENLİ LİNK KULLANIMI
+                            <img src={getSafeImageUrl(data.logo)} alt="Logo" crossOrigin="anonymous" className="w-5 h-5 object-contain" />
                          ) : (
                             <span className="text-white font-black text-xs">P</span>
                          )}
@@ -667,7 +682,8 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                              style={{ backgroundColor: logoBgColor }}
                            >
                              {data?.logo ? (
-                                <img src={data.logo} alt="Logo" crossOrigin="anonymous" className="w-6 h-6 object-contain" />
+                                // 🚀 GÜVENLİ LİNK KULLANIMI
+                                <img src={getSafeImageUrl(data.logo)} alt="Logo" crossOrigin="anonymous" className="w-6 h-6 object-contain" />
                              ) : (
                                 <span className="text-white">P</span>
                              )}

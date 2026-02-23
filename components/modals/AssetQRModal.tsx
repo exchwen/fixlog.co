@@ -28,6 +28,16 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
   const [showPrintModeSelection, setShowPrintModeSelection] = useState(false);
   const [printMode, setPrintMode] = useState<'color' | 'bw'>('color');
 
+  // 🚀 GÜVENLİ LİNK DÖNÜŞÜTÜRÜCÜ (PROXY)
+  const getSafeImageUrl = (url: string | undefined) => {
+    if (!url) return '';
+    // Eğer link bizim R2 bucket ise, onu Vercel proxy'sine çevir
+    if (url.includes('pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev')) {
+       return url.replace('https://pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev', '/dosya-deposu');
+    }
+    return url;
+  };
+
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -49,6 +59,9 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
       setLogoBgColor('#ffffff');
       return;
     }
+
+    // 🔥 Linki güvenli hale getiriyoruz
+    const safeLogoUrl = getSafeImageUrl(companyLogo);
 
     const img = new Image();
     img.crossOrigin = "Anonymous";
@@ -106,7 +119,8 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
         console.error("Renk analizi yapılamadı:", e);
       }
     };
-    img.src = companyLogo + (companyLogo.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
+    // 🚀 Güvenli linki kullanıyoruz
+    img.src = safeLogoUrl + (safeLogoUrl.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
     }, [companyLogo]);
 
   const handlePrint = useReactToPrint({
@@ -261,8 +275,9 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                   style={{ backgroundColor: printMode === 'bw' ? '#ffffff' : (companyLogo ? logoBgColor : '#f8fafc') }}
                 >
                   {companyLogo ? (
+                    // 🚀 GÜVENLİ LİNK KULLANIMI
                     <img 
-                      src={companyLogo} 
+                      src={getSafeImageUrl(companyLogo)} 
                       alt="Logo" 
                       crossOrigin="anonymous"
                       className={`w-7 h-7 object-contain drop-shadow-md print:drop-shadow-none ${printMode === 'bw' ? 'grayscale brightness-0' : ''}`} 

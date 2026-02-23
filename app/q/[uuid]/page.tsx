@@ -39,6 +39,16 @@ export default function AssetScanPage() {
 
   const API_URL = 'https://backend.isdokumu.workers.dev'; 
 
+  // 🚀 GÜVENLİ LİNK DÖNÜŞÜTÜRÜCÜ (PROXY)
+  const getSafeImageUrl = (url: string) => {
+    if (!url) return '';
+    // Eğer link bizim R2 bucket ise, onu Vercel proxy'sine çevir
+    if (url.includes('pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev')) {
+       return url.replace('https://pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev', '/dosya-deposu');
+    }
+    return url;
+  };
+
   // PWA Kurulum Dinleyicisi
   useEffect(() => {
     // 1. ZIRH: Eğer kullanıcı zaten sistemdeyse ve barkodu okuttuysa "Panele Dön" butonunu göster
@@ -98,6 +108,11 @@ export default function AssetScanPage() {
         if (!res.ok) throw new Error('Varlık bulunamadı');
         const data = await res.json();
         
+        // 🔥 LOGOYU GÜVENLİ LİNKE ÇEVİR (Data gelince hemen)
+        if (data.logo) {
+            data.logo = getSafeImageUrl(data.logo);
+        }
+
         localStorage.setItem(`asset_cache_${uuid}`, JSON.stringify(data));
         setIsOffline(false);
         setAsset(data);
@@ -176,6 +191,7 @@ export default function AssetScanPage() {
         setLogoBgColor('#ffffff');
       }
     };
+    // asset.logo artık güvenli link olduğu için burası sorunsuz çalışır
     img.src = asset.logo + (asset.logo.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
   }, [asset?.logo]);
 

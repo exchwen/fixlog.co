@@ -8,11 +8,25 @@ interface DynamicPWAProps {
 }
 
 export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps) {
+  
+  // 🚀 GÜVENLİ LİNK DÖNÜŞÜTÜRÜCÜ (PROXY)
+  const getSafeImageUrl = (url: string | undefined) => {
+    if (!url) return '';
+    // Eğer link bizim R2 bucket ise, onu Vercel proxy'sine çevir
+    if (url.includes('pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev')) {
+       return url.replace('https://pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev', '/dosya-deposu');
+    }
+    return url;
+  };
+
   useEffect(() => {
     if (!companyLogo) {
       resetToDefaultManifest();
       return;
     }
+
+    // 🔥 Linki güvenli hale getiriyoruz
+    const safeLogoUrl = getSafeImageUrl(companyLogo);
 
     const img = new Image();
     img.crossOrigin = "Anonymous";
@@ -141,8 +155,8 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
       }
     };
     
-    // 🚀 KESİN ÇÖZÜM: CDN Cache'ini atlamak için Date.now() eklendi
-    img.src = companyLogo + (companyLogo.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
+    // 🚀 KESİN ÇÖZÜM: Güvenli link kullanılıyor
+    img.src = safeLogoUrl + (safeLogoUrl.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
   }, [companyName, companyLogo]);
 
   const updateManifestTag = (url: string) => {

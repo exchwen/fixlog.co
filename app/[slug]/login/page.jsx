@@ -29,6 +29,16 @@ export default function StaffLoginPage() {
 
   const [hasPatronSession, setHasPatronSession] = useState(false);
 
+  // 🚀 GÜVENLİ LİNK DÖNÜŞÜTÜRÜCÜ (PROXY)
+  const getSafeImageUrl = (url) => {
+    if (!url) return '';
+    // Eğer link bizim R2 bucket ise, onu Vercel proxy'sine çevir
+    if (url.includes('pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev')) {
+       return url.replace('https://pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev', '/dosya-deposu');
+    }
+    return url;
+  };
+
   useEffect(() => {
     const patronRole = localStorage.getItem('patron_userRole');
     const staffRole = localStorage.getItem('staff_userRole');
@@ -87,7 +97,10 @@ export default function StaffLoginPage() {
              const data = await res.json();
              
              if (data.logo) {
-                 setCompanyData({ name: data.company_name, logo: data.logo });
+                 // 🔥 GÜVENLİ LİNK DÖNÜŞÜMÜ
+                 const safeLogoUrl = getSafeImageUrl(data.logo);
+
+                 setCompanyData({ name: data.company_name, logo: safeLogoUrl });
                  
                  const img = new Image();
                  img.crossOrigin = "Anonymous";
@@ -119,7 +132,8 @@ export default function StaffLoginPage() {
                          }
                      } catch (e) { setLogoBgColor('#ffffff'); }
                  };
-                 img.src = data.logo + (data.logo.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
+                 // 🔥 BURADA GÜVENLİ LİNKİ KULLANIYORUZ
+                 img.src = safeLogoUrl + (safeLogoUrl.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
              } else {
                  setCompanyData({ name: data.company_name, logo: '' });
              }

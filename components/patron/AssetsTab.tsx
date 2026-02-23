@@ -7,6 +7,16 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
   const [searchTerm, setSearchTerm] = useState('');
   const [logoBgColor, setLogoBgColor] = useState<string>('#f8fafc');
 
+  // 🚀 GÜVENLİ LİNK DÖNÜŞÜTÜRÜCÜ (PROXY)
+  const getSafeImageUrl = (url: string | undefined) => {
+    if (!url) return '';
+    // Eğer link bizim R2 bucket ise, onu Vercel proxy'sine çevir
+    if (url.includes('pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev')) {
+       return url.replace('https://pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev', '/dosya-deposu');
+    }
+    return url;
+  };
+
   // --- RENK ANALİZ MOTORU ---
   useEffect(() => {
     const companyLogo = data?.logo;
@@ -14,6 +24,9 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
       setLogoBgColor('#f8fafc');
       return;
     }
+
+    // 🔥 Linki güvenli hale getiriyoruz
+    const safeLogoUrl = getSafeImageUrl(companyLogo);
 
     const img = new Image();
     img.crossOrigin = "Anonymous";
@@ -61,8 +74,8 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
         setLogoBgColor('#f8fafc'); 
       }
     };
-    // 🚀 KESİN ÇÖZÜM: CDN Cache'ini atlamak için Date.now() eklendi
-    img.src = companyLogo + (companyLogo.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
+    // 🚀 Güvenli linki kullanıyoruz
+    img.src = safeLogoUrl + (safeLogoUrl.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
     }, [data?.logo]);
   // --- RENK ANALİZ BİTİŞ ---
 
@@ -143,7 +156,8 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
                     >
                       {data?.logo ? (
                         <img 
-                          src={data.logo} 
+                          // 🚀 GÜVENLİ LİNK KULLANIMI
+                          src={getSafeImageUrl(data.logo)} 
                           alt="Firma Logosu" 
                           crossOrigin="anonymous"
                           className="w-full h-full object-contain p-2 drop-shadow-sm" 
