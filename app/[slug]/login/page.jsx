@@ -118,7 +118,8 @@ export default function StaffLoginPage() {
                          }
                      } catch (e) { setLogoBgColor('#ffffff'); }
                  };
-                 img.src = data.logo;
+                 // 🚀 KESİN ÇÖZÜM: Canvas'ın logoyu sorunsuz okuyabilmesi için CDN Cache atlama parametresi
+                 img.src = data.logo.startsWith('http') ? `${data.logo}?t=${Date.now()}` : data.logo;
              }
          } else {
              setCompanyData({ name: fallbackName, logo: '' }); 
@@ -242,6 +243,7 @@ export default function StaffLoginPage() {
                className="w-20 h-20 rounded-2xl flex items-center justify-center mb-4 shadow-sm border border-slate-200/50 p-2 overflow-hidden"
                style={{ backgroundColor: logoBgColor }}
              >
+                {/* 🚀 LOGONUN GÖRÜNMESİ İÇİN CROSSORIGIN EKLENDİ */}
                 <img src={companyData.logo} crossOrigin="anonymous" alt="Firma Logo" className="w-full h-full object-contain drop-shadow-md" />
              </div>
           ) : (
