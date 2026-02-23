@@ -62,7 +62,7 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
       }
     };
     // 🚀 KESİN ÇÖZÜM: CDN Cache'ini atlamak için Date.now() eklendi
-    img.src = companyLogo;
+    img.src = companyLogo + (companyLogo.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
     }, [data?.logo]);
   // --- RENK ANALİZ BİTİŞ ---
 

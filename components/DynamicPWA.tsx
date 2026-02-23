@@ -142,7 +142,7 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
     };
     
     // 🚀 KESİN ÇÖZÜM: CDN Cache'ini atlamak için Date.now() eklendi
-    img.src = companyLogo;
+    img.src = companyLogo + (companyLogo.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
   }, [companyName, companyLogo]);
 
   const updateManifestTag = (url: string) => {

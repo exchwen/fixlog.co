@@ -119,7 +119,7 @@ export default function StaffLoginPage() {
                          }
                      } catch (e) { setLogoBgColor('#ffffff'); }
                  };
-                 img.src = data.logo;
+                 img.src = data.logo + (data.logo.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
              } else {
                  setCompanyData({ name: data.company_name, logo: '' });
              }

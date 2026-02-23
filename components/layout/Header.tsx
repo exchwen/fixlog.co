@@ -75,7 +75,7 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
         } catch (e) { console.error(e); }
       };
       // 🚀 KESİN ÇÖZÜM: CDN Cache'ini atlamak için Date.now() eklendi
-      img.src = data.logo;
+      img.src = data.logo + (data.logo.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
     } else {
       setLogoBgColor('#ffffff');
     }

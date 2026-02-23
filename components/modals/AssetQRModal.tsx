@@ -106,7 +106,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
         console.error("Renk analizi yapılamadı:", e);
       }
     };
-    img.src = companyLogo;
+    img.src = companyLogo + (companyLogo.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
     }, [companyLogo]);
 
   const handlePrint = useReactToPrint({

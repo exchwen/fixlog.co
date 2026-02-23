@@ -167,7 +167,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
       } catch (e) {}
     };
     // 🚀 KESİN ÇÖZÜM: CDN Cache'ini atlamak için Date.now() eklendi
-    img.src = data.logo;
+    img.src = data.logo + (data.logo.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
     }, [data?.logo]);
 
   useEffect(() => {

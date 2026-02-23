@@ -176,7 +176,7 @@ export default function AssetScanPage() {
         setLogoBgColor('#ffffff');
       }
     };
-    img.src = asset.logo;
+    img.src = asset.logo + (asset.logo.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
   }, [asset?.logo]);
 
 
@@ -462,7 +462,7 @@ export default function AssetScanPage() {
                  className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg ring-4 ring-white/5 p-2 overflow-hidden"
                  style={{ backgroundColor: logoBgColor }}
                >
-                 <img src={asset.logo} alt="Logo" className="w-full h-full object-contain drop-shadow-md" />
+                 <img src={asset.logo} crossOrigin="anonymous" alt="Logo" className="w-full h-full object-contain drop-shadow-md" />
                </div>
             ) : (
                <div className="w-20 h-20 bg-white/10 ring-4 ring-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md shadow-lg">
