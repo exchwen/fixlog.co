@@ -9,7 +9,6 @@ interface DynamicPWAProps {
 
 export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps) {
   useEffect(() => {
-    // Logo yoksa varsayılan İş Dökümü manifestine geri dön
     if (!companyLogo) {
       resetToDefaultManifest();
       return;
@@ -32,7 +31,6 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
       ctx.drawImage(img, 0, 0);
       
       try {
-        // 1. ADIM: Senin referans kodundaki Renk Analizini Yapıyoruz
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
         let r = 0, g = 0, b = 0, count = 0;
@@ -45,7 +43,7 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
           count++;
         }
         
-        let finalColor = '#0f172a'; // Varsayılan renk
+        let finalColor = '#0f172a';
 
         if (count > 0) {
           r = Math.floor(r / count);
@@ -68,10 +66,8 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
           }
         }
 
-        // Beyaz renk seçildiyse ikon arka planı çok parlamasın diye hafif gri yapıyoruz
         const bgColorForIcon = finalColor === '#ffffff' ? '#f8fafc' : finalColor;
 
-        // 2. ADIM: Dinamik İkon Çizici Fonksiyon (Canvas)
         const generateIcon = (size: number) => {
           const iconCanvas = document.createElement('canvas');
           iconCanvas.width = size;
@@ -79,11 +75,9 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
           const iconCtx = iconCanvas.getContext('2d');
           if (!iconCtx) return '';
 
-          // Arka planı akıllı renkle doldur
           iconCtx.fillStyle = bgColorForIcon;
           iconCtx.fillRect(0, 0, size, size);
 
-          // Logoyu merkeze yerleştir (Etrafında %20 boşluk kalacak şekilde ölçeklendir)
           const padding = size * 0.2;
           const maxDrawSize = size - (padding * 2);
           
@@ -104,16 +98,14 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
           return iconCanvas.toDataURL('image/png');
         };
 
-        // 192x192 ve 512x512 PWA ikonlarını DataURL (Base64) olarak anında oluştur
         const icon192 = generateIcon(192);
         const icon512 = generateIcon(512);
 
-        // 3. ADIM: Dinamik Manifest JSON'ını Oluştur
         const dynamicManifest = {
           name: companyName || "İş Dökümü",
           short_name: companyName || "İş Dökümü",
           description: "Saha operasyonları, personel ve iş takibi uygulaması.",
-          start_url: window.location.pathname, // Hangi sayfadaysa oradan başlasın
+          start_url: window.location.pathname,
           display: "standalone",
           background_color: finalColor,
           theme_color: finalColor,
@@ -135,7 +127,6 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
           ]
         };
 
-        // 4. ADIM: Manifesti Tarayıcıya Enjekte Et
         const stringManifest = JSON.stringify(dynamicManifest);
         const blob = new Blob([stringManifest], { type: 'application/json' });
         const manifestUrl = URL.createObjectURL(blob);
@@ -149,11 +140,10 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
       }
     };
     
-    img.src = companyLogo;
+    // CORS Cache Buster
+    img.src = companyLogo.startsWith('http') ? `${companyLogo}?c=1` : companyLogo;
 
   }, [companyName, companyLogo]);
-
-  // --- YARDIMCI FONKSİYONLAR ---
 
   const updateManifestTag = (url: string) => {
     let linkTag = document.querySelector('link[rel="manifest"]');

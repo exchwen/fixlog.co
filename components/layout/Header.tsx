@@ -10,7 +10,6 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
   const router = useRouter(); 
   const [isOffline, setIsOffline] = useState(false);
   
-  // DÜZELTME 1: branch stateti durabilir ama artık kullanılmayacak
   const [userInfo, setUserInfo] = useState({ name: '', role: '' });
   const [logoBgColor, setLogoBgColor] = useState<string>('#ffffff');
 
@@ -39,7 +38,6 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
         currentName = data?.ownerName || storedName || 'Firma Sahibi';
     } 
 
-    // DÜZELTME 1: Branş verisi alımını tamamen kaldırdık
     setUserInfo({ name: currentName, role: isPatronPath ? 'Patron' : storedRole });
 
     if (data?.logo) {
@@ -76,7 +74,8 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
           }
         } catch (e) { console.error(e); }
       };
-      img.src = data.logo;
+      // CORS Cache Buster eklendi
+      img.src = data.logo.startsWith('http') ? `${data.logo}?c=1` : data.logo;
     } else {
       setLogoBgColor('#ffffff');
     }
@@ -89,9 +88,6 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
 
   const notificationCount = (data?.activeEmergencies?.length || 0) + (data?.pendingFaults?.length || 0);
 
-  // ==========================================
-  // AKILLI QR YÖNLENDİRME (SMART ROUTING) - DÜZELTİLDİ
-  // ==========================================
   const processQRData = (code: string) => {
     if (!code.trim()) return;
     
@@ -104,16 +100,12 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
 
     const isUsta = userInfo.role === 'Usta';
     
-    // DÜZELTME 2: Varlık arama mantığını (ID eşleşmesini) daha esnek ve güvenli hale getirdik.
-    // Artık girilen sayı da olsa metin de olsa kesin bulur.
-    let finalUuidForRouting = extractedId; // Eğer ustaya iş atanmamışsa bu id ile yönlenecek
+    let finalUuidForRouting = extractedId; 
     
     if (data?.assets) {
         const foundAsset = data.assets.find((a: any) => String(a.uuid) === String(extractedId) || String(a.id) === String(extractedId));
         
         if (foundAsset) {
-            // ID ile bile girse, yönlendirmede UUID kullansın ki sayfa patlamasın (eğer sayfa uuid bekliyorsa)
-            // Ama sayfan id de destekliyorsa sıkıntı yok, biz asıl UUID'sini alalım garanti olsun.
             finalUuidForRouting = foundAsset.uuid || foundAsset.id; 
 
             if (isUsta && data?.jobs) {
@@ -209,7 +201,8 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shadow-sm shrink-0 border border-slate-200/50 p-1.5 overflow-hidden"
                style={{ backgroundColor: logoBgColor }}
             >
-               <img src={data.logo} alt="Firma Logo" className="w-full h-full object-contain drop-shadow-sm" />
+               {/* Resme crossOrigin eklendi */}
+               <img src={data.logo} alt="Firma Logo" crossOrigin="anonymous" className="w-full h-full object-contain drop-shadow-sm" />
             </div>
           ) : (
             <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
@@ -237,7 +230,6 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
                   {userInfo.role}
                 </span>
               )}
-              {/* DÜZELTME 1: Branş gösterim satırı buradan tamamen silindi */}
             </div>
           </div>
         </div>

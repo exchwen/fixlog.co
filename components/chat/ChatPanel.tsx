@@ -32,7 +32,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
   const actualSlug = data?.slug || (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '');
 
-  // 🚀 REFERANSLAR: UI state'leri Pusher bağlantısını koparmasın diye
   const activeChatIdRef = useRef(activeChatId);
   const isChatOpenRef = useRef(isChatOpen);
   const dataRef = useRef(data);
@@ -60,7 +59,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     }
   }, []);
 
-  // 🚀 PUSHER BEAMS BAŞLATMA VE ARAYA GİRME (INTERCEPT)
   useEffect(() => {
     if (!currentUserId || !actualSlug || !currentUserRole) return;
     
@@ -72,7 +70,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             }
 
             try {
-                // ZORUNLU GÜNCELLEME EMRİ (CACHE ATLATMA)
                 const reg = await navigator.serviceWorker.register('/service-worker.js', { updateViaCache: 'none' });
                 await reg.update();
                 
@@ -85,34 +82,20 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
                 await beamsClient.start();
                 
-                const interest = currentUserRole === 'Patron' ? `user-${actualSlug}-PATRON` : `user-${actualSlug}-${currentUserId}`;
+                const safeRole = currentUserRole ? currentUserRole.trim().toLocaleUpperCase('tr-TR') : '';
+                const interest = safeRole === 'PATRON' ? `user-${actualSlug}-PATRON` : `user-${actualSlug}-${currentUserId}`;
                 
                 await beamsClient.clearDeviceInterests();
-                await beamsClient.addDeviceInterest(interest);
                 
-                if (currentUserRole === 'Yönetici' || currentUserRole === 'Patron') {
+                await beamsClient.addDeviceInterest(interest);
+                if (safeRole === 'YÖNETİCİ' || safeRole === 'YONETICI' || safeRole === 'PATRON') {
                     await beamsClient.addDeviceInterest(`role-${actualSlug}-ADMIN`);
                 }
 
-                const deviceId = await beamsClient.getDeviceId();
-                console.log("✅ [BEAMS] KESİN KAYIT BAŞARILI. Cihaz ID:", deviceId);
+                await beamsClient.addDeviceInterest('test-kanal');
 
-                // 🚨 ZORUNLU GÖSTERİM KODU BURADA (Araya giriyoruz)
-                if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.addEventListener('message', (event) => {
-                       // Pusher'ın gönderdiği paketi havada yakalıyoruz
-                       if (event.data && event.data.pusher) {
-                           // "Uygulama açıksa gizle" ayarını zorla KAPAT!
-                           event.data.notification.hide_notification_if_site_has_focus = false;
-                       }
-                    });
-                }
-                
-                if (!localStorage.getItem('beams_success_alert')) {
-                    alert("✅ BAŞARILI! Telefon Pusher'a bağlandı.\n\nArtık bildirimler açıkken de, kapalıyken de gelecek!");
-                    localStorage.setItem('beams_success_alert', 'true');
-                }
-                
+                console.log("✅ [BEAMS] Service Worker ile Kayıt Başarılı.");
+
             } catch (err) {
                 console.error("❌ [BEAMS] Kayıt Hatası:", err);
             }
@@ -183,7 +166,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         }
       } catch (e) {}
     };
-    img.src = data.logo;
+    img.src = data.logo.startsWith('http') ? `${data.logo}?c=1` : data.logo;
   }, [data?.logo]);
 
   useEffect(() => {
@@ -195,7 +178,8 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         const API_URL = 'https://backend.isdokumu.workers.dev';
         
         try {
-            const myId = currentUserRole === 'Patron' ? 'PATRON' : currentUserId;
+            const safeRole = currentUserRole ? currentUserRole.trim().toLocaleUpperCase('tr-TR') : '';
+            const myId = safeRole === 'PATRON' ? 'PATRON' : currentUserId;
             const res = await fetch(`${API_URL}/get-messages?slug=${actualSlug}&staffId=${myId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -229,7 +213,8 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
     const staffWithLastMsg = data.staff.map((staff: any) => {
         const staffIdStr = String(staff.id);
-        const myIdStr = currentUserRole === 'Patron' ? 'PATRON' : String(currentUserId);
+        const safeRole = currentUserRole ? currentUserRole.trim().toLocaleUpperCase('tr-TR') : '';
+        const myIdStr = safeRole === 'PATRON' ? 'PATRON' : String(currentUserId);
         
         const chatHistory = allMessages.filter(m => 
             (String(m.sender_id) === staffIdStr && String(m.receiver_id) === myIdStr) || 
@@ -293,8 +278,9 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     });
 
     channel.bind('new-message', (newMsg: any) => {
-        const isForMe = String(newMsg.receiver_id) === String(currentUserId) || (currentUserRole === 'Patron' && newMsg.receiver_id === 'PATRON');
-        const isFromMe = String(newMsg.sender_id) === String(currentUserId) || (currentUserRole === 'Patron' && newMsg.sender_id === 'PATRON');
+        const safeRole = currentUserRole ? currentUserRole.trim().toLocaleUpperCase('tr-TR') : '';
+        const isForMe = String(newMsg.receiver_id) === String(currentUserId) || (safeRole === 'PATRON' && newMsg.receiver_id === 'PATRON');
+        const isFromMe = String(newMsg.sender_id) === String(currentUserId) || (safeRole === 'PATRON' && newMsg.sender_id === 'PATRON');
 
         if (!isForMe && !isFromMe) return;
 
@@ -347,7 +333,8 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     });
 
     channel.bind('messages-read', (readData: any) => {
-        const iAmSender = String(readData.senderId) === String(currentUserId) || (currentUserRole === 'Patron' && readData.senderId === 'PATRON');
+        const safeRole = currentUserRole ? currentUserRole.trim().toLocaleUpperCase('tr-TR') : '';
+        const iAmSender = String(readData.senderId) === String(currentUserId) || (safeRole === 'PATRON' && readData.senderId === 'PATRON');
         if (iAmSender) {
             setAllMessages((prev: any) => prev.map((m: any) => {
                 if (String(m.sender_id) === String(readData.senderId) && String(m.receiver_id) === String(readData.readerId)) {
@@ -360,7 +347,8 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
     channel.bind('client-typing', (typeData: any) => {
         const currentActiveChatId = activeChatIdRef.current;
-        const iAmReceiver = String(typeData.receiverId) === String(currentUserId) || (currentUserRole === 'Patron' && typeData.receiverId === 'PATRON');
+        const safeRole = currentUserRole ? currentUserRole.trim().toLocaleUpperCase('tr-TR') : '';
+        const iAmReceiver = String(typeData.receiverId) === String(currentUserId) || (safeRole === 'PATRON' && typeData.receiverId === 'PATRON');
         const isFromActiveChat = String(typeData.senderId) === String(currentActiveChatId) || (typeData.senderId === 'PATRON' && currentActiveChatId === 'PATRON');
         
         if (iAmReceiver && isFromActiveChat) {
@@ -387,10 +375,11 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     const API_URL = 'https://backend.isdokumu.workers.dev';
     
     try {
+        const safeRole = currentUserRole ? currentUserRole.trim().toLocaleUpperCase('tr-TR') : '';
         await fetch(`${API_URL}/read-messages`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ slug: actualSlug, readerId: currentUserRole === 'Patron' ? 'PATRON' : currentUserId, senderId: targetSenderId })
+            body: JSON.stringify({ slug: actualSlug, readerId: safeRole === 'PATRON' ? 'PATRON' : currentUserId, senderId: targetSenderId })
         });
         
         setAllMessages((prev: any) => prev.map((m: any) => 
@@ -463,10 +452,11 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     if (!messageInput.trim() || isOffline) return;
     
     const tempId = Date.now();
+    const safeRole = currentUserRole ? currentUserRole.trim().toLocaleUpperCase('tr-TR') : '';
     const newMessage = {
       _tempId: tempId, 
       message: messageInput,
-      sender_id: currentUserRole === 'Patron' ? 'PATRON' : currentUserId, 
+      sender_id: safeRole === 'PATRON' ? 'PATRON' : currentUserId, 
       receiver_id: activeChatId,
       created_at: new Date().toISOString(),
       is_read: 0
@@ -490,7 +480,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ 
             slug: actualSlug, 
-            senderId: currentUserRole === 'Patron' ? 'PATRON' : currentUserId, 
+            senderId: safeRole === 'PATRON' ? 'PATRON' : currentUserId, 
             receiverId: activeChatId, 
             message: newMessage.message,
             tempId: tempId 
@@ -522,8 +512,9 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
      setMessageInput(e.target.value);
      if (!isOffline && activeChatId && pusherChannel) {
          try {
+             const safeRole = currentUserRole ? currentUserRole.trim().toLocaleUpperCase('tr-TR') : '';
              pusherChannel.trigger('client-typing', {
-                 senderId: currentUserRole === 'Patron' ? 'PATRON' : currentUserId,
+                 senderId: safeRole === 'PATRON' ? 'PATRON' : currentUserId,
                  receiverId: activeChatId
              });
          } catch(err) {}
@@ -546,7 +537,8 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   const isUserReallyOnline = activeChatId === 'PATRON' ? onlineUsers.has('PATRON') : onlineUsers.has(String(activeChatId));
 
   const isMessageFromMe = (m: any) => {
-    if (currentUserRole === 'Patron') return m.sender_id === 'PATRON';
+    const safeRole = currentUserRole ? currentUserRole.trim().toLocaleUpperCase('tr-TR') : '';
+    if (safeRole === 'PATRON') return m.sender_id === 'PATRON';
     return String(m.sender_id) === String(currentUserId);
   };
 
@@ -628,7 +620,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                          style={{ backgroundColor: logoBgColor }}
                       >
                          {data?.logo ? (
-                            <img src={data.logo} alt="Logo" className="w-5 h-5 object-contain" />
+                            <img src={data.logo} alt="Logo" crossOrigin="anonymous" className="w-5 h-5 object-contain" />
                          ) : (
                             <span className="text-white font-black text-xs">P</span>
                          )}
@@ -674,7 +666,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                              style={{ backgroundColor: logoBgColor }}
                            >
                              {data?.logo ? (
-                                <img src={data.logo} alt="Logo" className="w-6 h-6 object-contain" />
+                                <img src={data.logo} alt="Logo" crossOrigin="anonymous" className="w-6 h-6 object-contain" />
                              ) : (
                                 <span className="text-white">P</span>
                              )}

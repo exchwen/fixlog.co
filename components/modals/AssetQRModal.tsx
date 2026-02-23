@@ -109,7 +109,8 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
         console.error("Renk analizi yapılamadı:", e);
       }
     };
-    img.src = companyLogo;
+    // CORS Cache Buster
+    img.src = companyLogo.startsWith('http') ? `${companyLogo}?c=1` : companyLogo;
   }, [companyLogo]);
 
   const handlePrint = useReactToPrint({
@@ -273,6 +274,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                     <img 
                       src={companyLogo} 
                       alt="Logo" 
+                      crossOrigin="anonymous"
                       className={`w-8 h-8 object-contain drop-shadow-md print:drop-shadow-none ${printMode === 'bw' ? 'grayscale brightness-0' : ''}`} 
                     />
                   ) : (
