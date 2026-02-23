@@ -1,26 +1,32 @@
+// 🚀 Pusher Arka Plan Dinleyicisi
 importScripts("https://js.pusher.com/beams/service-worker.js");
 
-const CACHE_NAME = 'isdokumu-cache-v1';
+const CACHE_VERSION = 'v3-pusher-cors-fix'; 
 
-// Uygulama kurulduğunda Service Worker'ı hemen aktif et
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Aktif olduğunda tüm sekmelerin kontrolünü anında devral
 self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-// PWA YÜKLEME BUTONUNUN ÇIKMASI İÇİN ZORUNLU OLAN FETCH DİNLEYİCİSİ
 self.addEventListener('fetch', (event) => {
-  // Senin OfflineSyncManager'ın POST isteklerini (veri kaydetme) yönettiği için
-  // Service Worker sadece GET (sayfa/resim yükleme) isteklerine bakar.
   if (event.request.method !== 'GET') return;
+  
+  // 🚀 HAYAT KURTARAN DOKUNUŞ: R2 Linklerine SW karışmasın, doğrudan ağdan çekilsin!
+  if (event.request.url.includes('r2.dev')) {
+      return; 
+  }
 
   event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
+    fetch(event.request).catch(async () => {
+      const cachedResponse = await caches.match(event.request);
+      if (cachedResponse) {
+          return cachedResponse;
+      }
+      // Eğer resim bulunamazsa panik yapıp çökmek yerine boş/sahte bir yanıt dön (Kırmızı hatayı önler)
+      return new Response('', { status: 404, statusText: 'Not Found' });
     })
   );
 });
