@@ -7,6 +7,9 @@ import { MapPin, Clock, CheckCircle2, MessageSquareText, LogOut, ChevronRight, P
 import sectorsData from '@/lib/data/sectors.json';
 import Header from '@/components/layout/Header';
 
+// 🚀 ÇÖZÜM: DynamicPWA bileşeni import edildi
+import DynamicPWA from '@/components/DynamicPWA'; 
+
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
 const parseJwt = (token) => {
@@ -689,6 +692,14 @@ export default function WorkerDashboard() {
           </>
         )}
       </AnimatePresence>
+
+      {/* 🚀 EKSİK OLAN PWA KİMLİĞİ BURAYA EKLENDİ */}
+      {data && (
+        <DynamicPWA 
+          companyName={data?.name} 
+          companyLogo={data?.logo} 
+        />
+      )}
 
       {/* MOBİL ALT MENÜ (BOTTOM NAVIGATION) */}
       <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 pb-safe pt-2 px-6 flex justify-between items-center z-30 h-20 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">

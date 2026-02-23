@@ -24,6 +24,9 @@ import AlertsTab from '@/components/patron/AlertsTab';
 import SupportTab from '@/components/patron/SupportTab'; 
 import AssetQRModal from '@/components/modals/AssetQRModal';
 
+// 🚀 ÇÖZÜM: DynamicPWA bileşeni import edildi
+import DynamicPWA from '@/components/DynamicPWA'; 
+
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
 const parseJwt = (token) => {
@@ -138,7 +141,6 @@ export default function ManagerDashboard() {
   };
 
   const fetchData = async (isInitial = false) => {
-    // 🚀 BUG FIX: Yönlendirme döngüsünü kıran ana kontrol noktası (Patron ve Yönetici ayrı arandı)
     let token = localStorage.getItem('patron_authToken');
     let role = localStorage.getItem('patron_userRole');
 
@@ -148,7 +150,6 @@ export default function ManagerDashboard() {
     }
 
     if (!token || (role !== 'Patron' && role !== 'Yönetici')) {
-      // Sadece bu panele ait tokenleri temizle, her şeyi silme
       localStorage.removeItem('patron_authToken');
       localStorage.removeItem('patron_userRole');
       localStorage.removeItem('staff_authToken');
@@ -484,6 +485,14 @@ export default function ManagerDashboard() {
       </main>
 
       <ChatPanel isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} activeChatId={activeChatId} setActiveChatId={setActiveChatId} data={data} messages={messages} setMessages={setMessages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} />
+
+      {/* 🚀 ÇÖZÜM: Manifest'in (Kimliğin) sayfada oluşabilmesi için eklendi */}
+      {data && (
+        <DynamicPWA 
+          companyName={data?.name} 
+          companyLogo={data?.logo} 
+        />
+      )}
 
       <DashboardModals 
         showStaffDetail={showStaffDetail} setShowStaffDetail={setShowStaffDetail} isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff} editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}
