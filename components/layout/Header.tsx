@@ -74,8 +74,8 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
           }
         } catch (e) { console.error(e); }
       };
-      // CORS Cache Buster eklendi
-      img.src = data.logo.startsWith('http') ? `${data.logo}?c=1` : data.logo;
+      // 🚀 KESİN ÇÖZÜM: CDN Cache'ini atlamak için Date.now() eklendi
+      img.src = data.logo.startsWith('http') ? `${data.logo}?t=${Date.now()}` : data.logo;
     } else {
       setLogoBgColor('#ffffff');
     }
@@ -201,7 +201,6 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shadow-sm shrink-0 border border-slate-200/50 p-1.5 overflow-hidden"
                style={{ backgroundColor: logoBgColor }}
             >
-               {/* Resme crossOrigin eklendi */}
                <img src={data.logo} alt="Firma Logo" crossOrigin="anonymous" className="w-full h-full object-contain drop-shadow-sm" />
             </div>
           ) : (

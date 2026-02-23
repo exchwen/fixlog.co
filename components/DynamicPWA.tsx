@@ -105,7 +105,8 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
           name: companyName || "İş Dökümü",
           short_name: companyName || "İş Dökümü",
           description: "Saha operasyonları, personel ve iş takibi uygulaması.",
-          start_url: window.location.pathname,
+          // 🚀 KESİN ÇÖZÜM: URL is invalid hatasını önlemek için tam adres veriyoruz.
+          start_url: window.location.origin + window.location.pathname,
           display: "standalone",
           background_color: finalColor,
           theme_color: finalColor,
@@ -140,8 +141,8 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
       }
     };
     
-    // CORS Cache Buster
-    img.src = companyLogo.startsWith('http') ? `${companyLogo}?c=1` : companyLogo;
+    // 🚀 KESİN ÇÖZÜM: CDN Cache'ini atlamak için Date.now() eklendi
+    img.src = companyLogo.startsWith('http') ? `${companyLogo}?t=${Date.now()}` : companyLogo;
 
   }, [companyName, companyLogo]);
 
@@ -164,7 +165,6 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
     }
     metaTag.setAttribute('content', color);
   };
-
 
   const resetToDefaultManifest = () => {
     updateManifestTag('/manifest.json');

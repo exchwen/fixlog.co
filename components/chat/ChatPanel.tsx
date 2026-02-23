@@ -166,7 +166,8 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         }
       } catch (e) {}
     };
-    img.src = data.logo.startsWith('http') ? `${data.logo}?c=1` : data.logo;
+    // 🚀 KESİN ÇÖZÜM: CDN Cache'ini atlamak için Date.now() eklendi
+    img.src = data.logo.startsWith('http') ? `${data.logo}?t=${Date.now()}` : data.logo;
   }, [data?.logo]);
 
   useEffect(() => {

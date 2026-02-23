@@ -61,8 +61,8 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
         setLogoBgColor('#f8fafc'); 
       }
     };
-    // CORS Cache Buster
-    img.src = companyLogo.startsWith('http') ? `${companyLogo}?c=1` : companyLogo;
+    // 🚀 KESİN ÇÖZÜM: CDN Cache'ini atlamak için Date.now() eklendi
+    img.src = companyLogo.startsWith('http') ? `${companyLogo}?t=${Date.now()}` : companyLogo;
   }, [data?.logo]);
   // --- RENK ANALİZ BİTİŞ ---
 

@@ -22,26 +22,24 @@ interface AssetQRModalProps {
 export default function AssetQRModal({ isOpen, onClose, asset, companyName, companyLogo, landlinePhone, whatsappPhone, companyWebsite }: AssetQRModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
-  const [idCopied, setIdCopied] = useState(false); // YENİ: ID kopyalama durumu için
+  const [idCopied, setIdCopied] = useState(false); 
   const [logoBgColor, setLogoBgColor] = useState<string>('#ffffff');
   
   const [showPrintModeSelection, setShowPrintModeSelection] = useState(false);
   const [printMode, setPrintMode] = useState<'color' | 'bw'>('color');
 
-  // Akıllı ESC Tuşu Yönetimi (Sadece Baskı Seçim Ekranını Kapatmak İçin)
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (showPrintModeSelection) {
           setShowPrintModeSelection(false);
-          e.stopImmediatePropagation(); // Ana modalın kapanmasını engeller
+          e.stopImmediatePropagation(); 
         } else {
           onClose();
         }
       }
     };
-    // capture: true ile olayı en dıştan önce biz yakalıyoruz
     window.addEventListener('keydown', handleKeyDown, { capture: true });
     return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
   }, [isOpen, showPrintModeSelection, onClose]);
@@ -55,7 +53,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
     const img = new Image();
     img.crossOrigin = "Anonymous";
     
-    // Çevrimdışı (Offline) Durumda Resim Yüklenemezse Patlamayı Önleme
     img.onerror = () => {
       setLogoBgColor('#ffffff');
     };
@@ -109,8 +106,8 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
         console.error("Renk analizi yapılamadı:", e);
       }
     };
-    // CORS Cache Buster
-    img.src = companyLogo.startsWith('http') ? `${companyLogo}?c=1` : companyLogo;
+    // 🚀 KESİN ÇÖZÜM: CDN Cache'ini atlamak için Date.now() eklendi
+    img.src = companyLogo.startsWith('http') ? `${companyLogo}?t=${Date.now()}` : companyLogo;
   }, [companyLogo]);
 
   const handlePrint = useReactToPrint({
@@ -153,7 +150,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           page-break-inside: avoid !important;
         }
 
-        /* Yeni sade footer için baskı stili */
         .print-simple-footer {
             color: #64748b !important; 
         }
@@ -161,7 +157,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
             color: #94a3b8 !important; 
         }
 
-        /* Siyah-beyaz modda ikonları siyah yap */
         .print-bw-icon {
             color: black !important;
             fill: black !important;
@@ -191,7 +186,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
   const mainTitle = aptName || asset.name;
   const subTitle = aptName ? asset.name : null;
 
-  // İkon boyutu
   const iconSize = 9;
 
   return (
@@ -208,7 +202,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           exit={{ opacity: 0, scale: 0.95 }}
           className="bg-white rounded-3xl shadow-2xl w-full max-w-sm max-h-[90vh] overflow-hidden flex flex-col relative print:shadow-none print:w-auto print:max-w-none print:rounded-none"
         >
-          {/* BASKI MODU SEÇİM EKRANI (OVERLAY) */}
           <AnimatePresence>
             {showPrintModeSelection && (
               <motion.div 
@@ -246,7 +239,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
             )}
           </AnimatePresence>
 
-          {/* Header */}
           <div className="flex justify-between items-center p-5 border-b border-slate-100 bg-slate-50 print:hidden shrink-0">
             <h3 className="font-black text-slate-800 flex items-center gap-2">
                <Printer size={18} className="text-blue-600"/> Etiket Önizleme
@@ -256,7 +248,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
             </button>
           </div>
 
-          {/* YAZDIRILACAK ALAN */}
           <div className="flex-1 py-8 overflow-y-auto flex flex-col items-center justify-center bg-slate-100 print:bg-white print:p-0 print:m-0 print:block">
             
             <div 
@@ -264,7 +255,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
               className="print-container w-[302px] h-[302px] bg-white border border-slate-200 shadow-xl rounded-2xl flex flex-col items-center justify-between p-2.5 relative box-border print:border-none print:shadow-none print:rounded-none shrink-0"
             >
               
-              {/* 1. LOGO VE FİRMA ADI */}
               <div className="w-full flex flex-col items-center justify-center mt-0.5">
                 <div 
                   className={`w-11 h-11 rounded-lg flex items-center justify-center mb-1 overflow-hidden shadow-sm border-2 ${printMode === 'bw' ? 'border-black bg-white' : 'border-white ring-1 ring-slate-100'}`}
@@ -286,7 +276,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                 </div>
               </div>
 
-              {/* 2. QR KOD */}
               <div className="flex-1 flex flex-col items-center justify-center w-full my-1 relative">
                 <QRCodeSVG 
                   value={qrUrl} 
@@ -294,7 +283,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                   level="Q"
                   includeMargin={false}
                 />
-                {/* YENİ: SİSTEM KODU (ID) VE KOPYALA BUTONU EKLENDİ */}
                 <div 
                    onClick={() => {
                      navigator.clipboard.writeText(uniqueId);
@@ -311,7 +299,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                 </div>
               </div>
 
-              {/* 3. ALT BİLGİLER VE İLETİŞİM */}
               <div className="w-full flex flex-col items-center mb-1">
                 <h2 className={`text-[13px] font-black leading-tight mb-0.5 text-center truncate w-full px-1 ${printMode === 'bw' ? 'text-black' : 'text-slate-900'}`}>
                   {mainTitle}
@@ -323,7 +310,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                   </div>
                 )}
 
-                {/* İletişim Bilgileri */}
                 {(landlinePhone || whatsappPhone || companyWebsite) && (
                   <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 mt-0.5 w-full px-1">
                     {landlinePhone && (
@@ -345,7 +331,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                 )}
               </div>
 
-              {/* 4. YENİ SADE FOOTER */}
               <div className="flex flex-col items-center justify-center mt-1">
                 <span className={`text-[8px] font-medium ${printMode === 'bw' ? 'text-black' : 'text-slate-500'} print-simple-footer`}>
                    Powered by İş Dökümü
@@ -358,7 +343,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
             </div>
           </div>
 
-          {/* Footer Butonları */}
           <div className="p-5 border-t border-slate-100 bg-white grid grid-cols-2 gap-3 print:hidden shrink-0">
             <button 
               onClick={() => setShowPrintModeSelection(true)} 
