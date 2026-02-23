@@ -106,7 +106,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
         console.error("Renk analizi yapılamadı:", e);
       }
     };
-    // 🚀 KESİN ÇÖZÜM: CDN Cache'ini atlamak için Date.now() eklendi
     img.src = companyLogo;
     }, [companyLogo]);
 
@@ -144,10 +143,11 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           display: flex !important;
           flex-direction: column !important;
           align-items: center !important;
-          justify-content: space-between !important; 
+          justify-content: space-evenly !important; 
           position: relative !important;
           box-sizing: border-box !important;
           page-break-inside: avoid !important;
+          overflow: hidden !important;
         }
 
         .print-simple-footer {
@@ -252,12 +252,12 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
             
             <div 
               ref={printRef} 
-              className="print-container w-[302px] h-[302px] bg-white border border-slate-200 shadow-xl rounded-2xl flex flex-col items-center justify-between p-2.5 relative box-border print:border-none print:shadow-none print:rounded-none shrink-0"
+              className="print-container w-[302px] h-[302px] bg-white border border-slate-200 shadow-xl rounded-2xl flex flex-col items-center justify-evenly p-2.5 relative box-border print:border-none print:shadow-none print:rounded-none shrink-0"
             >
               
-              <div className="w-full flex flex-col items-center justify-center mt-0.5">
+              <div className="w-full flex flex-col items-center justify-center shrink-0">
                 <div 
-                  className={`w-11 h-11 rounded-lg flex items-center justify-center mb-1 overflow-hidden shadow-sm border-2 ${printMode === 'bw' ? 'border-black bg-white' : 'border-white ring-1 ring-slate-100'}`}
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center mb-1 overflow-hidden shadow-sm border-2 ${printMode === 'bw' ? 'border-black bg-white' : 'border-white ring-1 ring-slate-100'}`}
                   style={{ backgroundColor: printMode === 'bw' ? '#ffffff' : (companyLogo ? logoBgColor : '#f8fafc') }}
                 >
                   {companyLogo ? (
@@ -265,21 +265,21 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                       src={companyLogo} 
                       alt="Logo" 
                       crossOrigin="anonymous"
-                      className={`w-8 h-8 object-contain drop-shadow-md print:drop-shadow-none ${printMode === 'bw' ? 'grayscale brightness-0' : ''}`} 
+                      className={`w-7 h-7 object-contain drop-shadow-md print:drop-shadow-none ${printMode === 'bw' ? 'grayscale brightness-0' : ''}`} 
                     />
                   ) : (
-                    <Building2 size={20} className={printMode === 'bw' ? 'text-black' : 'text-slate-400'} />
+                    <Building2 size={18} className={printMode === 'bw' ? 'text-black' : 'text-slate-400'} />
                   )}
                 </div>
-                <div className={`text-sm font-black tracking-tight uppercase leading-none text-center truncate w-full px-2 ${printMode === 'bw' ? 'text-black' : 'text-slate-900'}`}>
+                <div className={`text-[13px] font-black tracking-tight uppercase leading-none text-center truncate w-full px-2 ${printMode === 'bw' ? 'text-black' : 'text-slate-900'}`}>
                   {companyName || 'İşletme Adı'}
                 </div>
               </div>
 
-              <div className="flex-1 flex flex-col items-center justify-center w-full my-1 relative">
+              <div className="flex flex-col items-center justify-center w-full relative my-1 shrink-0">
                 <QRCodeSVG 
                   value={qrUrl} 
-                  size={90} 
+                  size={85} 
                   level="Q"
                   includeMargin={false}
                 />
@@ -289,23 +289,23 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                      setIdCopied(true);
                      setTimeout(() => setIdCopied(false), 2000);
                    }}
-                   className={`mt-2 flex items-center gap-1.5 text-[9px] font-bold tracking-widest uppercase px-3 py-1 rounded-md border border-slate-200 cursor-pointer print-id-text transition-colors print:border-none print:bg-transparent ${printMode === 'bw' ? 'text-black' : 'text-slate-600 bg-slate-50 hover:bg-slate-100'}`}
+                   className={`mt-1.5 flex items-center gap-1.5 text-[8px] font-bold tracking-widest uppercase px-2.5 py-[3px] rounded-md border border-slate-200 cursor-pointer print-id-text transition-colors print:border-none print:bg-transparent ${printMode === 'bw' ? 'text-black' : 'text-slate-600 bg-slate-50 hover:bg-slate-100'}`}
                    title="Kodu Kopyalamak İçin Tıklayın"
                 >
                    ID: {asset.id}
                    <span className="print:hidden">
-                     {idCopied ? <Check size={10} className="text-emerald-500" /> : <Copy size={10} className="text-slate-400" />}
+                     {idCopied ? <Check size={8} className="text-emerald-500" /> : <Copy size={8} className="text-slate-400" />}
                    </span>
                 </div>
               </div>
 
-              <div className="w-full flex flex-col items-center mb-1">
-                <h2 className={`text-[13px] font-black leading-tight mb-0.5 text-center truncate w-full px-1 ${printMode === 'bw' ? 'text-black' : 'text-slate-900'}`}>
+              <div className="w-full flex flex-col items-center shrink-0">
+                <h2 className={`text-xs font-black leading-tight mb-0.5 text-center truncate w-full px-1 ${printMode === 'bw' ? 'text-black' : 'text-slate-900'}`}>
                   {mainTitle}
                 </h2>
                 
                 {subTitle && (
-                  <div className={`text-[9px] font-bold px-2 py-[1px] rounded mb-1 max-w-full truncate ${printMode === 'bw' ? 'bg-transparent border border-black text-black' : 'bg-slate-100 text-slate-600'}`}>
+                  <div className={`text-[8px] font-bold px-2 py-[1px] rounded mb-1 max-w-full truncate ${printMode === 'bw' ? 'bg-transparent border border-black text-black' : 'bg-slate-100 text-slate-600'}`}>
                     {subTitle}
                   </div>
                 )}
@@ -313,17 +313,17 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                 {(landlinePhone || whatsappPhone || companyWebsite) && (
                   <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 mt-0.5 w-full px-1">
                     {landlinePhone && (
-                      <div className={`flex items-center gap-1 text-[9px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-800'}`}>
+                      <div className={`flex items-center gap-1 text-[8px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-800'}`}>
                         <Phone size={iconSize} className={printMode === 'bw' ? 'print-bw-icon' : ''} /> {landlinePhone}
                       </div>
                     )}
                     {whatsappPhone && (
-                      <div className={`flex items-center gap-1 text-[9px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-800'}`}>
+                      <div className={`flex items-center gap-1 text-[8px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-800'}`}>
                         <FaWhatsapp size={iconSize} className={printMode === 'bw' ? 'print-bw-icon' : 'text-[#25D366]'} /> {whatsappPhone}
                       </div>
                     )}
                     {companyWebsite && (
-                      <div className={`flex items-center gap-1 text-[9px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-600'}`}>
+                      <div className={`flex items-center gap-1 text-[8px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-600'}`}>
                         <Globe size={iconSize} className={printMode === 'bw' ? 'print-bw-icon' : ''} /> {companyWebsite.replace(/^https?:\/\//, '')}
                       </div>
                     )}
@@ -331,11 +331,11 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                 )}
               </div>
 
-              <div className="flex flex-col items-center justify-center mt-1">
-                <span className={`text-[8px] font-medium ${printMode === 'bw' ? 'text-black' : 'text-slate-500'} print-simple-footer`}>
+              <div className="flex flex-col items-center justify-center shrink-0 mt-0.5">
+                <span className={`text-[7px] font-medium ${printMode === 'bw' ? 'text-black' : 'text-slate-500'} print-simple-footer`}>
                    Powered by İş Dökümü
                 </span>
-                <span className={`text-[7px] font-medium ${printMode === 'bw' ? 'text-black' : 'text-slate-400'} print-simple-footer-link`}>
+                <span className={`text-[6px] font-medium ${printMode === 'bw' ? 'text-black' : 'text-slate-400'} print-simple-footer-link`}>
                    www.isdokumu.com
                 </span>
               </div>

@@ -24,12 +24,12 @@ export default function StaffLoginPage() {
   const [isIos, setIsIos] = useState(false);
   const [installState, setInstallState] = useState('idle');
 
-  const fallbackName = slug ? slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : 'Firma';
+  const actualSlug = Array.isArray(slug) ? slug[0] : slug;
+  const fallbackName = actualSlug ? actualSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : 'Firma';
 
   const [hasPatronSession, setHasPatronSession] = useState(false);
 
   useEffect(() => {
-    // 🚀 BUG FIX: Eski 'userRole' yerine güncel 'patron_userRole' ve 'staff_userRole' kontrolü
     const patronRole = localStorage.getItem('patron_userRole');
     const staffRole = localStorage.getItem('staff_userRole');
     
@@ -82,7 +82,7 @@ export default function StaffLoginPage() {
   useEffect(() => {
     const fetchCompanyBranding = async () => {
       try {
-         const res = await fetch(`${API_URL}/public/company-info?slug=${slug}`);
+         const res = await fetch(`${API_URL}/public/company-info?slug=${actualSlug}`);
          if(res.ok) {
              const data = await res.json();
              setCompanyData({ name: data.company_name, logo: data.logo });
@@ -90,6 +90,7 @@ export default function StaffLoginPage() {
              if (data.logo) {
                  const img = new Image();
                  img.crossOrigin = "Anonymous";
+                 
                  img.onerror = () => setLogoBgColor('#ffffff');
                  img.onload = () => {
                      const canvas = document.createElement('canvas');
@@ -126,8 +127,8 @@ export default function StaffLoginPage() {
          setCompanyData({ name: fallbackName, logo: '' }); 
       }
     };
-    if (slug) fetchCompanyBranding();
-  }, [slug, fallbackName]);
+    if (actualSlug) fetchCompanyBranding();
+  }, [actualSlug, fallbackName]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -143,7 +144,7 @@ export default function StaffLoginPage() {
       const res = await fetch(`${API_URL}/staff-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug, username: formData.username, password: formData.password })
+        body: JSON.stringify({ slug: actualSlug, username: formData.username, password: formData.password })
       });
 
       const data = await res.json();
@@ -151,15 +152,15 @@ export default function StaffLoginPage() {
       if (res.ok && data.success) {
         localStorage.setItem('staff_authToken', data.token);
         localStorage.setItem('staff_userRole', data.role);
-        localStorage.setItem('staff_userSlug', slug);
+        localStorage.setItem('staff_userSlug', actualSlug);
         localStorage.setItem('staff_userName', data.name);
 
         if (data.role === 'Yönetici') {
-            router.push(`/${slug}/manager`);
+            router.push(`/${actualSlug}/manager`);
         } else if (data.role === 'Usta') {
-            router.push(`/${slug}/worker`);
+            router.push(`/${actualSlug}/worker`);
         } else {
-            router.push(`/${slug}/dashboard`); 
+            router.push(`/${actualSlug}/dashboard`); 
         }
       } else {
         setError(data.error || 'Giriş yapılamadı. Bilgilerinizi kontrol edin.');
@@ -184,12 +185,11 @@ export default function StaffLoginPage() {
             <motion.button 
               initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
               onClick={() => {
-                  // 🚀 BUG FIX: Acil çıkış butonu prefixli keyleri kullanacak şekilde güncellendi
                   const patronRole = localStorage.getItem('patron_userRole');
                   const staffRole = localStorage.getItem('staff_userRole');
                   
-                  if(patronRole === 'Patron') router.push(`/${slug}/manager`);
-                  else if(staffRole === 'Yönetici') router.push(`/${slug}/manager`);
+                  if(patronRole === 'Patron') router.push(`/${actualSlug}/manager`);
+                  else if(staffRole === 'Yönetici') router.push(`/${actualSlug}/manager`);
                   else router.push(`/login`);
               }}
               className="absolute top-6 right-6 flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-lg hover:bg-slate-800 transition-all active:scale-95 z-50"
@@ -242,7 +242,7 @@ export default function StaffLoginPage() {
                className="w-20 h-20 rounded-2xl flex items-center justify-center mb-4 shadow-sm border border-slate-200/50 p-2 overflow-hidden"
                style={{ backgroundColor: logoBgColor }}
              >
-                <img src={companyData.logo} alt="Firma Logo" className="w-full h-full object-contain drop-shadow-md" />
+                <img src={companyData.logo} crossOrigin="anonymous" alt="Firma Logo" className="w-full h-full object-contain drop-shadow-md" />
              </div>
           ) : (
              <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center border border-blue-100 mb-4 shadow-inner text-blue-600">
