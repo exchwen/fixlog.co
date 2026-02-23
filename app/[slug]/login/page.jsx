@@ -85,9 +85,16 @@ export default function StaffLoginPage() {
          const res = await fetch(`${API_URL}/public/company-info?slug=${actualSlug}`);
          if(res.ok) {
              const data = await res.json();
-             setCompanyData({ name: data.company_name, logo: data.logo });
              
              if (data.logo) {
+                 // 🚀 KESİN ÇÖZÜM: İki Soru İşareti Bug'ı ve Mobil Senkronizasyon Engeli Çözüldü
+                 const safeLogoUrl = data.logo.startsWith('http') 
+                      ? data.logo + (data.logo.includes('?') ? '&' : '?') + 't=' + Date.now() 
+                      : data.logo;
+                      
+                 // URL'yi hem Canvas hem HTML img etiketi kullansın diye state'e kaydediyoruz
+                 setCompanyData({ name: data.company_name, logo: safeLogoUrl });
+                 
                  const img = new Image();
                  img.crossOrigin = "Anonymous";
                  
@@ -118,8 +125,9 @@ export default function StaffLoginPage() {
                          }
                      } catch (e) { setLogoBgColor('#ffffff'); }
                  };
-                 // 🚀 KESİN ÇÖZÜM: Canvas'ın logoyu sorunsuz okuyabilmesi için CDN Cache atlama parametresi
-                 img.src = data.logo.startsWith('http') ? `${data.logo}?t=${Date.now()}` : data.logo;
+                 img.src = safeLogoUrl;
+             } else {
+                 setCompanyData({ name: data.company_name, logo: '' });
              }
          } else {
              setCompanyData({ name: fallbackName, logo: '' }); 
@@ -243,7 +251,6 @@ export default function StaffLoginPage() {
                className="w-20 h-20 rounded-2xl flex items-center justify-center mb-4 shadow-sm border border-slate-200/50 p-2 overflow-hidden"
                style={{ backgroundColor: logoBgColor }}
              >
-                {/* 🚀 LOGONUN GÖRÜNMESİ İÇİN CROSSORIGIN EKLENDİ */}
                 <img src={companyData.logo} crossOrigin="anonymous" alt="Firma Logo" className="w-full h-full object-contain drop-shadow-md" />
              </div>
           ) : (
