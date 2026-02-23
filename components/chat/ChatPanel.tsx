@@ -5,6 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Send, X, MessageSquare, ArrowLeft, WifiOff, CheckCheck, Clock, Lock } from 'lucide-react';
 import Pusher from 'pusher-js';
 
+// 🚀 ÇÖZÜM: Pusher Beams kütüphanesini dinamik olarak import edeceğiz
+import * as PusherPushNotifications from '@pusher/push-notifications-web';
+
 export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, setActiveChatId, data, messages, setMessages, messageInput, setMessageInput, sendMessage }: any) {
   const chatEndRef = useRef<HTMLDivElement>(null);
   
@@ -50,44 +53,42 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     }
   }, []);
 
-  // 🚀 DÜZELTİLDİ: Beams kaydı için tüm verilerin hazır olmasını bekle
+  // 🚀 DÜZELTİLDİ: 404 Hatası çözüldü! Eski script ekleme yöntemi yerine resmi NPM paketi kullanıldı.
   useEffect(() => {
     if (!currentUserId || !actualSlug || !currentUserRole) return;
     
     const registerBeams = async () => {
-        // Önce tarayıcı izni iste
         if (typeof window !== 'undefined' && 'Notification' in window) {
             if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
                 await Notification.requestPermission();
             }
         }
 
-        const script = document.createElement("script");
-        script.src = "https://js.pusher.com/beams/1.0/push-notifications-web.js";
-        script.async = true;
-        script.onload = () => {
-            if (typeof window !== 'undefined' && (window as any).PusherPushNotifications) {
-                const beamsClient = new (window as any).PusherPushNotifications.Client({
-                    instanceId: '6a47ebc2-0c89-48f1-81a3-80a4e003dd41',
-                });
-                beamsClient.start()
-                    .then(() => {
-                        const interest = currentUserRole === 'Patron' ? `user-${actualSlug}-PATRON` : `user-${actualSlug}-${currentUserId}`;
-                        beamsClient.addDeviceInterest(interest);
-                        console.log("✅ [BEAMS BİLDİRİM] Cihaz Kaydı Başarılı. İlgi Alanı:", interest);
-                    })
-                    .catch((err: any) => console.error("❌ [BEAMS BİLDİRİM] Kayıt Hatası:", err));
+        try {
+            const beamsClient = new PusherPushNotifications.Client({
+                instanceId: '6a47ebc2-0c89-48f1-81a3-80a4e003dd41',
+            });
+
+            await beamsClient.start();
+            
+            const interest = currentUserRole === 'Patron' ? `user-${actualSlug}-PATRON` : `user-${actualSlug}-${currentUserId}`;
+            
+            await beamsClient.clearDeviceInterests();
+            await beamsClient.addDeviceInterest(interest);
+            
+            // Eğer Yönetici ise fazladan role-ADMIN kanalını da dinlesin (Acil Durumlar vs için)
+            if (currentUserRole === 'Yönetici') {
+                await beamsClient.addDeviceInterest(`role-${actualSlug}-ADMIN`);
             }
-        };
-        document.body.appendChild(script);
+
+            console.log("✅ [BEAMS BİLDİRİM] Cihaz Kaydı Başarılı. İlgi Alanı:", interest);
+        } catch (err) {
+            console.error("❌ [BEAMS BİLDİRİM] Kayıt Hatası:", err);
+        }
     };
 
     registerBeams();
 
-    return () => {
-      const existingScript = document.querySelector('script[src="https://js.pusher.com/beams/1.0/push-notifications-web.js"]');
-      if (existingScript) existingScript.remove();
-    };
   }, [currentUserId, actualSlug, currentUserRole]);
 
   useEffect(() => {
