@@ -15,14 +15,16 @@ export const metadata: Metadata = {
   title: 'İş Dökümü | Profesyonel İş Takip Sistemi',
   description:
     'Global, ölçeklenebilir ve sürdürülebilir yeni nesil iş takip SaaS platformu.',
+    
+  // 🚀 İŞTE EKSİK OLAN VE CHROME'U TETİKLEYECEK SATIR!
+  manifest: "/manifest.json", 
 
   appleWebApp: {
-    // capable: true, -> Konsoldaki sarı uyarının sebebi buydu, kaldırıldı.
     statusBarStyle: "default",
     title: "İş Dökümü",
   },
   other: {
-    "mobile-web-app-capable": "yes" // YENİ STANDART: Sarı uyarının istediği yeni etiket eklendi
+    "mobile-web-app-capable": "yes"
   },
   formatDetection: {
     telephone: false,

@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Send, X, MessageSquare, ArrowLeft, WifiOff, CheckCheck, Clock, Lock, Bell } from 'lucide-react';
+import { ChevronDown, Send, X, MessageSquare, ArrowLeft, WifiOff, CheckCheck, Clock, Lock } from 'lucide-react';
 import Pusher from 'pusher-js';
 
 export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, setActiveChatId, data, messages, setMessages, messageInput, setMessageInput, sendMessage }: any) {
@@ -26,11 +26,12 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   
   const [pusherChannel, setPusherChannel] = useState<any>(null);
 
-  // URL'den veya data üzerinden slug bilgisini %100 garantili şekilde alıyoruz.
+  // 🚀 YENİ: Hangi personelden kaç okunmamış mesaj var? (Örn: { "3": 2, "PATRON": 1 })
+  const [unreadMap, setUnreadMap] = useState<Record<string, number>>({});
+
   const actualSlug = data?.slug || (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '');
 
   useEffect(() => {
-    console.log("--- CHAT PANEL BAŞLATILDI ---");
     const isPatronPath = window.location.pathname.includes('/dashboard');
     const prefix = isPatronPath ? 'patron_' : 'staff_';
     
@@ -45,41 +46,47 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
             const payload = JSON.parse(jsonPayload);
             setCurrentUserId(String(payload.id));
-            console.log("Aktif Kullanıcı ID:", payload.id, "Rol:", storedRole);
-        } catch(e) {
-            console.error("Token çözümlenemedi:", e);
-        }
-    }
-
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-        Notification.requestPermission();
+        } catch(e) {}
     }
   }, []);
 
+  // 🚀 DÜZELTİLDİ: Beams kaydı için tüm verilerin hazır olmasını bekle
   useEffect(() => {
-    if (!currentUserId || !actualSlug) return;
+    if (!currentUserId || !actualSlug || !currentUserRole) return;
     
-    const script = document.createElement("script");
-    script.src = "https://js.pusher.com/beams/1.0/push-notifications-web.js";
-    script.async = true;
-    script.onload = () => {
-        if (typeof window !== 'undefined' && (window as any).PusherPushNotifications) {
-            const beamsClient = new (window as any).PusherPushNotifications.Client({
-                instanceId: '6a47ebc2-0c89-48f1-81a3-80a4e003dd41',
-            });
-            beamsClient.start()
-                .then(() => {
-                    const interest = currentUserRole === 'Patron' ? `user-${actualSlug}-PATRON` : `user-${actualSlug}-${currentUserId}`;
-                    beamsClient.addDeviceInterest(interest);
-                    console.log("✅ Pusher Beams Cihaz Kaydı Başarılı! Bildirimler Gelecek. İlgi Alanı:", interest);
-                })
-                .catch(console.error);
+    const registerBeams = async () => {
+        // Önce tarayıcı izni iste
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                await Notification.requestPermission();
+            }
         }
+
+        const script = document.createElement("script");
+        script.src = "https://js.pusher.com/beams/1.0/push-notifications-web.js";
+        script.async = true;
+        script.onload = () => {
+            if (typeof window !== 'undefined' && (window as any).PusherPushNotifications) {
+                const beamsClient = new (window as any).PusherPushNotifications.Client({
+                    instanceId: '6a47ebc2-0c89-48f1-81a3-80a4e003dd41',
+                });
+                beamsClient.start()
+                    .then(() => {
+                        const interest = currentUserRole === 'Patron' ? `user-${actualSlug}-PATRON` : `user-${actualSlug}-${currentUserId}`;
+                        beamsClient.addDeviceInterest(interest);
+                        console.log("✅ [BEAMS BİLDİRİM] Cihaz Kaydı Başarılı. İlgi Alanı:", interest);
+                    })
+                    .catch((err: any) => console.error("❌ [BEAMS BİLDİRİM] Kayıt Hatası:", err));
+            }
+        };
+        document.body.appendChild(script);
     };
-    document.body.appendChild(script);
+
+    registerBeams();
 
     return () => {
-      if (document.body.contains(script)) document.body.removeChild(script);
+      const existingScript = document.querySelector('script[src="https://js.pusher.com/beams/1.0/push-notifications-web.js"]');
+      if (existingScript) existingScript.remove();
     };
   }, [currentUserId, actualSlug, currentUserRole]);
 
@@ -92,9 +99,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     const img = new Image();
     img.crossOrigin = "Anonymous";
     
-    img.onerror = () => {
-      setLogoBgColor('#2563eb');
-    };
+    img.onerror = () => setLogoBgColor('#2563eb');
 
     img.onload = () => {
       const canvas = document.createElement('canvas');
@@ -140,15 +145,10 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             }
           }
           
-          if (selectedColor === '#ffffff') {
-              setLogoBgColor('#f1f5f9');
-          } else {
-              setLogoBgColor(selectedColor);
-          }
+          if (selectedColor === '#ffffff') setLogoBgColor('#f1f5f9');
+          else setLogoBgColor(selectedColor);
         }
-      } catch (e) {
-        console.error("Renk analizi yapılamadı:", e);
-      }
+      } catch (e) {}
     };
     img.src = data.logo;
   }, [data?.logo]);
@@ -164,23 +164,36 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         
         try {
             const myId = currentUserRole === 'Patron' ? 'PATRON' : currentUserId;
-            console.log(`Geçmiş Mesajlar Çekiliyor... API: /get-messages?slug=${actualSlug}&staffId=${myId}`);
-            
             const res = await fetch(`${API_URL}/get-messages?slug=${actualSlug}&staffId=${myId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const msgs = await res.json();
-            console.log("Gelen Tüm Mesaj Geçmişi:", msgs);
-            if (msgs) setAllMessages(msgs);
-        } catch (e) {
-            console.error("Geçmiş mesajları çekerken hata:", e);
-        }
+            if (msgs) {
+                setAllMessages(msgs);
+                
+                // 🚀 YENİ: Başlangıçta okunmamış mesajları say (bana gelen ve is_read = 0 olanlar)
+                const newUnreadMap: Record<string, number> = {};
+                let totalUnread = 0;
+                
+                msgs.forEach((m: any) => {
+                    const iAmReceiver = String(m.receiver_id) === String(myId);
+                    if (iAmReceiver && m.is_read === 0) {
+                        const senderIdStr = String(m.sender_id);
+                        newUnreadMap[senderIdStr] = (newUnreadMap[senderIdStr] || 0) + 1;
+                        totalUnread++;
+                    }
+                });
+                
+                setUnreadMap(newUnreadMap);
+                setUnreadCount(totalUnread);
+            }
+        } catch (e) {}
     };
     
-    if (isChatOpen && !activeChatId) {
+    if (isChatOpen && !activeChatId && allMessages.length === 0) {
         fetchAllMessages();
     }
-  }, [isChatOpen, activeChatId, actualSlug, currentUserId, currentUserRole]);
+  }, [isChatOpen, activeChatId, actualSlug, currentUserId, currentUserRole, allMessages.length]);
 
   const sortedStaffList = useMemo(() => {
     if (!data?.staff) return [];
@@ -214,19 +227,14 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     const token = localStorage.getItem(`${prefix}authToken`);
     const API_URL = 'https://backend.isdokumu.workers.dev';
 
-    Pusher.logToConsole = true;
+    Pusher.logToConsole = false; // Tüm Pusher logları kapatıldı
 
-    console.log("Pusher'a bağlanılıyor... Kanal:", `presence-chat-${actualSlug}`);
     const pusher = new Pusher('75dfed44245e16eaea0a', {
       cluster: 'eu',
       authEndpoint: `${API_URL}/pusher/auth`,
       auth: {
           headers: { 'Authorization': `Bearer ${token}` }
       }
-    });
-
-    pusher.connection.bind('connected', () => {
-        console.log("✅ Pusher WebSocket Bağlantısı Başarılı!");
     });
 
     const channelName = `presence-chat-${actualSlug}`;
@@ -256,34 +264,30 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     });
 
     channel.bind('new-message', (newMsg: any) => {
-        console.log("Pusher'dan YENİ MESAJ geldi:", newMsg);
         const isForMe = String(newMsg.receiver_id) === String(currentUserId) || (currentUserRole === 'Patron' && newMsg.receiver_id === 'PATRON');
         const isFromMe = String(newMsg.sender_id) === String(currentUserId) || (currentUserRole === 'Patron' && newMsg.sender_id === 'PATRON');
 
-        if (!isForMe && !isFromMe) {
-            console.log("Bu mesaj bana ait değil, yok sayılıyor.");
-            return;
-        }
+        if (!isForMe && !isFromMe) return;
 
         setAllMessages(prev => {
             if (newMsg._tempId) {
                 const tempIdx = prev.findIndex((p: any) => String(p._tempId) === String(newMsg._tempId));
                 if (tempIdx !== -1) {
-                    console.log("Pusher: Temp ID eşleşti, mesaj güncelleniyor (Saat İkonu Kalkıyor)");
                     const arr = [...prev];
                     arr[tempIdx] = { ...newMsg, _tempId: undefined };
                     return arr;
                 }
             }
             if (!prev.some((p: any) => String(p.id) === String(newMsg.id))) {
-                console.log("Pusher: Yeni mesaj listeye eklendi.");
                 return [...prev, newMsg];
             }
             return prev;
         });
 
         if (isForMe) {
-            if (isChatOpen && document.hasFocus() && (String(activeChatId) === String(newMsg.sender_id) || (activeChatId === 'PATRON' && newMsg.sender_id === 'PATRON'))) {
+            const isTargetChatOpen = isChatOpen && document.hasFocus() && (String(activeChatId) === String(newMsg.sender_id) || (activeChatId === 'PATRON' && newMsg.sender_id === 'PATRON'));
+            
+            if (isTargetChatOpen) {
                 markMessagesAsRead(newMsg.sender_id);
             } else {
                 let senderName = 'Bilinmeyen Kullanıcı';
@@ -294,7 +298,14 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                     if (foundStaff) senderName = foundStaff.name;
                 }
 
+                // 🚀 YENİ: Okunmamış mesajları listede göstermek için map'i güncelle
+                const senderIdStr = String(newMsg.sender_id);
+                setUnreadMap(prev => ({
+                    ...prev,
+                    [senderIdStr]: (prev[senderIdStr] || 0) + 1
+                }));
                 setUnreadCount(prev => prev + 1);
+                
                 setMsgToast({ show: true, senderName: senderName, text: newMsg.message });
                 setTimeout(() => setMsgToast({ show: false, senderName: '', text: '' }), 4000);
 
@@ -309,7 +320,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     });
 
     channel.bind('messages-read', (readData: any) => {
-        console.log("Pusher'dan MESAJ OKUNDU bilgisi geldi:", readData);
         const iAmSender = String(readData.senderId) === String(currentUserId) || (currentUserRole === 'Patron' && readData.senderId === 'PATRON');
         if (iAmSender) {
             setAllMessages((prev: any) => prev.map((m: any) => {
@@ -322,7 +332,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     });
 
     channel.bind('client-typing', (typeData: any) => {
-        console.log("Pusher'dan YAZIYOR bilgisi geldi:", typeData);
         const iAmReceiver = String(typeData.receiverId) === String(currentUserId) || (currentUserRole === 'Patron' && typeData.receiverId === 'PATRON');
         const isFromActiveChat = String(typeData.senderId) === String(activeChatId) || (typeData.senderId === 'PATRON' && activeChatId === 'PATRON');
         
@@ -336,7 +345,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     });
 
     return () => {
-        console.log("Pusher aboneliği iptal ediliyor...");
         pusher.unsubscribe(channelName);
         pusher.disconnect();
     };
@@ -367,14 +375,22 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         setAllMessages((prev: any) => prev.map((m: any) => 
             (String(m.sender_id) === String(targetSenderId) && m.is_read === 0) ? { ...m, is_read: 1 } : m
         ));
-    } catch (e) {
-        console.error("Mesajları okundu işaretlerken hata:", e);
-    }
+
+        // 🚀 YENİ: Okunmuş olarak işaretlenen sohbetin balonunu sıfırla
+        const senderIdStr = String(targetSenderId);
+        if (unreadMap[senderIdStr]) {
+             setUnreadCount(prev => Math.max(0, prev - unreadMap[senderIdStr]));
+             setUnreadMap(prev => {
+                 const newMap = { ...prev };
+                 delete newMap[senderIdStr];
+                 return newMap;
+             });
+        }
+    } catch (e) {}
   };
 
   useEffect(() => {
     if (isChatOpen && activeChatId) {
-      setUnreadCount(0);
       markMessagesAsRead(activeChatId);
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
@@ -437,8 +453,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
       is_read: 0
     };
     
-    console.log("Giden Mesaj Objesi:", newMessage);
-
     setAllMessages(prev => [...prev, newMessage]);
     
     if (setMessages) {
@@ -452,8 +466,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     const token = localStorage.getItem(`${prefix}authToken`);
     const API_URL = 'https://backend.isdokumu.workers.dev';
     
-    console.log("Backend'e istek atılıyor: /send-message");
-
     fetch(`${API_URL}/send-message`, { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -467,23 +479,18 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     })
     .then(res => res.json())
     .then(responseData => {
-        console.log("Backend'den Gelen Yanıt:", responseData);
-        
         if (responseData.success && responseData.data) {
              setAllMessages(prev => prev.map(m => {
                  if (String(m._tempId) === String(tempId)) {
-                     console.log("REST API: Saat ikonu tike dönüştürülüyor!");
                      return { ...m, _tempId: undefined, id: responseData.data.id, created_at: responseData.data.created_at };
                  }
                  return m;
              }));
         } else if (!responseData.success) {
-             console.error("Backend Hata Döndürdü:", responseData);
              setAllMessages(prev => prev.filter(m => String(m._tempId) !== String(tempId)));
         }
     })
     .catch(err => {
-        console.error("Mesaj Gönderiminde Ağ Hatası:", err);
         setAllMessages(prev => prev.filter(m => String(m._tempId) !== String(tempId)));
     });
     
@@ -500,9 +507,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                  senderId: currentUserRole === 'Patron' ? 'PATRON' : currentUserId,
                  receiverId: activeChatId
              });
-         } catch(err) {
-             console.error("Typing event trigger hatası:", err);
-         }
+         } catch(err) {}
      }
   };
 
@@ -528,12 +533,10 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
   const displayMessages = useMemo(() => {
     if (!activeChatId) return [];
-    const filtered = allMessages.filter(m => 
+    return allMessages.filter(m => 
       (String(m.sender_id) === String(activeChatId) && (m.receiver_id === 'PATRON' || String(m.receiver_id) === String(currentUserId))) || 
       (String(m.receiver_id) === String(activeChatId) && (m.sender_id === 'PATRON' || String(m.sender_id) === String(currentUserId)))
     );
-    console.log(`Ekranda Gösterilen Filtrelenmiş Mesajlar (${activeChatId} için):`, filtered);
-    return filtered;
   }, [allMessages, activeChatId, currentUserId, currentUserRole]);
 
   return (
@@ -660,7 +663,15 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                            <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full shadow-sm ${onlineUsers.has('PATRON') ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
                        </div>
                        <div className="flex-1 min-w-0">
-                         <div className="text-sm font-black text-blue-900 truncate">{data?.ownerName || 'Firma Sahibi'}</div>
+                         <div className="flex justify-between items-center">
+                            <div className="text-sm font-black text-blue-900 truncate">{data?.ownerName || 'Firma Sahibi'}</div>
+                            {/* 🚀 YENİ: PATRON İÇİN OKUNMAMIŞ MESAJ BALONU */}
+                            {unreadMap['PATRON'] > 0 && (
+                                <div className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                                    {unreadMap['PATRON']}
+                                </div>
+                            )}
+                         </div>
                          <div className="text-[11px] text-blue-700 font-bold truncate mt-1">
                              {onlineUsers.has('PATRON') ? <span className="text-emerald-600">Çevrimiçi</span> : 'YÖNETİM KADEMESİ'}
                          </div>
@@ -673,6 +684,8 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
                    const status = getDynamicStaffStatus(m.id);
                    const isStaffOnline = onlineUsers.has(String(m.id));
+                   const staffIdStr = String(m.id);
+                   const unreadMsgs = unreadMap[staffIdStr] || 0;
                    
                    return (
                      <div key={m.id} onClick={() => setActiveChatId(m.id)} className="p-3 bg-white hover:bg-slate-100 rounded-xl cursor-pointer flex items-center gap-3 shadow-sm border border-slate-100 transition-colors group">
@@ -683,7 +696,15 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                          <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${isStaffOnline ? 'bg-emerald-500' : status.dot}`}></span>
                        </div>
                        <div className="flex-1 min-w-0">
-                         <div className="text-sm font-bold text-slate-800 truncate">{m.name}</div>
+                         <div className="flex justify-between items-center">
+                            <div className={`text-sm font-bold truncate ${unreadMsgs > 0 ? 'text-slate-900' : 'text-slate-800'}`}>{m.name}</div>
+                            {/* 🚀 YENİ: PERSONEL İÇİN OKUNMAMIŞ MESAJ BALONU */}
+                            {unreadMsgs > 0 && (
+                                <div className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                                    {unreadMsgs}
+                                </div>
+                            )}
+                         </div>
                          <div className="text-[11px] text-slate-500 font-medium truncate mt-1 flex items-center justify-between gap-2">
                            <span className="uppercase tracking-wider font-bold text-[9px] truncate">{m.role}</span>
                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold border shrink-0 ${isStaffOnline ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : status.badge}`}>
