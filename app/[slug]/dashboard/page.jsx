@@ -62,7 +62,13 @@ export default function PatronDashboard() {
 
   const [stockCategory, setStockCategory] = useState('Tümü');
 
+  // Modal States
   const [showJobModal, setShowJobModal] = useState(false);
+  // YENİ: Modalın hangi aşamada olduğunu takip eder (1: Seçim, 2: Form)
+  const [jobModalStep, setJobModalStep] = useState(1);
+  // YENİ: Seçilen iş türünü tutar
+  const [jobModalType, setJobModalType] = useState(null);
+
   const [showAssetModal, setShowAssetModal] = useState(false);
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
@@ -97,6 +103,15 @@ export default function PatronDashboard() {
   
   const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', landlinePhone: '', emergencyPhone: '', whatsappPhone: '', website: '', logo: '' });
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '', username: '', password: '', is_active: 1 });
+
+  // Job Modal Kapatma Yardımcısı (State'leri sıfırlar)
+  const handleCloseJobModal = () => {
+    setShowJobModal(false);
+    setTimeout(() => {
+        setJobModalStep(1);
+        setJobModalType(null);
+    }, 300); // Animasyon bitince sıfırla
+  };
 
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -260,7 +275,7 @@ export default function PatronDashboard() {
   useEffect(() => {
     const closeAnyOpenModal = () => {
       if (showQRModal) { setShowQRModal(false); return true; }
-      if (showJobModal) { setShowJobModal(false); return true; }
+      if (showJobModal) { handleCloseJobModal(); return true; } // Güncellendi
       if (showAssetModal) { setShowAssetModal(false); return true; }
       if (showStaffModal) { setShowStaffModal(false); return true; }
       if (showCustomerModal) { setShowCustomerModal(false); return true; }
@@ -332,6 +347,11 @@ export default function PatronDashboard() {
       });
       if (res.ok) { 
         if(closeFn) closeFn(false); 
+        // Modal adımlı ise ve resetFn yoksa manuel resetleyelim
+        if(endpoint === 'create-job' || endpoint === 'add-job') {
+             setJobModalStep(1);
+             setJobModalType(null);
+        }
         if(resetFn) resetFn(); 
         await fetchData(true); 
         return true; 
@@ -719,7 +739,13 @@ export default function PatronDashboard() {
         showStaffDetail={showStaffDetail} setShowStaffDetail={setShowStaffDetail} isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff} editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}
         showCustomerDetail={showCustomerDetail} setShowCustomerDetail={setShowCustomerDetail}
         showAssetDetail={showAssetDetail} setShowAssetDetail={setShowAssetDetail}
-        showJobModal={showJobModal} setShowJobModal={setShowJobModal} jobForm={jobForm} setJobForm={setJobForm}
+        
+        // GÜNCELLENDİ: Yeni Modal Propsları Eklendi
+        showJobModal={showJobModal} setShowJobModal={handleCloseJobModal}
+        jobModalStep={jobModalStep} setJobModalStep={setJobModalStep}
+        jobModalType={jobModalType} setJobModalType={setJobModalType}
+
+        jobForm={jobForm} setJobForm={setJobForm}
         showAssetModal={showAssetModal} setShowAssetModal={setShowAssetModal} assetForm={assetForm} setAssetForm={setAssetForm}
         showStaffModal={showStaffModal} setShowStaffModal={setShowStaffModal} staffForm={staffForm} setStaffForm={setStaffForm}
         showCustomerModal={showCustomerModal} setShowCustomerModal={setShowCustomerModal} customerForm={customerForm} setCustomerForm={setCustomerForm}

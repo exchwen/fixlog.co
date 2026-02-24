@@ -23,8 +23,6 @@ import CompletedJobsTab from '@/components/patron/CompletedJobsTab';
 import AlertsTab from '@/components/patron/AlertsTab';
 import SupportTab from '@/components/patron/SupportTab'; 
 import AssetQRModal from '@/components/modals/AssetQRModal';
-
-// 🚀 ÇÖZÜM: DynamicPWA bileşeni import edildi
 import DynamicPWA from '@/components/DynamicPWA'; 
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
@@ -64,7 +62,13 @@ export default function ManagerDashboard() {
 
   const [stockCategory, setStockCategory] = useState('Tümü');
 
+  // Modal States
   const [showJobModal, setShowJobModal] = useState(false);
+  // YENİ: Modalın hangi aşamada olduğunu takip eder (1: Seçim, 2: Form)
+  const [jobModalStep, setJobModalStep] = useState(1);
+  // YENİ: Seçilen iş türünü tutar (Normal veya Genel)
+  const [jobModalType, setJobModalType] = useState(null);
+
   const [showAssetModal, setShowAssetModal] = useState(false);
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
@@ -96,6 +100,15 @@ export default function ManagerDashboard() {
   const [stockForm, setStockForm] = useState({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', category: '', supplierId: '', supplierMode: 'NONE', newSupplier: { name: '', phone: '' } });
   const [supplierForm, setSupplierForm] = useState({ name: '', phone: '' });
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '', username: '', password: '', is_active: 1 });
+
+  // Job Modal Kapatma Yardımcısı (State'leri sıfırlar)
+  const handleCloseJobModal = () => {
+    setShowJobModal(false);
+    setTimeout(() => {
+        setJobModalStep(1);
+        setJobModalType(null);
+    }, 300); // Animasyon bitince sıfırla
+  };
 
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -160,7 +173,6 @@ export default function ManagerDashboard() {
 
     const decoded = parseJwt(token);
     setUserData(decoded);
-
 
     try {
       const res = await fetch(`${API_URL}/dashboard-data?slug=${slug}`, {
@@ -269,6 +281,17 @@ export default function ManagerDashboard() {
     setIsSaving(true);
     const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken'); 
 
+    // 🚀 GÜNCELLEME: İş güncellenirken Manager ID'yi kaydet
+    if (endpoint === 'update-job' && userData && userData.role === 'Yönetici') {
+         const details = body.details ? { ...JSON.parse(JSON.stringify(body.details)) } : {};
+         details.managerName = userData.name;
+         details.managerId = userData.id;
+         body.details = details;
+    }
+    
+    // YENİ: İşi kabul etme işlemi için özel kontrol (Eğer endpoint accept-job ise)
+    // Bu backend'de işin status'unu 'Ustaya Atanmayı Bekliyor' yapmalı.
+    
     try {
       const res = await fetch(`${API_URL}/${endpoint}`, { 
           method: 'POST', 
@@ -281,6 +304,11 @@ export default function ManagerDashboard() {
 
       if (res.ok) { 
         if(closeFn) closeFn(false); 
+        // Modal adımlı ise ve resetFn yoksa manuel resetleyelim
+        if(endpoint === 'create-job' || endpoint === 'update-job') {
+             setJobModalStep(1);
+             setJobModalType(null);
+        }
         if(resetFn) resetFn(); 
         await fetchData(true); 
         return true; 
@@ -352,9 +380,14 @@ export default function ManagerDashboard() {
   );
 
   const statusColors = { 
-    'Beklemede': 'bg-amber-100 text-amber-700 border-amber-200', 'Tamamlandı': 'bg-emerald-100 text-emerald-700 border-emerald-200', 
-    'Devam Ediyor': 'bg-blue-100 text-blue-700 border-blue-200', 'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200', 
-    'İptal': 'bg-rose-100 text-rose-700 border-rose-200', 'Onay Bekliyor': 'bg-purple-100 text-purple-700 border-purple-200'
+    'Beklemede': 'bg-amber-100 text-amber-700 border-amber-200', 
+    'Tamamlandı': 'bg-emerald-100 text-emerald-700 border-emerald-200', 
+    'Devam Ediyor': 'bg-blue-100 text-blue-700 border-blue-200', 
+    'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200', 
+    'İptal': 'bg-rose-100 text-rose-700 border-rose-200', 
+    'Onay Bekliyor': 'bg-purple-100 text-purple-700 border-purple-200',
+    // YENİ DURUM: Ustaya atanmayı bekleyenler için (Opsiyonel görselleştirmeler için)
+    'Usta Bekliyor': 'bg-indigo-100 text-indigo-700 border-indigo-200' 
   };
 
   return (
@@ -469,7 +502,6 @@ export default function ManagerDashboard() {
 
       <ChatPanel isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} activeChatId={activeChatId} setActiveChatId={setActiveChatId} data={data} messages={messages} setMessages={setMessages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} />
 
-      {/* 🚀 ÇÖZÜM: Manifest'in (Kimliğin) sayfada oluşabilmesi için eklendi */}
       {data && (
         <DynamicPWA 
           companyName={data?.name} 
@@ -481,7 +513,13 @@ export default function ManagerDashboard() {
         showStaffDetail={showStaffDetail} setShowStaffDetail={setShowStaffDetail} isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff} editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}
         showCustomerDetail={showCustomerDetail} setShowCustomerDetail={setShowCustomerDetail}
         showAssetDetail={showAssetDetail} setShowAssetDetail={setShowAssetDetail}
-        showJobModal={showJobModal} setShowJobModal={setShowJobModal} jobForm={jobForm} setJobForm={setJobForm}
+        
+        // YENİ: Modal için özelleştirilmiş kapatma fonksiyonu ve step/type propsları
+        showJobModal={showJobModal} setShowJobModal={handleCloseJobModal} 
+        jobModalStep={jobModalStep} setJobModalStep={setJobModalStep}
+        jobModalType={jobModalType} setJobModalType={setJobModalType}
+
+        jobForm={jobForm} setJobForm={setJobForm}
         showAssetModal={showAssetModal} setShowAssetModal={setShowAssetModal} assetForm={assetForm} setAssetForm={setAssetForm}
         showStaffModal={showStaffModal} setShowStaffModal={setShowStaffModal} staffForm={staffForm} setStaffForm={setStaffForm}
         showCustomerModal={showCustomerModal} setShowCustomerModal={setShowCustomerModal} customerForm={customerForm} setCustomerForm={setCustomerForm}
