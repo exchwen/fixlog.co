@@ -10,6 +10,9 @@ const withPWA = withPWAInit({
   workboxOptions: {
     disableDevLogs: true,
   },
+  // 🚀 KİLİT NOKTA: Otomatik kaydı kapatıyoruz ki senin özel dosyan çalışsın
+  register: false, 
+  skipWaiting: false,
 });
 
 /** @type {import('next').NextConfig} */
@@ -17,13 +20,10 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // 🚀 EKLEDİĞİMİZ KISIM BURASI (REWRITES)
   async rewrites() {
     return [
       {
-        // Bizim uydurduğumuz güvenli yol
         source: "/dosya-deposu/:path*",
-        // Arka plandaki gerçek (sorunlu görünen) R2 adresi
         destination: "https://pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev/:path*",
       },
     ];
