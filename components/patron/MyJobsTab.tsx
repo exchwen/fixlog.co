@@ -12,6 +12,7 @@ interface Job {
   work_type: string;
   created_at?: string;
   asset_name?: string;
+  asset_id?: string | number;
   details?: {
     worker_id?: string | number;
     managerId?: string | number;
@@ -83,7 +84,10 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
 
   // Gruplandırma Mantığı
   const incomingJobs = myAllJobs.filter((j) => j.status === 'Beklemede' || j.status === 'Gelecek');
+  
+  // "Usta Bekliyor" statüsü yönetici işi kabul ettiğinde oluşur
   const waitingForWorkerJobs = myAllJobs.filter((j) => j.status === 'Usta Bekliyor');
+  
   const activeJobs = myAllJobs.filter((j) => j.status === 'Devam Ediyor' || j.status === 'Sahada');
   const pastJobs = myAllJobs.filter((j) => j.status === 'Tamamlandı' || j.status === 'İptal');
 
@@ -93,7 +97,9 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
     setProcessingId(job.id);
     try {
         const isGeneral = job.work_type === 'Genel Görev';
-        // Genel görev ise direkt 'Devam Ediyor', değilse 'Usta Bekliyor'
+        
+        // Eğer genel görev ise direkt "Devam Ediyor" olabilir çünkü kişi kendi yapar.
+        // Eğer normal iş ise "Usta Bekliyor" olur, atama beklenir.
         const newStatus = isGeneral ? 'Devam Ediyor' : 'Usta Bekliyor';
 
         const success = await handleAction('update-job', {
@@ -112,7 +118,7 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
     }
   };
 
-  // Ustaya Atama Modalını Aç
+  // Ustaya Atama Modalını Aç (Veya Detay Görüntüle)
   const handleOpenAssignModal = (job: Job) => {
       setSelectedJob(job);
       setShowJobModal(true);
@@ -146,7 +152,7 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
               <div className="text-[10px] font-bold uppercase tracking-wider">Devam Eden</div>
               <div className="text-lg font-black leading-none mt-1">{activeJobs.length}</div>
            </div>
-           {/* EKLENDİ: Tamamlanan İşler Kutusu */}
+           {/* Tamamlanan İşler Kutusu */}
            <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2 rounded-xl text-center">
               <div className="text-[10px] font-bold uppercase tracking-wider">Tamamlanan</div>
               <div className="text-lg font-black leading-none mt-1">{pastJobs.length}</div>
@@ -166,7 +172,12 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                  {incomingJobs.map((job) => {
                     const isGeneral = job.work_type === 'Genel Görev';
                     return (
-                        <div key={job.id} className="bg-amber-950/40 border border-amber-300/30 rounded-2xl p-5 flex flex-col justify-between hover:bg-amber-950/60 transition-colors">
+                        <div 
+                            key={job.id} 
+                            // Kartın tamamı tıklanabilir (Detayları açar)
+                            onClick={() => handleOpenAssignModal(job)}
+                            className="bg-amber-950/40 border border-amber-300/30 rounded-2xl p-5 flex flex-col justify-between hover:bg-amber-950/60 transition-colors cursor-pointer group active:scale-95"
+                        >
                             <div className="mb-2">
                                 <div className="flex justify-between items-start mb-3">
                                     <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-white/20 text-white">
@@ -186,7 +197,8 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                             </div>
                             
                             <button 
-                                onClick={() => handleAcceptJob(job)}
+                                // Butona tıklandığında sadece kabul etme işlemi çalışsın
+                                onClick={(e) => { e.stopPropagation(); handleAcceptJob(job); }}
                                 disabled={processingId === job.id}
                                 className="mt-2 w-full bg-white text-amber-600 hover:bg-amber-50 py-3 rounded-xl text-sm font-black transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                             >
@@ -209,7 +221,12 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {waitingForWorkerJobs.map((job) => (
-                    <div key={job.id} className="bg-white border-2 border-indigo-100 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all flex flex-col justify-between group">
+                    <div 
+                        key={job.id} 
+                        // Kart tıklanabilir (Detay/Atama modalını açar)
+                        onClick={() => handleOpenAssignModal(job)}
+                        className="bg-white border-2 border-indigo-100 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all flex flex-col justify-between group cursor-pointer active:scale-95"
+                    >
                         <div>
                              <div className="flex justify-between items-start mb-3">
                                 <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-700">
@@ -228,7 +245,8 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                         </div>
                         
                         <button 
-                            onClick={() => handleOpenAssignModal(job)}
+                            // Butona basınca da aynı modal açılır (UX iyileştirmesi)
+                            onClick={(e) => { e.stopPropagation(); handleOpenAssignModal(job); }}
                             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-200 active:scale-95 flex items-center justify-center gap-2"
                         >
                             <UserPlus size={18} />
@@ -252,7 +270,11 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                       const assignedWorker = job.details?.worker_id ? staff.find((s) => s.id === job.details?.worker_id) : null;
                       
                       return (
-                          <div key={job.id} onClick={() => handleOpenAssignModal(job)} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group active:scale-95 flex flex-col justify-between">
+                          <div 
+                            key={job.id} 
+                            onClick={() => handleOpenAssignModal(job)} 
+                            className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group active:scale-95 flex flex-col justify-between"
+                          >
                               <div>
                                   <div className="flex justify-between items-start mb-3">
                                       <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${isGeneral ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
@@ -283,7 +305,7 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
           </div>
       )}
 
-      {/* 4. GRUP: GEÇMİŞ İŞLER (Burada Tamamlananlar Listelenir) */}
+      {/* 4. GRUP: GEÇMİŞ İŞLER */}
       {pastJobs.length > 0 && (
           <div className="space-y-3 mt-8">
               <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest pl-2 flex items-center gap-2">
@@ -293,7 +315,11 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                   {pastJobs.slice(0, 15).map((job) => { 
                       const isGeneral = job.work_type === 'Genel Görev';
                       return (
-                          <div key={job.id} onClick={() => handleOpenAssignModal(job)} className="bg-slate-50 border border-slate-200 rounded-xl p-4 cursor-pointer hover:bg-white transition-colors active:scale-95 flex justify-between items-center">
+                          <div 
+                            key={job.id} 
+                            onClick={() => handleOpenAssignModal(job)} 
+                            className="bg-slate-50 border border-slate-200 rounded-xl p-4 cursor-pointer hover:bg-white transition-colors active:scale-95 flex justify-between items-center"
+                          >
                               <div className="min-w-0 pr-2">
                                   <h4 className="text-sm font-black text-slate-700 truncate">{job.customer_name}</h4>
                                   <p className="text-[10px] text-slate-500 font-bold mt-0.5 uppercase tracking-wider">{isGeneral ? 'Genel Görev' : job.work_type}</p>

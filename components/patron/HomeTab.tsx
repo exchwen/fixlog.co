@@ -7,7 +7,7 @@ import {
   ClipboardList, Users, Box, Wallet, Plus, ArrowUpRight, 
   CheckCircle, Clock, Calendar, TrendingUp, TrendingDown, 
   Package, AlertTriangle, ShieldCheck, Activity, User, Lock, 
-  Settings, X, Wrench, Link as LinkIcon, Check, Database, Image as ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2, Bell
+  Settings, X, Wrench, Link as LinkIcon, Check, Database, Image as ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2, Bell, CheckSquare, UserPlus
 } from 'lucide-react';
 
 export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob, setActiveTab, userRole: propRole, handleAction, isMyJobsTab }: any) {
@@ -68,22 +68,35 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const pendingJobs = jobs.filter((j: any) => j.status === 'Beklemede' || j.status === 'Devam Ediyor').length;
   const plannedJobs = jobs.filter((j: any) => j.status === 'Gelecek').length;
 
-  const myAssignedJobs = useMemo(() => {
+  // --- YENİ AYRIŞTIRILMIŞ LİSTELER ---
+  
+  // 1. Onay Bekleyenler (İlk Adım)
+  const incomingJobs = useMemo(() => {
      if (!currentUserId || userRole === 'Patron') return [];
      return jobs.filter((j: any) => 
-        (String(j.staff_id) === String(currentUserId) || String(j.details?.worker_id) === String(currentUserId)) && 
+        (String(j.staff_id) === String(currentUserId) || String(j.details?.managerId) === String(currentUserId)) && 
         (j.status === 'Beklemede' || j.status === 'Gelecek')
      );
   }, [jobs, currentUserId, userRole]);
 
+  // 2. Onaylanmış Ama Usta Bekleyenler (İkinci Adım)
+  const waitingForAssignmentJobs = useMemo(() => {
+    if (!currentUserId || userRole === 'Patron') return [];
+    return jobs.filter((j: any) => 
+       (String(j.staff_id) === String(currentUserId) || String(j.details?.managerId) === String(currentUserId)) && 
+       (j.status === 'Usta Bekliyor')
+    );
+ }, [jobs, currentUserId, userRole]);
+
+  // Bildirim Mantığı (Gelen İşler İçin)
   useEffect(() => {
-    if (myAssignedJobs.length > 0) {
-        const currentIds = myAssignedJobs.map((j: any) => String(j.id));
+    if (incomingJobs.length > 0) {
+        const currentIds = incomingJobs.map((j: any) => String(j.id));
         
         if (prevJobIds.current.length > 0) {
             const newIds = currentIds.filter((id: string) => !prevJobIds.current.includes(id));
             if (newIds.length > 0) {
-                const newlyAddedJob = myAssignedJobs.find((j: any) => String(j.id) === newIds[0]);
+                const newlyAddedJob = incomingJobs.find((j: any) => String(j.id) === newIds[0]);
                 if (newlyAddedJob) {
                     setNewJobNotification({ show: true, jobName: newlyAddedJob.customer_name || 'Yeni İş' });
                     
@@ -100,7 +113,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         }
         prevJobIds.current = currentIds;
     }
-  }, [myAssignedJobs]);
+  }, [incomingJobs]);
 
   const handleApproveJob = async (job: any) => {
     if (!handleAction) {
@@ -112,20 +125,20 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
     
     try {
         const isGeneralJob = job.work_type === 'Genel Görev';
+        // Eğer genel görevse direkt devam ediyor, yoksa usta atama adımına geçiyor
+        const newStatus = isGeneralJob ? 'Devam Ediyor' : 'Usta Bekliyor';
 
         const success = await handleAction('update-job', {
             id: job.id,
-            status: 'Devam Ediyor',
+            status: newStatus,
             lastEditedBy: currentUserName,
         }, null, null);
 
         if (success) {
-            if (!isGeneralJob) {
-                setSelectedJob({ ...job, status: 'Devam Ediyor' });
-                setShowJobModal(true);
-            } else {
+            if (isGeneralJob) {
                 alert("Genel Görev başarıyla onaylandı ve üzerinize alındı.");
             }
+            // Normal iş ise liste güncellenecek ve alt kutuya düşecek
         }
     } catch (e) {
         console.error(e);
@@ -133,6 +146,11 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
     } finally {
         setIsApproving(null);
     }
+  };
+
+  const handleAssignWorker = (job: any) => {
+      setSelectedJob(job);
+      setShowJobModal(true);
   };
 
   const { currentMonthJobs, lastMonthJobs, growthPercent, isGrowthPositive, monthlyPhotos } = useMemo(() => {
@@ -352,16 +370,64 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         </div>
       </div>
 
-      {myAssignedJobs.length > 0 && (
+      {/* --- KUTU 1: ONAY BEKLEYEN İŞLER (ÖNCE BUNLAR GÖRÜNÜR) --- */}
+      {incomingJobs.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-amber-500 rounded-3xl p-5 shadow-xl shadow-amber-500/20 text-white relative overflow-hidden">
+           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+           <div className="relative z-10">
+              <h2 className="text-xs font-black text-amber-100 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-amber-400/30 pb-2">
+                 <AlertTriangle size={16} /> Onayınızı Bekleyen İşler ({incomingJobs.length})
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                 {incomingJobs.map((job: any) => {
+                    const isGeneral = job.work_type === 'Genel Görev';
+                    return (
+                        <div key={job.id} className="bg-amber-950/40 border border-amber-300/30 rounded-2xl p-4 flex flex-col justify-between hover:bg-amber-950/60 transition-colors">
+                            <div 
+                                className="cursor-pointer mb-2 group" 
+                                onClick={() => { setSelectedJob(job); setShowJobModal(true); }}
+                                title="İş Detayını Görüntüle"
+                            >
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-white/20 text-white`}>
+                                        {isGeneral ? 'GENEL GÖREV' : 'NORMAL İŞ'}
+                                    </span>
+                                    <span className="text-[10px] font-bold opacity-70 flex items-center gap-1 group-hover:opacity-100 transition-opacity">
+                                        <ArrowUpRight size={14} className="text-amber-200"/> Detay
+                                    </span>
+                                </div>
+                                <h3 className="text-sm font-black leading-tight mb-1 truncate">{job.customer_name}</h3>
+                                <p className="text-amber-100 text-[11px] font-medium flex items-center gap-1.5 truncate">
+                                    <Briefcase size={12} className="shrink-0 opacity-70"/> {job.work_type}
+                                </p>
+                            </div>
+                            
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); handleApproveJob(job); }}
+                                disabled={isApproving === job.id}
+                                className="mt-2 w-full bg-white text-amber-600 hover:bg-amber-50 py-2.5 rounded-xl text-xs font-black transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {isApproving === job.id ? <Loader2 size={14} className="animate-spin" /> : <CheckSquare size={14} />}
+                                {isApproving === job.id ? 'İşleniyor...' : 'KABUL ET / ONAYLA'}
+                            </button>
+                        </div>
+                    );
+                 })}
+              </div>
+           </div>
+        </motion.div>
+      )}
+
+      {/* --- KUTU 2: ONAYLANMIŞ FAKAT USTA BEKLEYEN İŞLER (İKİNCİ ADIM) --- */}
+      {waitingForAssignmentJobs.length > 0 && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-indigo-600 rounded-3xl p-5 shadow-xl shadow-indigo-600/20 text-white relative overflow-hidden">
            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
            <div className="relative z-10">
-              <h2 className="text-xs font-black text-indigo-200 uppercase tracking-widest mb-4 flex items-center gap-2">
-                 <UserCircle size={16} /> Size Atanan Bekleyen İşler ({myAssignedJobs.length})
+              <h2 className="text-xs font-black text-indigo-200 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-indigo-400/30 pb-2">
+                 <UserPlus size={16} /> Ustaya Atanmayı Bekleyenler ({waitingForAssignmentJobs.length})
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                 {myAssignedJobs.map((job: any) => {
-                    const isGeneral = job.work_type === 'Genel Görev';
+                 {waitingForAssignmentJobs.map((job: any) => {
                     return (
                         <div key={job.id} className="bg-indigo-950/40 border border-indigo-500/30 rounded-2xl p-4 flex flex-col justify-between hover:bg-indigo-950/60 transition-colors">
                             <div 
@@ -370,8 +436,8 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                                 title="İş Detayını Görüntüle"
                             >
                                 <div className="flex justify-between items-start mb-2">
-                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${isGeneral ? 'bg-purple-500/30 text-purple-200' : 'bg-blue-500/30 text-blue-200'}`}>
-                                        {isGeneral ? 'GENEL GÖREV' : 'NORMAL İŞ'}
+                                    <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-white/20 text-white">
+                                        ATAMA BEKLİYOR
                                     </span>
                                     <span className="text-[10px] font-bold opacity-70 flex items-center gap-1 group-hover:opacity-100 transition-opacity">
                                         <ArrowUpRight size={14} className="text-indigo-300"/> Detay
@@ -384,12 +450,10 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                             </div>
                             
                             <button 
-                                onClick={(e) => { e.stopPropagation(); handleApproveJob(job); }}
-                                disabled={isApproving === job.id}
-                                className="mt-2 w-full bg-indigo-500 hover:bg-indigo-400 text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                                onClick={(e) => { e.stopPropagation(); handleAssignWorker(job); }}
+                                className="mt-2 w-full bg-indigo-500 hover:bg-indigo-400 text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
                             >
-                                {isApproving === job.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-                                {isApproving === job.id ? 'İşleniyor...' : (isGeneral ? 'Gördüm, İşleme Al' : 'Onayla & Ustaya Ata')}
+                                <UserPlus size={14} /> USTAYA ATA
                             </button>
                         </div>
                     );
