@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin, Calendar, AlertTriangle, ArrowRight, Filter, ShieldCheck, CheckCircle, Clock, Plus, Tags, Truck, Edit2, ShieldAlert, MessageSquareText, Image as ImageIcon, Download } from 'lucide-react';
+import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin, Calendar, AlertTriangle, ArrowRight, Filter, ShieldCheck, CheckCircle, Clock, Plus, Tags, Truck, Edit2, ShieldAlert, MessageSquareText, Image as ImageIcon, Download, Briefcase } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 import trCitiesData from '@/lib/data/tr-cities.json';
 
