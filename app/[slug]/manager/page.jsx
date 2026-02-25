@@ -64,9 +64,7 @@ export default function ManagerDashboard() {
 
   // Modal States
   const [showJobModal, setShowJobModal] = useState(false);
-  // YENİ: Modalın hangi aşamada olduğunu takip eder (1: Seçim, 2: Form)
   const [jobModalStep, setJobModalStep] = useState(1);
-  // YENİ: Seçilen iş türünü tutar (Normal veya Genel)
   const [jobModalType, setJobModalType] = useState(null);
 
   const [showAssetModal, setShowAssetModal] = useState(false);
@@ -93,6 +91,11 @@ export default function ManagerDashboard() {
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
 
+  // 🔥 EKLENEN EKSİK STATE'LER (Manager için de gerekli)
+  const [searchCust, setSearchCust] = useState('');
+  const [searchAsset, setSearchAsset] = useState('');
+  // ---------------------------------------------------
+
   const [jobForm, setJobForm] = useState({ customerName: '', assetId: '', staffId: '', workType: 'Genel Görev', jobType: 'Anlık', scheduledDate: '', taskNote: '' });
   const [assetForm, setAssetForm] = useState({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', customerMode: 'NONE', newCustomer: { name: '', contact: '', address: '', taxInfo: '' } });
   const [staffForm, setStaffForm] = useState({ name: '', phone: '', role: 'Usta', branch: '', status: 'Aktif', username: '', password: '' });
@@ -101,13 +104,13 @@ export default function ManagerDashboard() {
   const [supplierForm, setSupplierForm] = useState({ name: '', phone: '' });
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '', username: '', password: '', is_active: 1 });
 
-  // Job Modal Kapatma Yardımcısı (State'leri sıfırlar)
+  // Job Modal Kapatma Yardımcısı
   const handleCloseJobModal = () => {
     setShowJobModal(false);
     setTimeout(() => {
         setJobModalStep(1);
         setJobModalType(null);
-    }, 300); // Animasyon bitince sıfırla
+    }, 300);
   };
 
   useEffect(() => {
@@ -289,9 +292,6 @@ export default function ManagerDashboard() {
          body.details = details;
     }
     
-    // YENİ: İşi kabul etme işlemi için özel kontrol (Eğer endpoint accept-job ise)
-    // Bu backend'de işin status'unu 'Ustaya Atanmayı Bekliyor' yapmalı.
-    
     try {
       const res = await fetch(`${API_URL}/${endpoint}`, { 
           method: 'POST', 
@@ -304,8 +304,7 @@ export default function ManagerDashboard() {
 
       if (res.ok) { 
         if(closeFn) closeFn(false); 
-        // Modal adımlı ise ve resetFn yoksa manuel resetleyelim
-        if(endpoint === 'create-job' || endpoint === 'update-job') {
+        if(endpoint === 'create-job' || endpoint === 'add-job') {
              setJobModalStep(1);
              setJobModalType(null);
         }
@@ -386,7 +385,6 @@ export default function ManagerDashboard() {
     'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200', 
     'İptal': 'bg-rose-100 text-rose-700 border-rose-200', 
     'Onay Bekliyor': 'bg-purple-100 text-purple-700 border-purple-200',
-    // YENİ DURUM: Ustaya atanmayı bekleyenler için (Opsiyonel görselleştirmeler için)
     'Usta Bekliyor': 'bg-indigo-100 text-indigo-700 border-indigo-200' 
   };
 
@@ -502,6 +500,7 @@ export default function ManagerDashboard() {
 
       <ChatPanel isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} activeChatId={activeChatId} setActiveChatId={setActiveChatId} data={data} messages={messages} setMessages={setMessages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} />
 
+      {/* 🚀 DÜZELTİLEN VE DOĞRU YERE ALINAN KISIM */}
       {data && (
         <DynamicPWA 
           companyName={data?.name} 
@@ -514,8 +513,8 @@ export default function ManagerDashboard() {
         showCustomerDetail={showCustomerDetail} setShowCustomerDetail={setShowCustomerDetail}
         showAssetDetail={showAssetDetail} setShowAssetDetail={setShowAssetDetail}
         
-        // YENİ: Modal için özelleştirilmiş kapatma fonksiyonu ve step/type propsları
-        showJobModal={showJobModal} setShowJobModal={handleCloseJobModal} 
+        // GÜNCELLENDİ: Yeni Modal Propsları Eklendi
+        showJobModal={showJobModal} setShowJobModal={handleCloseJobModal}
         jobModalStep={jobModalStep} setJobModalStep={setJobModalStep}
         jobModalType={jobModalType} setJobModalType={setJobModalType}
 
@@ -529,10 +528,15 @@ export default function ManagerDashboard() {
         showCategoryModal={showCategoryModal} setShowCategoryModal={setShowCategoryModal}
         handleAction={handleAction} isSaving={isSaving} data={data}
         selectedJob={selectedJob} setSelectedJob={setSelectedJob}
-        userRole="Yönetici" 
+        
+        // 🔥 BURAYA DİKKAT: Eksik state'ler buraya eklendi
+        searchCust={searchCust} setSearchCust={setSearchCust}
+        searchAsset={searchAsset} setSearchAsset={setSearchAsset}
+        userRole="Yönetici" // Yönetici için sabit rol
       />
       
       <AssetQRModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} asset={selectedQRAsset} companyName={data?.name} companyLogo={data?.logo} landlinePhone={data?.landlinePhone} whatsappPhone={data?.whatsappPhone} companyWebsite={data?.website} />
+
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, AlertTriangle, ArrowRight, Settings, Filter, ShieldAlert, Info, MapPin, Check, WifiOff, Download, Share } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, ArrowRight, Settings, Filter, ShieldAlert, Info, MapPin, Check, WifiOff, Download, Share, Lock } from 'lucide-react';
 
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
@@ -64,9 +64,7 @@ export default function PatronDashboard() {
 
   // Modal States
   const [showJobModal, setShowJobModal] = useState(false);
-  // YENİ: Modalın hangi aşamada olduğunu takip eder (1: Seçim, 2: Form)
   const [jobModalStep, setJobModalStep] = useState(1);
-  // YENİ: Seçilen iş türünü tutar
   const [jobModalType, setJobModalType] = useState(null);
 
   const [showAssetModal, setShowAssetModal] = useState(false);
@@ -94,6 +92,11 @@ export default function PatronDashboard() {
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
 
+  // 🔥 EKLENEN EKSİK STATE'LER (Saf JS)
+  const [searchCust, setSearchCust] = useState('');
+  const [searchAsset, setSearchAsset] = useState('');
+  // ------------------------------------------------
+
   const [jobForm, setJobForm] = useState({ customerName: '', assetId: '', staffId: '', workType: 'Genel Görev', jobType: 'Anlık', scheduledDate: '', taskNote: '' });
   const [assetForm, setAssetForm] = useState({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', customerMode: 'NONE', newCustomer: { name: '', contact: '', address: '', taxInfo: '' } });
   const [staffForm, setStaffForm] = useState({ name: '', phone: '', role: 'Usta', branch: '', status: 'Aktif', username: '', password: '' });
@@ -104,13 +107,13 @@ export default function PatronDashboard() {
   const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', landlinePhone: '', emergencyPhone: '', whatsappPhone: '', website: '', logo: '' });
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '', username: '', password: '', is_active: 1 });
 
-  // Job Modal Kapatma Yardımcısı (State'leri sıfırlar)
+  // Job Modal Kapatma Yardımcısı
   const handleCloseJobModal = () => {
     setShowJobModal(false);
     setTimeout(() => {
         setJobModalStep(1);
         setJobModalType(null);
-    }, 300); // Animasyon bitince sıfırla
+    }, 300);
   };
 
   useEffect(() => {
@@ -166,7 +169,6 @@ export default function PatronDashboard() {
     const decoded = parseJwt(token);
     setUserData(decoded);
 
-    
     try {
       const res = await fetch(`${API_URL}/dashboard-data?slug=${slug}`, {
         headers: {
@@ -275,7 +277,7 @@ export default function PatronDashboard() {
   useEffect(() => {
     const closeAnyOpenModal = () => {
       if (showQRModal) { setShowQRModal(false); return true; }
-      if (showJobModal) { handleCloseJobModal(); return true; } // Güncellendi
+      if (showJobModal) { handleCloseJobModal(); return true; }
       if (showAssetModal) { setShowAssetModal(false); return true; }
       if (showStaffModal) { setShowStaffModal(false); return true; }
       if (showCustomerModal) { setShowCustomerModal(false); return true; }
@@ -347,7 +349,6 @@ export default function PatronDashboard() {
       });
       if (res.ok) { 
         if(closeFn) closeFn(false); 
-        // Modal adımlı ise ve resetFn yoksa manuel resetleyelim
         if(endpoint === 'create-job' || endpoint === 'add-job') {
              setJobModalStep(1);
              setJobModalType(null);
@@ -755,6 +756,11 @@ export default function PatronDashboard() {
         showCategoryModal={showCategoryModal} setShowCategoryModal={setShowCategoryModal}
         handleAction={handleAction} isSaving={isSaving} data={data}
         selectedJob={selectedJob} setSelectedJob={setSelectedJob}
+        
+        // 🔥 BURAYA DİKKAT: Eksik state'ler buraya eklenmeli
+        searchCust={searchCust} setSearchCust={setSearchCust}
+        searchAsset={searchAsset} setSearchAsset={setSearchAsset}
+        userRole="Patron" // Patron için sabit rol
       />
       
       <AssetQRModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} asset={selectedQRAsset} companyName={data?.name} companyLogo={data?.logo} landlinePhone={data?.landlinePhone} whatsappPhone={data?.whatsappPhone} companyWebsite={data?.website} />
