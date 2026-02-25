@@ -19,8 +19,9 @@ export default function AddJobModal({
     ? Object.keys(safeSectors.sectors[currentSector].subTypes) 
     : [];
 
-// ? işareti ekleyerek jobForm varsa kontrol et diyoruz
-const isJobValid = jobForm?.workCategory === 'Genel İş Atama' ? true : (jobForm?.customerName || jobForm?.assetId);
+  // ? işareti ile güvenli kontrol
+  const isJobValid = jobForm?.workCategory === 'Genel İş Atama' ? true : (jobForm?.customerName || jobForm?.assetId);
+
   return (
     <AnimatePresence>
       {showJobModal && (
@@ -38,7 +39,7 @@ const isJobValid = jobForm?.workCategory === 'Genel İş Atama' ? true : (jobFor
                   )}
                   <div>
                       <h2 className="text-xl font-black text-slate-900 tracking-tight">
-                          {jobModalStep === 1 ? 'Yeni Görev Oluştur' : (jobForm.workCategory === 'Genel İş Atama' ? 'Genel Görev Detayları' : 'Normal İş Detayları')}
+                          {jobModalStep === 1 ? 'Yeni Görev Oluştur' : (jobForm?.workCategory === 'Genel İş Atama' ? 'Genel Görev Detayları' : 'Normal İş Detayları')}
                       </h2>
                       {jobModalStep === 2 && <div className="text-xs font-medium text-slate-500">Formu doldurarak atamayı tamamlayın.</div>}
                   </div>
@@ -151,10 +152,10 @@ const isJobValid = jobForm?.workCategory === 'Genel İş Atama' ? true : (jobFor
                               <div>
                                 <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Tarih / Zamanlama</label>
                                 <div className="grid grid-cols-2 gap-2">
-                                    <button onClick={() => setJobForm({...jobForm, jobType: 'Anlık', scheduledDate: ''})} className={`py-3 sm:py-2.5 text-xs font-bold rounded-xl border transition-all active:scale-95 ${jobForm.jobType === 'Anlık' ? 'bg-blue-50 text-blue-700 border-blue-300 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>Anlık Görev</button>
-                                    <button onClick={() => setJobForm({...jobForm, jobType: 'Planlı'})} className={`py-3 sm:py-2.5 text-xs font-bold rounded-xl border transition-all active:scale-95 ${jobForm.jobType === 'Planlı' ? 'bg-blue-50 text-blue-700 border-blue-300 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>Tarih Planla</button>
+                                    <button onClick={() => setJobForm({...jobForm, jobType: 'Anlık', scheduledDate: ''})} className={`py-3 sm:py-2.5 text-xs font-bold rounded-xl border transition-all active:scale-95 ${jobForm?.jobType === 'Anlık' ? 'bg-blue-50 text-blue-700 border-blue-300 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>Anlık Görev</button>
+                                    <button onClick={() => setJobForm({...jobForm, jobType: 'Planlı'})} className={`py-3 sm:py-2.5 text-xs font-bold rounded-xl border transition-all active:scale-95 ${jobForm?.jobType === 'Planlı' ? 'bg-blue-50 text-blue-700 border-blue-300 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>Tarih Planla</button>
                                 </div>
-                                {jobForm.jobType === 'Planlı' && (
+                                {jobForm?.jobType === 'Planlı' && (
                                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-3">
                                     <input type="date" className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" onChange={e => setJobForm({...jobForm, scheduledDate: e.target.value})} />
                                   </motion.div>
@@ -162,7 +163,7 @@ const isJobValid = jobForm?.workCategory === 'Genel İş Atama' ? true : (jobFor
                               </div>
 
                               {/* Sadece Normal İş İse: Müşteri/Varlık Seçimi */}
-                              {jobForm.workCategory !== 'Genel İş Atama' && (
+                              {jobForm?.workCategory !== 'Genel İş Atama' && (
                                 <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 shadow-sm">
                                   <div className="flex flex-col sm:flex-row gap-2 mb-2">
                                     <button onClick={() => setJobTargetMode('CUSTOMER')} className={`flex-1 py-2.5 sm:py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 flex items-center justify-center gap-1.5 ${jobTargetMode === 'CUSTOMER' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-200'}`}><User size={14}/> Müşteri ile İlerle</button>
@@ -173,20 +174,24 @@ const isJobValid = jobForm?.workCategory === 'Genel İş Atama' ? true : (jobFor
                                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
                                       <div className="relative">
                                         <Search className="absolute left-3 top-3 sm:top-2.5 text-slate-400" size={16} />
-                                        <input type="text" placeholder="İsim veya TC ile Müşteri Ara..." className="w-full pl-9 pr-3 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 bg-white" value={searchCust} onChange={e => setSearchCust(e.target.value)} />
+                                        <input type="text" placeholder="İsim veya TC ile Müşteri Ara..." className="w-full pl-9 pr-3 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 bg-white" value={searchCust || ''} onChange={e => setSearchCust(e.target.value)} />
                                       </div>
-                                      <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500 custom-scrollbar" size={4} value={jobForm.customerName} onChange={e => setJobForm({...jobForm, customerName: e.target.value, assetId: ''})}>
+                                      <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500 custom-scrollbar" size={4} value={jobForm?.customerName || ''} onChange={e => setJobForm({...jobForm, customerName: e.target.value, assetId: ''})}>
                                         <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- 1. Listeden Müşteri Seçin --</option>
-                                        {(data?.customers || []).filter((c:any) => c.name?.toLowerCase().includes(searchCust.toLowerCase()) || c.tax_info?.includes(searchCust)).map((c: any) => <option key={c.id} value={c.name} className="py-2 border-b border-slate-50 last:border-0">{c.name} {c.tax_info ? `(${c.tax_info})` : ''}</option>)}
+                                        
+                                        {/* HATA ÇÖZÜMÜ BURADA: (searchCust || '') ve (c.name || '') kullanarak undefined kontrolü */}
+                                        {(data?.customers || []).filter((c:any) => (c.name || '').toLowerCase().includes((searchCust || '').toLowerCase()) || (c.tax_info || '').includes(searchCust || '')).map((c: any) => (
+                                            <option key={c.id} value={c.name} className="py-2 border-b border-slate-50 last:border-0">{c.name} {c.tax_info ? `(${c.tax_info})` : ''}</option>
+                                        ))}
                                       </select>
                                       
-                                      {jobForm.customerName && (() => {
+                                      {jobForm?.customerName && (() => {
                                          const selectedCustomer = (data?.customers || []).find((c:any) => c.name === jobForm.customerName);
                                          const customerAssets = (data?.assets || []).filter((a:any) => String(a.customer_id) === String(selectedCustomer?.id));
                                          return (
                                            <div className="pt-2 border-t border-slate-100">
                                               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">2. Bu Müşteriye Ait Varlık (İsteğe Bağlı)</label>
-                                              <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500" value={jobForm.assetId} onChange={e => setJobForm({...jobForm, assetId: e.target.value})}>
+                                              <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500" value={jobForm?.assetId || ''} onChange={e => setJobForm({...jobForm, assetId: e.target.value})}>
                                                   <option value="">-- Varlık Seçilmedi (Genel Müşteri İşi) --</option>
                                                   {customerAssets.map((a:any) => (
                                                      <option key={a.id} value={a.id}>{a.name} - {a.location}</option>
@@ -201,19 +206,21 @@ const isJobValid = jobForm?.workCategory === 'Genel İş Atama' ? true : (jobFor
                                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                                       <div className="relative mb-2">
                                         <Search className="absolute left-3 top-3 sm:top-2.5 text-slate-400" size={16} />
-                                        <input type="text" placeholder="Cihaz Adı Ara..." className="w-full pl-9 pr-3 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 bg-white" value={searchAsset} onChange={e => setSearchAsset(e.target.value)} />
+                                        <input type="text" placeholder="Cihaz Adı Ara..." className="w-full pl-9 pr-3 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 bg-white" value={searchAsset || ''} onChange={e => setSearchAsset(e.target.value)} />
                                       </div>
-                                      <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500 custom-scrollbar" size={4} value={jobForm.assetId} onChange={e => {
+                                      <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500 custom-scrollbar" size={4} value={jobForm?.assetId || ''} onChange={e => {
                                         const selectedAsset = (data?.assets || []).find((a:any) => String(a.id) === String(e.target.value));
                                         const parentCust = (data?.customers || []).find((c:any) => String(c.id) === String(selectedAsset?.customer_id));
                                         setJobForm({...jobForm, assetId: e.target.value, customerName: parentCust?.name || ''});
                                       }}>
                                         <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- Listeden Varlık Seçin --</option>
-                                        {(data?.assets || []).filter((a: any) => a.name?.toLowerCase().includes(searchAsset.toLowerCase())).map((a: any) => (
+                                        
+                                        {/* HATA ÇÖZÜMÜ BURADA: (searchAsset || '') ve (a.name || '') kullanımı */}
+                                        {(data?.assets || []).filter((a: any) => (a.name || '').toLowerCase().includes((searchAsset || '').toLowerCase())).map((a: any) => (
                                           <option key={a.id} value={a.id} className="py-2 border-b border-slate-50 last:border-0">{a.name} - {a.location}</option>
                                         ))}
                                       </select>
-                                      {jobForm.assetId && (
+                                      {jobForm?.assetId && (
                                           <div className="mt-3 text-[10px] font-bold text-blue-700 bg-blue-50/80 p-2.5 rounded-lg border border-blue-100 flex items-center gap-1.5">
                                               <CheckCircle size={14} className="text-blue-500 shrink-0"/> Müşteri Eşleşti: <span className="text-slate-800 truncate">{jobForm.customerName || 'Bağımsız Varlık'}</span>
                                           </div>
@@ -226,7 +233,7 @@ const isJobValid = jobForm?.workCategory === 'Genel İş Atama' ? true : (jobFor
                               {/* Ortak Alan: Personel Seçimi */}
                               <div>
                                 <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Sorumlu Personel</label>
-                                <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={jobForm.staffId} onChange={e => setJobForm({...jobForm, staffId: e.target.value})}>
+                                <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={jobForm?.staffId || ''} onChange={e => setJobForm({...jobForm, staffId: e.target.value})}>
                                   <option value="">Seçiniz...</option>
                                   {(data?.staff || [])
                                     .filter((s:any) => userRole === 'Patron' ? s.role === 'Yönetici' : s.role === 'Usta')
@@ -239,7 +246,7 @@ const isJobValid = jobForm?.workCategory === 'Genel İş Atama' ? true : (jobFor
                               {/* Ortak Alan: Not */}
                               <div>
                                 <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Görev Özeti / Talimatlar</label>
-                                <textarea rows={3} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none resize-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="İşin detayı nedir?..." value={jobForm.taskNote} onChange={e => setJobForm({...jobForm, taskNote: e.target.value})} />
+                                <textarea rows={3} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none resize-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="İşin detayı nedir?..." value={jobForm?.taskNote || ''} onChange={e => setJobForm({...jobForm, taskNote: e.target.value})} />
                               </div>
                           </div>
                       )}
