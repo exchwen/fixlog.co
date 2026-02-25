@@ -37,14 +37,15 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
            </thead>
            <tbody className="divide-y divide-slate-100">
              {data?.jobs?.length > 0 ? data.jobs.map((j: any) => {
-               // --- HİYERARŞİ MANTIĞI ---
-               // 1. İşi kim oluşturdu? (Details içinden veya ownerName)
+               // --- HİYERARŞİ MANTIĞI (DÜZELTİLDİ) ---
+               
+               // 1. İşi kim oluşturdu?
                const createdBy = j.details?.createdBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
                
-               // 2. Şu anki sorumlu yönetici kim? (staff_id ile eşleşen)
+               // 2. Şu anki sorumlu yönetici kim? (String dönüşümü ile güvenli eşleştirme)
                const assignedManager = data?.staff?.find((s: any) => String(s.id) === String(j.staff_id));
                
-               // 3. Sahadaki usta kim? (worker_id ile eşleşen)
+               // 3. Sahadaki usta kim? (String dönüşümü ile güvenli eşleştirme - İsim sorunu burada çözüldü)
                const assignedWorker = data?.staff?.find((s: any) => String(s.id) === String(j.details?.worker_id));
                
                // 4. Kontrol: Oluşturan kişi ile atanan yönetici aynı isim mi?
@@ -86,7 +87,7 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                       )}
                    </td>
                    
-                   {/* PERSONEL HİYERARŞİSİ (ÖZEL KISIM) */}
+                   {/* PERSONEL HİYERARŞİSİ */}
                    <td className="px-5 py-4 align-top">
                       <div className="flex flex-col gap-2">
                         
@@ -167,7 +168,7 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
       {/* MOBİL GÖRÜNÜM: DİKEY İŞ KARTLARI */}
       <div className="md:hidden flex flex-col gap-3">
         {data?.jobs?.length > 0 ? data.jobs.map((j: any) => {
-          // --- MOBİL İÇİN HİYERARŞİ MANTIĞI ---
+          // --- MOBİL İÇİN HİYERARŞİ MANTIĞI (DÜZELTİLDİ) ---
           const createdBy = j.details?.createdBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
           const assignedManager = data?.staff?.find((s: any) => String(s.id) === String(j.staff_id));
           const assignedWorker = data?.staff?.find((s: any) => String(s.id) === String(j.details?.worker_id));

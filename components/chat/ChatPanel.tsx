@@ -39,7 +39,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   // 🚀 GÜVENLİ LİNK DÖNÜŞÜTÜRÜCÜ (PROXY)
   const getSafeImageUrl = (url: string) => {
     if (!url) return '';
-    // Eğer link bizim R2 bucket ise, onu Vercel proxy'sine çevir
     if (url.includes('pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev')) {
        return url.replace('https://pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev', '/dosya-deposu');
     }
@@ -116,16 +115,14 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
   }, [currentUserId, actualSlug, currentUserRole]);
 
-  // LOGO RENK ANALİZİ (Güvenli Link İle)
+  // LOGO RENK ANALİZİ
   useEffect(() => {
     if (!data?.logo) {
       setLogoBgColor('#2563eb'); 
       return;
     }
 
-    // 🔥 Linki güvenli hale getiriyoruz
     const safeLogoUrl = getSafeImageUrl(data.logo);
-
     const img = new Image();
     img.crossOrigin = "Anonymous";
     
@@ -180,7 +177,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
         }
       } catch (e) {}
     };
-    // 🚀 Güvenli linki kullanıyoruz
     img.src = safeLogoUrl + (safeLogoUrl.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
     }, [data?.logo]);
 
@@ -566,7 +562,8 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   }, [allMessages, activeChatId, currentUserId, currentUserRole]);
 
   return (
-    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[100] flex flex-col items-end gap-3 pointer-events-none">
+    // DÜZENLEME BURADA: Masaüstü için sola taşıdım, mobilde sağda bıraktım ve z-index düşürüldü.
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 md:right-auto md:left-6 z-[30] flex flex-col items-end md:items-start gap-3 pointer-events-none">
       
       <AnimatePresence>
         {msgToast.show && !isChatOpen && (
@@ -594,7 +591,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             initial={{ opacity: 0, y: 20, scale: 0.95 }} 
             animate={{ opacity: 1, y: 0, scale: 1 }} 
             exit={{ opacity: 0, y: 20, scale: 0.95 }} 
-            className="w-[calc(100vw-32px)] sm:w-[340px] h-[70vh] max-h-[550px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden origin-bottom-right pointer-events-auto"
+            className="w-[calc(100vw-32px)] sm:w-[340px] h-[70vh] max-h-[550px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden origin-bottom-right md:origin-bottom-left pointer-events-auto"
           >
             
             <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between shadow-md z-10 shrink-0">

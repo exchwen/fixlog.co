@@ -51,7 +51,6 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
     setUserInfo({ name: currentName, role: isPatronPath ? 'Patron' : storedRole });
 
     if (data?.logo) {
-      // 🔥 Linki güvenli hale getiriyoruz
       const safeLogoUrl = getSafeImageUrl(data.logo);
 
       const img = new Image();
@@ -87,7 +86,6 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
           }
         } catch (e) { console.error(e); }
       };
-      // 🚀 Güvenli linki kullanıyoruz
       img.src = safeLogoUrl + (safeLogoUrl.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
     } else {
       setLogoBgColor('#ffffff');
@@ -228,16 +226,17 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
               <span title={isOffline ? "Çevrimdışı (Önbellek)" : "Çevrimiçi (Canlı)"} className={`w-2 h-2 rounded-full animate-pulse shadow-sm shrink-0 ${isOffline ? 'bg-rose-500' : 'bg-emerald-500'}`}></span>
             </h1>
             
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider truncate max-w-[70px] sm:max-w-[120px]">
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[11px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider truncate max-w-[80px] sm:max-w-[120px]">
                 {userInfo.name || 'Yönetim'}
               </span>
               
+              {/* DÜZENLENEN KISIM: Mobil Görünüm İyileştirildi */}
               {userInfo.role && (
-                <span className={`text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border shadow-sm shrink-0
-                  ${userInfo.role === 'Patron' ? 'bg-purple-100 text-purple-700 border-purple-200' : 
-                    userInfo.role === 'Yönetici' ? 'bg-blue-100 text-blue-700 border-blue-200' : 
-                    'bg-emerald-100 text-emerald-700 border-emerald-200'}`}
+                <span className={`text-[10px] sm:text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg border shadow-sm shrink-0
+                  ${userInfo.role === 'Patron' ? 'bg-purple-50 text-purple-700 border-purple-200' : 
+                    userInfo.role === 'Yönetici' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
+                    'bg-emerald-50 text-emerald-700 border-emerald-200'}`}
                 >
                   {userInfo.role}
                 </span>
