@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Briefcase, MapPin, CheckCircle, PlayCircle, 
   ArrowUpRight, User, Wrench, Loader2, 
-  UserPlus, Check, Calendar, Activity, AlertTriangle, CheckSquare, Clock
+  UserPlus, Check, Calendar, Activity, AlertTriangle, CheckSquare, Clock, Eye
 } from 'lucide-react';
 
 interface Job {
@@ -69,29 +69,46 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
   const jobs = data?.jobs || [];
   const staff = data?.staff || [];
 
-  // 1. ADIM: İZOLASYON (Sadece bana ait işler)
+  // 1. ADIM: İZOLASYON (Sadece bana ait veya benim sorumlu olduğum işler)
   const myAllJobs = useMemo(() => {
      if (!currentUserId) return [];
      return jobs.filter((j: any) => 
-        String(j.staff_id) === String(currentUserId) || 
-        String(j.details?.managerId) === String(currentUserId)
+        String(j.staff_id) === String(currentUserId) || // Direkt bana atanan
+        String(j.details?.managerId) === String(currentUserId) // Benim yönetici olarak atadığım
      );
   }, [jobs, currentUserId]);
 
   // --- GRUPLANDIRMA MANTIĞI (GÜNCELLENDİ) ---
 
-  // 1. Onay Bekleyenler (Patrondan Yeni Gelmiş)
-  const incomingJobs = myAllJobs.filter((j: any) => j.status === 'Beklemede' || j.status === 'Gelecek');
-
-  // 2. Atama Bekleyenler (Yönetici Kabul Etmiş, Statüsü 'Usta Bekliyor' VE HENÜZ worker_id YOK)
-  const waitingForAssignment = myAllJobs.filter((j: any) => j.status === 'Usta Bekliyor' && !j.details?.worker_id);
-
-  // 3. Devam Edenler & Usta Onayı Bekleyenler
-  // Şart: (Normal Devam Edenler) VEYA (Statüsü 'Usta Bekliyor' ama worker_id VAR)
-  const ongoingJobs = myAllJobs.filter((j: any) => 
-    (j.status === 'Devam Ediyor' || j.status === 'Sahada') || 
-    (j.status === 'Usta Bekliyor' && j.details?.worker_id)
+  // 1. Onay Bekleyenler (Patrondan Yeni Gelmiş, Henüz Kabul Etmemişim)
+  const incomingJobs = myAllJobs.filter((j: any) => 
+    (j.status === 'Beklemede' || j.status === 'Gelecek') && 
+    String(j.staff_id) === String(currentUserId) // Sadece direkt üzerimdeyse
   );
+
+  // 2. Atama Bekleyenler (Kabul Ettim ama Henüz Usta Seçmedim)
+  const waitingForAssignment = myAllJobs.filter((j: any) => 
+    j.status === 'Usta Bekliyor' && 
+    !j.details?.worker_id && 
+    String(j.staff_id) === String(currentUserId)
+  );
+
+  // 3. Devam Edenler & Takiptekiler (KRİTİK GÜNCELLEME BURADA)
+  // - Kendim yapıyorsam (Devam Ediyor)
+  // - Ustaya atadıysam ve usta henüz onaylamadıysa (Usta Bekliyor + worker_id var)
+  // - Usta onayladı ve çalışıyorsa (Devam Ediyor / Sahada + worker_id var)
+  const ongoingJobs = myAllJobs.filter((j: any) => {
+    // Tamamlananlar hariç
+    if (j.status === 'Tamamlandı' || j.status === 'İptal') return false;
+    
+    // Zaten yukarıdaki kategorilere girenleri çıkar
+    const isIncoming = (j.status === 'Beklemede' || j.status === 'Gelecek') && String(j.staff_id) === String(currentUserId);
+    const isWaitingAssign = j.status === 'Usta Bekliyor' && !j.details?.worker_id;
+    
+    if (isIncoming || isWaitingAssign) return false;
+
+    return true; // Geriye kalan her şey "Aktif/Takip edilen" işlerdir.
+  });
 
   // 4. Tamamlananlar
   const completedJobs = myAllJobs.filter((j: any) => j.status === 'Tamamlandı');
@@ -148,7 +165,7 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
               <div className="text-2xl font-black">{waitingForAssignment.length}</div>
            </div>
            <div className="bg-blue-50 border border-blue-100 text-blue-700 p-3 rounded-xl text-center">
-              <div className="text-[10px] font-bold uppercase tracking-wider opacity-70">Aktif / Atanan</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider opacity-70">Aktif / Takipte</div>
               <div className="text-2xl font-black">{ongoingJobs.length}</div>
            </div>
            <div className="bg-emerald-50 border border-emerald-100 text-emerald-700 p-3 rounded-xl text-center">
@@ -241,11 +258,13 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
       {/* 3. BÖLÜM: TABLOLAR (DEVAM EDEN & TAMAMLANAN) */}
       <div className="space-y-8 pt-2">
           
-          {/* TABLO 1: DEVAM EDEN İŞLER */}
+          {/* TABLO 1: DEVAM EDEN & TAKİPTEKİ İŞLER (GÜNCELLENDİ) */}
           <div className="bg-white rounded-3xl border border-blue-100 shadow-sm overflow-hidden">
               <div className="p-5 bg-blue-50/50 border-b border-blue-100 flex items-center gap-2">
                   <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><Activity size={18} /></div>
-                  <h3 className="font-black text-blue-900 text-sm uppercase tracking-wide">Yönetimimdeki Devam Eden İşler ({ongoingJobs.length})</h3>
+                  <h3 className="font-black text-blue-900 text-sm uppercase tracking-wide">
+                      Aktif ve Takip Edilen İşler ({ongoingJobs.length})
+                  </h3>
               </div>
               
               {/* Masaüstü Görünüm (Table) */}
@@ -257,15 +276,32 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                               <th className="px-6 py-4 border-b border-slate-100">Saha Ustası</th>
                               <th className="px-6 py-4 border-b border-slate-100">Planlanan Tarih</th>
                               <th className="px-6 py-4 border-b border-slate-100 text-right">Durum</th>
+                              <th className="px-6 py-4 border-b border-slate-100"></th>
                           </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">
                           {ongoingJobs.length > 0 ? ongoingJobs.map((job: any) => {
+                              // USTA BİLGİSİ
                               const worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
-                              // Eğer statü 'Usta Bekliyor' ama worker atanmışsa -> Usta Onayı Bekleniyor
-                              const displayStatus = (job.status === 'Usta Bekliyor' && job.details?.worker_id) 
-                                ? 'Usta Onayı Bekleniyor' 
-                                : job.status;
+                              
+                              // AKILLI DURUM METNİ (Yönetici Gözüyle)
+                              let displayStatus = job.status;
+                              let statusClass = 'bg-blue-50 text-blue-700 border-blue-200';
+                              let StatusIcon = Activity;
+
+                              if (job.status === 'Usta Bekliyor' && worker) {
+                                  displayStatus = 'Usta Onayı Bekleniyor';
+                                  statusClass = 'bg-amber-50 text-amber-700 border-amber-200';
+                                  StatusIcon = Clock;
+                              } else if (job.status === 'Sahada' || job.status === 'Devam Ediyor') {
+                                  if (worker) {
+                                      displayStatus = 'Usta Sahada / Çalışıyor';
+                                      statusClass = 'bg-indigo-50 text-indigo-700 border-indigo-200';
+                                      StatusIcon = Wrench;
+                                  } else {
+                                      displayStatus = 'Siz Çalışıyorsunuz'; // Yönetici kendi üzerine aldıysa
+                                  }
+                              }
 
                               return (
                                   <tr key={job.id} onClick={() => handleOpenModal(job)} className="hover:bg-blue-50/50 transition-colors cursor-pointer group">
@@ -276,12 +312,17 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                                       <td className="px-6 py-4">
                                           {worker ? (
                                               <div className="flex items-center gap-2">
-                                                  <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-black border border-blue-200">
+                                                  <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-black border border-indigo-200">
                                                       {worker.name.charAt(0)}
                                                   </div>
                                                   <span className="font-bold text-slate-700">{worker.name}</span>
                                               </div>
-                                          ) : <span className="text-slate-400 italic text-[11px]">Atanmadı</span>}
+                                          ) : (
+                                              <div className="flex items-center gap-2 opacity-60">
+                                                  <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center"><User size={12} /></div>
+                                                  <span className="text-slate-500 italic text-[11px]">Kendim</span>
+                                              </div>
+                                          )}
                                       </td>
                                       <td className="px-6 py-4 font-medium text-slate-600">
                                           <div className="flex items-center gap-1.5">
@@ -290,15 +331,18 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                                           </div>
                                       </td>
                                       <td className="px-6 py-4 text-right">
-                                          <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase border inline-flex items-center gap-1.5 shadow-sm ${displayStatus === 'Usta Onayı Bekleniyor' ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-white text-blue-700 border-blue-200'}`}>
-                                              {displayStatus === 'Usta Onayı Bekleniyor' ? <Clock size={10} /> : <Loader2 size={10} className="animate-spin" />} 
+                                          <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase border inline-flex items-center gap-1.5 shadow-sm ${statusClass}`}>
+                                              <StatusIcon size={12} />
                                               {displayStatus}
                                           </span>
+                                      </td>
+                                      <td className="px-6 py-4 text-right text-slate-300">
+                                          <div className="group-hover:text-blue-500 transition-colors"><Eye size={16} /></div>
                                       </td>
                                   </tr>
                               );
                           }) : (
-                              <tr><td colSpan={4} className="p-10 text-center text-slate-400 font-medium text-sm">Şu anda devam eden bir işiniz yok.</td></tr>
+                              <tr><td colSpan={5} className="p-10 text-center text-slate-400 font-medium text-sm">Şu anda aktif veya takip edilen bir işiniz yok.</td></tr>
                           )}
                       </tbody>
                   </table>
@@ -308,9 +352,17 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
               <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50">
                   {ongoingJobs.length > 0 ? ongoingJobs.map((job: any) => {
                       const worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
-                      const displayStatus = (job.status === 'Usta Bekliyor' && job.details?.worker_id) 
-                        ? 'Usta Onayı Bekleniyor' 
-                        : job.status;
+                      
+                      let displayStatus = job.status;
+                      let statusClass = 'bg-blue-50 text-blue-600 border-blue-100';
+
+                      if (job.status === 'Usta Bekliyor' && worker) {
+                          displayStatus = 'Usta Onayı Bekleniyor';
+                          statusClass = 'bg-amber-50 text-amber-600 border-amber-200';
+                      } else if ((job.status === 'Sahada' || job.status === 'Devam Ediyor') && worker) {
+                          displayStatus = 'Usta Çalışıyor';
+                          statusClass = 'bg-indigo-50 text-indigo-600 border-indigo-200';
+                      }
 
                       return (
                         <div key={job.id} onClick={() => handleOpenModal(job)} className="bg-white rounded-xl border border-blue-100 p-4 shadow-sm flex flex-col gap-3 active:scale-95 transition-all">
@@ -319,14 +371,14 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                                 <div className="font-bold text-slate-800 text-sm truncate">{job.customer_name}</div>
                                 <div className="text-[10px] text-slate-500 font-medium mt-0.5">{job.work_type}</div>
                               </div>
-                              <span className={`px-2 py-1 rounded text-[9px] font-black uppercase border ${displayStatus === 'Usta Onayı Bekleniyor' ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                              <span className={`px-2 py-1 rounded text-[9px] font-black uppercase border ${statusClass}`}>
                                 {displayStatus}
                               </span>
                            </div>
                            <div className="flex items-center justify-between border-t border-slate-50 pt-2">
                               <div className="flex items-center gap-1.5">
                                  <Wrench size={12} className="text-slate-400"/>
-                                 <span className="text-xs font-bold text-slate-700">{worker ? worker.name : 'Atanmadı'}</span>
+                                 <span className="text-xs font-bold text-slate-700">{worker ? worker.name : 'Sorumlu: Siz'}</span>
                               </div>
                               <div className="flex items-center gap-1.5 text-xs text-slate-500">
                                  <Calendar size={12}/> {job.scheduled_date || 'Tarih Yok'}

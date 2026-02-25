@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Plus, Calendar, User, ArrowRight, Clock, MapPin, ClipboardList, ShieldCheck, Wrench } from 'lucide-react';
+import { Plus, Calendar, User, ArrowRight, Clock, MapPin, ClipboardList, ShieldCheck, Wrench, UserPlus, UserCheck, ChevronsRight } from 'lucide-react';
 
 export default function JobsTab({ data, setShowJobModal, statusColors, setSelectedJob }: any) {
   return (
@@ -37,19 +37,21 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
            </thead>
            <tbody className="divide-y divide-slate-100">
              {data?.jobs?.length > 0 ? data.jobs.map((j: any) => {
-               // --- HİYERARŞİ MANTIĞI (DÜZELTİLDİ) ---
                
-               // 1. İşi kim oluşturdu?
-               const createdBy = j.details?.createdBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
+               // --- GELİŞMİŞ HİYERARŞİ MANTIĞI ---
                
-               // 2. Şu anki sorumlu yönetici kim? (String dönüşümü ile güvenli eşleştirme)
+               // 1. İşi Oluşturan (Veritabanındaki createdBy veya Patron adı)
+               const creatorName = j.details?.createdBy || data?.ownerName || 'Yönetici';
+               
+               // 2. Atanan Sorumlu Yönetici (staff_id üzerinden bulunur)
                const assignedManager = data?.staff?.find((s: any) => String(s.id) === String(j.staff_id));
                
-               // 3. Sahadaki usta kim? (String dönüşümü ile güvenli eşleştirme - İsim sorunu burada çözüldü)
+               // 3. Atanan Saha Ustası (details.worker_id üzerinden bulunur)
                const assignedWorker = data?.staff?.find((s: any) => String(s.id) === String(j.details?.worker_id));
                
-               // 4. Kontrol: Oluşturan kişi ile atanan yönetici aynı isim mi?
-               const isSamePerson = assignedManager && (assignedManager.name === createdBy);
+               // 4. Kontrol: Oluşturan kişi ile Sorumlu aynı mı?
+               // Eğer yönetici işi kendine atadıysa veya işi oluşturup yönetici olarak kendini seçtiyse "Atayan & Sorumlu" tek satır olur.
+               const isCreatorSameAsManager = assignedManager && (assignedManager.name === creatorName);
 
                return (
                  <tr 
@@ -87,33 +89,33 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                       )}
                    </td>
                    
-                   {/* PERSONEL HİYERARŞİSİ */}
+                   {/* PERSONEL HİYERARŞİSİ (TABLO GÖRÜNÜMÜ) */}
                    <td className="px-5 py-4 align-top">
-                      <div className="flex flex-col gap-2">
+                      <div className="flex flex-col gap-1.5">
                         
-                        {/* 1. KADEME: YÖNETİM */}
-                        {isSamePerson ? (
-                            // Atayan ve Sorumlu AYNI Kişi İse Tek Satır
+                        {/* A) ÜST YÖNETİM KATMANI */}
+                        {isCreatorSameAsManager ? (
+                            // 1. Senaryo: Yönetici işi oluşturdu ve kendine atadı (Tek Satır)
                             <div className="flex items-center gap-2">
                                 <ShieldCheck size={14} className="text-blue-600" />
-                                <span className="text-[9px] font-black text-slate-400 uppercase w-[100px] tracking-wider">Atayan & Sorumlu:</span>
+                                <span className="text-[9px] font-black text-slate-400 uppercase w-[105px] tracking-wider">ATAYAN & SORUMLU:</span>
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200 bg-blue-50 text-blue-700 whitespace-nowrap">
                                     {assignedManager.name}
                                 </span>
                             </div>
                         ) : (
-                            // Farklı Kişiler İse İki Satır
+                            // 2. Senaryo: Patron/Yönetici oluşturdu -> Başka Yöneticiye atadı (İki Satır)
                             <>
                                 <div className="flex items-center gap-2">
-                                    <ShieldCheck size={14} className="text-slate-400" />
-                                    <span className="text-[9px] font-black text-slate-400 uppercase w-[56px] tracking-wider">Atayan:</span>
+                                    <UserPlus size={14} className="text-slate-400" />
+                                    <span className="text-[9px] font-black text-slate-400 uppercase w-[60px] tracking-wider">ATAYAN:</span>
                                     <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-600 whitespace-nowrap">
-                                        {createdBy}
+                                        {creatorName}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <User size={14} className={assignedManager ? 'text-blue-500' : 'text-slate-300'} />
-                                    <span className="text-[9px] font-black text-slate-400 uppercase w-[56px] tracking-wider">Sorumlu:</span>
+                                    <UserCheck size={14} className={assignedManager ? 'text-blue-500' : 'text-slate-300'} />
+                                    <span className="text-[9px] font-black text-slate-400 uppercase w-[60px] tracking-wider">SORUMLU:</span>
                                     {assignedManager ? (
                                         <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200 bg-blue-50 text-blue-700 whitespace-nowrap">
                                             {assignedManager.name}
@@ -125,11 +127,16 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                             </>
                         )}
 
-                        {/* 2. KADEME: SAHA (USTA) */}
+                        {/* Hiyerarşi Çizgisi (Görsel Ayraç) */}
+                        {(assignedManager || assignedWorker) && (
+                            <div className="ml-[7px] w-[1px] h-2 bg-slate-200 my-0.5"></div>
+                        )}
+
+                        {/* B) SAHA (USTA) KATMANI */}
                         <div className="flex items-center gap-2">
                             <Wrench size={14} className={assignedWorker ? 'text-indigo-500' : 'text-slate-300'} />
-                            <span className="text-[9px] font-black text-slate-400 uppercase w-[100px] tracking-wider">
-                                Saha Ustası:
+                            <span className="text-[9px] font-black text-slate-400 uppercase w-[105px] tracking-wider">
+                                {isCreatorSameAsManager ? 'SAHA USTASI:' : 'SAHA USTASI:'}
                             </span>
                             {assignedWorker ? (
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-indigo-700 whitespace-nowrap">
@@ -168,11 +175,12 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
       {/* MOBİL GÖRÜNÜM: DİKEY İŞ KARTLARI */}
       <div className="md:hidden flex flex-col gap-3">
         {data?.jobs?.length > 0 ? data.jobs.map((j: any) => {
-          // --- MOBİL İÇİN HİYERARŞİ MANTIĞI (DÜZELTİLDİ) ---
-          const createdBy = j.details?.createdBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
+          
+          // --- MOBİL İÇİN HİYERARŞİ MANTIĞI ---
+          const creatorName = j.details?.createdBy || data?.ownerName || 'Yönetici';
           const assignedManager = data?.staff?.find((s: any) => String(s.id) === String(j.staff_id));
           const assignedWorker = data?.staff?.find((s: any) => String(s.id) === String(j.details?.worker_id));
-          const isSamePerson = assignedManager && (assignedManager.name === createdBy);
+          const isCreatorSameAsManager = assignedManager && (assignedManager.name === creatorName);
 
           return (
             <div 
@@ -194,25 +202,47 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                  </span>
               </div>
 
-              {/* PERSONEL BİLGİSİ (MOBİL) */}
+              {/* PERSONEL BİLGİSİ (MOBİL KART) */}
               <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                          {isSamePerson ? 'ATAYAN & SORUMLU' : 'SORUMLU'}
-                      </span>
-                      <div className="text-[11px] font-bold text-blue-700 flex items-center gap-1.5 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
-                          {isSamePerson ? (
-                              <><ShieldCheck size={12} /> {assignedManager.name}</>
-                          ) : (
-                              <><User size={12} /> {assignedManager ? assignedManager.name : 'Atanmadı'}</>
-                          )}
-                      </div>
-                  </div>
                   
-                  <div className="flex items-center justify-between border-t border-slate-200 pt-2">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">SAHA USTASI</span>
+                  {/* ÜST BÖLÜM: YÖNETİM */}
+                  {isCreatorSameAsManager ? (
+                      <div className="flex items-center justify-between">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                             <ShieldCheck size={10} /> ATAYAN & SORUMLU
+                          </span>
+                          <div className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                              {assignedManager.name}
+                          </div>
+                      </div>
+                  ) : (
+                      <>
+                        <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                               <UserPlus size={10} /> ATAYAN
+                            </span>
+                            <div className="text-[11px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
+                                {creatorName}
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                               <UserCheck size={10} /> SORUMLU
+                            </span>
+                            <div className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                                {assignedManager ? assignedManager.name : 'Atanmadı'}
+                            </div>
+                        </div>
+                      </>
+                  )}
+                  
+                  {/* ALT BÖLÜM: SAHA */}
+                  <div className="flex items-center justify-between border-t border-slate-200 pt-2 border-dashed">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                         <Wrench size={10} /> SAHA USTASI
+                      </span>
                       <div className="text-[11px] font-bold text-indigo-700 flex items-center gap-1.5 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
-                          <Wrench size={12} /> {assignedWorker ? assignedWorker.name : 'Atanmadı'}
+                          {assignedWorker ? assignedWorker.name : 'Atanmadı'}
                       </div>
                   </div>
               </div>
