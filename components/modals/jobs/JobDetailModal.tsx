@@ -39,8 +39,8 @@ export default function JobDetailModal({
     'Onay Bekliyor': 'bg-purple-100 text-purple-700 border-purple-200'
   };
 
-  const isEditJobValid = editJobDetailForm.workCategory === 'Genel İş Atama' ? true : (editJobDetailForm.customerName || editJobDetailForm.assetId);
-
+// ? işareti ekleyerek editJobDetailForm varsa kontrol et diyoruz
+const isEditJobValid = editJobDetailForm?.workCategory === 'Genel İş Atama' ? true : (editJobDetailForm?.customerName || editJobDetailForm?.assetId);
   const currentSector = data?.sector || '';
   const safeSectors: any = sectorsData;
   const branchList = currentSector && safeSectors?.sectors?.[currentSector]?.subTypes 

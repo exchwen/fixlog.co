@@ -19,8 +19,8 @@ export default function AddJobModal({
     ? Object.keys(safeSectors.sectors[currentSector].subTypes) 
     : [];
 
-  const isJobValid = jobForm.workCategory === 'Genel İş Atama' ? true : (jobForm.customerName || jobForm.assetId);
-
+// ? işareti ekleyerek jobForm varsa kontrol et diyoruz
+const isJobValid = jobForm?.workCategory === 'Genel İş Atama' ? true : (jobForm?.customerName || jobForm?.assetId);
   return (
     <AnimatePresence>
       {showJobModal && (
