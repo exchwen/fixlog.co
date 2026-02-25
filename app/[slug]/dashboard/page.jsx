@@ -95,6 +95,7 @@ export default function PatronDashboard() {
   // 🔥 EKLENEN EKSİK STATE'LER (Saf JS)
   const [searchCust, setSearchCust] = useState('');
   const [searchAsset, setSearchAsset] = useState('');
+  const [jobTargetMode, setJobTargetMode] = useState('CUSTOMER');
   // ------------------------------------------------
 
   const [jobForm, setJobForm] = useState({ customerName: '', assetId: '', staffId: '', workType: 'Genel Görev', jobType: 'Anlık', scheduledDate: '', taskNote: '' });
@@ -760,6 +761,8 @@ export default function PatronDashboard() {
         // 🔥 BURAYA DİKKAT: Eksik state'ler buraya eklenmeli
         searchCust={searchCust} setSearchCust={setSearchCust}
         searchAsset={searchAsset} setSearchAsset={setSearchAsset}
+        jobTargetMode={jobTargetMode} 
+         setJobTargetMode={setJobTargetMode}
         userRole="Patron" // Patron için sabit rol
       />
       

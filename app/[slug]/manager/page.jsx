@@ -94,6 +94,7 @@ export default function ManagerDashboard() {
   // 🔥 EKLENEN EKSİK STATE'LER (Manager için de gerekli)
   const [searchCust, setSearchCust] = useState('');
   const [searchAsset, setSearchAsset] = useState('');
+  const [jobTargetMode, setJobTargetMode] = useState('CUSTOMER');
   // ---------------------------------------------------
 
   const [jobForm, setJobForm] = useState({ customerName: '', assetId: '', staffId: '', workType: 'Genel Görev', jobType: 'Anlık', scheduledDate: '', taskNote: '' });
@@ -528,13 +529,15 @@ export default function ManagerDashboard() {
         showCategoryModal={showCategoryModal} setShowCategoryModal={setShowCategoryModal}
         handleAction={handleAction} isSaving={isSaving} data={data}
         selectedJob={selectedJob} setSelectedJob={setSelectedJob}
-        
+        jobTargetMode={jobTargetMode} 
+        setJobTargetMode={setJobTargetMode}
+
         // 🔥 BURAYA DİKKAT: Eksik state'ler buraya eklendi
         searchCust={searchCust} setSearchCust={setSearchCust}
         searchAsset={searchAsset} setSearchAsset={setSearchAsset}
+        
         userRole="Yönetici" // Yönetici için sabit rol
       />
-      
       <AssetQRModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} asset={selectedQRAsset} companyName={data?.name} companyLogo={data?.logo} landlinePhone={data?.landlinePhone} whatsappPhone={data?.whatsappPhone} companyWebsite={data?.website} />
 
     </div>
