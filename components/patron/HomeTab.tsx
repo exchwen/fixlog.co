@@ -385,13 +385,10 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                             <div 
                                 className="cursor-pointer mb-2 group" 
                                 onClick={() => { 
+                                  if (setJobModalType) setJobModalType('');
                                   setSelectedJob(job); 
-                                  // HATA DÜZELTİLDİ: props kaldırıldı, doğrudan değişkene bakılıyor
-                                  if (setJobModalType) setJobModalType('APPROVAL');
-                                  
-                                  setShowJobModal(true); 
                               }}
-                                title="İş Detayını Görüntüle ve Onayla"
+                                title="İş Detayını Görüntüle"
                             >
                                 <div className="flex justify-between items-start mb-2">
                                     <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-white/20 text-white`}>
