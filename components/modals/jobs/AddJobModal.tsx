@@ -19,7 +19,7 @@ export default function AddJobModal({
     ? Object.keys(safeSectors.sectors[currentSector].subTypes) 
     : [];
 
-  // ? işareti ile güvenli kontrol (Form boşsa hata vermesin)
+  // Güvenli validasyon kontrolü
   const isJobValid = jobForm?.workCategory === 'Genel İş Atama' ? true : (jobForm?.customerName || jobForm?.assetId);
 
   return (
@@ -179,7 +179,6 @@ export default function AddJobModal({
                                       <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500 custom-scrollbar" size={4} value={jobForm?.customerName || ''} onChange={e => setJobForm({...jobForm, customerName: e.target.value, assetId: ''})}>
                                         <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- 1. Listeden Müşteri Seçin --</option>
                                         
-                                        {/* GÜVENLİ FİLTRELEME: searchCust yoksa boş string say */}
                                         {(data?.customers || []).filter((c:any) => 
                                             (c.name || '').toLowerCase().includes((searchCust || '').toLowerCase()) || 
                                             (c.tax_info || '').toLowerCase().includes((searchCust || '').toLowerCase())
@@ -196,10 +195,12 @@ export default function AddJobModal({
                                               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">2. Bu Müşteriye Ait Varlık (İsteğe Bağlı)</label>
                                               <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500" value={jobForm?.assetId || ''} onChange={e => setJobForm({...jobForm, assetId: e.target.value})}>
                                                   <option value="">-- Varlık Seçilmedi (Genel Müşteri İşi) --</option>
-                                                  {customerAssets.map((a:any) => (
-                                                     /* 🟢 DÜZELTME: Konum yerine sadece İsim ve Tür */
-                                                     <option key={a.id} value={a.id}>{a.name} {a.type ? `(${a.type})` : ''}</option>
-                                                  ))}
+                                                  {customerAssets.map((a:any) => {
+                                                     /* 🟢 DÜZELTME: Apartman Adı Öne Çıkarıldı */
+                                                     const aptName = a.apartmentName || a.apartment_name || '';
+                                                     const displayName = aptName ? `${aptName} - ${a.name}` : a.name;
+                                                     return <option key={a.id} value={a.id}>{displayName}</option>;
+                                                  })}
                                               </select>
                                               {customerAssets.length === 0 && <div className="text-[10px] text-amber-500 mt-1.5 font-bold px-1">Bu müşteriye ait kayıtlı varlık bulunamadı.</div>}
                                            </div>
@@ -210,7 +211,7 @@ export default function AddJobModal({
                                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                                       <div className="relative mb-2">
                                         <Search className="absolute left-3 top-3 sm:top-2.5 text-slate-400" size={16} />
-                                        <input type="text" placeholder="Cihaz Adı Ara..." className="w-full pl-9 pr-3 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 bg-white" value={searchAsset || ''} onChange={e => setSearchAsset(e.target.value)} />
+                                        <input type="text" placeholder="Bina veya Cihaz Adı Ara..." className="w-full pl-9 pr-3 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 bg-white" value={searchAsset || ''} onChange={e => setSearchAsset(e.target.value)} />
                                       </div>
                                       <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500 custom-scrollbar" size={4} value={jobForm?.assetId || ''} onChange={e => {
                                         const selectedAsset = (data?.assets || []).find((a:any) => String(a.id) === String(e.target.value));
@@ -219,13 +220,17 @@ export default function AddJobModal({
                                       }}>
                                         <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- Listeden Varlık Seçin --</option>
                                         
-                                        {/* GÜVENLİ FİLTRELEME & GÖRÜNÜM DÜZELTME */}
-                                        {(data?.assets || []).filter((a: any) => 
-                                            (a.name || '').toLowerCase().includes((searchAsset || '').toLowerCase())
-                                        ).map((a: any) => (
-                                          /* 🟢 DÜZELTME: Konum kaldırıldı, Tür eklendi */
-                                          <option key={a.id} value={a.id} className="py-2 border-b border-slate-50 last:border-0">{a.name} {a.type ? `(${a.type})` : ''}</option>
-                                        ))}
+                                        {/* 🟢 DÜZELTME: Bina Adında da Arama + Görünüm Güncellemesi */}
+                                        {(data?.assets || []).filter((a: any) => {
+                                            const term = (searchAsset || '').toLowerCase();
+                                            const aptName = (a.apartmentName || a.apartment_name || '').toLowerCase();
+                                            const assetName = (a.name || '').toLowerCase();
+                                            return assetName.includes(term) || aptName.includes(term);
+                                        }).map((a: any) => {
+                                            const aptName = a.apartmentName || a.apartment_name || '';
+                                            const displayName = aptName ? `${aptName} - ${a.name}` : a.name;
+                                            return <option key={a.id} value={a.id}>{displayName}</option>;
+                                        })}
                                       </select>
                                       {jobForm?.assetId && (
                                           <div className="mt-3 text-[10px] font-bold text-blue-700 bg-blue-50/80 p-2.5 rounded-lg border border-blue-100 flex items-center gap-1.5">
@@ -237,7 +242,7 @@ export default function AddJobModal({
                                 </div>
                               )}
 
-                              {/* Ortak Alan: Personel Seçimi (Patron sadece Yöneticiyi görür) */}
+                              {/* Ortak Alan: Personel Seçimi */}
                               <div>
                                 <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Sorumlu Personel</label>
                                 <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={jobForm?.staffId || ''} onChange={e => setJobForm({...jobForm, staffId: e.target.value})}>
