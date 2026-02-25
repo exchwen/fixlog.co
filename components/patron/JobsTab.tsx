@@ -1,276 +1,529 @@
 'use client';
 
-import React from 'react';
-import { Plus, Calendar, User, ArrowRight, Clock, MapPin, ClipboardList, ShieldCheck, Wrench, UserPlus, UserCheck, ChevronsRight } from 'lucide-react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Briefcase, MapPin, CheckCircle, PlayCircle, 
+  ArrowUpRight, User, Wrench, Loader2, 
+  UserPlus, Check, Calendar, Activity, AlertTriangle, CheckSquare, Clock, ShieldCheck, Eye
+} from 'lucide-react';
 
-export default function JobsTab({ data, setShowJobModal, statusColors, setSelectedJob }: any) {
+interface Job {
+  id: string | number;
+  staff_id: string | number;
+  customer_name: string;
+  status: string;
+  work_type: string;
+  created_at?: string;
+  updated_at?: string;
+  asset_name?: string;
+  asset_id?: string | number;
+  details?: {
+    worker_id?: string | number;
+    managerId?: string | number;
+    createdBy?: string;
+    creatorRole?: string;
+    note?: string;
+    scheduledDate?: string;
+    price?: string;
+    [key: string]: any;
+  };
+  [key: string]: any;
+}
+
+interface MyJobsTabProps {
+  data: any;
+  setShowJobModal: (show: boolean) => void;
+  statusColors: { [key: string]: string };
+  setSelectedJob: (job: Job | null) => void;
+  handleAction: (endpoint: string, body: any, closeFn?: any, resetFn?: any) => Promise<boolean>;
+}
+
+export default function MyJobsTab({ data, setShowJobModal, statusColors, setSelectedJob, handleAction }: MyJobsTabProps) {
+  const [currentUserName, setCurrentUserName] = useState<string>('Yönetici');
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [processingId, setProcessingId] = useState<string | number | null>(null);
+  
+  // Şık Bildirim Modalı State'i
+  const [successModal, setSuccessModal] = useState<{show: boolean, msg: string}>({show: false, msg: ''});
+
+  useEffect(() => {
+    const isPatronPath = window.location.pathname.includes('/dashboard');
+    const prefix = isPatronPath ? 'patron_' : 'staff_';
+    const savedName = localStorage.getItem(`${prefix}userName`);
+    
+    const token = localStorage.getItem(`${prefix}authToken`);
+    if (token) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+            const payload = JSON.parse(jsonPayload);
+            setCurrentUserId(String(payload.id));
+        } catch(e) {}
+    }
+
+    if (savedName) {
+      setCurrentUserName(savedName.split(' ')[0]); 
+    }
+  }, []);
+
+  const jobs = data?.jobs || [];
+  const staff = data?.staff || [];
+
+  // --- İZOLASYON VE GRUPLANDIRMA MANTIĞI (DÜZELTİLDİ) ---
+  
+  // 1. "Benimle İlgili" Tüm İşler
+  const myAllJobs = useMemo(() => {
+     if (!currentUserId) return [];
+     return jobs.filter((j: any) => 
+        String(j.staff_id) === String(currentUserId) || // Direkt bana atanmış (Yönetici olarak)
+        String(j.details?.managerId) === String(currentUserId) || // Ben yönetici olarak atanmışım
+        String(j.details?.worker_id) === String(currentUserId) // Ben usta olarak atanmışım
+     );
+  }, [jobs, currentUserId]);
+
+  // A) ONAY BEKLEYENLER (Patrondan bana gelen, henüz kabul etmediğim)
+  const incomingJobs = myAllJobs.filter((j: any) => 
+    (j.status === 'Beklemede' || j.status === 'Gelecek') && 
+    String(j.staff_id) === String(currentUserId)
+  );
+
+  // B) ATAMA BEKLEYENLER (Kabul ettim, statü 'Usta Bekliyor' ama worker_id YOK)
+  const waitingForAssignment = myAllJobs.filter((j: any) => 
+    j.status === 'Usta Bekliyor' && 
+    !j.details?.worker_id && 
+    String(j.staff_id) === String(currentUserId)
+  );
+
+  // C) DEVAM EDEN & TAKİPTEKİ İŞLER (KRİTİK DÜZELTME)
+  // Şartlar:
+  // 1. Statü 'Tamamlandı' veya 'İptal' OLMAYACAK.
+  // 2. Yukarıdaki (A) ve (B) gruplarına girmeyecek.
+  // 3. Ya ben yapıyorumdur (worker_id yok veya benim id'm) YA DA atadığım usta yapıyordur (worker_id var).
+  const ongoingJobs = myAllJobs.filter((j: any) => {
+    // Tamamlanmış veya iptalleri çıkar
+    if (j.status === 'Tamamlandı' || j.status === 'İptal') return false;
+    
+    // Onay bekleyen veya atama bekleyenleri çıkar (zaten yukarıda varlar)
+    const isIncoming = (j.status === 'Beklemede' || j.status === 'Gelecek') && String(j.staff_id) === String(currentUserId);
+    const isWaitingAssign = j.status === 'Usta Bekliyor' && !j.details?.worker_id;
+    
+    if (isIncoming || isWaitingAssign) return false;
+
+    // Geriye kalanlar: 'Devam Ediyor', 'Sahada' veya 'Usta Bekliyor' (ama worker_id dolu)
+    return true; 
+  });
+
+  // D) TAMAMLANANLAR
+  const completedJobs = myAllJobs.filter((j: any) => j.status === 'Tamamlandı');
+
+  // İŞLEM FONKSİYONLARI
+  const handleAcceptJob = async (job: Job) => {
+    if (!handleAction) return;
+    setProcessingId(job.id);
+    try {
+        const isGeneral = job.work_type === 'Genel Görev';
+        const newStatus = isGeneral ? 'Devam Ediyor' : 'Usta Bekliyor';
+
+        const success = await handleAction('update-job', {
+            id: job.id,
+            status: newStatus, 
+            lastEditedBy: currentUserName,
+        }, null, null);
+
+        if (success) {
+           setSuccessModal({show: true, msg: 'Görev başarıyla kabul edildi.'});
+           setTimeout(() => setSuccessModal({show: false, msg: ''}), 2000);
+        }
+    } catch (e) {
+        alert("Hata oluştu.");
+    } finally {
+        setProcessingId(null);
+    }
+  };
+
+  const handleOpenModal = (job: Job) => {
+      setSelectedJob(job);
+      setShowJobModal(true);
+  };
+
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 relative pb-20">
       
-      {/* BAŞLIK VE KONTROLLER */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
-        <div className="w-full sm:w-auto">
-          <h3 className="text-lg font-black text-slate-800 tracking-tight">Tüm İş Emirleri (Genel Arşiv)</h3>
-          <p className="text-xs text-slate-500 font-medium mt-0.5 hidden sm:block">Filtresiz tüm iş kayıtları ve güncel durumları.</p>
+      {/* BAŞLIK VE ÖZET KARTLARI */}
+      <div className="flex flex-col gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+             <Briefcase className="text-blue-600" /> İş Yönetim Paneli
+          </h2>
+          <p className="text-slate-500 text-sm font-medium">Sorumluluğunuzdaki işlerin durumunu buradan yönetebilirsiniz.</p>
         </div>
         
-        <button 
-          onClick={() => setShowJobModal(true)} 
-          className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2.5 sm:py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all whitespace-nowrap"
-        >
-          <Plus size={16} strokeWidth={3} /> Yeni Görev Ata
-        </button>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+           <div className="bg-amber-50 border border-amber-100 text-amber-800 p-3 rounded-xl text-center">
+              <div className="text-[10px] font-bold uppercase tracking-wider opacity-70">Onay Bekleyen</div>
+              <div className="text-2xl font-black">{incomingJobs.length}</div>
+           </div>
+           <div className="bg-indigo-50 border border-indigo-100 text-indigo-700 p-3 rounded-xl text-center">
+              <div className="text-[10px] font-bold uppercase tracking-wider opacity-70">Atama Bekleyen</div>
+              <div className="text-2xl font-black">{waitingForAssignment.length}</div>
+           </div>
+           <div className="bg-blue-50 border border-blue-100 text-blue-700 p-3 rounded-xl text-center">
+              <div className="text-[10px] font-bold uppercase tracking-wider opacity-70">Aktif / Takipte</div>
+              <div className="text-2xl font-black">{ongoingJobs.length}</div>
+           </div>
+           <div className="bg-emerald-50 border border-emerald-100 text-emerald-700 p-3 rounded-xl text-center">
+              <div className="text-[10px] font-bold uppercase tracking-wider opacity-70">Tamamlanan</div>
+              <div className="text-2xl font-black">{completedJobs.length}</div>
+           </div>
+        </div>
       </div>
 
-      {/* MASAÜSTÜ GÖRÜNÜM: TABLO */}
-      <div className="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden overflow-x-auto custom-scrollbar">
-         <table className="w-full text-left text-xs min-w-[900px] border-collapse">
-           <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 uppercase tracking-wider text-[10px]">
-             <tr>
-               <th className="px-5 py-4 whitespace-nowrap">Lokasyon / Müşteri</th>
-               <th className="px-5 py-4 whitespace-nowrap">Görev Tipi</th>
-               <th className="px-5 py-4 whitespace-nowrap">Tarih / Saat</th>
-               <th className="px-5 py-4 whitespace-nowrap">Personel Hiyerarşisi</th>
-               <th className="px-5 py-4 text-right whitespace-nowrap">Durum</th>
-               <th className="px-5 py-4 w-10"></th>
-             </tr>
-           </thead>
-           <tbody className="divide-y divide-slate-100">
-             {data?.jobs?.length > 0 ? data.jobs.map((j: any) => {
-               
-               // --- GELİŞMİŞ HİYERARŞİ MANTIĞI ---
-               
-               // 1. İşi Oluşturan (Veritabanındaki createdBy veya Patron adı)
-               const creatorName = j.details?.createdBy || data?.ownerName || 'Yönetici';
-               
-               // 2. Atanan Sorumlu Yönetici (staff_id üzerinden bulunur)
-               const assignedManager = data?.staff?.find((s: any) => String(s.id) === String(j.staff_id));
-               
-               // 3. Atanan Saha Ustası (details.worker_id üzerinden bulunur)
-               const assignedWorker = data?.staff?.find((s: any) => String(s.id) === String(j.details?.worker_id));
-               
-               // 4. Kontrol: Oluşturan kişi ile Sorumlu aynı mı?
-               // Eğer yönetici işi kendine atadıysa veya işi oluşturup yönetici olarak kendini seçtiyse "Atayan & Sorumlu" tek satır olur.
-               const isCreatorSameAsManager = assignedManager && (assignedManager.name === creatorName);
-
-               return (
-                 <tr 
-                   key={j.id} 
-                   onClick={() => setSelectedJob(j)}
-                   className="hover:bg-blue-50/50 cursor-pointer transition-colors group"
-                 >
-                   {/* Müşteri & Konum */}
-                   <td className="px-5 py-4 align-top">
-                      <div className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors truncate max-w-[200px]">{j.customer_name}</div>
-                      <div className="text-[10px] text-slate-500 font-semibold mt-1 flex items-center gap-1.5 truncate max-w-[200px]">
-                        <MapPin size={12} className="shrink-0" />
-                        <span className="truncate">{data?.assets?.find((a:any) => String(a.id) === String(j.asset_id))?.location || 'Konum Belirtilmedi'}</span>
-                      </div>
-                   </td>
-
-                   {/* Görev Tipi */}
-                   <td className="px-5 py-4 align-top font-bold text-slate-600 whitespace-nowrap">
-                     <div className="flex items-center gap-1.5 bg-slate-50 w-fit px-2 py-1 rounded border border-slate-100">
-                       <ClipboardList size={14} className="text-slate-400" /> {j.work_type}
-                     </div>
-                   </td>
-
-                   {/* Tarih */}
-                   <td className="px-5 py-4 align-top">
-                      <div className="flex items-center gap-1.5 text-slate-700 font-bold whitespace-nowrap">
-                         <Calendar size={14} className="text-blue-500"/> 
-                         {j.scheduled_date || 'Anlık Kayıt'}
-                      </div>
-                      {j.created_at && (
-                         <div className="text-[10px] text-slate-400 font-semibold mt-1 flex items-center gap-1.5 whitespace-nowrap ml-0.5">
-                            <Clock size={10} />
-                            {new Date(j.created_at).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' })}
-                         </div>
-                      )}
-                   </td>
-                   
-                   {/* PERSONEL HİYERARŞİSİ (TABLO GÖRÜNÜMÜ) */}
-                   <td className="px-5 py-4 align-top">
-                      <div className="flex flex-col gap-1.5">
-                        
-                        {/* A) ÜST YÖNETİM KATMANI */}
-                        {isCreatorSameAsManager ? (
-                            // 1. Senaryo: Yönetici işi oluşturdu ve kendine atadı (Tek Satır)
-                            <div className="flex items-center gap-2">
-                                <ShieldCheck size={14} className="text-blue-600" />
-                                <span className="text-[9px] font-black text-slate-400 uppercase w-[105px] tracking-wider">ATAYAN & SORUMLU:</span>
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200 bg-blue-50 text-blue-700 whitespace-nowrap">
-                                    {assignedManager.name}
-                                </span>
-                            </div>
-                        ) : (
-                            // 2. Senaryo: Patron/Yönetici oluşturdu -> Başka Yöneticiye atadı (İki Satır)
-                            <>
-                                <div className="flex items-center gap-2">
-                                    <UserPlus size={14} className="text-slate-400" />
-                                    <span className="text-[9px] font-black text-slate-400 uppercase w-[60px] tracking-wider">ATAYAN:</span>
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-600 whitespace-nowrap">
-                                        {creatorName}
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <UserCheck size={14} className={assignedManager ? 'text-blue-500' : 'text-slate-300'} />
-                                    <span className="text-[9px] font-black text-slate-400 uppercase w-[60px] tracking-wider">SORUMLU:</span>
-                                    {assignedManager ? (
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200 bg-blue-50 text-blue-700 whitespace-nowrap">
-                                            {assignedManager.name}
-                                        </span>
-                                    ) : (
-                                        <span className="text-[10px] font-medium text-slate-400 italic">Atanmadı</span>
-                                    )}
-                                </div>
-                            </>
-                        )}
-
-                        {/* Hiyerarşi Çizgisi (Görsel Ayraç) */}
-                        {(assignedManager || assignedWorker) && (
-                            <div className="ml-[7px] w-[1px] h-2 bg-slate-200 my-0.5"></div>
-                        )}
-
-                        {/* B) SAHA (USTA) KATMANI */}
-                        <div className="flex items-center gap-2">
-                            <Wrench size={14} className={assignedWorker ? 'text-indigo-500' : 'text-slate-300'} />
-                            <span className="text-[9px] font-black text-slate-400 uppercase w-[105px] tracking-wider">
-                                {isCreatorSameAsManager ? 'SAHA USTASI:' : 'SAHA USTASI:'}
-                            </span>
-                            {assignedWorker ? (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-indigo-700 whitespace-nowrap">
-                                    {assignedWorker.name}
-                                </span>
-                            ) : (
-                                <span className="text-[10px] font-medium text-slate-400 italic">Atanmadı</span>
-                            )}
+      {/* 1. BÖLÜM: ONAY BEKLEYENLER */}
+      {incomingJobs.length > 0 && (
+        <div className="bg-amber-500 rounded-3xl p-5 shadow-xl shadow-amber-500/20 text-white relative overflow-hidden">
+           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+           <div className="relative z-10">
+              <h3 className="text-sm font-black text-amber-50 uppercase tracking-widest mb-4 flex items-center gap-2">
+                 <AlertTriangle size={18} /> Onayınızı Bekleyen Atamalar
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                 {incomingJobs.map((job: any) => (
+                    <div key={job.id} onClick={() => handleOpenModal(job)} className="bg-amber-950/40 border border-amber-300/30 rounded-2xl p-4 cursor-pointer hover:bg-amber-950/60 transition-colors group">
+                        <div className="flex justify-between items-start mb-2">
+                            <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-white/20 text-white">{job.work_type}</span>
+                            <span className="text-[10px] font-bold opacity-70">{job.created_at?.split('T')[0]}</span>
                         </div>
-
-                      </div>
-                   </td>
-
-                   <td className="px-5 py-4 align-top text-right whitespace-nowrap">
-                      <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border shadow-sm ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span>
-                   </td>
-                   <td className="px-5 py-4 align-middle text-slate-300 group-hover:text-blue-500 text-right">
-                      <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-                   </td>
-                 </tr>
-               );
-             }) : (
-               <tr>
-                 <td colSpan={6} className="p-20 text-center bg-slate-50">
-                    <div className="flex flex-col items-center justify-center gap-3">
-                       <Calendar size={48} className="text-slate-200" />
-                       <span className="text-slate-500 font-medium text-sm">Henüz iş kaydı bulunamadı.</span>
+                        <h4 className="font-black text-white leading-tight mb-1 truncate">{job.customer_name}</h4>
+                        <p className="text-amber-100/80 text-xs line-clamp-1 mb-3">{job.details?.note || 'Not girilmemiş.'}</p>
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); handleAcceptJob(job); }}
+                            disabled={processingId === job.id}
+                            className="w-full bg-white text-amber-600 hover:bg-amber-50 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95"
+                        >
+                            {processingId === job.id ? <Loader2 size={14} className="animate-spin"/> : <CheckSquare size={14} />}
+                            GÖREVİ KABUL ET
+                        </button>
                     </div>
-                 </td>
-               </tr>
-             )}
-           </tbody>
-         </table>
-      </div>
-
-      {/* MOBİL GÖRÜNÜM: DİKEY İŞ KARTLARI */}
-      <div className="md:hidden flex flex-col gap-3">
-        {data?.jobs?.length > 0 ? data.jobs.map((j: any) => {
-          
-          // --- MOBİL İÇİN HİYERARŞİ MANTIĞI ---
-          const creatorName = j.details?.createdBy || data?.ownerName || 'Yönetici';
-          const assignedManager = data?.staff?.find((s: any) => String(s.id) === String(j.staff_id));
-          const assignedWorker = data?.staff?.find((s: any) => String(s.id) === String(j.details?.worker_id));
-          const isCreatorSameAsManager = assignedManager && (assignedManager.name === creatorName);
-
-          return (
-            <div 
-              key={j.id} 
-              onClick={() => setSelectedJob(j)}
-              className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col gap-3 active:scale-95 transition-all cursor-pointer group"
-            >
-              {/* Müşteri Adı ve Durum */}
-              <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
-                 <div className="min-w-0">
-                   <div className="font-black text-slate-800 text-sm truncate">{j.customer_name}</div>
-                   <div className="text-[10px] text-slate-500 font-semibold mt-1 flex items-start gap-1.5 line-clamp-2">
-                     <MapPin size={12} className="shrink-0 mt-0.5 text-slate-400" />
-                     <span>{data?.assets?.find((a:any) => String(a.id) === String(j.asset_id))?.location || 'Konum Belirtilmedi'}</span>
-                   </div>
-                 </div>
-                 <span className={`px-2 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider border shrink-0 shadow-sm ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>
-                   {j.status}
-                 </span>
+                 ))}
               </div>
+           </div>
+        </div>
+      )}
 
-              {/* PERSONEL BİLGİSİ (MOBİL KART) */}
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-2">
-                  
-                  {/* ÜST BÖLÜM: YÖNETİM */}
-                  {isCreatorSameAsManager ? (
-                      <div className="flex items-center justify-between">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                             <ShieldCheck size={10} /> ATAYAN & SORUMLU
-                          </span>
-                          <div className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
-                              {assignedManager.name}
-                          </div>
-                      </div>
-                  ) : (
-                      <>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                               <UserPlus size={10} /> ATAYAN
-                            </span>
-                            <div className="text-[11px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
-                                {creatorName}
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                               <UserCheck size={10} /> SORUMLU
-                            </span>
-                            <div className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
-                                {assignedManager ? assignedManager.name : 'Atanmadı'}
-                            </div>
-                        </div>
-                      </>
-                  )}
-                  
-                  {/* ALT BÖLÜM: SAHA */}
-                  <div className="flex items-center justify-between border-t border-slate-200 pt-2 border-dashed">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                         <Wrench size={10} /> SAHA USTASI
-                      </span>
-                      <div className="text-[11px] font-bold text-indigo-700 flex items-center gap-1.5 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
-                          {assignedWorker ? assignedWorker.name : 'Atanmadı'}
-                      </div>
-                  </div>
-              </div>
-
-              {/* Tarih ve Oku */}
-              <div className="flex justify-between items-center pt-1">
-                <div className="flex flex-col gap-0.5">
-                  <div className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5 w-fit">
-                     <Calendar size={14} className="text-blue-500" /> {j.scheduled_date || 'Tarih Planlanmadı'}
-                  </div>
-                  <div className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 w-fit flex items-center gap-1">
-                     <ClipboardList size={10} className="text-slate-400" /> {j.work_type}
-                  </div>
-                </div>
-                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
-                   <ArrowRight size={14} className="text-blue-500 group-hover:text-white transition-colors" />
-                </div>
-              </div>
+      {/* 2. BÖLÜM: ATAMA BEKLEYENLER */}
+      {waitingForAssignment.length > 0 && (
+        <div className="space-y-3">
+            <div className="flex items-center gap-2 px-1">
+                <div className="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg"><UserPlus size={16} /></div>
+                <h3 className="text-sm font-black text-indigo-900 uppercase tracking-widest">
+                    Ustaya Atanmayı Bekleyenler ({waitingForAssignment.length})
+                </h3>
             </div>
-          );
-        }) : (
-          <div className="p-10 text-center bg-white rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3">
-             <Calendar size={40} className="text-slate-300" />
-             <span className="text-slate-500 font-medium text-sm">Henüz iş kaydı bulunamadı.</span>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {waitingForAssignment.map((job: any) => (
+                    <div 
+                        key={job.id} 
+                        onClick={() => handleOpenModal(job)} 
+                        className="bg-white border-2 border-indigo-100 rounded-2xl p-5 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer group active:scale-95 flex flex-col justify-between h-full"
+                    >
+                        <div>
+                             <div className="flex justify-between items-start mb-3">
+                                <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-600 border border-indigo-100">
+                                    Atama Bekliyor
+                                </span>
+                                <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded">
+                                    {job.details?.scheduledDate ? new Date(job.details.scheduledDate).toLocaleDateString('tr-TR') : 'Tarih Yok'}
+                                </span>
+                            </div>
+                            <h4 className="text-lg font-black text-slate-800 leading-tight mb-2 line-clamp-2">{job.customer_name}</h4>
+                            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-4">
+                                <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+                                    <MapPin size={14} className="text-indigo-400 shrink-0"/> 
+                                    <span className="truncate">{job.asset_name || 'Lokasyon/Cihaz Belirtilmemiş'}</span>
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); handleOpenModal(job); }}
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-200 active:scale-95 flex items-center justify-center gap-2 mt-auto"
+                        >
+                            <UserPlus size={16} />
+                            USTA SEÇ VE ATA
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </div>
+      )}
+
+      {/* 3. BÖLÜM: AKTİF VE TAKİPTEKİ İŞLER */}
+      <div className="space-y-8 pt-2">
+          
+          <div className="bg-white rounded-3xl border border-blue-100 shadow-sm overflow-hidden">
+              <div className="p-5 bg-blue-50/50 border-b border-blue-100 flex items-center gap-2">
+                  <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><Activity size={18} /></div>
+                  <h3 className="font-black text-blue-900 text-sm uppercase tracking-wide">
+                      Yönetimimdeki Aktif İşler ({ongoingJobs.length})
+                  </h3>
+              </div>
+              
+              {/* Masaüstü Görünüm */}
+              <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                          <tr>
+                              <th className="px-6 py-4 border-b border-slate-100">Müşteri / Hiyerarşi</th>
+                              <th className="px-6 py-4 border-b border-slate-100">Atanan Usta</th>
+                              <th className="px-6 py-4 border-b border-slate-100">Planlanan Tarih</th>
+                              <th className="px-6 py-4 border-b border-slate-100 text-right">Durum</th>
+                              <th className="px-6 py-4 border-b border-slate-100"></th>
+                          </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                          {ongoingJobs.length > 0 ? ongoingJobs.map((job: any) => {
+                              // HIYERARŞİ VE İSİM BULMA
+                              const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
+                              const createdBy = job.details?.createdBy || ownerName;
+                              const assignedManager = data?.staff?.find((s: any) => String(s.id) === String(job.staff_id));
+                              const assignedWorker = data?.staff?.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                              
+                              const isCreatorSameAsManager = assignedManager && (assignedManager.name === createdBy);
+
+                              // AKILLI DURUM MANTIĞI
+                              let displayStatus = job.status;
+                              let statusClass = 'bg-blue-50 text-blue-700 border-blue-200';
+                              let StatusIcon = Activity;
+
+                              if (job.status === 'Usta Bekliyor' && assignedWorker) {
+                                  displayStatus = 'Usta Onayı Bekleniyor';
+                                  statusClass = 'bg-amber-50 text-amber-700 border-amber-200';
+                                  StatusIcon = Clock;
+                              } else if (job.status === 'Sahada' || job.status === 'Devam Ediyor') {
+                                  if (assignedWorker) {
+                                      displayStatus = 'Usta Sahada / Çalışıyor';
+                                      statusClass = 'bg-indigo-50 text-indigo-700 border-indigo-200';
+                                      StatusIcon = Wrench;
+                                  } else {
+                                      displayStatus = 'Siz Çalışıyorsunuz';
+                                  }
+                              }
+
+                              return (
+                                  <tr key={job.id} onClick={() => handleOpenModal(job)} className="hover:bg-blue-50/50 transition-colors cursor-pointer group">
+                                      {/* Müşteri ve Atayan Bilgisi */}
+                                      <td className="px-6 py-4">
+                                          <div className="font-bold text-slate-800 text-sm">{job.customer_name}</div>
+                                          <div className="flex items-center gap-1 mt-1">
+                                              {isCreatorSameAsManager ? (
+                                                  <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 flex items-center gap-1">
+                                                      <ShieldCheck size={10} /> {assignedManager?.name} (Siz)
+                                                  </span>
+                                              ) : (
+                                                  <>
+                                                      <span className="text-[10px] text-slate-500 font-medium bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                                                          {createdBy}
+                                                      </span>
+                                                      <span className="text-[10px] text-slate-300">➜</span>
+                                                      <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                                                          {assignedManager?.name} (Siz)
+                                                      </span>
+                                                  </>
+                                              )}
+                                          </div>
+                                      </td>
+
+                                      {/* Usta Bilgisi */}
+                                      <td className="px-6 py-4">
+                                          {assignedWorker ? (
+                                              <div className="flex items-center gap-2">
+                                                  <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-black border border-indigo-200">
+                                                      {assignedWorker.name.charAt(0)}
+                                                  </div>
+                                                  <span className="font-bold text-slate-700 text-xs">{assignedWorker.name}</span>
+                                              </div>
+                                          ) : (
+                                              <div className="flex items-center gap-2 opacity-60">
+                                                  <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center"><User size={12} /></div>
+                                                  <span className="text-slate-500 italic text-[11px]">Kendim</span>
+                                              </div>
+                                          )}
+                                      </td>
+
+                                      <td className="px-6 py-4 font-medium text-slate-600">
+                                          <div className="flex items-center gap-1.5 text-xs">
+                                              <Calendar size={14} className="text-slate-400"/>
+                                              {job.scheduled_date || 'Anlık / Acil'}
+                                          </div>
+                                      </td>
+
+                                      <td className="px-6 py-4 text-right">
+                                          <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase border inline-flex items-center gap-1.5 shadow-sm ${statusClass}`}>
+                                              <StatusIcon size={12} />
+                                              {displayStatus}
+                                          </span>
+                                      </td>
+                                      <td className="px-6 py-4 text-right text-slate-300">
+                                          <div className="group-hover:text-blue-500 transition-colors"><Eye size={16} /></div>
+                                      </td>
+                                  </tr>
+                              );
+                          }) : (
+                              <tr><td colSpan={5} className="p-10 text-center text-slate-400 font-medium text-sm">Şu anda aktif veya takip edilen bir işiniz yok.</td></tr>
+                          )}
+                      </tbody>
+                  </table>
+              </div>
+
+              {/* Mobil Görünüm */}
+              <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50">
+                  {ongoingJobs.length > 0 ? ongoingJobs.map((job: any) => {
+                      const assignedWorker = data?.staff?.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                      
+                      let displayStatus = job.status;
+                      let statusClass = 'bg-blue-50 text-blue-600 border-blue-100';
+
+                      if (job.status === 'Usta Bekliyor' && assignedWorker) {
+                          displayStatus = 'Usta Onayı Bekleniyor';
+                          statusClass = 'bg-amber-50 text-amber-600 border-amber-200';
+                      } else if ((job.status === 'Sahada' || job.status === 'Devam Ediyor') && assignedWorker) {
+                          displayStatus = 'Usta Çalışıyor';
+                          statusClass = 'bg-indigo-50 text-indigo-600 border-indigo-200';
+                      }
+
+                      return (
+                        <div key={job.id} onClick={() => handleOpenModal(job)} className="bg-white rounded-xl border border-blue-100 p-4 shadow-sm flex flex-col gap-3 active:scale-95 transition-all">
+                           <div className="flex justify-between items-start gap-2">
+                              <div className="min-w-0">
+                                <div className="font-bold text-slate-800 text-sm truncate">{job.customer_name}</div>
+                                <div className="text-[10px] text-slate-500 font-medium mt-0.5">{job.work_type}</div>
+                              </div>
+                              <span className={`px-2 py-1 rounded text-[9px] font-black uppercase border ${statusClass}`}>
+                                {displayStatus}
+                              </span>
+                           </div>
+                           
+                           {/* Mobil Hiyerarşi Özeti */}
+                           <div className="flex items-center justify-between border-t border-slate-50 pt-2">
+                              <div className="flex items-center gap-1.5">
+                                 <Wrench size={12} className="text-slate-400"/>
+                                 <span className="text-xs font-bold text-slate-700">
+                                    {assignedWorker ? assignedWorker.name : 'Sorumlu: Siz'}
+                                 </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                                 <Calendar size={12}/> {job.scheduled_date || 'Tarih Yok'}
+                              </div>
+                           </div>
+                        </div>
+                      );
+                  }) : <div className="text-center p-6 text-slate-400 text-sm font-medium">Kayıt yok.</div>}
+              </div>
           </div>
-        )}
+
+          {/* TABLO 2: TAMAMLANAN İŞLER */}
+          <div className="bg-white rounded-3xl border border-emerald-100 shadow-sm overflow-hidden opacity-90 hover:opacity-100 transition-opacity">
+              <div className="p-5 bg-emerald-50/50 border-b border-emerald-100 flex items-center gap-2">
+                  <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><CheckCircle size={18} /></div>
+                  <h3 className="font-black text-emerald-900 text-sm uppercase tracking-wide">Yönetimimde Tamamlanan İşler ({completedJobs.length})</h3>
+              </div>
+              
+              {/* Masaüstü */}
+              <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                          <tr>
+                              <th className="px-6 py-4 border-b border-slate-100">Müşteri / İş</th>
+                              <th className="px-6 py-4 border-b border-slate-100">Tamamlayan Usta</th>
+                              <th className="px-6 py-4 border-b border-slate-100">Bitiş Tarihi</th>
+                              <th className="px-6 py-4 border-b border-slate-100 text-right">Tutar</th>
+                          </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                          {completedJobs.length > 0 ? completedJobs.map((job: any) => {
+                              const worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                              return (
+                                  <tr key={job.id} onClick={() => handleOpenModal(job)} className="hover:bg-emerald-50/50 transition-colors cursor-pointer group">
+                                      <td className="px-6 py-4">
+                                          <div className="font-bold text-slate-800 text-sm">{job.customer_name}</div>
+                                          <div className="text-[10px] text-slate-500 font-medium mt-0.5">{job.work_type}</div>
+                                      </td>
+                                      <td className="px-6 py-4">
+                                          {worker ? (
+                                              <span className="font-bold text-slate-700 text-xs bg-slate-100 px-2 py-1 rounded border border-slate-200">{worker.name}</span>
+                                          ) : <span className="text-slate-400 italic">-</span>}
+                                      </td>
+                                      <td className="px-6 py-4 font-medium text-slate-600">
+                                          {job.updated_at ? new Date(job.updated_at).toLocaleDateString('tr-TR') : '-'}
+                                      </td>
+                                      <td className="px-6 py-4 text-right">
+                                          <span className="font-black text-emerald-600 text-sm bg-emerald-50 px-2 py-1 rounded border border-emerald-100">
+                                            {job.details?.price ? `${job.details.price}` : 'Ücretsiz'}
+                                          </span>
+                                      </td>
+                                  </tr>
+                              );
+                          }) : (
+                              <tr><td colSpan={4} className="p-10 text-center text-slate-400 font-medium text-sm">Henüz tamamlanmış bir iş kaydınız yok.</td></tr>
+                          )}
+                      </tbody>
+                  </table>
+              </div>
+
+              {/* Mobil */}
+              <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50">
+                  {completedJobs.length > 0 ? completedJobs.map((job: any) => {
+                      const worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                      return (
+                        <div key={job.id} onClick={() => handleOpenModal(job)} className="bg-white rounded-xl border border-emerald-100 p-4 shadow-sm flex flex-col gap-3 active:scale-95 transition-all">
+                           <div className="flex justify-between items-start gap-2">
+                              <div className="min-w-0">
+                                <div className="font-bold text-slate-800 text-sm truncate">{job.customer_name}</div>
+                                <div className="text-[10px] text-slate-500 font-medium mt-0.5">{job.work_type}</div>
+                              </div>
+                              <span className="px-2 py-1 rounded text-[9px] font-black uppercase border bg-emerald-50 text-emerald-600 border-emerald-100">
+                                {job.details?.price || 'Ücretsiz'}
+                              </span>
+                           </div>
+                           <div className="flex items-center justify-between border-t border-slate-50 pt-2">
+                              <div className="flex items-center gap-1.5">
+                                 <CheckCircle size={12} className="text-emerald-500"/>
+                                 <span className="text-xs font-bold text-slate-700">{worker ? worker.name : 'Usta Yok'}</span>
+                              </div>
+                              <div className="text-xs text-slate-400">
+                                 {job.updated_at ? new Date(job.updated_at).toLocaleDateString('tr-TR') : '-'}
+                              </div>
+                           </div>
+                        </div>
+                      );
+                  }) : <div className="text-center p-6 text-slate-400 text-sm font-medium">Kayıt yok.</div>}
+              </div>
+          </div>
+
       </div>
 
-    </div>
+      <AnimatePresence>
+        {successModal.show && (
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.8 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="fixed inset-0 z-[300] flex items-center justify-center p-4 pointer-events-none"
+            >
+                <div className="bg-white/95 backdrop-blur-md border-2 border-emerald-100 shadow-2xl rounded-3xl p-8 flex flex-col items-center text-center max-w-sm w-full pointer-events-auto">
+                    <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 shadow-inner animate-pulse">
+                        <Check size={40} strokeWidth={4} />
+                    </div>
+                    <h3 className="text-xl font-black text-slate-900 mb-1">Harika!</h3>
+                    <p className="text-sm text-slate-500 font-medium">{successModal.msg}</p>
+                </div>
+            </motion.div>
+        )}
+      </AnimatePresence>
+
+    </motion.div>
   );
 }
