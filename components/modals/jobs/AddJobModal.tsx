@@ -19,7 +19,7 @@ export default function AddJobModal({
     ? Object.keys(safeSectors.sectors[currentSector].subTypes) 
     : [];
 
-  // Güvenli validasyon kontrolü
+  // ? işareti ile güvenli kontrol (Form boşsa hata vermesin)
   const isJobValid = jobForm?.workCategory === 'Genel İş Atama' ? true : (jobForm?.customerName || jobForm?.assetId);
 
   return (
@@ -29,7 +29,7 @@ export default function AddJobModal({
           <div className="absolute inset-0" onClick={() => { setShowJobModal(false); if (jobModalType === 'APPROVAL') { setSelectedJob(null); setJobModalType(''); } }}></div>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-2xl p-0 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh] pointer-events-auto">
             
-            {/* HEADER */}
+            {/* HEADER: Geri Butonu ve Başlık */}
             <div className="flex justify-between items-center p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50">
                <div className="flex items-center gap-3">
                   {jobModalStep === 2 && (
@@ -50,7 +50,7 @@ export default function AddJobModal({
             {/* BODY */}
             <div className="p-5 sm:p-6 overflow-y-auto custom-scrollbar flex-1">
               
-              {/* ONAY EKRANI */}
+              {/* EĞER MODAL TİPİ 'APPROVAL' İSE SADECE ONAY EKRANI GÖSTER */}
               {jobModalType === 'APPROVAL' && selectedJob ? (
                   <div className="space-y-6 flex flex-col h-full justify-center">
                       <div className="bg-amber-50 p-5 rounded-2xl border border-amber-100 flex items-start gap-4">
@@ -179,7 +179,7 @@ export default function AddJobModal({
                                       <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500 custom-scrollbar" size={4} value={jobForm?.customerName || ''} onChange={e => setJobForm({...jobForm, customerName: e.target.value, assetId: ''})}>
                                         <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- 1. Listeden Müşteri Seçin --</option>
                                         
-                                        {/* HATA ÇÖZÜMÜ 1: Müşteri filtresinde güvenli .toLowerCase() */}
+                                        {/* GÜVENLİ FİLTRELEME: searchCust yoksa boş string say */}
                                         {(data?.customers || []).filter((c:any) => 
                                             (c.name || '').toLowerCase().includes((searchCust || '').toLowerCase()) || 
                                             (c.tax_info || '').toLowerCase().includes((searchCust || '').toLowerCase())
@@ -197,7 +197,8 @@ export default function AddJobModal({
                                               <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500" value={jobForm?.assetId || ''} onChange={e => setJobForm({...jobForm, assetId: e.target.value})}>
                                                   <option value="">-- Varlık Seçilmedi (Genel Müşteri İşi) --</option>
                                                   {customerAssets.map((a:any) => (
-                                                     <option key={a.id} value={a.id}>{a.name} - {a.location}</option>
+                                                     /* 🟢 DÜZELTME: Konum yerine sadece İsim ve Tür */
+                                                     <option key={a.id} value={a.id}>{a.name} {a.type ? `(${a.type})` : ''}</option>
                                                   ))}
                                               </select>
                                               {customerAssets.length === 0 && <div className="text-[10px] text-amber-500 mt-1.5 font-bold px-1">Bu müşteriye ait kayıtlı varlık bulunamadı.</div>}
@@ -218,11 +219,12 @@ export default function AddJobModal({
                                       }}>
                                         <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- Listeden Varlık Seçin --</option>
                                         
-                                        {/* HATA ÇÖZÜMÜ 2: Varlık filtresinde güvenli .toLowerCase() */}
+                                        {/* GÜVENLİ FİLTRELEME & GÖRÜNÜM DÜZELTME */}
                                         {(data?.assets || []).filter((a: any) => 
                                             (a.name || '').toLowerCase().includes((searchAsset || '').toLowerCase())
                                         ).map((a: any) => (
-                                          <option key={a.id} value={a.id} className="py-2 border-b border-slate-50 last:border-0">{a.name} - {a.location}</option>
+                                          /* 🟢 DÜZELTME: Konum kaldırıldı, Tür eklendi */
+                                          <option key={a.id} value={a.id} className="py-2 border-b border-slate-50 last:border-0">{a.name} {a.type ? `(${a.type})` : ''}</option>
                                         ))}
                                       </select>
                                       {jobForm?.assetId && (
@@ -235,13 +237,13 @@ export default function AddJobModal({
                                 </div>
                               )}
 
-                              {/* Ortak Alan: Personel Seçimi (DÜZELTME: Patron sadece Yönetici görür) */}
+                              {/* Ortak Alan: Personel Seçimi (Patron sadece Yöneticiyi görür) */}
                               <div>
                                 <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Sorumlu Personel</label>
                                 <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={jobForm?.staffId || ''} onChange={e => setJobForm({...jobForm, staffId: e.target.value})}>
                                   <option value="">Seçiniz...</option>
                                   {(data?.staff || [])
-                                    .filter((s:any) => userRole === 'Patron' ? s.role === 'Yönetici' : s.role === 'Usta') // BURASI ZATEN DOĞRU: Patron -> Yönetici, Yönetici -> Usta görür
+                                    .filter((s:any) => userRole === 'Patron' ? s.role === 'Yönetici' : s.role === 'Usta') 
                                     .map((s:any) => (
                                       <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
                                   ))}
