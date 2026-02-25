@@ -19,18 +19,27 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
 
   // Çıkış yapma fonksiyonu
   const handleLogout = () => {
+    // Çıkış anında anlık olarak hangi ekranda olduğumuzu tekrar kontrol ediyoruz ki yanlışlık olmasın
+    const isPatronPath = window.location.pathname.includes('/dashboard');
+    const prefix = isPatronPath ? 'patron_' : 'staff_';
+
     // SADECE aktif kullanıcının yetkilerini temizle, tarayıcıdaki her şeyi silme
-    if (userRole === 'Patron') {
-       localStorage.removeItem('patron_authToken');
-       localStorage.removeItem('patron_userRole');
-       localStorage.removeItem('patron_userName');
-       localStorage.removeItem('patron_userSlug');
-    } else {
-       localStorage.removeItem('staff_authToken');
-       localStorage.removeItem('staff_userRole');
-       localStorage.removeItem('staff_userName');
-       localStorage.removeItem('staff_userSlug');
-    }
+    // Hem standart kayıtları hem de takılı kalabilen firma/slug kayıtlarını temizliyoruz
+    localStorage.removeItem(`${prefix}authToken`);
+    localStorage.removeItem(`${prefix}userRole`);
+    localStorage.removeItem(`${prefix}userName`);
+    localStorage.removeItem(`${prefix}userSlug`);
+    localStorage.removeItem(`${prefix}firmaSlug`);
+    localStorage.removeItem(`${prefix}slug`);
+
+    // Eğer sisteme önek (patron_ veya staff_) olmadan düz kaydedilmiş inatçı veriler varsa onları da temizliyoruz
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('role');
+    localStorage.removeItem('userSlug');
+    localStorage.removeItem('slug');
+    localStorage.removeItem('firmaSlug');
+    localStorage.removeItem('firma_slug');
+
     // Kullanıcıyı giriş ekranına yönlendir
     window.location.href = '/'; 
   };
