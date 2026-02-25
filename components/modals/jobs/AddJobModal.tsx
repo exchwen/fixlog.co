@@ -19,7 +19,7 @@ export default function AddJobModal({
     ? Object.keys(safeSectors.sectors[currentSector].subTypes) 
     : [];
 
-  // ? işareti ile güvenli kontrol
+  // Güvenli validasyon kontrolü
   const isJobValid = jobForm?.workCategory === 'Genel İş Atama' ? true : (jobForm?.customerName || jobForm?.assetId);
 
   return (
@@ -29,7 +29,7 @@ export default function AddJobModal({
           <div className="absolute inset-0" onClick={() => { setShowJobModal(false); if (jobModalType === 'APPROVAL') { setSelectedJob(null); setJobModalType(''); } }}></div>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-2xl p-0 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh] pointer-events-auto">
             
-            {/* HEADER: Geri Butonu ve Başlık */}
+            {/* HEADER */}
             <div className="flex justify-between items-center p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50">
                <div className="flex items-center gap-3">
                   {jobModalStep === 2 && (
@@ -50,7 +50,7 @@ export default function AddJobModal({
             {/* BODY */}
             <div className="p-5 sm:p-6 overflow-y-auto custom-scrollbar flex-1">
               
-              {/* EĞER MODAL TİPİ 'APPROVAL' İSE SADECE ONAY EKRANI GÖSTER */}
+              {/* ONAY EKRANI */}
               {jobModalType === 'APPROVAL' && selectedJob ? (
                   <div className="space-y-6 flex flex-col h-full justify-center">
                       <div className="bg-amber-50 p-5 rounded-2xl border border-amber-100 flex items-start gap-4">
@@ -179,8 +179,11 @@ export default function AddJobModal({
                                       <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500 custom-scrollbar" size={4} value={jobForm?.customerName || ''} onChange={e => setJobForm({...jobForm, customerName: e.target.value, assetId: ''})}>
                                         <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- 1. Listeden Müşteri Seçin --</option>
                                         
-                                        {/* HATA ÇÖZÜMÜ BURADA: (searchCust || '') ve (c.name || '') kullanarak undefined kontrolü */}
-                                        {(data?.customers || []).filter((c:any) => (c.name || '').toLowerCase().includes((searchCust || '').toLowerCase()) || (c.tax_info || '').includes(searchCust || '')).map((c: any) => (
+                                        {/* HATA ÇÖZÜMÜ 1: Müşteri filtresinde güvenli .toLowerCase() */}
+                                        {(data?.customers || []).filter((c:any) => 
+                                            (c.name || '').toLowerCase().includes((searchCust || '').toLowerCase()) || 
+                                            (c.tax_info || '').toLowerCase().includes((searchCust || '').toLowerCase())
+                                        ).map((c: any) => (
                                             <option key={c.id} value={c.name} className="py-2 border-b border-slate-50 last:border-0">{c.name} {c.tax_info ? `(${c.tax_info})` : ''}</option>
                                         ))}
                                       </select>
@@ -215,8 +218,10 @@ export default function AddJobModal({
                                       }}>
                                         <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- Listeden Varlık Seçin --</option>
                                         
-                                        {/* HATA ÇÖZÜMÜ BURADA: (searchAsset || '') ve (a.name || '') kullanımı */}
-                                        {(data?.assets || []).filter((a: any) => (a.name || '').toLowerCase().includes((searchAsset || '').toLowerCase())).map((a: any) => (
+                                        {/* HATA ÇÖZÜMÜ 2: Varlık filtresinde güvenli .toLowerCase() */}
+                                        {(data?.assets || []).filter((a: any) => 
+                                            (a.name || '').toLowerCase().includes((searchAsset || '').toLowerCase())
+                                        ).map((a: any) => (
                                           <option key={a.id} value={a.id} className="py-2 border-b border-slate-50 last:border-0">{a.name} - {a.location}</option>
                                         ))}
                                       </select>
@@ -230,13 +235,13 @@ export default function AddJobModal({
                                 </div>
                               )}
 
-                              {/* Ortak Alan: Personel Seçimi */}
+                              {/* Ortak Alan: Personel Seçimi (DÜZELTME: Patron sadece Yönetici görür) */}
                               <div>
                                 <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Sorumlu Personel</label>
                                 <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={jobForm?.staffId || ''} onChange={e => setJobForm({...jobForm, staffId: e.target.value})}>
                                   <option value="">Seçiniz...</option>
                                   {(data?.staff || [])
-                                    .filter((s:any) => userRole === 'Patron' ? s.role === 'Yönetici' : s.role === 'Usta')
+                                    .filter((s:any) => userRole === 'Patron' ? s.role === 'Yönetici' : s.role === 'Usta') // BURASI ZATEN DOĞRU: Patron -> Yönetici, Yönetici -> Usta görür
                                     .map((s:any) => (
                                       <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
                                   ))}
