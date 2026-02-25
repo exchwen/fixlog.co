@@ -10,7 +10,7 @@ import {
   Settings, X, Wrench, Link as LinkIcon, Check, Database, Image as ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2, Bell, CheckSquare, UserPlus
 } from 'lucide-react';
 
-export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob, setActiveTab, userRole: propRole, handleAction, isMyJobsTab }: any) {
+export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob, setActiveTab, userRole: propRole, handleAction, isMyJobsTab, setJobModalType }: any) {
   
   const { slug } = useParams(); 
 
@@ -21,6 +21,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   
   const [isApproving, setIsApproving] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false); // YENİ EKLENEN SATIR
 
   const [newJobNotification, setNewJobNotification] = useState<{show: boolean, jobName: string}>({show: false, jobName: ''});
   const prevJobIds = useRef<string[]>([]);
@@ -125,7 +126,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
     
     try {
         const isGeneralJob = job.work_type === 'Genel Görev';
-        // Eğer genel görevse direkt devam ediyor, yoksa usta atama adımına geçiyor
         const newStatus = isGeneralJob ? 'Devam Ediyor' : 'Usta Bekliyor';
 
         const success = await handleAction('update-job', {
@@ -135,10 +135,9 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         }, null, null);
 
         if (success) {
-            if (isGeneralJob) {
-                alert("Genel Görev başarıyla onaylandı ve üzerinize alındı.");
-            }
-            // Normal iş ise liste güncellenecek ve alt kutuya düşecek
+            setShowSuccessModal(true); // YENİ: Alert yerine modalı aç
+            setTimeout(() => setShowSuccessModal(false), 2500); // 2.5 saniye sonra kapat
+            if (setShowJobModal) setShowJobModal(false); // Eğer detay penceresi açıksa kapat
         }
     } catch (e) {
         console.error(e);
@@ -385,8 +384,14 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                         <div key={job.id} className="bg-amber-950/40 border border-amber-300/30 rounded-2xl p-4 flex flex-col justify-between hover:bg-amber-950/60 transition-colors">
                             <div 
                                 className="cursor-pointer mb-2 group" 
-                                onClick={() => { setSelectedJob(job); setShowJobModal(true); }}
-                                title="İş Detayını Görüntüle"
+                                onClick={() => { 
+                                  setSelectedJob(job); 
+                                  // HATA DÜZELTİLDİ: props kaldırıldı, doğrudan değişkene bakılıyor
+                                  if (setJobModalType) setJobModalType('APPROVAL');
+                                  
+                                  setShowJobModal(true); 
+                              }}
+                                title="İş Detayını Görüntüle ve Onayla"
                             >
                                 <div className="flex justify-between items-start mb-2">
                                     <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-white/20 text-white`}>
@@ -432,8 +437,14 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                         <div key={job.id} className="bg-indigo-950/40 border border-indigo-500/30 rounded-2xl p-4 flex flex-col justify-between hover:bg-indigo-950/60 transition-colors">
                             <div 
                                 className="cursor-pointer mb-2 group" 
-                                onClick={() => { setSelectedJob(job); setShowJobModal(true); }}
-                                title="İş Detayını Görüntüle"
+                                onClick={() => { 
+                                  setSelectedJob(job); 
+                                  // HATA DÜZELTİLDİ: props kaldırıldı, doğrudan değişkene bakılıyor
+                                  if (setJobModalType) setJobModalType('ASSIGN');
+
+                                  setShowJobModal(true); 
+                              }}
+                                title="İş Detayını Gör ve Ata"
                             >
                                 <div className="flex justify-between items-start mb-2">
                                     <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-white/20 text-white">
@@ -1026,6 +1037,25 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
             )}
         </div>
       </div>
+
+      <AnimatePresence>
+        {showSuccessModal && (
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.8 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="fixed inset-0 z-[300] flex items-center justify-center p-4 pointer-events-none"
+            >
+                <div className="bg-white/95 backdrop-blur-md border-2 border-emerald-100 shadow-2xl rounded-3xl p-8 flex flex-col items-center text-center max-w-sm w-full">
+                    <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 shadow-inner animate-pulse">
+                        <CheckCircle size={40} strokeWidth={3} />
+                    </div>
+                    <h3 className="text-xl font-black text-slate-900 mb-1">İşlem Başarılı!</h3>
+                    <p className="text-sm text-slate-500 font-medium">Görev onaylandı ve bir sonraki aşamaya (Usta Atama) başarıyla taşındı.</p>
+                </div>
+            </motion.div>
+        )}
+      </AnimatePresence>
 
     </motion.div>
   );

@@ -16,7 +16,7 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
   // Çevrimdışı kontrolü için State
   const [isOffline, setIsOffline] = useState(false);
 
-  // YENİ: Şık Uyarı Modalı State'i (Çirkin alert'ler yerine)
+  // Şık Uyarı Modalı State'i
   const [alertModal, setAlertModal] = useState<{isOpen: boolean, title: string, message: string, type: 'success' | 'error' | 'warning'}>({ 
     isOpen: false, title: '', message: '', type: 'warning' 
   });
@@ -27,7 +27,7 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
   // 1. Yönetici onayını bekleyen ve fiyatlandırılacak BİTMİŞ işler
   const pendingJobs = localJobs.filter((j: any) => j.status === 'Onay Bekliyor');
 
-  // YENİ: 2. Usta ataması yapılmış ama usta tarafından henüz "Devam Ediyor" (İşe Başla) yapılmamış işler
+  // 2. Usta ataması yapılmış ama usta tarafından henüz "Devam Ediyor" yapılmamış işler
   const waitingForWorkerJobs = localJobs.filter((j: any) => (j.status === 'Beklemede' || j.status === 'Gelecek') && j.staff_id);
 
   // İnternet durumunu anlık dinleyen yapı
@@ -55,7 +55,6 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
     
     setIsProcessing(job.id);
 
-    // Hem online hem offline için body aynı
     const endpoint = 'approve-job';
     const bodyData = { slug: activeSlug, jobId: job.id, amount: parseFloat(amount), customerName: job.customer_name };
 
@@ -99,54 +98,7 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
   return (
     <div className="space-y-8 relative">
 
-       {/* YENİ: USTA ONAYI BEKLEYEN İŞLER KUTUSU */}
-       {waitingForWorkerJobs.length > 0 && (
-         <div className="bg-blue-50/50 p-5 sm:p-6 rounded-3xl border border-blue-100 shadow-sm relative overflow-hidden">
-           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
-           
-           <div className="flex items-center gap-3 mb-5 relative z-10">
-              <div className="bg-blue-100 p-2.5 rounded-xl text-blue-600">
-                 <Clock size={20} />
-              </div>
-              <div>
-                 <h2 className="text-lg font-black text-slate-800 tracking-tight">Ustada Bekleyen Atamalar ({waitingForWorkerJobs.length})</h2>
-                 <p className="text-xs font-medium text-slate-500 mt-0.5">Personel atanmış ancak ustaların henüz sahada "İşe Başla" demediği görevler.</p>
-              </div>
-           </div>
-
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 relative z-10">
-             {waitingForWorkerJobs.map((j: any) => {
-               const assignedWorker = j.staff_id ? staff.find((s:any) => s.id === j.staff_id) : null;
-               return (
-                 <div key={j.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-3 group hover:border-blue-300 transition-colors">
-                   <div className="flex justify-between items-start gap-2">
-                     <div className="font-bold text-slate-800 text-sm truncate pr-2">{j.customer_name}</div>
-                     <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider whitespace-nowrap border border-slate-200 shadow-sm">
-                       {j.status}
-                     </span>
-                   </div>
-                   
-                   <div className="text-[11px] font-semibold text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center gap-2">
-                     <User size={14} className="text-slate-400" />
-                     Atanan: <span className="text-blue-600 font-bold">{assignedWorker ? assignedWorker.name : 'Bilinmiyor'}</span>
-                   </div>
-
-                   {setSelectedJob && (
-                     <button 
-                       onClick={() => setSelectedJob(j)}
-                       className="text-[10px] font-bold text-slate-500 hover:text-blue-600 transition-colors flex items-center justify-end gap-1 w-full mt-1 active:scale-95"
-                     >
-                       Detayları Gör <ArrowUpRight size={12} />
-                     </button>
-                   )}
-                 </div>
-               )
-             })}
-           </div>
-         </div>
-       )}
-
-       {/* ONAY BEKLEYEN (TAMAMLANAN) İŞLER KUTUSU */}
+       {/* 1. KUTU (YUKARI ALINDI): ONAY BEKLEYEN (TAMAMLANAN) İŞLER */}
        <div className="space-y-4">
          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 sm:p-0 sm:bg-transparent rounded-3xl border sm:border-none border-slate-200 shadow-sm sm:shadow-none mb-2">
            <div>
@@ -176,7 +128,6 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
               <tbody className="divide-y divide-slate-100">
                 {pendingJobs.length > 0 ? pendingJobs.map((j: any) => {
                   
-                  // Personel Hiyerarşisi Mantığı
                   const assignedManager = j.staff_id ? staff.find((s:any) => s.id === j.staff_id) : null;
                   const assignedWorker = j.details?.worker_id ? staff.find((s:any) => s.id === j.details?.worker_id) : null;
                   const actionBy = j.details?.lastEditedBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
@@ -190,7 +141,6 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                            <FileText size={12} className="text-slate-400" /> {j.work_type}
                         </div>
                         
-                        {/* Tıklanabilir Detay Butonu */}
                         {setSelectedJob && (
                           <button 
                             onClick={() => setSelectedJob(j)}
@@ -368,7 +318,54 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
          </div>
        </div>
 
-       {/* YENİ: ŞIK UYARI MODALI (Alert yerine geçer) */}
+       {/* 2. KUTU (AŞAĞI ALINDI): USTA ONAYI BEKLEYEN İŞLER KUTUSU */}
+       {waitingForWorkerJobs.length > 0 && (
+         <div className="bg-blue-50/50 p-5 sm:p-6 rounded-3xl border border-blue-100 shadow-sm relative overflow-hidden">
+           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+           
+           <div className="flex items-center gap-3 mb-5 relative z-10">
+              <div className="bg-blue-100 p-2.5 rounded-xl text-blue-600">
+                 <Clock size={20} />
+              </div>
+              <div>
+                 <h2 className="text-lg font-black text-slate-800 tracking-tight">Ustada Bekleyen Atamalar ({waitingForWorkerJobs.length})</h2>
+                 <p className="text-xs font-medium text-slate-500 mt-0.5">Personel atanmış ancak ustaların henüz sahada "İşe Başla" demediği görevler.</p>
+              </div>
+           </div>
+
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 relative z-10">
+             {waitingForWorkerJobs.map((j: any) => {
+               const assignedWorker = j.staff_id ? staff.find((s:any) => s.id === j.staff_id) : null;
+               return (
+                 <div key={j.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-3 group hover:border-blue-300 transition-colors">
+                   <div className="flex justify-between items-start gap-2">
+                     <div className="font-bold text-slate-800 text-sm truncate pr-2">{j.customer_name}</div>
+                     <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider whitespace-nowrap border border-slate-200 shadow-sm">
+                       {j.status}
+                     </span>
+                   </div>
+                   
+                   <div className="text-[11px] font-semibold text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center gap-2">
+                     <User size={14} className="text-slate-400" />
+                     Atanan: <span className="text-blue-600 font-bold">{assignedWorker ? assignedWorker.name : 'Bilinmiyor'}</span>
+                   </div>
+
+                   {setSelectedJob && (
+                     <button 
+                       onClick={() => setSelectedJob(j)}
+                       className="text-[10px] font-bold text-slate-500 hover:text-blue-600 transition-colors flex items-center justify-end gap-1 w-full mt-1 active:scale-95"
+                     >
+                       Detayları Gör <ArrowUpRight size={12} />
+                     </button>
+                   )}
+                 </div>
+               )
+             })}
+           </div>
+         </div>
+       )}
+
+       {/* ŞIK UYARI MODALI (Alert yerine geçer) */}
        <AnimatePresence>
           {alertModal.isOpen && (
             <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
