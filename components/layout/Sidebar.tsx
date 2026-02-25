@@ -19,29 +19,21 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
 
   // Çıkış yapma fonksiyonu
   const handleLogout = () => {
-    // Çıkış anında anlık olarak hangi ekranda olduğumuzu tekrar kontrol ediyoruz ki yanlışlık olmasın
-    const isPatronPath = window.location.pathname.includes('/dashboard');
-    const prefix = isPatronPath ? 'patron_' : 'staff_';
+    // 1. LocalStorage temizliği (Uygulamana ait tüm verileri sıfırlar)
+    localStorage.clear();
+    
+    // 2. SessionStorage temizliği (Geçici sekmeye özel takılı kalan veriler için)
+    sessionStorage.clear();
+    
+    // 3. Çerezleri (Cookies) temizleme (En inatçı giriş kayıtları genellikle buradadır)
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
 
-    // SADECE aktif kullanıcının yetkilerini temizle, tarayıcıdaki her şeyi silme
-    // Hem standart kayıtları hem de takılı kalabilen firma/slug kayıtlarını temizliyoruz
-    localStorage.removeItem(`${prefix}authToken`);
-    localStorage.removeItem(`${prefix}userRole`);
-    localStorage.removeItem(`${prefix}userName`);
-    localStorage.removeItem(`${prefix}userSlug`);
-    localStorage.removeItem(`${prefix}firmaSlug`);
-    localStorage.removeItem(`${prefix}slug`);
-
-    // Eğer sisteme önek (patron_ veya staff_) olmadan düz kaydedilmiş inatçı veriler varsa onları da temizliyoruz
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('role');
-    localStorage.removeItem('userSlug');
-    localStorage.removeItem('slug');
-    localStorage.removeItem('firmaSlug');
-    localStorage.removeItem('firma_slug');
-
-    // Kullanıcıyı giriş ekranına yönlendir
-    window.location.href = '/'; 
+    // 4. Kullanıcıyı kesin olarak giriş ekranına yönlendir (Daha güçlü bir yönlendirme komutu)
+    window.location.replace('/'); 
   };
 
   // Mobilde kaydırma (Swipe) hareketlerini algılayan zeka
