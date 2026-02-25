@@ -405,12 +405,14 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                             </div>
                             
                             <button 
-                                onClick={(e) => { e.stopPropagation(); handleApproveJob(job); }}
-                                disabled={isApproving === job.id}
-                                className="mt-2 w-full bg-white text-amber-600 hover:bg-amber-50 py-2.5 rounded-xl text-xs font-black transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                                onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    if (setJobModalType) setJobModalType('APPROVAL_FIRST_STEP'); // Modal türünü belirt
+                                    setSelectedJob(job); 
+                                }}
+                                className="mt-2 w-full bg-white text-amber-600 hover:bg-amber-50 py-2.5 rounded-xl text-xs font-black transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
                             >
-                                {isApproving === job.id ? <Loader2 size={14} className="animate-spin" /> : <CheckSquare size={14} />}
-                                {isApproving === job.id ? 'İşleniyor...' : 'KABUL ET / ONAYLA'}
+                                <CheckSquare size={14} /> İŞİ GÖR VE ONAYLA
                             </button>
                         </div>
                     );

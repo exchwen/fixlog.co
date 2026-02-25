@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin, Calendar, AlertTriangle, ArrowRight, Filter, ShieldCheck, CheckCircle, Clock, Plus, Tags, Truck, Edit2, ShieldAlert, MessageSquareText, Image as ImageIcon, Download, Briefcase } from 'lucide-react';
+import { X, Settings, Trash2, Loader2, Search, User, Box, ExternalLink, MapPin, Calendar, AlertTriangle, ArrowRight, Filter, ShieldCheck, CheckCircle, Clock, Plus, Tags, Truck, Edit2, ShieldAlert, MessageSquareText, Image as ImageIcon, Download, Briefcase, CheckSquare } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 import trCitiesData from '@/lib/data/tr-cities.json';
 
@@ -521,23 +521,47 @@ export default function DashboardModals({
                             </button>
                         )}
 
-                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full pt-2">
-                            <button 
-                                onClick={handleEditClick}
-                                className="flex-1 bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"
-                            >
-                                <Settings size={16} /> Düzenle / Ata
-                            </button>
-                            
-                            {selectedJob.status !== 'İptal' && selectedJob.status !== 'Tamamlandı' && (
-                                <button 
-                                    onClick={() => setShowCancelConfirm(true)}
-                                    className="sm:w-1/3 bg-rose-50 text-rose-600 border border-rose-200 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"
-                                >
-                                    <X size={16} strokeWidth={3} /> İptal Et
-                                </button>
-                            )}
-                        </div>
+<div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full pt-2">
+                            {jobModalType === 'APPROVAL_FIRST_STEP' ? (
+                                <button 
+                                    onClick={async () => {
+                                        setIsApproving(true);
+                                        const isGeneralJob = selectedJob.work_type === 'Genel Görev';
+                                        const newStatus = isGeneralJob ? 'Devam Ediyor' : 'Usta Bekliyor';
+                                        await handleAction('update-job', {
+                                            id: selectedJob.id,
+                                            status: newStatus,
+                                            lastEditedBy: data?.ownerName || 'Yönetici',
+                                        }, () => {
+                                            setSelectedJob(null);
+                                            if (setJobModalType) setJobModalType('');
+                                        }, null);
+                                        setIsApproving(false);
+                                    }}
+                                    disabled={isApproving}
+                                    className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-black transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+                                >
+                                    {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckSquare size={16} />}
+                                    İŞİ ONAYLIYORUM
+                                </button>
+                            ) : (
+                                <button 
+                                    onClick={handleEditClick}
+                                    className="flex-1 bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"
+                                >
+                                    <Settings size={16} /> Düzenle / Ata
+                                </button>
+                            )}
+                            
+                            {selectedJob.status !== 'İptal' && selectedJob.status !== 'Tamamlandı' && (
+                                <button 
+                                    onClick={() => setShowCancelConfirm(true)}
+                                    className="sm:w-1/3 bg-rose-50 text-rose-600 border border-rose-200 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                >
+                                    <X size={16} strokeWidth={3} /> İptal Et
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
               ) : (
