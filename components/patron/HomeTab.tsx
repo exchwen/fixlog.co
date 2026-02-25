@@ -199,10 +199,10 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
     const calculatedMonths = (new Date().getFullYear() - earliestDate.getFullYear()) * 12 + new Date().getMonth() - earliestDate.getMonth() + 1;
     const finalMonthsUsed = Math.max(1, calculatedMonths); 
     
-    const baseFee = 3000;       
-    const perAssetFee = 50;       
-    const perPhotoFee = 1;        
-    const perJobFee = 5;          
+    const baseFee = 3000;        
+    const perAssetFee = 50;      
+    const perPhotoFee = 1;       
+    const perJobFee = 5;         
 
     const uPaid = (finalMonthsUsed * (totalAssetsCount * perAssetFee)) + (totalLifetimePhotos * perPhotoFee) + (totalJobs * perJobFee);
     const cUsageBill = (totalAssetsCount * perAssetFee) + (monthlyPhotos * perPhotoFee) + (currentMonthJobs * perJobFee);
@@ -327,19 +327,19 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                       <div className="text-[10px] text-slate-500 mt-0.5">{item.supplier_name || 'Tedarikçi Kaydı Yok'}</div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <div className="text-sm font-black text-amber-600 bg-amber-100 px-2.5 py-1 rounded-md">
-                          {item.quantity} <span className="text-[10px] uppercase">{item.unit_name}</span>
-                        </div>
-                        <button 
-                          onClick={() => {
-                            setShowLowStockModal(false);
-                            if (setActiveTab) setActiveTab('stock');
-                          }}
-                          className="px-2.5 py-1.5 bg-white border border-slate-200 text-blue-600 rounded-md text-[10px] font-bold hover:bg-blue-50 hover:border-blue-200 transition-all active:scale-95 shadow-sm flex items-center gap-1"
-                          title="Stok Sayfasına Git"
-                        >
-                          Stoğa Git <ArrowUpRight size={12} />
-                        </button>
+                       <div className="text-sm font-black text-amber-600 bg-amber-100 px-2.5 py-1 rounded-md">
+                         {item.quantity} <span className="text-[10px] uppercase">{item.unit_name}</span>
+                       </div>
+                       <button 
+                         onClick={() => {
+                           setShowLowStockModal(false);
+                           if (setActiveTab) setActiveTab('stock');
+                         }}
+                         className="px-2.5 py-1.5 bg-white border border-slate-200 text-blue-600 rounded-md text-[10px] font-bold hover:bg-blue-50 hover:border-blue-200 transition-all active:scale-95 shadow-sm flex items-center gap-1"
+                         title="Stok Sayfasına Git"
+                       >
+                         Stoğa Git <ArrowUpRight size={12} />
+                       </button>
                     </div>
                   </div>
                 ))}
@@ -591,10 +591,10 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden h-auto min-h-[140px] sm:h-[192px] flex flex-col justify-center group hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-2.5">
-                      <div className={`p-2 rounded-lg ${isGrowthPositive ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
-                         {isGrowthPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                      </div>
-                      <h3 className="font-bold text-slate-900 text-sm">İş Büyüme Hızı</h3>
+                     <div className={`p-2 rounded-lg ${isGrowthPositive ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                        {isGrowthPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                     </div>
+                     <h3 className="font-bold text-slate-900 text-sm">İş Büyüme Hızı</h3>
                   </div>
                 </div>
                 <div>
@@ -613,10 +613,10 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-visible h-auto min-h-[140px] sm:h-[192px] flex flex-col justify-center group hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-2.5">
-                      <div className={`p-2 rounded-lg ${lowStockItems.length > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-600'}`}>
-                         <Package size={16} />
-                      </div>
-                      <h3 className="font-bold text-slate-900 text-sm">Stok Uyarıları</h3>
+                     <div className={`p-2 rounded-lg ${lowStockItems.length > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-600'}`}>
+                        <Package size={16} />
+                     </div>
+                     <h3 className="font-bold text-slate-900 text-sm">Stok Uyarıları</h3>
                   </div>
                   
                   {lowStockItems.length > 0 && (
@@ -821,12 +821,12 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                     </td>
                     <td className="px-5 py-4 align-middle text-right">
                       <div className="flex items-center justify-end gap-3">
-                          <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black tracking-wide border shadow-sm ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'} whitespace-nowrap uppercase`}>
+                         <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black tracking-wide border shadow-sm ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'} whitespace-nowrap uppercase`}>
                            {j.status}
-                          </span>
-                          <div className="w-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                             <ArrowUpRight size={16} className="text-blue-500" />
-                          </div>
+                         </span>
+                         <div className="w-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <ArrowUpRight size={16} className="text-blue-500" />
+                         </div>
                       </div>
                     </td>
                   </tr>
