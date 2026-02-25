@@ -10,8 +10,8 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
       {/* BAŞLIK VE KONTROLLER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
         <div className="w-full sm:w-auto">
-          <h3 className="text-lg font-black text-slate-800 tracking-tight">Tüm İş Emirleri</h3>
-          <p className="text-xs text-slate-500 font-medium mt-0.5 hidden sm:block">Sistemdeki tüm kayıtlı işleri ve durumlarını yönetin.</p>
+          <h3 className="text-lg font-black text-slate-800 tracking-tight">Tüm İş Emirleri (Genel Arşiv)</h3>
+          <p className="text-xs text-slate-500 font-medium mt-0.5 hidden sm:block">Filtresiz tüm iş kayıtları ve güncel durumları.</p>
         </div>
         
         <button 
@@ -38,11 +38,16 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
            <tbody className="divide-y divide-slate-100">
              {data?.jobs?.length > 0 ? data.jobs.map((j: any) => {
                // --- HİYERARŞİ MANTIĞI ---
+               // 1. İşi kim oluşturdu? (Details içinden veya ownerName)
                const createdBy = j.details?.createdBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
-               const assignedManager = data?.staff?.find((s: any) => s.id === j.staff_id);
-               const assignedWorker = data?.staff?.find((s: any) => s.id === j.details?.worker_id);
                
-               // Eğer Atayan kişi ile Atanan Yönetici ismi aynıysa TRUE döner
+               // 2. Şu anki sorumlu yönetici kim? (staff_id ile eşleşen)
+               const assignedManager = data?.staff?.find((s: any) => String(s.id) === String(j.staff_id));
+               
+               // 3. Sahadaki usta kim? (worker_id ile eşleşen)
+               const assignedWorker = data?.staff?.find((s: any) => String(s.id) === String(j.details?.worker_id));
+               
+               // 4. Kontrol: Oluşturan kişi ile atanan yönetici aynı isim mi?
                const isSamePerson = assignedManager && (assignedManager.name === createdBy);
 
                return (
@@ -51,18 +56,23 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                    onClick={() => setSelectedJob(j)}
                    className="hover:bg-blue-50/50 cursor-pointer transition-colors group"
                  >
+                   {/* Müşteri & Konum */}
                    <td className="px-5 py-4 align-top">
                       <div className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors truncate max-w-[200px]">{j.customer_name}</div>
                       <div className="text-[10px] text-slate-500 font-semibold mt-1 flex items-center gap-1.5 truncate max-w-[200px]">
                         <MapPin size={12} className="shrink-0" />
-                        <span className="truncate">{data?.assets?.find((a:any) => a.id === j.asset_id)?.location || 'Konum Belirtilmedi'}</span>
+                        <span className="truncate">{data?.assets?.find((a:any) => String(a.id) === String(j.asset_id))?.location || 'Konum Belirtilmedi'}</span>
                       </div>
                    </td>
+
+                   {/* Görev Tipi */}
                    <td className="px-5 py-4 align-top font-bold text-slate-600 whitespace-nowrap">
                      <div className="flex items-center gap-1.5 bg-slate-50 w-fit px-2 py-1 rounded border border-slate-100">
                        <ClipboardList size={14} className="text-slate-400" /> {j.work_type}
                      </div>
                    </td>
+
+                   {/* Tarih */}
                    <td className="px-5 py-4 align-top">
                       <div className="flex items-center gap-1.5 text-slate-700 font-bold whitespace-nowrap">
                          <Calendar size={14} className="text-blue-500"/> 
@@ -76,7 +86,7 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                       )}
                    </td>
                    
-                   {/* YENİ: PERSONEL HİYERARŞİSİ SÜTUNU */}
+                   {/* PERSONEL HİYERARŞİSİ (ÖZEL KISIM) */}
                    <td className="px-5 py-4 align-top">
                       <div className="flex flex-col gap-2">
                         
@@ -118,7 +128,7 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                         <div className="flex items-center gap-2">
                             <Wrench size={14} className={assignedWorker ? 'text-indigo-500' : 'text-slate-300'} />
                             <span className="text-[9px] font-black text-slate-400 uppercase w-[100px] tracking-wider">
-                                {isSamePerson ? 'Saha Ustası:' : 'Saha Ustası:'} {/* Hizalama için genişlik aynı tutuldu */}
+                                Saha Ustası:
                             </span>
                             {assignedWorker ? (
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-indigo-700 whitespace-nowrap">
@@ -159,8 +169,8 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
         {data?.jobs?.length > 0 ? data.jobs.map((j: any) => {
           // --- MOBİL İÇİN HİYERARŞİ MANTIĞI ---
           const createdBy = j.details?.createdBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
-          const assignedManager = data?.staff?.find((s: any) => s.id === j.staff_id);
-          const assignedWorker = data?.staff?.find((s: any) => s.id === j.details?.worker_id);
+          const assignedManager = data?.staff?.find((s: any) => String(s.id) === String(j.staff_id));
+          const assignedWorker = data?.staff?.find((s: any) => String(s.id) === String(j.details?.worker_id));
           const isSamePerson = assignedManager && (assignedManager.name === createdBy);
 
           return (
@@ -175,7 +185,7 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                    <div className="font-black text-slate-800 text-sm truncate">{j.customer_name}</div>
                    <div className="text-[10px] text-slate-500 font-semibold mt-1 flex items-start gap-1.5 line-clamp-2">
                      <MapPin size={12} className="shrink-0 mt-0.5 text-slate-400" />
-                     <span>{data?.assets?.find((a:any) => a.id === j.asset_id)?.location || 'Konum Belirtilmedi'}</span>
+                     <span>{data?.assets?.find((a:any) => String(a.id) === String(j.asset_id))?.location || 'Konum Belirtilmedi'}</span>
                    </div>
                  </div>
                  <span className={`px-2 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider border shrink-0 shadow-sm ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>
