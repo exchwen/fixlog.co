@@ -148,9 +148,9 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   };
 
   const handleAssignWorker = (job: any) => {
-      setSelectedJob(job);
-      setShowJobModal(true);
-  };
+    if (setJobModalType) setJobModalType('ASSIGN');
+    setSelectedJob(job);
+};
 
   const { currentMonthJobs, lastMonthJobs, growthPercent, isGrowthPositive, monthlyPhotos } = useMemo(() => {
     const now = new Date();
@@ -438,11 +438,8 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                             <div 
                                 className="cursor-pointer mb-2 group" 
                                 onClick={() => { 
-                                  setSelectedJob(job); 
-                                  // HATA DÜZELTİLDİ: props kaldırıldı, doğrudan değişkene bakılıyor
                                   if (setJobModalType) setJobModalType('ASSIGN');
-
-                                  setShowJobModal(true); 
+                                  setSelectedJob(job); 
                               }}
                                 title="İş Detayını Gör ve Ata"
                             >
@@ -747,7 +744,10 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                 return (
                   <tr 
                     key={j.id} 
-                    onClick={() => setSelectedJob && setSelectedJob(j)}
+                    onClick={() => {
+                        if (setJobModalType) setJobModalType('');
+                        setSelectedJob && setSelectedJob(j);
+                    }}
                     className="hover:bg-blue-50/50 transition-colors group cursor-pointer relative"
                   >
                     <td className="px-5 py-4 align-middle">
@@ -879,11 +879,14 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
              const staffColor = isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200';
 
              return (
-               <div 
-                 key={j.id} 
-                 onClick={() => setSelectedJob && setSelectedJob(j)}
-                 className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col gap-4 active:scale-95 transition-all cursor-pointer"
-               >
+              <div 
+              key={j.id} 
+              onClick={() => {
+                  if (setJobModalType) setJobModalType('');
+                  setSelectedJob && setSelectedJob(j);
+              }}
+              className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col gap-4 active:scale-95 transition-all cursor-pointer"
+            >
                  <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
                     <div className="min-w-0">
                       <div className="font-black text-slate-800 text-sm truncate">{j.customer_name}</div>

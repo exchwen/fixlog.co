@@ -128,7 +128,7 @@ export default function DashboardModals({
     if (showStaffDetail) setShowStaffDetail(null);
     if (showCustomerDetail) { setShowCustomerDetail(null); setIsEditingCustomer(false); }
     if (showAssetDetail) { setShowAssetDetail(null); setIsEditingAsset(false); setAssetDetailTab('info'); }
-    if (selectedJob) { setSelectedJob(null); setIsEditingJobDetail(false); setShowCancelConfirm(false); setFullScreenImage(null); }
+    if (selectedJob) { setSelectedJob(null); setIsEditingJobDetail(false); setShowCancelConfirm(false); setFullScreenImage(null); if (setJobModalType) setJobModalType(''); }
     if (previewPdfJob) setPreviewPdfJob(null);
     
     setShowJobModal(false); 
@@ -156,11 +156,12 @@ export default function DashboardModals({
         setSelectedCity(''); setSelectedDistrict(''); setBuildingNo('');
     }
     if (type === 'job' && setSelectedJob) { 
-        setSelectedJob(null); 
-        setIsEditingJobDetail(false); 
-        setShowCancelConfirm(false); 
-        setFullScreenImage(null);
-    }
+      setSelectedJob(null); 
+      setIsEditingJobDetail(false); 
+      setShowCancelConfirm(false); 
+      setFullScreenImage(null);
+      if (setJobModalType) setJobModalType('');
+  }
   };
 
   const isAnyModalOpen = showStaffDetail || showCustomerDetail || showAssetDetail || showJobModal || showAssetModal || showStaffModal || showCustomerModal || showStockModal || showSupplierModal || showSupplierListModal || showCategoryModal || selectedJob || previewPdfJob || fullScreenImage;
@@ -360,9 +361,8 @@ export default function DashboardModals({
 
       {/* 1. SEÇİLİ İŞ (GÖREV) DETAY MODALI */}
       <AnimatePresence>
-        {selectedJob && !previewPdfJob && (
+        {selectedJob && !previewPdfJob && jobModalType !== 'APPROVAL' && (
           <div className={`fixed inset-0 z-[130] flex items-center justify-center p-4 ${isAnyProfileDetailOpen && !isMobile ? 'bg-transparent pointer-events-none' : 'bg-slate-900/60 backdrop-blur-sm'}`}>
-            
             {!(isAnyProfileDetailOpen && !isMobile) && (
                 <div className="absolute inset-0" onClick={() => handleCloseDetail('job')}></div>
             )}
@@ -1138,7 +1138,7 @@ export default function DashboardModals({
       <AnimatePresence>
         {showJobModal && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
-            <div className="absolute inset-0" onClick={() => setShowJobModal(false)}></div>
+            <div className="absolute inset-0" onClick={() => { setShowJobModal(false); if (jobModalType === 'APPROVAL') { setSelectedJob(null); setJobModalType(''); } }}></div>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-2xl p-0 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh] pointer-events-auto">
               
               {/* HEADER: Geri Butonu ve Başlık */}
@@ -1156,7 +1156,7 @@ export default function DashboardModals({
                         {jobModalStep === 2 && <div className="text-xs font-medium text-slate-500">Formu doldurarak atamayı tamamlayın.</div>}
                     </div>
                  </div>
-                 <button onClick={() => setShowJobModal(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-xl transition-all active:scale-95"><X size={20} /></button>
+                 <button onClick={() => { setShowJobModal(false); if (jobModalType === 'APPROVAL') { setSelectedJob(null); setJobModalType(''); } }} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-xl transition-all active:scale-95"><X size={20} /></button>
               </div>
 
               {/* BODY */}
@@ -1204,6 +1204,8 @@ export default function DashboardModals({
                                             lastEditedBy: data?.ownerName || 'Yönetici'
                                         }, () => {
                                             setShowJobModal(false);
+                                            setSelectedJob(null);
+                                            if (setJobModalType) setJobModalType('');
                                             // Başarı modalını burada tetiklemek için bir prop gönderilebilir ama 
                                             // Hometab tarafındaki handleApproveJob bunu zaten yapıyor.
                                         }, null);
