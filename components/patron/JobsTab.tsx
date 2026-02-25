@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Plus, Calendar, User, ArrowRight, Clock, MapPin, ClipboardList } from 'lucide-react';
+import { Plus, Calendar, User, ArrowRight, Clock, MapPin, ClipboardList, ShieldCheck, Wrench } from 'lucide-react';
 
 export default function JobsTab({ data, setShowJobModal, statusColors, setSelectedJob }: any) {
   return (
@@ -30,31 +30,40 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                <th className="px-5 py-4 whitespace-nowrap">Lokasyon / Müşteri</th>
                <th className="px-5 py-4 whitespace-nowrap">Görev Tipi</th>
                <th className="px-5 py-4 whitespace-nowrap">Tarih / Saat</th>
-               <th className="px-5 py-4 whitespace-nowrap">Sorumlu</th>
+               <th className="px-5 py-4 whitespace-nowrap w-[30%]">Hiyerarşi & Sorumlular</th>
                <th className="px-5 py-4 text-right whitespace-nowrap">Durum</th>
                <th className="px-5 py-4 w-10"></th>
              </tr>
            </thead>
            <tbody className="divide-y divide-slate-100">
-             {data?.jobs?.length > 0 ? data.jobs.map((j: any) => (
+             {data?.jobs?.length > 0 ? data.jobs.map((j: any) => {
+               // Hiyerarşi Mantığı
+               const creator = j.details?.createdBy || 'Sistem';
+               const manager = data?.staff?.find((s: any) => s.id === j.staff_id)?.name || null;
+               const worker = data?.staff?.find((s: any) => String(s.id) === String(j.details?.worker_id))?.name || null;
+               
+               // Eğer Atayan ve Yönetici aynı isimse, tek satırda gösterelim
+               const isCreatorManager = creator === manager;
+
+               return (
                <tr 
                  key={j.id} 
                  onClick={() => setSelectedJob(j)}
                  className="hover:bg-blue-50/50 cursor-pointer transition-colors group"
                >
-                 <td className="px-5 py-4 align-middle">
+                 <td className="px-5 py-4 align-top">
                     <div className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors truncate max-w-[200px] lg:max-w-[250px]">{j.customer_name}</div>
                     <div className="text-[10px] text-slate-500 font-semibold mt-1 flex items-center gap-1.5 truncate max-w-[200px] lg:max-w-[250px]">
                       <MapPin size={12} className="shrink-0" />
                       <span className="truncate">{data?.assets?.find((a:any) => a.id === j.asset_id)?.location || 'Konum Belirtilmedi'}</span>
                     </div>
                  </td>
-                 <td className="px-5 py-4 align-middle font-bold text-slate-600 whitespace-nowrap">
+                 <td className="px-5 py-4 align-top font-bold text-slate-600 whitespace-nowrap">
                    <div className="flex items-center gap-1.5">
                      <ClipboardList size={14} className="text-slate-400" /> {j.work_type}
                    </div>
                  </td>
-                 <td className="px-5 py-4 align-middle">
+                 <td className="px-5 py-4 align-top">
                     <div className="flex items-center gap-1.5 text-slate-700 font-bold whitespace-nowrap">
                        <Calendar size={14} className="text-blue-500"/> 
                        {j.scheduled_date || 'Anlık Kayıt'}
@@ -69,20 +78,51 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                        </div>
                     )}
                  </td>
-                 <td className="px-5 py-4 align-middle font-bold text-slate-600">
-                    <div className="flex items-center gap-1.5 whitespace-nowrap">
-                        <User size={14} className="text-slate-400"/>
-                        {data?.staff?.find((s: any) => s.id === j.staff_id)?.name || 'Atanmadı'}
+                 
+                 {/* HİYERARŞİ SÜTUNU */}
+                 <td className="px-5 py-4 align-top">
+                    <div className="flex flex-col gap-1.5">
+                        {/* 1. Atayan / Yönetici */}
+                        {isCreatorManager ? (
+                            <div className="flex items-center gap-1.5">
+                                <ShieldCheck size={14} className="text-blue-600" />
+                                <span className="text-[10px] font-black text-slate-400 uppercase w-[60px] tracking-wider">Yönetici:</span>
+                                <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">{manager}</span>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex items-center gap-1.5">
+                                    <ShieldCheck size={14} className="text-slate-400" />
+                                    <span className="text-[10px] font-black text-slate-400 uppercase w-[60px] tracking-wider">Atayan:</span>
+                                    <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">{creator}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <User size={14} className="text-blue-500" />
+                                    <span className="text-[10px] font-black text-slate-400 uppercase w-[60px] tracking-wider">Sorumlu:</span>
+                                    <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">{manager || 'Atanmadı'}</span>
+                                </div>
+                            </>
+                        )}
+
+                        {/* 2. Usta */}
+                        <div className="flex items-center gap-1.5">
+                            <Wrench size={14} className={worker ? "text-amber-500" : "text-slate-300"} />
+                            <span className="text-[10px] font-black text-slate-400 uppercase w-[60px] tracking-wider">Usta:</span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${worker ? 'text-amber-700 bg-amber-50 border-amber-100' : 'text-slate-400 bg-slate-50 border-slate-200'}`}>
+                                {worker || 'Atanmadı'}
+                            </span>
+                        </div>
                     </div>
                  </td>
-                 <td className="px-5 py-4 align-middle text-right whitespace-nowrap">
+
+                 <td className="px-5 py-4 align-top text-right whitespace-nowrap">
                     <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border shadow-sm ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span>
                  </td>
                  <td className="px-5 py-4 align-middle text-slate-300 group-hover:text-blue-500 text-right">
                     <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
                  </td>
                </tr>
-             )) : (
+             )}) : (
                <tr>
                  <td colSpan={6} className="p-20 text-center bg-slate-50">
                     <div className="flex flex-col items-center justify-center gap-3">
@@ -98,7 +138,14 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
 
       {/* MOBİL GÖRÜNÜM: DİKEY İŞ KARTLARI (Yatay Scroll'u Engeller) */}
       <div className="md:hidden flex flex-col gap-3">
-        {data?.jobs?.length > 0 ? data.jobs.map((j: any) => (
+        {data?.jobs?.length > 0 ? data.jobs.map((j: any) => {
+          // Hiyerarşi Mantığı (Mobil İçin Tekrar)
+          const creator = j.details?.createdBy || 'Sistem';
+          const manager = data?.staff?.find((s: any) => s.id === j.staff_id)?.name || null;
+          const worker = data?.staff?.find((s: any) => String(s.id) === String(j.details?.worker_id))?.name || null;
+          const isCreatorManager = creator === manager;
+
+          return (
           <div 
             key={j.id} 
             onClick={() => setSelectedJob(j)}
@@ -118,18 +165,42 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                </span>
             </div>
 
-            {/* Görev Tipi ve Sorumlu */}
-            <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
-               <div className="flex flex-col gap-1 min-w-0">
-                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Görev Tipi</div>
-                  <div className="text-xs font-bold text-slate-700 flex items-center gap-1.5 truncate">
-                    <ClipboardList size={12} className="text-blue-500 shrink-0" /> <span className="truncate">{j.work_type}</span>
+            {/* Görev Tipi ve Hiyerarşi (Mobil) */}
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-2">
+               <div className="flex items-center justify-between">
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">GÖREV TİPİ</div>
+                  <div className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                    <ClipboardList size={12} className="text-slate-400" /> {j.work_type}
                   </div>
                </div>
-               <div className="flex flex-col gap-1 min-w-0">
-                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sorumlu</div>
-                  <div className="text-xs font-bold text-slate-700 flex items-center gap-1.5 truncate">
-                    <User size={12} className="text-amber-500 shrink-0" /> <span className="truncate">{data?.staff?.find((s: any) => s.id === j.staff_id)?.name || 'Atanmadı'}</span>
+               
+               <div className="h-px bg-slate-200 w-full my-0.5"></div>
+
+               {/* Mobil Hiyerarşi */}
+               <div className="flex flex-col gap-1.5">
+                  {isCreatorManager ? (
+                      <div className="flex items-center justify-between">
+                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><ShieldCheck size={12}/> YÖNETİCİ</div>
+                          <div className="text-[11px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded border border-blue-200">{manager}</div>
+                      </div>
+                  ) : (
+                      <>
+                        <div className="flex items-center justify-between">
+                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><ShieldCheck size={12}/> ATAYAN</div>
+                            <div className="text-[11px] font-bold text-slate-600">{creator}</div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><User size={12}/> SORUMLU</div>
+                            <div className="text-[11px] font-bold text-blue-600">{manager || 'Atanmadı'}</div>
+                        </div>
+                      </>
+                  )}
+                  
+                  <div className="flex items-center justify-between">
+                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><Wrench size={12}/> SAHA USTASI</div>
+                      <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${worker ? 'text-amber-700 bg-amber-100 border-amber-200' : 'text-slate-400 bg-white border-slate-200'}`}>
+                          {worker || 'Atanmadı'}
+                      </div>
                   </div>
                </div>
             </div>
@@ -151,7 +222,7 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
               </div>
             </div>
           </div>
-        )) : (
+        )}) : (
           <div className="p-10 text-center bg-white rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3">
              <Calendar size={40} className="text-slate-300" />
              <span className="text-slate-500 font-medium text-sm">Henüz iş kaydı bulunamadı.</span>
