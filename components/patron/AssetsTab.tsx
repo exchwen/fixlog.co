@@ -88,7 +88,7 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
         mapQuery = mapQuery.substring(1).trim();
       }
     }
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
+    return `https://www.google.com/maps/search/?api=1&query=$${encodeURIComponent(mapQuery)}`;
   };
 
   const handleMapClick = (e: React.MouseEvent<HTMLAnchorElement>, location: string, apartmentName: string) => {

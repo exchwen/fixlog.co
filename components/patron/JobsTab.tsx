@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Plus, Calendar, User, ArrowRight, Clock, MapPin, ClipboardList, ShieldCheck, Wrench, UserPlus, UserCheck } from 'lucide-react';
+import { Plus, Calendar, ArrowRight, Clock, MapPin, ClipboardList, ShieldCheck, Wrench, UserPlus, UserCheck } from 'lucide-react';
 
-export default function JobsTab({ data, setShowJobModal, statusColors, setSelectedJob }: any) {
+export default function JobsTab({ data, setShowJobModal, statusColors, setSelectedJob, setJobModalType, handleAction }: any) {
   
   // Tarih Formatlayıcı (Yıl ve Saat Eklendi)
   const formatFullDate = (dateString: string) => {

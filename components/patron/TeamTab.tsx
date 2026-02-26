@@ -36,16 +36,19 @@ interface DashboardData {
   [key: string]: any;
 }
 
+// 🟢 DÜZELTME: patron.jsx dosyasının gönderdiği proplarla birebir eşleştirildi.
 interface TeamTabProps {
   data: DashboardData | null;
-  setShowStaffModal: (show: boolean) => void;
-  setShowStaffDetail: (staff: Staff | null) => void;
+  setShowAddStaff: (show: boolean) => void;
+  setSelectedStaff: (staff: Staff | null) => void;
   setEditStaffForm: (staff: any) => void;
   setIsEditingStaff: (isEditing: boolean) => void;
   setActiveChatId: (id: any) => void;
   setIsChatOpen: (isOpen: boolean) => void;
   setShowJobModal: (show: boolean) => void;
   setSelectedJob: (job: Job | null) => void;
+  setJobModalType?: (type: string) => void;
+  handleAction?: any;
 }
 
 interface DetailItem {
@@ -65,14 +68,16 @@ interface StatusResult {
 
 export default function TeamTab({ 
   data, 
-  setShowStaffModal, 
-  setShowStaffDetail, 
+  setShowAddStaff, 
+  setSelectedStaff, 
   setEditStaffForm, 
   setIsEditingStaff, 
   setActiveChatId, 
   setIsChatOpen, 
   setShowJobModal, 
-  setSelectedJob 
+  setSelectedJob,
+  setJobModalType,
+  handleAction
 }: TeamTabProps) {
   
   const { slug } = useParams(); 
@@ -146,7 +151,7 @@ export default function TeamTab({
       return;
     }
     setWaModalStaff(staff);
-    setWaPassword(''); // Önceki yazılanları temizle
+    setWaPassword(''); 
   };
 
   // Modaldan Gönder Butonuna Basılınca WhatsApp'ı Aç
@@ -168,13 +173,13 @@ export default function TeamTab({
     const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
     
-    setWaModalStaff(null); // Modalı Kapat
+    setWaModalStaff(null); 
   };
 
   return (
     <div className="space-y-4 sm:space-y-6">
       
-      {/* YENİ: WHATSAPP ŞİFRE GÖNDERİM MODALI */}
+      {/* WHATSAPP ŞİFRE GÖNDERİM MODALI */}
       <AnimatePresence>
         {waModalStaff && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
@@ -251,8 +256,9 @@ export default function TeamTab({
           >
             <Plus size={16} strokeWidth={3} /> İş Ata
           </button>
+          {/* 🟢 DÜZELTME: Doğru fonksiyona bağlandı */}
           <button 
-            onClick={() => setShowStaffModal(true)} 
+            onClick={() => setShowAddStaff(true)} 
             className="w-full sm:w-auto justify-center bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm sm:text-xs font-bold flex items-center gap-2 shadow-sm hover:bg-slate-800 transition-all active:scale-95"
           >
             <UserPlus size={16} /> Yeni Personel
@@ -323,9 +329,10 @@ export default function TeamTab({
                  >
                    <MessageCircle size={16} />
                  </button>
+                 {/* 🟢 DÜZELTME: Doğru fonksiyona bağlandı */}
                  <button 
                    onClick={() => { 
-                     setShowStaffDetail(s); 
+                     setSelectedStaff(s); 
                      setEditStaffForm({ ...s, password: '', is_active: s.is_active ?? 1 }); 
                      setIsEditingStaff(false); 
                    }} 

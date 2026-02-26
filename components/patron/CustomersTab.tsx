@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { Plus, Box, Search, MessageCircle, Phone, MapPin, Users, Info } from 'lucide-react';
 
-export default function CustomersTab({ data, setShowCustomerModal, setShowCustomerDetail }: any) {
+// 🟢 DÜZELTME: Prop isimleri patron.jsx'in gönderdikleriyle (setShowAddCustomer, setSelectedCustomer) eşleştirildi.
+export default function CustomersTab({ data, setShowAddCustomer, setSelectedCustomer }: any) {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Arama filtresi mantığı
@@ -48,7 +49,7 @@ export default function CustomersTab({ data, setShowCustomerModal, setShowCustom
             />
           </div>
 
-          <button onClick={() => setShowCustomerModal(true)} className="bg-blue-600 text-white w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all whitespace-nowrap">
+          <button onClick={() => setShowAddCustomer(true)} className="bg-blue-600 text-white w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all whitespace-nowrap">
             <Plus size={16} /> Yeni Müşteri Ekle
           </button>
         </div>
@@ -71,7 +72,7 @@ export default function CustomersTab({ data, setShowCustomerModal, setShowCustom
                return (
                  <tr 
                    key={c.id} 
-                   onClick={() => setShowCustomerDetail && setShowCustomerDetail(c)} 
+                   onClick={() => setSelectedCustomer && setSelectedCustomer(c)} 
                    className="hover:bg-blue-50/50 cursor-pointer transition-colors group"
                  >
                    <td className="px-5 py-4 font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{c.name}</td>
@@ -133,7 +134,7 @@ export default function CustomersTab({ data, setShowCustomerModal, setShowCustom
           return (
             <div 
               key={c.id}
-              onClick={() => setShowCustomerDetail && setShowCustomerDetail(c)}
+              onClick={() => setSelectedCustomer && setSelectedCustomer(c)}
               className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm active:bg-blue-50 transition-colors flex flex-col gap-3 cursor-pointer"
             >
               {/* İsim ve Vergi No */}

@@ -562,8 +562,8 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   }, [allMessages, activeChatId, currentUserId, currentUserRole]);
 
   return (
-    // DÜZENLEME BURADA: Masaüstü için sola taşıdım, mobilde sağda bıraktım ve z-index düşürüldü.
-    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 md:right-auto md:left-6 z-[30] flex flex-col items-end md:items-start gap-3 pointer-events-none">
+    // DÜZENLEME: pointer-events-none kaldırıldı.
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 md:right-auto md:left-6 z-[30] flex flex-col items-end md:items-start gap-3">
       
       <AnimatePresence>
         {msgToast.show && !isChatOpen && (
@@ -660,8 +660,8 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                   </div>
                 ) : (
                   <div className="flex flex-col pl-1">
-                    <span className="text-[14px] font-black tracking-wide leading-none mb-0.5">Saha Ekibi İletişim</span>
-                    <span className="text-[10px] font-medium text-slate-400">Personel seçip mesajlaşmaya başlayın</span>
+                    <span className="text-[14px] font-black tracking-wide leading-none mb-0.5">Sohbet Menüsü</span>
+                    <span className="text-[10px] font-medium text-slate-400">İletişime geçilecek kişiyi seçin.</span>
                   </div>
                 )}
               </div>
