@@ -383,6 +383,8 @@ export default function PatronDashboard() {
                 setShowCategoryModal={setShowCategoryModal}
                 setShowOrderModal={setShowOrderModal}
                 setShowBulkOrderModal={setShowBulkOrderModal}
+                stockCategory={stockCategory}
+                setStockCategory={setStockCategory}
               />
             </div>
           )}
@@ -400,13 +402,17 @@ export default function PatronDashboard() {
       {/* MERKEZİ MODAL YÖNETİCİSİ */}
       <DashboardModals 
         data={data}
+        refreshData={() => fetchData(true)} // BU EKLENDİ: Modallar işlem bitince listeyi yenileyebilsin diye
         handleAction={handleAction}
         isSaving={isSaving}
         handleCloseDetail={handleCloseDetail}
 
         selectedJob={selectedJob} setSelectedJob={setSelectedJob}
-        showAddJob={showAddJob} setShowAddJob={handleCloseJobModal}
+        
+        // DÜZELTME: showAddJob ve setShowJobModal karışıklığı giderildi
+        showAddJob={showAddJob} setShowAddJob={setShowAddJob} 
         showJobModal={showAddJob} setShowJobModal={setShowAddJob}
+        
         newJob={newJob} setNewJob={setNewJob}
         
         selectedCustomer={selectedCustomer} setSelectedCustomer={setSelectedCustomer}
@@ -441,7 +447,7 @@ export default function PatronDashboard() {
         isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff}
         editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}
 
-        // --- İŞ DETAY VE DÜZENLEME STATE'LERİ (KESİN EKLENDİ) ---
+        // --- İŞ DETAY VE DÜZENLEME STATE'LERİ ---
         previewPdfJob={previewPdfJob} setPreviewPdfJob={setPreviewPdfJob}
         fullScreenImage={fullScreenImage} setFullScreenImage={setFullScreenImage}
         isEditingJobDetail={isEditingJobDetail} setIsEditingJobDetail={setIsEditingJobDetail}
@@ -451,6 +457,10 @@ export default function PatronDashboard() {
         jobPrice={jobPrice} setJobPrice={setJobPrice}
         isApproving={isApproving} setIsApproving={setIsApproving}
         jobModalType={jobModalType} setJobModalType={setJobModalType}
+
+        // BU KISIM EKSİKTİ (QR Kod Modal Yönetimi İçin)
+        showQRModal={showQRModal} setShowQRModal={setShowQRModal}
+        selectedQRAsset={selectedQRAsset} setSelectedQRAsset={setSelectedQRAsset}
 
         searchCust={searchCust} setSearchCust={setSearchCust}
         searchAsset={searchAsset} setSearchAsset={setSearchAsset}

@@ -465,6 +465,8 @@ export default function ManagerDashboard() {
                 setShowCategoryModal={setShowCategoryModal}
                 setShowOrderModal={setShowOrderModal}
                 setShowBulkOrderModal={setShowBulkOrderModal}
+                stockCategory={stockCategory}
+                setStockCategory={setStockCategory}
               />
             </div>
           )}
@@ -483,13 +485,17 @@ export default function ManagerDashboard() {
       {/* MERKEZİ MODAL YÖNETİCİSİ */}
       <DashboardModals 
         data={data}
+        refreshData={() => fetchData(true)} // BU EKLENDİ: Modallar işlem bitince listeyi yenileyebilsin diye
         handleAction={handleAction}
         isSaving={isSaving}
         handleCloseDetail={handleCloseDetail}
 
         selectedJob={selectedJob} setSelectedJob={setSelectedJob}
-        showAddJob={showAddJob} setShowAddJob={handleCloseJobModal}
+        
+        // DÜZELTME: showAddJob ve setShowJobModal karışıklığı giderildi
+        showAddJob={showAddJob} setShowAddJob={setShowAddJob} 
         showJobModal={showAddJob} setShowJobModal={setShowAddJob}
+        
         newJob={newJob} setNewJob={setNewJob}
         
         selectedCustomer={selectedCustomer} setSelectedCustomer={setSelectedCustomer}
@@ -509,7 +515,7 @@ export default function ManagerDashboard() {
         newStock={newStock} setNewStock={setNewStock}
 
         showSupplierModal={showSupplierModal} setShowSupplierModal={setShowSupplierModal}
-        showSupplierListModal={showSupplierModal} setShowSupplierListModal={setShowSupplierListModal} // Alias
+        showSupplierListModal={showSupplierModal} setShowSupplierListModal={setShowSupplierModal} 
         showAddSupplier={showAddSupplier} setShowAddSupplier={setShowAddSupplier}
         newSupplier={newSupplier} setNewSupplier={setNewSupplier}
 
@@ -524,7 +530,7 @@ export default function ManagerDashboard() {
         isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff}
         editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}
 
-        // --- İŞ DETAY VE DÜZENLEME STATE'LERİ (KESİN EKLENDİ) ---
+        // --- İŞ DETAY VE DÜZENLEME STATE'LERİ ---
         previewPdfJob={previewPdfJob} setPreviewPdfJob={setPreviewPdfJob}
         fullScreenImage={fullScreenImage} setFullScreenImage={setFullScreenImage}
         isEditingJobDetail={isEditingJobDetail} setIsEditingJobDetail={setIsEditingJobDetail}
@@ -534,6 +540,10 @@ export default function ManagerDashboard() {
         jobPrice={jobPrice} setJobPrice={setJobPrice}
         isApproving={isApproving} setIsApproving={setIsApproving}
         jobModalType={jobModalType} setJobModalType={setJobModalType}
+
+        // BU KISIM EKSİKTİ (QR Kod Modal Yönetimi İçin)
+        showQRModal={showQRModal} setShowQRModal={setShowQRModal}
+        selectedQRAsset={selectedQRAsset} setSelectedQRAsset={setSelectedQRAsset}
 
         searchCust={searchCust} setSearchCust={setSearchCust}
         searchAsset={searchAsset} setSearchAsset={setSearchAsset}
