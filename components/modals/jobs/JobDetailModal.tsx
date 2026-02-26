@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Search, User, Box, Calendar, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle, Clock, Image as ImageIcon, Download, MessageSquareText, Settings, CheckSquare } from 'lucide-react';
+import { X, Loader2, Search, User, Box, Calendar, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle, Clock, Image as ImageIcon, Download, MessageSquareText, Settings, CheckSquare, Tag } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 
 export default function JobDetailModal({
@@ -39,8 +39,27 @@ export default function JobDetailModal({
     'Onay Bekliyor': 'bg-purple-100 text-purple-700 border-purple-200'
   };
 
-// ? işareti ekleyerek editJobDetailForm varsa kontrol et diyoruz
-const isEditJobValid = editJobDetailForm?.workCategory === 'Genel İş Atama' ? true : (editJobDetailForm?.customerName || editJobDetailForm?.assetId);
+  // 🚀 Gecikme kontrolü fonksiyonu
+  const getDynamicStatus = (job: any) => {
+    if (!job) return { label: '', colorClass: '' };
+    let label = job.status;
+    let colorClass = statusColors[job.status] || 'bg-slate-100 text-slate-500 border-slate-200';
+
+    if (job.status === 'Gelecek' && job.scheduled_date) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const sDate = new Date(job.scheduled_date.split(' ')[0]);
+        sDate.setHours(0, 0, 0, 0);
+
+        if (sDate < today) {
+            label = 'Gecikti';
+            colorClass = 'bg-rose-100 text-rose-700 border-rose-200';
+        }
+    }
+    return { label, colorClass };
+  };
+
+  const isEditJobValid = editJobDetailForm?.workCategory === 'Genel İş Atama' ? true : (editJobDetailForm?.customerName || editJobDetailForm?.assetId);
   const currentSector = data?.sector || '';
   const safeSectors: any = sectorsData;
   const branchList = currentSector && safeSectors?.sectors?.[currentSector]?.subTypes 
@@ -126,7 +145,7 @@ const isEditJobValid = editJobDetailForm?.workCategory === 'Genel İş Atama' ? 
                           <div className="text-xs font-black text-slate-800 uppercase border-b border-slate-200 pb-2 mb-3">Saha Kayıt Fotoğrafları</div>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                              {previewPdfJob.photos.map((p: string, i: number) => (
-                               <img key={i} src={p} className="w-full h-32 object-cover rounded-xl border border-slate-200 shadow-sm" />
+                               <img key={i} src={p} alt="Saha" className="w-full h-32 object-cover rounded-xl border border-slate-200 shadow-sm" />
                              ))}
                           </div>
                        </div>
@@ -222,7 +241,14 @@ const isEditJobValid = editJobDetailForm?.workCategory === 'Genel İş Atama' ? 
 
                     <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200">
                         <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">GÜNCEL DURUM</span>
-                        <span className={`px-3 py-1.5 rounded-lg text-xs font-black border uppercase tracking-wider ${statusColors[selectedJob.status] || 'bg-slate-100'}`}>{selectedJob.status}</span>
+                        {(() => {
+                            const dynamic = getDynamicStatus(selectedJob);
+                            return (
+                                <span className={`px-3 py-1.5 rounded-lg text-xs font-black border uppercase tracking-wider ${dynamic.colorClass}`}>
+                                    {dynamic.label}
+                                </span>
+                            );
+                        })()}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -243,7 +269,7 @@ const isEditJobValid = editJobDetailForm?.workCategory === 'Genel İş Atama' ? 
                         <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
                              <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Planlanan Tarih</div>
                              <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                <Calendar size={16} className="text-blue-500"/>
+                                <Calendar size={16} className={getDynamicStatus(selectedJob).label === 'Gecikti' ? 'text-rose-500' : 'text-blue-500'}/>
                                 {selectedJob.scheduled_date || 'Anlık / Acil'}
                              </div>
                         </div>
