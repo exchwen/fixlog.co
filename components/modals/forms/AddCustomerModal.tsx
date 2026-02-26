@@ -10,7 +10,8 @@ const CITY_DATA: any = trCitiesData;
 export default function AddCustomerModal({
   showAddCustomer, setShowAddCustomer,
   newCustomer, setNewCustomer,
-  isSaving, handleAction
+  isSaving, handleAction,
+  data // Mevcut varlıkları (assets) listelemek için data prop'u eklendi
 }: any) {
 
   // Yeni adres sistemi için state'ler
@@ -18,14 +19,17 @@ export default function AddCustomerModal({
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [buildingNo, setBuildingNo] = useState('');
 
+  // Varlık (Cihaz) Atama Modu: 'independent' (Bağımsız), 'select' (Listeden Seç), 'new' (Yeni Ekle)
+  const [assetMode, setAssetMode] = useState('independent'); 
+
   // Form doğrulama: Sadece Müşteri/Firma Adı zorunlu
   const isFormValid = newCustomer?.name?.trim() !== '';
 
   const getFullAddress = (rawAddress: string, bNo: string, city: string, district: string) => {
       let full = rawAddress ? rawAddress.trim() : '';
-      if (bNo) full += ` No:${bNo}`;
-      if (district) full += ` / ${district}`;
-      if (city) full += ` / ${city}`;
+      if (bNo) full += (full ? ` No:${bNo}` : `No:${bNo}`);
+      if (district) full += (full ? ` / ${district}` : district);
+      if (city) full += (full ? ` / ${city}` : city);
       return full;
   };
 
@@ -35,21 +39,24 @@ export default function AddCustomerModal({
       setSelectedCity('');
       setSelectedDistrict('');
       setBuildingNo('');
+      setAssetMode('independent');
   };
 
   return (
     <AnimatePresence>
       {showAddCustomer && (
         <motion.div 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }} 
-          exit={{ opacity: 0 }}
+          key="modal-backdrop-customer"
+          initial={{ opacity: 0, pointerEvents: "none" }} 
+          animate={{ opacity: 1, pointerEvents: "auto" }} 
+          exit={{ opacity: 0, pointerEvents: "none" }}
           transition={{ duration: 0.15 }}
-          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm pointer-events-auto"
+          className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
         >
           <div className="absolute inset-0 cursor-pointer" onClick={handleClose}></div>
           
           <motion.div 
+            key="modal-content-customer"
             initial={{ opacity: 0, scale: 0.95, y: 10 }} 
             animate={{ opacity: 1, scale: 1, y: 0 }} 
             exit={{ opacity: 0, scale: 0.95, y: 10 }} 
@@ -77,7 +84,7 @@ export default function AddCustomerModal({
                 {/* Müşteri / Firma Adı */}
                 <div>
                   <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
-                      <User size={14} /> Müşteri / Firma Adı <span className="text-rose-500">*</span>
+                      <User size={14} /> Müşteri / Firma Adı
                   </label>
                   <input 
                       type="text" 
@@ -157,31 +164,108 @@ export default function AddCustomerModal({
                   />
                 </div>
 
-                {/* 🟢 İLK VARLIĞI (CİHAZI) EKLEME BÖLÜMÜ */}
+                {/* 🟢 VARLIK (CİHAZ) ATAMA BÖLÜMÜ (3 SEÇENEKLİ) */}
                 <div className="pt-4 border-t border-slate-100 mt-2">
-                  <div className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                    <Box size={14} /> İlk Varlığı / Cihazı Ekle (Opsiyonel)
+                  <div className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                    <Box size={14} /> İlk Varlığı / Cihazı Belirleyin (Opsiyonel)
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <input 
-                          type="text" 
-                          placeholder="Varlık Adı (Örn: A Blok Asansör)" 
-                          className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:text-slate-400" 
-                          value={newCustomer.asset_name || ''} 
-                          onChange={e => setNewCustomer({...newCustomer, asset_name: e.target.value})} 
-                      />
-                    </div>
-                    <div>
-                      <input 
-                          type="text" 
-                          placeholder="Türü (Örn: Asansör, Kombi)" 
-                          className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:text-slate-400" 
-                          value={newCustomer.asset_type || ''} 
-                          onChange={e => setNewCustomer({...newCustomer, asset_type: e.target.value})} 
-                      />
-                    </div>
+                  
+                  {/* Sekme Butonları */}
+                  <div className="flex bg-slate-100 p-1 rounded-xl mb-3 shadow-inner">
+                    <button 
+                       type="button" 
+                       onClick={() => { 
+                           setAssetMode('independent'); 
+                           setNewCustomer({...newCustomer, linked_asset_id: '', asset_name: '', apartmentName: ''}); 
+                       }} 
+                       className={`flex-1 text-[11px] sm:text-xs font-bold py-2 rounded-lg transition-all ${assetMode === 'independent' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                       Bağımsız
+                    </button>
+                    <button 
+                       type="button" 
+                       onClick={() => { 
+                           setAssetMode('select'); 
+                           setNewCustomer({...newCustomer, asset_name: '', apartmentName: ''}); 
+                       }} 
+                       className={`flex-1 text-[11px] sm:text-xs font-bold py-2 rounded-lg transition-all ${assetMode === 'select' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                       Listeden Seç
+                    </button>
+                    <button 
+                       type="button" 
+                       onClick={() => { 
+                           setAssetMode('new'); 
+                           setNewCustomer({...newCustomer, linked_asset_id: ''}); 
+                       }} 
+                       className={`flex-1 text-[11px] sm:text-xs font-bold py-2 rounded-lg transition-all ${assetMode === 'new' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                       Yeni Ekle
+                    </button>
                   </div>
+
+                  {/* Dinamik İçerik Alanı */}
+                  <AnimatePresence mode="wait">
+                      {assetMode === 'independent' && (
+                          <motion.div 
+                              key="independent" 
+                              initial={{ opacity: 0, height: 0 }} 
+                              animate={{ opacity: 1, height: 'auto' }} 
+                              exit={{ opacity: 0, height: 0 }} 
+                              className="text-xs font-medium text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-200 leading-relaxed overflow-hidden"
+                          >
+                              Bu müşteriye şu an için herhangi bir varlık veya cihaz atanmayacak. Daha sonra varlık detaylarından eşleştirme yapabilirsiniz.
+                          </motion.div>
+                      )}
+
+                      {assetMode === 'select' && (
+                          <motion.div 
+                              key="select" 
+                              initial={{ opacity: 0, height: 0 }} 
+                              animate={{ opacity: 1, height: 'auto' }} 
+                              exit={{ opacity: 0, height: 0 }}
+                              className="overflow-hidden"
+                          >
+                             <select 
+                                 className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" 
+                                 value={newCustomer.linked_asset_id || ''} 
+                                 onChange={e => setNewCustomer({...newCustomer, linked_asset_id: e.target.value})}
+                             >
+                                 <option value="" disabled>Listeden Mevcut Bir Varlık Seçin...</option>
+                                 {(data?.assets || []).map((a: any) => (
+                                     <option key={a.id} value={a.id}>
+                                        {a.apartmentName || a.apartment_name ? `${a.apartmentName || a.apartment_name} - ${a.name}` : a.name}
+                                     </option>
+                                 ))}
+                             </select>
+                          </motion.div>
+                      )}
+
+                      {assetMode === 'new' && (
+                          <motion.div 
+                              key="new" 
+                              initial={{ opacity: 0, height: 0 }} 
+                              animate={{ opacity: 1, height: 'auto' }} 
+                              exit={{ opacity: 0, height: 0 }} 
+                              className="grid grid-cols-1 gap-3 overflow-hidden p-3 bg-blue-50/40 border border-blue-100 rounded-xl"
+                          >
+                             <input 
+                                 type="text" 
+                                 placeholder="Apartman / Tesis Adı (Örn: Akdeniz Apt.)" 
+                                 className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-white transition-all placeholder:text-slate-400" 
+                                 value={newCustomer.apartmentName || ''} 
+                                 onChange={e => setNewCustomer({...newCustomer, apartmentName: e.target.value})} 
+                             />
+                             <input 
+                                 type="text" 
+                                 placeholder="Cihaz / Varlık Türü (Örn: Yük Asansörü)" 
+                                 className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-white transition-all placeholder:text-slate-400" 
+                                 value={newCustomer.asset_name || ''} 
+                                 onChange={e => setNewCustomer({...newCustomer, asset_name: e.target.value})} 
+                             />
+                          </motion.div>
+                      )}
+                  </AnimatePresence>
                 </div>
 
             </div>
@@ -195,10 +279,11 @@ export default function AddCustomerModal({
                       const combinedAddress = getFullAddress(newCustomer.address, buildingNo, selectedCity, selectedDistrict);
                       
                       handleAction('add-customer', { ...newCustomer, address: combinedAddress }, setShowAddCustomer, () => {
-                          setNewCustomer({ name: '', contact: '', address: '', tax_info: '', asset_name: '', asset_type: '' });
+                          setNewCustomer({ name: '', contact: '', address: '', tax_info: '', asset_name: '', apartmentName: '', linked_asset_id: '' });
                           setSelectedCity('');
                           setSelectedDistrict('');
                           setBuildingNo('');
+                          setAssetMode('independent');
                       });
                   }} 
                   className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:bg-blue-700 transition-all active:scale-95 flex justify-center items-center disabled:opacity-50 disabled:hover:bg-blue-600"

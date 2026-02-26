@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { Plus, Box, Search, MessageCircle, Phone, MapPin, Users, Info } from 'lucide-react';
 
-// 🟢 DÜZELTME: Prop isimleri patron.jsx'in gönderdikleriyle (setShowAddCustomer, setSelectedCustomer) eşleştirildi.
 export default function CustomersTab({ data, setShowAddCustomer, setSelectedCustomer }: any) {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -18,7 +17,7 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
     );
   }) || [];
 
-  // YENİ: Akıllı WhatsApp Yönlendirme Kontrolü (Offline ise uyarı verir)
+  // Akıllı WhatsApp Yönlendirme Kontrolü
   const handleWAClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
     e.stopPropagation();
     if (typeof window !== 'undefined' && !navigator.onLine) {
@@ -127,7 +126,7 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
          </table>
       </div>
 
-      {/* MOBİL GÖRÜNÜM: DİKEY KARTLAR (Masaüstünde gizlenir, yatay scroll'u engeller) */}
+      {/* MOBİL GÖRÜNÜM: DİKEY KARTLAR (Masaüstünde gizlenir) */}
       <div className="md:hidden grid grid-cols-1 gap-3">
         {filteredCustomers.length > 0 ? filteredCustomers.map((c: any) => {
           const customerAssets = data?.assets?.filter((a: any) => a.customer_id === c.id) || [];
