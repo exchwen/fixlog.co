@@ -101,8 +101,9 @@ export default function PatronDashboard() {
     name: '', role: '', contact: '', branch: '', username: '', password: '' 
   });
 
+  // 🟢 YENİ: asset_name ve asset_type eklendi
   const [newCustomer, setNewCustomer] = useState({ 
-    name: '', contact: '', address: '', tax_info: '' 
+    name: '', contact: '', address: '', tax_info: '', asset_name: '', asset_type: '' 
   });
 
   const [newStock, setNewStock] = useState({ 
@@ -311,7 +312,6 @@ export default function PatronDashboard() {
   return (
     <div className={`min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 ${hasEmergency ? 'bg-rose-950' : 'bg-[#F8FAFC] text-slate-900'}`}>
       
-      {/* 🟢 DÜZELTME: Sohbet açıksa 'bottom-[600px]' (ya da istediğin kadar yukarı), değilse 'bottom-24' */}
       <AnimatePresence>
         {showPwaPrompt && !hasEmergency && activeTab === 'home' && (
            <motion.div 

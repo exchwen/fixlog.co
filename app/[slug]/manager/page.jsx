@@ -106,7 +106,7 @@ export default function ManagerDashboard() {
   });
 
   const [newCustomer, setNewCustomer] = useState({ 
-    name: '', contact: '', address: '', tax_info: '' 
+    name: '', contact: '', address: '', tax_info: '', asset_name: '', asset_type: '' 
   });
 
   const [newStock, setNewStock] = useState({ 

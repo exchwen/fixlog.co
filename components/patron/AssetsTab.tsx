@@ -3,21 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Box, MapPin, Users, Search, QrCode, ExternalLink } from 'lucide-react';
 
-export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail, setShowQRModal, setSelectedQRAsset }: any) {
+export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, setShowQRModal, setSelectedQRAsset }: any) {
   const [searchTerm, setSearchTerm] = useState('');
   const [logoBgColor, setLogoBgColor] = useState<string>('#f8fafc');
 
   // 🚀 GÜVENLİ LİNK DÖNÜŞÜTÜRÜCÜ (PROXY)
   const getSafeImageUrl = (url: string | undefined) => {
     if (!url) return '';
-    // Eğer link bizim R2 bucket ise, onu Vercel proxy'sine çevir
     if (url.includes('pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev')) {
        return url.replace('https://pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev', '/dosya-deposu');
     }
     return url;
   };
 
-  // --- RENK ANALİZ MOTORU ---
   useEffect(() => {
     const companyLogo = data?.logo;
     if (!companyLogo || typeof window !== 'undefined' && !navigator.onLine) {
@@ -25,15 +23,11 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
       return;
     }
 
-    // 🔥 Linki güvenli hale getiriyoruz
     const safeLogoUrl = getSafeImageUrl(companyLogo);
-
     const img = new Image();
     img.crossOrigin = "Anonymous";
     
-    img.onerror = () => {
-      setLogoBgColor('#f8fafc');
-    };
+    img.onerror = () => setLogoBgColor('#f8fafc');
 
     img.onload = () => {
       const canvas = document.createElement('canvas');
@@ -74,10 +68,8 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
         setLogoBgColor('#f8fafc'); 
       }
     };
-    // 🚀 Güvenli linki kullanıyoruz
     img.src = safeLogoUrl + (safeLogoUrl.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
-    }, [data?.logo]);
-  // --- RENK ANALİZ BİTİŞ ---
+  }, [data?.logo]);
 
   const getMapsUrl = (location: string, apartmentName: string) => {
     if (!location) return '#';
@@ -132,7 +124,7 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
             />
           </div>
 
-          <button onClick={() => setShowAssetModal(true)} className="bg-blue-600 text-white w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all whitespace-nowrap">
+          <button onClick={() => setShowAddAsset(true)} className="bg-blue-600 text-white w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all whitespace-nowrap">
             <Plus size={16} /> Yeni Varlık Ekle
           </button>
         </div>
@@ -145,7 +137,7 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
             return (
               <div 
                 key={a.id} 
-                onClick={() => setShowAssetDetail && setShowAssetDetail(a)}
+                onClick={() => setSelectedAsset && setSelectedAsset(a)}
                 className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer flex flex-col group overflow-hidden"
               >
                 <div className="p-5 flex-1 flex flex-col">
@@ -156,7 +148,6 @@ export default function AssetsTab({ data, setShowAssetModal, setShowAssetDetail,
                     >
                       {data?.logo ? (
                         <img 
-                          // 🚀 GÜVENLİ LİNK KULLANIMI
                           src={getSafeImageUrl(data.logo)} 
                           alt="Firma Logosu" 
                           crossOrigin="anonymous"

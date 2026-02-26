@@ -1,8 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, Box, User, MapPin, Settings, Hash } from 'lucide-react';
+import trCitiesData from '@/lib/data/tr-cities.json';
+
+const CITY_DATA: any = trCitiesData;
 
 export default function AddAssetModal({
   showAddAsset, setShowAddAsset,
@@ -11,15 +14,34 @@ export default function AddAssetModal({
   data
 }: any) {
 
+  // Yeni Adres/Konum Sistemi için State'ler
+  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [buildingNo, setBuildingNo] = useState('');
+
   // Form doğrulama: Varlık adı ve müşteri seçimi zorunlu
   const isFormValid = newAsset?.name?.trim() !== '' && newAsset?.customer_id !== '';
+
+  const getFullAddress = (rawAddress: string, bNo: string, city: string, district: string) => {
+      let full = rawAddress ? rawAddress.trim() : '';
+      if (bNo) full += ` No:${bNo}`;
+      if (district) full += ` / ${district}`;
+      if (city) full += ` / ${city}`;
+      return full;
+  };
+
+  const handleClose = () => {
+      setShowAddAsset(false);
+      setSelectedCity('');
+      setSelectedDistrict('');
+      setBuildingNo('');
+  };
 
   return (
     <AnimatePresence>
       {showAddAsset && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          {/* Arka plan tıklaması ile kapatma */}
-          <div className="absolute inset-0" onClick={() => setShowAddAsset(false)}></div>
+          <div className="absolute inset-0" onClick={handleClose}></div>
           
           <motion.div 
             initial={{ opacity: 0, scale: 0.95, y: 10 }} 
@@ -34,7 +56,7 @@ export default function AddAssetModal({
                   <div className="text-xs font-medium text-slate-500 mt-1">Müşteriye ait yeni bir varlık tanımlayın.</div>
                </div>
                <button 
-                  onClick={() => setShowAddAsset(false)} 
+                  onClick={handleClose} 
                   className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-xl transition-all active:scale-95"
                >
                   <X size={20} />
@@ -62,7 +84,7 @@ export default function AddAssetModal({
                 <div>
                   <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
                       <User size={14} /> Ait Olduğu Müşteri <span className="text-rose-500">*</span>
-                      </label>
+                  </label>
                   <select 
                       className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" 
                       value={newAsset.customer_id} 
@@ -75,18 +97,45 @@ export default function AddAssetModal({
                   </select>
                 </div>
 
-                {/* Konum / Şube */}
-                <div>
-                  <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
-                      <MapPin size={14} /> Konum / Departman / Şube
-                  </label>
-                  <input 
-                      type="text" 
-                      placeholder="Örn: 2. Kat Sistem Odası" 
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400" 
-                      value={newAsset.location} 
-                      onChange={e => setNewAsset({...newAsset, location: e.target.value})} 
-                  />
+                {/* Konum / Şube (Yeni Sistem) */}
+                <div className="p-4 bg-white border border-slate-200 shadow-sm rounded-xl space-y-3">
+                    <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5">
+                        <MapPin size={14} /> Konum / Adres Bilgileri
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <select 
+                            className="px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" 
+                            value={selectedCity} 
+                            onChange={(e) => { setSelectedCity(e.target.value); setSelectedDistrict(''); }}
+                        >
+                            <option value="">İl Seçin</option>
+                            {Object.keys(CITY_DATA).map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <select 
+                            className="px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none disabled:opacity-50" 
+                            value={selectedDistrict} 
+                            onChange={(e) => setSelectedDistrict(e.target.value)} 
+                            disabled={!selectedCity}
+                        >
+                            <option value="">İlçe Seçin</option>
+                            {selectedCity && CITY_DATA[selectedCity]?.map((d:string) => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <input 
+                            className="w-full sm:w-1/3 px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" 
+                            value={buildingNo} 
+                            onChange={(e) => setBuildingNo(e.target.value)} 
+                            placeholder="Bina/Kapı No" 
+                        />
+                        <textarea 
+                            rows={2} 
+                            className="w-full sm:w-2/3 px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all resize-none" 
+                            placeholder="Açık Adres veya Departman (Örn: 2. Kat Sistem Odası)" 
+                            value={newAsset.location || ''} 
+                            onChange={e => setNewAsset({...newAsset, location: e.target.value})} 
+                        />
+                    </div>
                 </div>
 
                 {/* Tür / Model */}
@@ -123,7 +172,15 @@ export default function AddAssetModal({
             <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0">
                <button 
                   disabled={isSaving || !isFormValid} 
-                  onClick={() => handleAction('add-asset', newAsset, setShowAddAsset, () => setNewAsset({ name: '', location: '', customer_id: '', type: '', serial_number: '' }))} 
+                  onClick={() => {
+                      const combinedLocation = getFullAddress(newAsset.location, buildingNo, selectedCity, selectedDistrict);
+                      handleAction('add-asset', { ...newAsset, location: combinedLocation }, setShowAddAsset, () => {
+                          setNewAsset({ name: '', location: '', customer_id: '', type: '', serial_number: '' });
+                          setSelectedCity('');
+                          setSelectedDistrict('');
+                          setBuildingNo('');
+                      });
+                  }} 
                   className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:bg-blue-700 transition-all active:scale-95 flex justify-center items-center disabled:opacity-50 disabled:hover:bg-blue-600"
                >
                   {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Cihazı Kaydet'}
