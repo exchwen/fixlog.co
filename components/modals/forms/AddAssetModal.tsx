@@ -138,13 +138,16 @@ return (
                       <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
                           <User size={14} /> Ait Olduğu Müşteri
                       </label>
-                      <button 
-                          type="button" 
-                          onClick={() => { setIsPushedBack(true); setShowAddCustomer && setShowAddCustomer(true); }} 
-                          className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition-all active:scale-95 flex items-center gap-1"
-                      >
-                          + Yeni Müşteri
-                      </button>
+                      {/* Döngü kırıcı: Müşteri modalı zaten açıksa bu butonu gizle */}
+                      {!showAddCustomer && (
+                        <button 
+                            type="button" 
+                            onClick={() => { setIsPushedBack(true); setShowAddCustomer && setShowAddCustomer(true); }} 
+                            className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition-all active:scale-95 flex items-center gap-1"
+                        >
+                            + Yeni Müşteri
+                        </button>
+                      )}
                   </div>
                   
                   {/* Custom Searchable Dropdown */}
