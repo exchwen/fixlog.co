@@ -9,6 +9,7 @@ const CITY_DATA: any = trCitiesData;
 
 export default function AddAssetModal({
   showAddAsset, setShowAddAsset,
+  setShowAddCustomer, // Yeni müşteri oluşturma modalını tetiklemek için eklendi
   newAsset, setNewAsset,
   isSaving, handleAction,
   data
@@ -19,14 +20,11 @@ export default function AddAssetModal({
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [buildingNo, setBuildingNo] = useState('');
 
-  // Form doğrulama: Varlık adı ve müşteri seçimi zorunlu
-  const isFormValid = newAsset?.name?.trim() !== '' && newAsset?.customer_id !== '';
-
   const getFullAddress = (rawAddress: string, bNo: string, city: string, district: string) => {
       let full = rawAddress ? rawAddress.trim() : '';
-      if (bNo) full += ` No:${bNo}`;
-      if (district) full += ` / ${district}`;
-      if (city) full += ` / ${city}`;
+      if (bNo) full += (full ? ` No:${bNo}` : `No:${bNo}`);
+      if (district) full += (full ? ` / ${district}` : district);
+      if (city) full += (full ? ` / ${city}` : city);
       return full;
   };
 
@@ -45,9 +43,9 @@ export default function AddAssetModal({
            initial={{ opacity: 0 }} 
            animate={{ opacity: 1 }} 
            exit={{ opacity: 0 }} 
-           className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+           className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm pointer-events-auto"
         >
-          <div className="absolute inset-0" onClick={handleClose}></div>
+          <div className="absolute inset-0 cursor-pointer" onClick={handleClose}></div>
           
           <motion.div 
             key="modal-content-add"
@@ -55,13 +53,13 @@ export default function AddAssetModal({
             animate={{ opacity: 1, scale: 1, y: 0 }} 
             exit={{ opacity: 0, scale: 0.95, y: 10 }} 
             onClick={(e) => e.stopPropagation()}
-            className="bg-white w-full max-w-md rounded-2xl p-0 shadow-2xl relative overflow-hidden border border-slate-200 pointer-events-auto flex flex-col max-h-[90vh]"
+            className="bg-white w-full max-w-md rounded-2xl p-0 shadow-2xl relative overflow-hidden border border-slate-200 cursor-default flex flex-col max-h-[90vh]"
           >
             {/* HEADER */}
             <div className="flex justify-between items-center p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50 shrink-0">
                <div>
                   <h2 className="text-xl font-black text-slate-800 tracking-tight">Yeni Cihaz / Varlık Ekle</h2>
-                  <div className="text-xs font-medium text-slate-500 mt-1">Müşteriye ait yeni bir varlık tanımlayın.</div>
+                  <div className="text-xs font-medium text-slate-500 mt-1">Sisteme yeni bir varlık tanımlayın.</div>
                </div>
                <button 
                   onClick={handleClose} 
@@ -91,35 +89,44 @@ export default function AddAssetModal({
                 {/* Varlık / Cihaz Adı */}
                 <div>
                   <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
-                      <Box size={14} /> Cihaz / Varlık Türü <span className="text-rose-500">*</span>
+                      <Box size={14} /> Cihaz / Varlık Türü
                   </label>
                   <input 
                       type="text" 
                       placeholder="Örn: Yük Asansörü, Tıbbi Cihaz #12 vb." 
                       className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400" 
-                      value={newAsset.name} 
+                      value={newAsset.name || ''} 
                       onChange={e => setNewAsset({...newAsset, name: e.target.value})} 
                   />
                 </div>
 
-                {/* Ait Olduğu Müşteri */}
+                {/* Ait Olduğu Müşteri ve Yeni Müşteri Ekle Kısayolu */}
                 <div>
-                  <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
-                      <User size={14} /> Ait Olduğu Müşteri <span className="text-rose-500">*</span>
-                  </label>
+                  <div className="flex justify-between items-center mb-2">
+                      <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                          <User size={14} /> Ait Olduğu Müşteri
+                      </label>
+                      <button 
+                          type="button" 
+                          onClick={() => setShowAddCustomer && setShowAddCustomer(true)} 
+                          className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md hover:bg-blue-100 transition-all active:scale-95"
+                      >
+                          + Yeni Müşteri
+                      </button>
+                  </div>
                   <select 
                       className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" 
-                      value={newAsset.customer_id} 
+                      value={newAsset.customer_id || ''} 
                       onChange={e => setNewAsset({...newAsset, customer_id: e.target.value})}
                   >
-                      <option value="" disabled>Lütfen Müşteri Seçin...</option>
+                      <option value="">Bağımsız / Müşteri Yok</option>
                       {(data?.customers || []).map((c: any) => (
                           <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
                   </select>
                 </div>
 
-                {/* Konum / Şube (Yeni Sistem) */}
+                {/* Konum / Şube */}
                 <div className="p-4 bg-white border border-slate-200 shadow-sm rounded-xl space-y-3">
                     <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5">
                         <MapPin size={14} /> Konum / Adres Bilgileri
@@ -179,7 +186,7 @@ export default function AddAssetModal({
             {/* FOOTER */}
             <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0">
                <button 
-                  disabled={isSaving || !isFormValid} 
+                  disabled={isSaving} 
                   onClick={() => {
                       const combinedLocation = getFullAddress(newAsset.location, buildingNo, selectedCity, selectedDistrict);
                       handleAction('add-asset', { ...newAsset, location: combinedLocation }, setShowAddAsset, () => {

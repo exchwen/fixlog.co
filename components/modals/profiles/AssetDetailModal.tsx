@@ -38,6 +38,40 @@ export default function AssetDetailModal({
     }
   }, [selectedAsset]);
 
+  // Düzenleme moduna geçerken veritabanındaki konumu parçalayıp kutulara yerleştirme
+  const handleToggleEdit = () => {
+      if (!isEditing && editForm?.location) {
+          const loc = editForm.location;
+          const parts = loc.split('/').map((p: string) => p.trim());
+          
+          if (parts.length >= 3) {
+              const city = parts[parts.length - 1];
+              const dist = parts[parts.length - 2];
+              
+              setSelectedCity(Object.keys(CITY_DATA).includes(city) ? city : '');
+              setSelectedDistrict(dist);
+              
+              let remaining = parts.slice(0, -2).join(' / ');
+              const noMatch = remaining.match(/No:\s*(.+)$/i);
+              
+              if (noMatch) {
+                  setBuildingNo(noMatch[1].trim());
+                  // prev tipini (prev: any) olarak belirttik
+                  setEditForm((prev: any) => ({ ...prev, location: remaining.replace(noMatch[0], '').trim() }));
+              } else {
+                  setBuildingNo('');
+                  setEditForm((prev: any) => ({ ...prev, location: remaining }));
+              }
+          } else {
+              setEditForm((prev: any) => ({ ...prev, location: loc }));
+          }
+      } else if (isEditing) {
+          // İptal edilirse form state'ini sıfırla
+          setEditForm(selectedAsset);
+      }
+      setIsEditing(!isEditing);
+  };
+
   const assetJobs = (data?.jobs || []).filter((j:any) => String(j.asset_id) === String(selectedAsset?.id));
   const assetFaults = (data?.fault_reports || []).filter((f:any) => String(f.asset_id) === String(selectedAsset?.id));
   const assetEmergencies = (data?.emergencies || []).filter((e:any) => String(e.asset_id) === String(selectedAsset?.id));
@@ -58,17 +92,13 @@ export default function AssetDetailModal({
 
   const getFullAddress = (rawAddress: string, bNo: string, city: string, district: string) => {
     let full = rawAddress ? rawAddress.trim() : '';
-    if (bNo) full += ` No:${bNo}`;
-    if (district) full += ` / ${district}`;
-    if (city) full += ` / ${city}`;
+    if (bNo) full += (full ? ` No:${bNo}` : `No:${bNo}`);
+    if (district) full += (full ? ` / ${district}` : district);
+    if (city) full += (full ? ` / ${city}` : city);
     return full;
   };
 
   const handleSaveEdit = async () => {
-      if(!editForm.name || !editForm.customer_id) {
-          alert("Lütfen Varlık Adı ve Müşteri alanlarını doldurun.");
-          return;
-      }
       setIsSaving(true);
       
       const locationToSave = (selectedCity || selectedDistrict || buildingNo) 
@@ -96,25 +126,31 @@ export default function AssetDetailModal({
       }
   };
 
+  // Güvenli kapatma
+  const handleClose = () => {
+      setSelectedAsset(null);
+      handleCloseDetail('asset');
+  };
+
   return (
     <AnimatePresence>
       {selectedAsset && (
         <motion.div 
-          key="modal-backdrop"
+          key="modal-backdrop-detail"
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
           exit={{ opacity: 0 }} 
-          className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+          className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm pointer-events-auto"
         >
-          <div className="absolute inset-0" onClick={() => { setSelectedAsset(null); handleCloseDetail('asset'); }}></div>
+          <div className="absolute inset-0 cursor-pointer" onClick={handleClose}></div>
 
           <motion.div 
-            key="modal-content"
+            key="modal-content-detail"
             initial={{ opacity: 0, scale: 0.95 }} 
             animate={{ opacity: 1, scale: 1 }} 
             exit={{ opacity: 0, scale: 0.95 }} 
             onClick={(e) => e.stopPropagation()}
-            className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 pointer-events-auto"
+            className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 cursor-default"
           >
             {/* HEADER */}
             <div className="flex justify-between items-start p-5 sm:p-6 pb-0 border-b border-slate-100 bg-slate-50/50 z-10 flex-col sm:flex-row sm:items-center gap-4">
@@ -136,24 +172,24 @@ export default function AssetDetailModal({
                           {userRole === 'Patron' && !isEditing && (
                               <button onClick={handleDelete} className="p-2 text-rose-500 hover:bg-rose-100 rounded-xl transition-all"><Trash2 size={18} /></button>
                           )}
-                          <button onClick={() => setIsEditing(!isEditing)} className={`p-2 rounded-xl transition-all ${isEditing ? 'bg-blue-600 text-white' : 'text-blue-500 hover:bg-blue-100'}`}><Edit size={18} /></button>
-                          <button onClick={() => { setSelectedAsset(null); handleCloseDetail('asset'); }} className="p-2 text-slate-400 hover:bg-slate-200 rounded-xl transition-all"><X size={20} /></button>
+                          <button onClick={handleToggleEdit} className={`p-2 rounded-xl transition-all ${isEditing ? 'bg-blue-600 text-white' : 'text-blue-500 hover:bg-blue-100'}`}><Edit size={18} /></button>
+                          <button onClick={handleClose} className="p-2 text-slate-400 hover:bg-slate-200 rounded-xl transition-all"><X size={20} /></button>
                       </div>
                   </div>
 
-                  {/* SEKMELER (Sadece görüntüleme modunda görünür) */}
+                  {/* SEKMELER - Flex-wrap ile Scroll Engellendi */}
                   {!isEditing && (
-                    <div className="flex gap-4 mt-4 border-b border-slate-200 w-full overflow-x-auto custom-scrollbar">
+                    <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 border-b border-slate-200 w-full">
                         <button 
                           onClick={() => setActiveTab('info')}
-                          className={`pb-3 whitespace-nowrap text-sm font-bold transition-all relative ${activeTab === 'info' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                          className={`pb-3 text-sm font-bold transition-all relative ${activeTab === 'info' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             Cihaz Bilgileri
                             {activeTab === 'info' && <motion.div layoutId="assetTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full" />}
                         </button>
                         <button 
                           onClick={() => setActiveTab('history')}
-                          className={`pb-3 whitespace-nowrap text-sm font-bold transition-all relative flex items-center gap-1.5 ${activeTab === 'history' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                          className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-1.5 ${activeTab === 'history' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             Servis Geçmişi
                             <span className="bg-slate-200 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-full">{assetJobs.length}</span>
@@ -161,7 +197,7 @@ export default function AssetDetailModal({
                         </button>
                         <button 
                           onClick={() => setActiveTab('faults')}
-                          className={`pb-3 whitespace-nowrap text-sm font-bold transition-all relative flex items-center gap-1.5 ${activeTab === 'faults' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                          className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-1.5 ${activeTab === 'faults' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             Arıza
                             <span className="bg-slate-200 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-full">{assetFaults.length}</span>
@@ -169,7 +205,7 @@ export default function AssetDetailModal({
                         </button>
                         <button 
                           onClick={() => setActiveTab('emergencies')}
-                          className={`pb-3 whitespace-nowrap text-sm font-bold transition-all relative flex items-center gap-1.5 ${activeTab === 'emergencies' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                          className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-1.5 ${activeTab === 'emergencies' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             Acil Durum
                             <span className="bg-slate-200 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-full">{assetEmergencies.length}</span>
@@ -184,8 +220,8 @@ export default function AssetDetailModal({
                   {userRole === 'Patron' && !isEditing && (
                       <button onClick={handleDelete} title="Varlığı Sil" className="p-2 text-rose-500 hover:bg-rose-100 rounded-xl transition-all"><Trash2 size={18} /></button>
                   )}
-                  <button onClick={() => setIsEditing(!isEditing)} title="Düzenle" className={`p-2 rounded-xl transition-all ${isEditing ? 'bg-blue-600 text-white shadow-sm shadow-blue-200' : 'text-blue-500 hover:bg-blue-100'}`}><Edit size={18} /></button>
-                  <button onClick={() => { setSelectedAsset(null); handleCloseDetail('asset'); }} className="p-2 text-slate-400 hover:bg-slate-200 rounded-xl transition-all"><X size={20} /></button>
+                  <button onClick={handleToggleEdit} title="Düzenle" className={`p-2 rounded-xl transition-all ${isEditing ? 'bg-blue-600 text-white shadow-sm shadow-blue-200' : 'text-blue-500 hover:bg-blue-100'}`}><Edit size={18} /></button>
+                  <button onClick={handleClose} className="p-2 text-slate-400 hover:bg-slate-200 rounded-xl transition-all"><X size={20} /></button>
               </div>
             </div>
 
@@ -205,12 +241,12 @@ export default function AssetDetailModal({
                        </div>
 
                        <div>
-                          <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Cihaz / Varlık Türü <span className="text-rose-500">*</span></label>
+                          <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Cihaz / Varlık Türü</label>
                           <input type="text" placeholder="Örn: Yük Asansörü" className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" value={editForm.name || ''} onChange={e => setEditForm({...editForm, name: e.target.value})} />
                        </div>
                        
                        <div>
-                          <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Ait Olduğu Müşteri <span className="text-rose-500">*</span></label>
+                          <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Ait Olduğu Müşteri</label>
                           <div className="space-y-2">
                               <div className="relative">
                                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -223,7 +259,7 @@ export default function AssetDetailModal({
                                   />
                               </div>
                               <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={editForm.customer_id || ''} onChange={e => setEditForm({...editForm, customer_id: e.target.value})}>
-                                  <option value="" disabled>Müşteri Seçin</option>
+                                  <option value="">Bağımsız / Müşteri Atanmamış</option>
                                   {filteredCustomers.map((c: any) => (
                                       <option key={c.id} value={c.id}>{c.name}</option>
                                   ))}
@@ -231,7 +267,7 @@ export default function AssetDetailModal({
                           </div>
                        </div>
                        
-                       {/* Konum / Şube (Yeni Sistem) */}
+                       {/* Konum / Şube (Edit Pre-fill Desteği İle) */}
                         <div className="p-4 bg-white border border-slate-200 shadow-sm rounded-xl space-y-3">
                             <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5 mb-1">
                                 <MapPin size={14} /> Konum / Adres Bilgileri
@@ -308,7 +344,7 @@ export default function AssetDetailModal({
                                   </div>
                               ) : (
                                   <div className="text-sm font-medium text-amber-600 flex items-center gap-2">
-                                      <AlertCircle size={16} /> Herhangi bir müşteriye atanmamış.
+                                      <AlertCircle size={16} /> Herhangi bir müşteriye atanmamış. Bağımsız varlık.
                                   </div>
                               )}
                           </div>
