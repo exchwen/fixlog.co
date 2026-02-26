@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Plus, Box, Search, MessageCircle, Phone, MapPin, Users, Info } from 'lucide-react';
 
-export default function CustomersTab({ data, setShowAddCustomer, setSelectedCustomer }: any) {
+export default function CustomersTab({ data, setShowAddCustomer, setSelectedCustomer, handleAction }: any) {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Arama filtresi mantığı

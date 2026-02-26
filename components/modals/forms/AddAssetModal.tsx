@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Box, User, MapPin, FileText, Building2 } from 'lucide-react';
+import { X, Loader2, Box, User, MapPin, FileText, Building2, ChevronDown, Search } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
 
 const CITY_DATA: any = trCitiesData;
@@ -20,6 +20,10 @@ export default function AddAssetModal({
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [buildingNo, setBuildingNo] = useState('');
 
+  // Müşteri Seçimi Özel Dropdown State'leri
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState('');
+
   const getFullAddress = (rawAddress: string, bNo: string, city: string, district: string) => {
       let full = rawAddress ? rawAddress.trim() : '';
       if (bNo) full += (full ? ` No:${bNo}` : `No:${bNo}`);
@@ -29,13 +33,22 @@ export default function AddAssetModal({
   };
 
   const handleClose = () => {
-      setShowAddAsset(false);
-      setSelectedCity('');
-      setSelectedDistrict('');
-      setBuildingNo('');
-  };
+    setShowAddAsset(false);
+    setSelectedCity('');
+    setSelectedDistrict('');
+    setBuildingNo('');
+    setIsCustomerDropdownOpen(false);
+    setCustomerSearch('');
+};
 
-  return (
+const filteredCustomers = (data?.customers || []).filter((c: any) => 
+    c.name?.toLowerCase().includes(customerSearch.toLowerCase())
+);
+
+const selectedCustomerObj = (data?.customers || []).find((c: any) => c.id === newAsset.customer_id);
+const selectedCustomerDisplay = selectedCustomerObj ? selectedCustomerObj.name : 'Bağımsız / Müşteri Yok';
+
+return (
     <AnimatePresence>
       {showAddAsset && (
         <motion.div 
@@ -119,21 +132,75 @@ export default function AddAssetModal({
                       <button 
                           type="button" 
                           onClick={() => setShowAddCustomer && setShowAddCustomer(true)} 
-                          className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md hover:bg-blue-100 transition-all active:scale-95"
+                          className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition-all active:scale-95 flex items-center gap-1"
                       >
                           + Yeni Müşteri
                       </button>
                   </div>
-                  <select 
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" 
-                      value={newAsset.customer_id || ''} 
-                      onChange={e => setNewAsset({...newAsset, customer_id: e.target.value})}
-                  >
-                      <option value="">Bağımsız / Müşteri Yok</option>
-                      {(data?.customers || []).map((c: any) => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                  </select>
+                  
+                  {/* Custom Searchable Dropdown */}
+                  <div className="relative">
+                    <div 
+                      onClick={() => setIsCustomerDropdownOpen(!isCustomerDropdownOpen)}
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold bg-slate-50 hover:bg-white focus-within:border-blue-500 transition-all cursor-pointer flex justify-between items-center"
+                    >
+                      <span className={newAsset.customer_id ? "text-slate-800" : "text-slate-500"}>
+                        {selectedCustomerDisplay}
+                      </span>
+                      <ChevronDown size={16} className={`text-slate-400 transition-transform ${isCustomerDropdownOpen ? 'rotate-180' : ''}`} />
+                    </div>
+
+                    <AnimatePresence>
+                      {isCustomerDropdownOpen && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden"
+                        >
+                          <div className="p-2 border-b border-slate-100 flex items-center bg-slate-50 relative">
+                            <Search size={16} className="text-slate-400 ml-2 absolute pointer-events-none" />
+                            <input 
+                              type="text"
+                              autoFocus
+                              placeholder="Müşteri Ara..."
+                              className="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-colors"
+                              value={customerSearch}
+                              onChange={(e) => setCustomerSearch(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                          <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 space-y-1 bg-white">
+                            <div 
+                              onClick={() => { setNewAsset({...newAsset, customer_id: ''}); setIsCustomerDropdownOpen(false); }}
+                              className={`px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-colors ${!newAsset.customer_id ? 'bg-blue-50 text-blue-700 font-bold' : 'hover:bg-slate-50 text-slate-700 font-medium'}`}
+                            >
+                              Bağımsız / Müşteri Yok
+                            </div>
+                            
+                            {filteredCustomers.length > 0 && <div className="px-3 pt-2 pb-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">Kayıtlı Müşteriler</div>}
+                            
+                            {filteredCustomers.map((c: any) => (
+                              <div 
+                                key={c.id}
+                                onClick={() => { setNewAsset({...newAsset, customer_id: c.id}); setIsCustomerDropdownOpen(false); }}
+                                className={`px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-colors ${newAsset.customer_id === c.id ? 'bg-blue-50 text-blue-700 font-bold' : 'hover:bg-slate-50 text-slate-700 font-medium'}`}
+                              >
+                                {c.name}
+                              </div>
+                            ))}
+                            
+                            {filteredCustomers.length === 0 && (data?.customers || []).length > 0 && (
+                              <div className="px-3 py-4 text-center text-xs text-slate-500 font-medium">
+                                Aranan müşteri bulunamadı.
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
 
                 {/* Konum / Şube */}
@@ -200,11 +267,13 @@ export default function AddAssetModal({
                   onClick={() => {
                       const combinedLocation = getFullAddress(newAsset.location, buildingNo, selectedCity, selectedDistrict);
                       handleAction('add-asset', { ...newAsset, location: combinedLocation }, setShowAddAsset, () => {
-                          setNewAsset({ name: '', location: '', customer_id: '', asset_details: '', apartmentName: '' });
-                          setSelectedCity('');
-                          setSelectedDistrict('');
-                          setBuildingNo('');
-                      });
+                        setNewAsset({ name: '', location: '', customer_id: '', asset_details: '', apartmentName: '' });
+                        setSelectedCity('');
+                        setSelectedDistrict('');
+                        setBuildingNo('');
+                        setIsCustomerDropdownOpen(false);
+                        setCustomerSearch('');
+                    });
                   }} 
                   className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:bg-blue-700 transition-all active:scale-95 flex justify-center items-center disabled:opacity-50 disabled:hover:bg-blue-600"
                >
