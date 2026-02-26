@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Box, User, MapPin, Settings, Hash } from 'lucide-react';
+import { X, Loader2, Box, User, MapPin, FileText, Building2 } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
 
 const CITY_DATA: any = trCitiesData;
@@ -40,13 +40,21 @@ export default function AddAssetModal({
   return (
     <AnimatePresence>
       {showAddAsset && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        <motion.div 
+           key="modal-backdrop-add"
+           initial={{ opacity: 0 }} 
+           animate={{ opacity: 1 }} 
+           exit={{ opacity: 0 }} 
+           className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+        >
           <div className="absolute inset-0" onClick={handleClose}></div>
           
           <motion.div 
+            key="modal-content-add"
             initial={{ opacity: 0, scale: 0.95, y: 10 }} 
             animate={{ opacity: 1, scale: 1, y: 0 }} 
             exit={{ opacity: 0, scale: 0.95, y: 10 }} 
+            onClick={(e) => e.stopPropagation()}
             className="bg-white w-full max-w-md rounded-2xl p-0 shadow-2xl relative overflow-hidden border border-slate-200 pointer-events-auto flex flex-col max-h-[90vh]"
           >
             {/* HEADER */}
@@ -66,14 +74,28 @@ export default function AddAssetModal({
             {/* BODY */}
             <div className="p-5 sm:p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
                 
-                {/* Varlık / Cihaz Adı */}
+                {/* Apartman / Tesis Adı */}
                 <div>
                   <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
-                      <Box size={14} /> Cihaz / Varlık Adı <span className="text-rose-500">*</span>
+                      <Building2 size={14} /> Apartman / Tesis Adı
                   </label>
                   <input 
                       type="text" 
-                      placeholder="Örn: B Blok Ana Klima, Tıbbi Cihaz #12 vb." 
+                      placeholder="Örn: Akdeniz Apartmanı" 
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400" 
+                      value={newAsset.apartmentName || ''} 
+                      onChange={e => setNewAsset({...newAsset, apartmentName: e.target.value})} 
+                  />
+                </div>
+
+                {/* Varlık / Cihaz Adı */}
+                <div>
+                  <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
+                      <Box size={14} /> Cihaz / Varlık Türü <span className="text-rose-500">*</span>
+                  </label>
+                  <input 
+                      type="text" 
+                      placeholder="Örn: Yük Asansörü, Tıbbi Cihaz #12 vb." 
                       className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400" 
                       value={newAsset.name} 
                       onChange={e => setNewAsset({...newAsset, name: e.target.value})} 
@@ -138,31 +160,17 @@ export default function AddAssetModal({
                     </div>
                 </div>
 
-                {/* Tür / Model */}
+                {/* Varlık / Cihaz Detayları */}
                 <div>
                   <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
-                      <Settings size={14} /> Türü / Modeli
+                      <FileText size={14} /> Varlık / Cihaz Detayları
                   </label>
-                  <input 
-                      type="text" 
-                      placeholder="Cihazın markası veya modeli..." 
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400" 
-                      value={newAsset.type || ''} 
-                      onChange={e => setNewAsset({...newAsset, type: e.target.value})} 
-                  />
-                </div>
-
-                {/* Seri Numarası */}
-                <div>
-                  <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
-                      <Hash size={14} /> Seri / Barkod Numarası
-                  </label>
-                  <input 
-                      type="text" 
-                      placeholder="SN: 1234567890" 
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400 font-mono" 
-                      value={newAsset.serial_number || ''} 
-                      onChange={e => setNewAsset({...newAsset, serial_number: e.target.value})} 
+                  <textarea 
+                      rows={3}
+                      placeholder="Teknik detaylar, kapasite, marka, model veya özel notlar..." 
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400 resize-none" 
+                      value={newAsset.asset_details || ''} 
+                      onChange={e => setNewAsset({...newAsset, asset_details: e.target.value})} 
                   />
                 </div>
 
@@ -175,7 +183,7 @@ export default function AddAssetModal({
                   onClick={() => {
                       const combinedLocation = getFullAddress(newAsset.location, buildingNo, selectedCity, selectedDistrict);
                       handleAction('add-asset', { ...newAsset, location: combinedLocation }, setShowAddAsset, () => {
-                          setNewAsset({ name: '', location: '', customer_id: '', type: '', serial_number: '' });
+                          setNewAsset({ name: '', location: '', customer_id: '', asset_details: '', apartmentName: '' });
                           setSelectedCity('');
                           setSelectedDistrict('');
                           setBuildingNo('');
@@ -188,7 +196,7 @@ export default function AddAssetModal({
             </div>
             
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );
