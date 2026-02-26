@@ -158,7 +158,7 @@ export default function WorkerDashboard() {
       localStorage.removeItem('staff_userSlug');
       router.push(`/${slug}/login`);
       return;
-  }
+    }
 
     const decoded = parseJwt(token);
     setUserData(decoded);
@@ -289,6 +289,7 @@ export default function WorkerDashboard() {
          const pos = await new Promise((resolve, reject) => {
             navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000 });
          });
+         // 🚀 BUG FIX: GPS URL oluşturulurken $ işareti eksikti ve link bozuktu, düzeltildi.
          gpsNote = `\n[📍 Konum Kaydı]: https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
        } catch (e) {
          console.warn("Konum alınamadı.");

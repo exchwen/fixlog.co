@@ -87,9 +87,10 @@ export default function PatronDashboard() {
   // =================================================================================
   // 2. FORM DATA STATES (Yeni Modallara Uyumlu)
   // =================================================================================
-  const [newJob, setNewJob] = useState({ 
-    customer_id: '', asset_id: '', staff_id: '', work_type: 'Genel Görev', 
-    priority: 'Normal', note: '', scheduled_date: '' 
+  const [jobModalStep, setJobModalStep] = useState(1);
+  const [jobForm, setJobForm] = useState({ 
+    customerName: '', assetId: '', staffId: '', workType: 'Görev', 
+    workCategory: 'Normal İş Atama', jobType: 'Anlık', scheduledDate: '', taskNote: '' 
   });
 
   const [newAsset, setNewAsset] = useState({ 
@@ -395,8 +396,7 @@ export default function PatronDashboard() {
         </div>
       </main>
 
-      <ChatPanel isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} activeChatId={activeChatId} setActiveChatId={setActiveChatId} data={data} messages={messages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} />
-
+      <ChatPanel isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} activeChatId={activeChatId} setActiveChatId={setActiveChatId} data={data} messages={messages} setMessages={setMessages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} />
       {data && <DynamicPWA companyName={data?.name} companyLogo={data?.logo} />}
 
       {/* MERKEZİ MODAL YÖNETİCİSİ */}
@@ -413,7 +413,8 @@ export default function PatronDashboard() {
         showAddJob={showAddJob} setShowAddJob={setShowAddJob} 
         showJobModal={showAddJob} setShowJobModal={setShowAddJob}
         
-        newJob={newJob} setNewJob={setNewJob}
+        jobModalStep={jobModalStep} setJobModalStep={setJobModalStep}
+        jobForm={jobForm} setJobForm={setJobForm}
         
         selectedCustomer={selectedCustomer} setSelectedCustomer={setSelectedCustomer}
         selectedAsset={selectedAsset} setSelectedAsset={setSelectedAsset}

@@ -91,9 +91,10 @@ export default function ManagerDashboard() {
   // =================================================================================
   // 2. FORM DATA STATES (Yeni Modallara Uyumlu)
   // =================================================================================
-  const [newJob, setNewJob] = useState({ 
-    customer_id: '', asset_id: '', staff_id: '', work_type: 'Genel Görev', 
-    priority: 'Normal', note: '', scheduled_date: '' 
+  const [jobModalStep, setJobModalStep] = useState(1);
+  const [jobForm, setJobForm] = useState({ 
+    customerName: '', assetId: '', staffId: '', workType: 'Görev', 
+    workCategory: 'Normal İş Atama', jobType: 'Anlık', scheduledDate: '', taskNote: '' 
   });
 
   const [newAsset, setNewAsset] = useState({ 
@@ -461,7 +462,7 @@ export default function ManagerDashboard() {
                 handleAction={handleAction} 
                 setShowStockModal={setShowStockModal} 
                 setShowSupplierModal={setShowSupplierModal} 
-                setShowSupplierListModal={setShowSupplierListModal} 
+                setShowSupplierListModal={setShowSupplierModal} 
                 setShowCategoryModal={setShowCategoryModal}
                 setShowOrderModal={setShowOrderModal}
                 setShowBulkOrderModal={setShowBulkOrderModal}
@@ -496,7 +497,8 @@ export default function ManagerDashboard() {
         showAddJob={showAddJob} setShowAddJob={setShowAddJob} 
         showJobModal={showAddJob} setShowJobModal={setShowAddJob}
         
-        newJob={newJob} setNewJob={setNewJob}
+        jobModalStep={jobModalStep} setJobModalStep={setJobModalStep}
+        jobForm={jobForm} setJobForm={setJobForm}
         
         selectedCustomer={selectedCustomer} setSelectedCustomer={setSelectedCustomer}
         selectedAsset={selectedAsset} setSelectedAsset={setSelectedAsset}
