@@ -2,20 +2,20 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Phone, Mail, Briefcase, Calendar, User, ShieldCheck, CheckCircle, Clock, Settings, Trash2, Loader2 } from 'lucide-react';
+import { X, Phone, Mail, Briefcase, Calendar, User, ShieldCheck, CheckCircle, Clock, Settings, Trash2, Loader2, Filter } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 
 export default function StaffDetailModal({
   selectedStaff, setSelectedStaff,
   data, handleCloseDetail,
   setSelectedJob,
-  // Yeni eklenen prop'lar (Düzenleme ve Silme için)
   isEditingStaff, setIsEditingStaff,
   editStaffForm, setEditStaffForm,
   handleAction, isSaving
 }: any) {
 
   const [activeTab, setActiveTab] = useState('info'); // 'info' | 'jobs'
+  const [jobFilter, setJobFilter] = useState('Tümü'); // 'Tümü' | 'Tamamlandı' | 'Aktif' YENİ EKLENDİ
 
   // Personele atanmış tüm işleri buluyoruz
   const staffJobs = (data?.jobs || []).filter((j:any) => String(j.staff_id) === String(selectedStaff?.id));
@@ -24,7 +24,14 @@ export default function StaffDetailModal({
   const completedJobs = staffJobs.filter((j:any) => j.status === 'Tamamlandı').length;
   const activeJobs = staffJobs.filter((j:any) => ['Devam Ediyor', 'Usta Bekliyor', 'Onay Bekliyor'].includes(j.status)).length;
 
-  // Branş listesi için (Sektör verisinden çekiyoruz)
+  // Filtrelenmiş Liste
+  const displayJobs = staffJobs.filter((j:any) => {
+    if (jobFilter === 'Tamamlandı') return j.status === 'Tamamlandı';
+    if (jobFilter === 'Aktif') return ['Devam Ediyor', 'Usta Bekliyor', 'Onay Bekliyor'].includes(j.status);
+    return true;
+  });
+
+  // Branş listesi için
   const currentSector = data?.sector || '';
   const safeSectors: any = sectorsData;
   const branchList = currentSector && safeSectors?.sectors?.[currentSector]?.subTypes 
@@ -41,12 +48,27 @@ export default function StaffDetailModal({
     'Usta Bekliyor': 'bg-orange-100 text-orange-700 border-orange-200'
   };
 
+  // 🟢 DONMA ÇÖZÜMÜ: Modalı güvenli bir şekilde kapatan ve stateleri sıfırlayan ana fonksiyon
+  const closeThisModal = () => {
+    setSelectedStaff(null);
+    if (handleCloseDetail) handleCloseDetail('staff');
+    setIsEditingStaff(false);
+    setActiveTab('info');
+    setJobFilter('Tümü');
+  };
+
   return (
     <AnimatePresence>
       {selectedStaff && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        // 🟢 DONMA ÇÖZÜMÜ: En dıştaki div artık bir motion.div
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }} 
+          exit={{ opacity: 0 }} 
+          className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+        >
           {/* Arka plan tıklaması ile kapatma */}
-          <div className="absolute inset-0" onClick={() => handleCloseDetail('staff')}></div>
+          <div className="absolute inset-0" onClick={closeThisModal}></div>
 
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }} 
@@ -55,7 +77,7 @@ export default function StaffDetailModal({
             className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 pointer-events-auto"
           >
             {/* HEADER (Üst Başlık Alanı) */}
-            <div className="flex justify-between items-start p-5 sm:p-6 pb-0 border-b border-slate-100 bg-slate-50/50 z-10 flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex justify-between items-start p-5 sm:p-6 pb-0 border-b border-slate-100 bg-slate-50/50 z-10 flex-col sm:flex-row sm:items-center gap-4 shrink-0">
               <div className="flex-1 w-full">
                   <div className="flex justify-between items-start w-full">
                       <div>
@@ -66,21 +88,21 @@ export default function StaffDetailModal({
                              </span>
                           </div>
                       </div>
-                      <button onClick={() => { setSelectedStaff(null); handleCloseDetail('staff'); }} className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-xl transition-all active:scale-95 sm:hidden"><X size={20} /></button>
+                      <button onClick={closeThisModal} className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-xl transition-all active:scale-95 sm:hidden"><X size={20} /></button>
                   </div>
 
                   {/* SEKMELER (Tabs) - Sadece düzenleme modunda değilse göster */}
                   {!isEditingStaff && (
                     <div className="flex gap-4 mt-4 border-b border-slate-200 w-full">
                         <button 
-                            onClick={() => setActiveTab('info')}
+                            onClick={() => { setActiveTab('info'); setJobFilter('Tümü'); }}
                             className={`pb-3 text-sm font-bold transition-all relative ${activeTab === 'info' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             Personel Bilgileri
                             {activeTab === 'info' && <motion.div layoutId="staffTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full" />}
                         </button>
                         <button 
-                            onClick={() => setActiveTab('jobs')}
+                            onClick={() => { setActiveTab('jobs'); setJobFilter('Tümü'); }}
                             className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-1.5 ${activeTab === 'jobs' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             İş Geçmişi
@@ -90,7 +112,7 @@ export default function StaffDetailModal({
                     </div>
                   )}
               </div>
-              <button onClick={() => { setSelectedStaff(null); handleCloseDetail('staff'); }} className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-xl transition-all active:scale-95 hidden sm:block self-start"><X size={20} /></button>
+              <button onClick={closeThisModal} className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-xl transition-all active:scale-95 hidden sm:block self-start"><X size={20} /></button>
             </div>
 
             {/* BODY (İçerik Alanı) */}
@@ -106,13 +128,20 @@ export default function StaffDetailModal({
                                 {/* -- GÖRÜNTÜLEME MODU -- */}
                                 {/* Performans Özeti */}
                                 <div className="grid grid-cols-2 gap-3 mb-2">
-                                    <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-sm">
-                                        <CheckCircle size={24} className="text-emerald-500 mb-2" />
+                                    {/* 🟢 TIKLANABİLİR KUTULAR */}
+                                    <div 
+                                      onClick={() => { setActiveTab('jobs'); setJobFilter('Tamamlandı'); }} 
+                                      className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-sm cursor-pointer hover:bg-emerald-100 transition-colors group"
+                                    >
+                                        <CheckCircle size={24} className="text-emerald-500 mb-2 group-hover:scale-110 transition-transform" />
                                         <div className="text-2xl font-black text-emerald-700">{completedJobs}</div>
                                         <div className="text-[10px] font-black text-emerald-600/70 uppercase tracking-widest mt-1">Tamamlanan İş</div>
                                     </div>
-                                    <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-sm">
-                                        <Clock size={24} className="text-blue-500 mb-2" />
+                                    <div 
+                                      onClick={() => { setActiveTab('jobs'); setJobFilter('Aktif'); }} 
+                                      className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-sm cursor-pointer hover:bg-blue-100 transition-colors group"
+                                    >
+                                        <Clock size={24} className="text-blue-500 mb-2 group-hover:scale-110 transition-transform" />
                                         <div className="text-2xl font-black text-blue-700">{activeJobs}</div>
                                         <div className="text-[10px] font-black text-blue-600/70 uppercase tracking-widest mt-1">Aktif Görevi</div>
                                     </div>
@@ -164,11 +193,11 @@ export default function StaffDetailModal({
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div className="col-span-1">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Kullanıcı Adı</label>
-                                                <input className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none focus:border-blue-500 transition-all bg-white" value={editStaffForm.username} onChange={(e) => setEditStaffForm({...editStaffForm, username: e.target.value})} placeholder="örn: ali.usta" />
+                                                <input className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none focus:border-blue-500 transition-all bg-white" value={editStaffForm.username} onChange={(e) => setEditStaffForm({...editStaffForm, username: e.target.value.replace(/\s+/g, '').toLowerCase()})} placeholder="örn: ali.usta" />
                                             </div>
                                             <div className="col-span-1">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Hesap Şifresi</label>
-                                                <input type="password" autoComplete="new-password" title="Mevcut şifreyi değiştirmek istemiyorsanız boş bırakın." className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 transition-all placeholder:text-[10px] placeholder:text-slate-400 bg-white" value={editStaffForm.password} onChange={(e) => setEditStaffForm({...editStaffForm, password: e.target.value})} placeholder="Değiştirmek için yazın..." />
+                                                <input type="text" autoComplete="new-password" title="Mevcut şifreyi değiştirmek istemiyorsanız boş bırakın." className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 transition-all placeholder:text-[10px] placeholder:text-slate-400 bg-white" value={editStaffForm.password} onChange={(e) => setEditStaffForm({...editStaffForm, password: e.target.value})} placeholder="Değiştirmek için yazın..." />
                                             </div>
                                             <div className="col-span-1 sm:col-span-2">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Hesap Durumu</label>
@@ -188,10 +217,19 @@ export default function StaffDetailModal({
 
                   {/* İŞ GEÇMİŞİ SEKMESİ */}
                   {activeTab === 'jobs' && !isEditingStaff && (
-                    <motion.div key="jobs" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
-                        {staffJobs.length > 0 ? (
-                            <div className="space-y-3 relative before:absolute before:inset-y-0 before:left-[19px] before:w-0.5 before:bg-slate-100">
-                                {staffJobs.sort((a:any, b:any) => new Date(b.created_at || b.scheduled_date).getTime() - new Date(a.created_at || a.scheduled_date).getTime()).map((job: any) => (
+                    <motion.div key="jobs" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex flex-col h-full">
+                        
+                        {/* Filtre Bilgi Çubuğu */}
+                        {jobFilter !== 'Tümü' && (
+                            <div className="bg-blue-50 text-blue-700 px-3 py-2 rounded-lg text-xs font-bold mb-4 flex justify-between items-center border border-blue-100 shrink-0">
+                                <span className="flex items-center gap-1.5"><Filter size={14}/> Sadece "{jobFilter}" durumundaki işler gösteriliyor.</span>
+                                <button onClick={() => setJobFilter('Tümü')} className="text-blue-500 hover:text-blue-800 underline">Tümünü Gör</button>
+                            </div>
+                        )}
+
+                        {displayJobs.length > 0 ? (
+                            <div className="space-y-3 relative before:absolute before:inset-y-0 before:left-[19px] before:w-0.5 before:bg-slate-100 pb-4">
+                                {displayJobs.sort((a:any, b:any) => new Date(b.created_at || b.scheduled_date).getTime() - new Date(a.created_at || a.scheduled_date).getTime()).map((job: any) => (
                                     <div 
                                       key={job.id}
                                       onClick={() => setSelectedJob && setSelectedJob(job)}
@@ -226,10 +264,10 @@ export default function StaffDetailModal({
                         ) : (
                             <div className="flex flex-col items-center justify-center py-10 text-center px-4">
                                 <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-3 border border-slate-100">
-                                    <User size={24} />
+                                    <Briefcase size={24} />
                                 </div>
-                                <h3 className="text-sm font-bold text-slate-700">İş Ataması Yok</h3>
-                                <p className="text-xs font-medium text-slate-500 mt-1">Bu personele henüz herhangi bir görev atanmamış veya geçmişte bir işlem yapmamış.</p>
+                                <h3 className="text-sm font-bold text-slate-700">Sonuç Bulunamadı</h3>
+                                <p className="text-xs font-medium text-slate-500 mt-1">Bu filtreye uygun herhangi bir iş kaydı yok.</p>
                             </div>
                         )}
                     </motion.div>
@@ -238,15 +276,15 @@ export default function StaffDetailModal({
             </div>
 
             {/* FOOTER (Alt Aksiyon Alanı) */}
-            <div className="pt-4 sm:pt-5 border-t border-slate-100 p-5 sm:p-6 bg-slate-50">
+            <div className="pt-4 sm:pt-5 border-t border-slate-100 p-5 sm:p-6 bg-slate-50 shrink-0">
                 {!isEditingStaff ? (
                     <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
                         <button onClick={() => setIsEditingStaff(true)} className="flex-[2] bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"><Settings size={16} /> Profili Düzenle</button>
-                        <button onClick={async () => { if(confirm(`${selectedStaff.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-staff', { id: selectedStaff.id }, () => handleCloseDetail('staff'), () => {}); } }} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"><Trash2 size={16} /> Sil</button>
+                        <button onClick={async () => { if(confirm(`${selectedStaff.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-staff', { id: selectedStaff.id }, closeThisModal, () => {}); } }} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"><Trash2 size={16} /> Sil</button>
                     </div>
                 ) : (
                     <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                        <button onClick={() => handleAction('add-staff', { ...editStaffForm, id: selectedStaff.id }, () => handleCloseDetail('staff'), () => setIsEditingStaff(false))} className="w-full sm:flex-[2] bg-blue-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-md flex justify-center items-center">
+                        <button onClick={() => handleAction('add-staff', { ...editStaffForm, id: selectedStaff.id }, closeThisModal, () => setIsEditingStaff(false))} className="w-full sm:flex-[2] bg-blue-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-md flex justify-center items-center disabled:opacity-50">
                             {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Değişiklikleri Kaydet'}
                         </button>
                         <button onClick={() => setIsEditingStaff(false)} className="w-full sm:flex-1 bg-white border-2 border-slate-200 text-slate-700 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95">İptal</button>
@@ -255,7 +293,7 @@ export default function StaffDetailModal({
             </div>
 
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );

@@ -98,7 +98,7 @@ export default function PatronDashboard() {
   });
 
   const [newStaff, setNewStaff] = useState({ 
-    name: '', role: '', contact: '', email: '' 
+    name: '', role: '', contact: '', branch: '', username: '', password: '' 
   });
 
   const [newCustomer, setNewCustomer] = useState({ 

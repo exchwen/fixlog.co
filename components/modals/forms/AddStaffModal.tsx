@@ -2,13 +2,21 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, User, Phone, Mail, ShieldCheck } from 'lucide-react';
+import { X, Loader2, User, Phone, ShieldCheck, Briefcase, KeyRound } from 'lucide-react';
+import sectorsData from '@/lib/data/sectors.json';
 
 export default function AddStaffModal({
   showAddStaff, setShowAddStaff,
   newStaff, setNewStaff,
-  isSaving, handleAction
+  isSaving, handleAction, data
 }: any) {
+
+  // Sektör branşlarını çekmek için
+  const currentSector = data?.sector || '';
+  const safeSectors: any = sectorsData;
+  const branchList = currentSector && safeSectors?.sectors?.[currentSector]?.subTypes 
+    ? Object.keys(safeSectors.sectors[currentSector].subTypes) 
+    : [];
 
   // Form doğrulama: İsim ve Rol zorunlu
   const isFormValid = newStaff?.name?.trim() !== '' && newStaff?.role?.trim() !== '';
@@ -16,17 +24,22 @@ export default function AddStaffModal({
   return (
     <AnimatePresence>
       {showAddStaff && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }} 
+          exit={{ opacity: 0 }} 
+          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+        >
           <div className="absolute inset-0" onClick={() => setShowAddStaff(false)}></div>
           
           <motion.div 
             initial={{ opacity: 0, scale: 0.95, y: 10 }} 
             animate={{ opacity: 1, scale: 1, y: 0 }} 
             exit={{ opacity: 0, scale: 0.95, y: 10 }} 
-            className="bg-white w-full max-w-md rounded-2xl p-0 shadow-2xl relative overflow-hidden border border-slate-200 pointer-events-auto"
+            className="bg-white w-full max-w-md rounded-2xl p-0 shadow-2xl relative overflow-hidden border border-slate-200 pointer-events-auto flex flex-col max-h-[90vh]"
           >
             {/* HEADER */}
-            <div className="flex justify-between items-center p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50">
+            <div className="flex justify-between items-center p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50 shrink-0">
                <div>
                   <h2 className="text-xl font-black text-slate-800 tracking-tight">Yeni Personel Ekle</h2>
                   <div className="text-xs font-medium text-slate-500 mt-1">Ekibe yeni bir üye dahil edin.</div>
@@ -40,7 +53,7 @@ export default function AddStaffModal({
             </div>
 
             {/* BODY */}
-            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto custom-scrollbar max-h-[70vh]">
+            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
                 
                 {/* Ad Soyad */}
                 <div>
@@ -51,63 +64,98 @@ export default function AddStaffModal({
                       type="text" 
                       placeholder="Personelin tam adı" 
                       className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400" 
-                      value={newStaff.name} 
+                      value={newStaff.name || ''} 
                       onChange={e => setNewStaff({...newStaff, name: e.target.value})} 
                   />
                 </div>
 
-                {/* Yetki Rolü */}
-                <div>
-                  <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
-                      <ShieldCheck size={14} /> Yetki / Rol
-                  </label>
-                  <select 
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" 
-                      value={newStaff.role} 
-                      onChange={e => setNewStaff({...newStaff, role: e.target.value})}
-                  >
-                      <option value="" disabled>Rol Seçiniz...</option>
-                      <option value="Yönetici">Yönetici (Tüm işleri görür ve atar)</option>
-                      <option value="Usta">Usta (Sahada işlemi gerçekleştirir)</option>
-                      <option value="Çırak">Çırak / Yardımcı</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-4">
+                    {/* Yetki Rolü */}
+                    <div>
+                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
+                        <ShieldCheck size={14} /> Yetki / Rol
+                    </label>
+                    <select 
+                        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" 
+                        value={newStaff.role || ''} 
+                        onChange={e => setNewStaff({...newStaff, role: e.target.value})}
+                    >
+                        <option value="" disabled>Seçiniz...</option>
+                        <option value="Yönetici">Yönetici</option>
+                        <option value="Usta">Usta</option>
+                        <option value="Çırak">Çırak</option>
+                    </select>
+                    </div>
+
+                    {/* Branş */}
+                    <div>
+                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
+                        <Briefcase size={14} /> Branş
+                    </label>
+                    <select 
+                        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" 
+                        value={newStaff.branch || ''} 
+                        onChange={e => setNewStaff({...newStaff, branch: e.target.value})}
+                    >
+                        <option value="">Genel</option>
+                        {branchList.map((subType: any) => (
+                            <option key={subType} value={subType}>{subType}</option>
+                        ))}
+                    </select>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 mt-2">
+                    {/* Kullanıcı Adı */}
+                    <div>
+                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
+                        <User size={14} /> Kullanıcı Adı
+                    </label>
+                    <input 
+                        type="text" 
+                        placeholder="örn: ali.usta" 
+                        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400" 
+                        value={newStaff.username || ''} 
+                        onChange={e => setNewStaff({...newStaff, username: e.target.value.replace(/\s+/g, '').toLowerCase()})} 
+                    />
+                    </div>
+
+                    {/* Şifre */}
+                    <div>
+                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
+                        <KeyRound size={14} /> Şifre
+                    </label>
+                    <input 
+                        type="text" 
+                        placeholder="Geçici şifre" 
+                        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400" 
+                        value={newStaff.password || ''} 
+                        onChange={e => setNewStaff({...newStaff, password: e.target.value})} 
+                    />
+                    </div>
                 </div>
 
                 {/* Telefon */}
                 <div>
-                  <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
+                  <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5 mt-2">
                       <Phone size={14} /> Telefon Numarası
                   </label>
                   <input 
                       type="tel" 
                       placeholder="05XX XXX XX XX" 
                       className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400" 
-                      value={newStaff.contact} 
+                      value={newStaff.contact || ''} 
                       onChange={e => setNewStaff({...newStaff, contact: e.target.value})} 
-                  />
-                </div>
-
-                {/* E-Posta */}
-                <div>
-                  <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
-                      <Mail size={14} /> E-Posta Adresi (İsteğe Bağlı)
-                  </label>
-                  <input 
-                      type="email" 
-                      placeholder="personel@firma.com" 
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400" 
-                      value={newStaff.email || ''} 
-                      onChange={e => setNewStaff({...newStaff, email: e.target.value})} 
                   />
                 </div>
 
             </div>
 
             {/* FOOTER */}
-            <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50">
+            <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0">
                <button 
                   disabled={isSaving || !isFormValid} 
-                  onClick={() => handleAction('add-staff', newStaff, setShowAddStaff, () => setNewStaff({ name: '', role: '', contact: '', email: '' }))} 
+                  onClick={() => handleAction('add-staff', newStaff, setShowAddStaff, () => setNewStaff({ name: '', role: '', contact: '', branch: '', username: '', password: '' }))} 
                   className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:bg-slate-800 transition-all active:scale-95 flex justify-center items-center disabled:opacity-50"
                >
                   {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Personeli Kaydet'}
@@ -115,7 +163,7 @@ export default function AddStaffModal({
             </div>
             
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );

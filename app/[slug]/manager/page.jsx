@@ -102,7 +102,7 @@ export default function ManagerDashboard() {
   });
 
   const [newStaff, setNewStaff] = useState({ 
-    name: '', role: '', contact: '', email: '' 
+    name: '', role: '', contact: '', branch: '', username: '', password: '' 
   });
 
   const [newCustomer, setNewCustomer] = useState({ 
@@ -133,7 +133,7 @@ export default function ManagerDashboard() {
   const [isSaving, setIsSaving] = useState(false);
 
   // =================================================================================
-  // 3. İŞ DETAYI VE DÜZENLEME STATE'LERİ (DÜZELTİLEN KISIM)
+  // 3. İŞ DETAYI VE DÜZENLEME STATE'LERİ
   // =================================================================================
   const [previewPdfJob, setPreviewPdfJob] = useState(null);
   const [fullScreenImage, setFullScreenImage] = useState(null);
@@ -143,7 +143,7 @@ export default function ManagerDashboard() {
     workCategory: '', workType: '', jobType: '', scheduledDate: '', 
     staffId: '', taskNote: '', customerName: '', assetId: '' 
   });
-  const [jobTargetMode, setJobTargetMode] = useState('CUSTOMER'); // BU EKSİKTİ
+  const [jobTargetMode, setJobTargetMode] = useState('CUSTOMER');
   const [jobPrice, setJobPrice] = useState('');
   const [isApproving, setIsApproving] = useState(false);
   const [jobModalType, setJobModalType] = useState(null);
@@ -370,15 +370,18 @@ export default function ManagerDashboard() {
         .manager-scope nav button:has(svg.lucide-settings) { display: none !important; }
       `}} />
 
+      {/* 🟢 DÜZELTME: patron.jsx ile uyumlu PWA prompt yapısı */}
       <AnimatePresence>
-        {showPwaPrompt && !hasEmergency && (
-          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} className="fixed bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[420px] bg-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-2xl z-[9999] flex flex-row items-center justify-between border border-slate-700">
-            {installState === 'success' ? (
-              <div className="flex items-center gap-3 w-full justify-center py-1"><div className="bg-emerald-500 p-2 rounded-full shrink-0"><Check size={20} className="text-white" /></div><div className="flex flex-col flex-1 min-w-0 pr-2"><span className="font-bold text-sm text-emerald-400">Kurulum Başarılı!</span><span className="text-xs text-slate-400 mt-0.5">Yönetici panelini ana ekrandan açabilirsiniz.</span></div></div>
-            ) : (
-              <><div className="flex items-center gap-3 w-full"><div className="bg-blue-500 p-2.5 rounded-xl shrink-0"><Download size={20} className="text-white" /></div><div className="flex flex-col flex-1 min-w-0 pr-2"><span className="font-bold text-sm">Uygulamayı Yükle</span>{isIos ? (<span className="text-[11px] text-slate-400 mt-0.5 leading-tight">Yüklemek için <Share size={12} className="inline-block mx-0.5 mb-0.5" /> <b>Paylaş</b> ikonuna basıp <br/> <b>Ana Ekrana Ekle</b>'yi seçin.</span>) : (<span className="text-xs text-slate-400 mt-0.5">Yönetim işlemlerini hızlıca yapın.</span>)}</div></div><div className="flex gap-2 shrink-0 items-center">{!isIos && (<button onClick={handleInstallPwa} className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95">Yükle</button>)}</div></>
-            )}
-          </motion.div>
+        {showPwaPrompt && !hasEmergency && activeTab === 'home' && (
+           <motion.div 
+             initial={{ y: 100 }} 
+             animate={{ y: 0 }} 
+             exit={{ y: 100 }} 
+             className={`fixed right-4 sm:right-6 z-[9999] bg-slate-900 text-white p-4 rounded-xl shadow-2xl w-80 transition-all duration-300 ${isChatOpen ? 'bottom-[600px]' : 'bottom-24'}`}
+           >
+              <div className="flex gap-3"><Download className="text-blue-400" /><div><div className="font-bold">Uygulamayı Yükle</div><div className="text-xs text-slate-400 mt-1">Daha hızlı erişim için ana ekrana ekle.</div></div></div>
+              {!isIos && <button onClick={handleInstallPwa} className="mt-3 w-full bg-blue-600 py-2 rounded-lg text-xs font-bold">Yükle</button>}
+           </motion.div>
         )}
       </AnimatePresence>
 
@@ -434,14 +437,15 @@ export default function ManagerDashboard() {
              <ShieldCheck size={14} /> Yönetici Yetkisi
           </div>
 
-          {activeTab === 'home' && <HomeTab data={data} setShowAddJob={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} handleAction={handleAction} />}
-          {activeTab === 'my-jobs' && <MyJobsTab data={data} setShowAddJob={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} handleAction={handleAction} />}
-          {activeTab === 'jobs' && <JobsTab data={data} setShowAddJob={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} />}
-          {activeTab === 'pending' && <PendingJobsTab data={data} setSelectedJob={setSelectedJob} />}
-          {activeTab === 'completed' && <CompletedJobsTab data={data} setSelectedJob={setSelectedJob} statusColors={statusColors} />}
-          {activeTab === 'alerts' && <AlertsTab data={data} />} 
-          {activeTab === 'team' && <TeamTab data={data} setShowAddStaff={setShowAddStaff} setShowAddJob={setShowAddJob} setSelectedStaff={setSelectedStaff} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} setSelectedJob={setSelectedJob} />}
-          {activeTab === 'customers' && <CustomersTab data={data} setShowAddCustomer={setShowAddCustomer} setSelectedCustomer={setSelectedCustomer} />}
+          {/* 🟢 DÜZELTME: patron.jsx ile uyumlu, eksik proplar eklendi */}
+          {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} handleAction={handleAction} setJobModalType={setJobModalType} />}
+          {activeTab === 'my-jobs' && <MyJobsTab data={data} setShowJobModal={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} handleAction={handleAction} setJobModalType={setJobModalType} />}
+          {activeTab === 'jobs' && <JobsTab data={data} setShowJobModal={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} setJobModalType={setJobModalType} handleAction={handleAction} />}
+          {activeTab === 'pending' && <PendingJobsTab data={data} setSelectedJob={setSelectedJob} setJobModalType={setJobModalType} handleAction={handleAction} />}
+          {activeTab === 'completed' && <CompletedJobsTab data={data} setSelectedJob={setSelectedJob} statusColors={statusColors} setJobModalType={setJobModalType} handleAction={handleAction} />}
+          {activeTab === 'alerts' && <AlertsTab data={data} handleAction={handleAction} />} 
+          {activeTab === 'team' && <TeamTab data={data} setShowAddStaff={setShowAddStaff} setShowJobModal={setShowAddJob} setSelectedStaff={setSelectedStaff} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} setSelectedJob={setSelectedJob} setJobModalType={setJobModalType} handleAction={handleAction} />}
+          {activeTab === 'customers' && <CustomersTab data={data} setShowAddCustomer={setShowAddCustomer} setSelectedCustomer={setSelectedCustomer} handleAction={handleAction} />}
           {activeTab === 'support' && <SupportTab handleAction={handleAction} isSaving={isSaving} />} 
           
           {activeTab === 'stock' && (
@@ -486,14 +490,13 @@ export default function ManagerDashboard() {
       {/* MERKEZİ MODAL YÖNETİCİSİ */}
       <DashboardModals 
         data={data}
-        refreshData={() => fetchData(true)} // BU EKLENDİ: Modallar işlem bitince listeyi yenileyebilsin diye
+        refreshData={() => fetchData(true)}
         handleAction={handleAction}
         isSaving={isSaving}
         handleCloseDetail={handleCloseDetail}
 
         selectedJob={selectedJob} setSelectedJob={setSelectedJob}
         
-        // DÜZELTME: showAddJob ve setShowJobModal karışıklığı giderildi
         showAddJob={showAddJob} setShowAddJob={setShowAddJob} 
         showJobModal={showAddJob} setShowJobModal={setShowAddJob}
         
@@ -532,7 +535,6 @@ export default function ManagerDashboard() {
         isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff}
         editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}
 
-        // --- İŞ DETAY VE DÜZENLEME STATE'LERİ ---
         previewPdfJob={previewPdfJob} setPreviewPdfJob={setPreviewPdfJob}
         fullScreenImage={fullScreenImage} setFullScreenImage={setFullScreenImage}
         isEditingJobDetail={isEditingJobDetail} setIsEditingJobDetail={setIsEditingJobDetail}
@@ -543,7 +545,6 @@ export default function ManagerDashboard() {
         isApproving={isApproving} setIsApproving={setIsApproving}
         jobModalType={jobModalType} setJobModalType={setJobModalType}
 
-        // BU KISIM EKSİKTİ (QR Kod Modal Yönetimi İçin)
         showQRModal={showQRModal} setShowQRModal={setShowQRModal}
         selectedQRAsset={selectedQRAsset} setSelectedQRAsset={setSelectedQRAsset}
 
