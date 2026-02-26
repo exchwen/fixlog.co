@@ -8,8 +8,8 @@ import trCitiesData from '@/lib/data/tr-cities.json';
 const CITY_DATA: any = trCitiesData;
 
 export default function CustomerDetailModal({
-  showCustomerDetail,
-  setShowCustomerDetail,
+  selectedCustomer,
+  setSelectedCustomer,
   setShowAssetDetail,
   data,
   handleAction,
@@ -80,8 +80,8 @@ export default function CustomerDetailModal({
   };
 
   const handleCloseDetail = () => {
-    if (setShowCustomerDetail) { 
-        setShowCustomerDetail(null); 
+    if (setSelectedCustomer) { 
+        setSelectedCustomer(null); 
         setIsEditingCustomer(false);
         setSelectedCity(''); 
         setSelectedDistrict(''); 
@@ -91,12 +91,12 @@ export default function CustomerDetailModal({
 
   return (
     <AnimatePresence>
-      {showCustomerDetail && (
+      {selectedCustomer && (
         <motion.div 
           key="modal-backdrop-customer-detail"
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }} 
-          exit={{ opacity: 0, pointerEvents: "none" }} // Ekrana tıklanamama sorunu kökten çözüldü
+          initial={{ opacity: 0, pointerEvents: "none" }} 
+          animate={{ opacity: 1, pointerEvents: "auto" }} 
+          exit={{ opacity: 0, pointerEvents: "none" }} 
           transition={{ duration: 0.15 }}
           className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4"
         >
@@ -112,7 +112,7 @@ export default function CustomerDetailModal({
           >
             
             <div className="flex justify-between items-start p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50">
-              <div><h2 className="text-xl font-black text-slate-900 leading-tight">{showCustomerDetail?.name}</h2><div className="text-xs font-medium text-slate-500 mt-1">Müşteri / Kurum Profili</div></div>
+              <div><h2 className="text-xl font-black text-slate-900 leading-tight">{selectedCustomer?.name}</h2><div className="text-xs font-medium text-slate-500 mt-1">Müşteri / Kurum Profili</div></div>
               <button onClick={handleCloseDetail} className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-xl transition-all active:scale-95"><X size={20} /></button>
             </div>
             
@@ -120,14 +120,14 @@ export default function CustomerDetailModal({
                 {!isEditingCustomer ? (
                     <div className="space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm"><div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">İletişim / Telefon</div><div className="text-sm font-bold text-slate-800 mt-1.5">{showCustomerDetail?.contact || '-'}</div></div>
-                        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm"><div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vergi No / T.C.</div><div className="text-sm font-bold text-slate-800 mt-1.5">{showCustomerDetail?.tax_info || '-'}</div></div>
+                        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm"><div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">İletişim / Telefon</div><div className="text-sm font-bold text-slate-800 mt-1.5">{selectedCustomer?.contact || '-'}</div></div>
+                        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm"><div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vergi No / T.C.</div><div className="text-sm font-bold text-slate-800 mt-1.5">{selectedCustomer?.tax_info || '-'}</div></div>
                         <div className="sm:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
                             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Açık Adres</div>
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-1.5 gap-3">
-                              <div className="text-sm font-medium text-slate-800 leading-relaxed">{showCustomerDetail?.address || 'Adres belirtilmemiş.'}</div>
-                              {showCustomerDetail?.address && (
-                                <a href={`http://maps.google.com/?q=${encodeURIComponent(showCustomerDetail.address || '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-blue-600 bg-blue-100 hover:bg-blue-200 px-3 py-2 rounded-lg transition-all active:scale-95 whitespace-nowrap shrink-0 shadow-sm"><MapPin size={14} /> Haritada Gör</a>
+                              <div className="text-sm font-medium text-slate-800 leading-relaxed">{selectedCustomer?.address || 'Adres belirtilmemiş.'}</div>
+                              {selectedCustomer?.address && (
+                                <a href={`http://maps.google.com/?q=${encodeURIComponent(selectedCustomer.address || '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-blue-600 bg-blue-100 hover:bg-blue-200 px-3 py-2 rounded-lg transition-all active:scale-95 whitespace-nowrap shrink-0 shadow-sm"><MapPin size={14} /> Haritada Gör</a>
                               )}
                             </div>
                         </div>
@@ -137,8 +137,8 @@ export default function CustomerDetailModal({
                         <div>
                             <h4 className="text-[11px] font-black text-blue-600 mb-2 uppercase tracking-widest flex items-center gap-1.5"><Box size={14}/> Kayıtlı Cihazları / Varlıkları</h4>
                             <div className="space-y-2">
-                                {(data?.assets || []).filter((a: any) => a.customer_id === showCustomerDetail?.id).length > 0 ? (data?.assets || []).filter((a: any) => a.customer_id === showCustomerDetail?.id).map((a: any) => (
-                                    <div key={a.id} onClick={() => { setShowCustomerDetail(null); setShowAssetDetail(a); }} className="p-4 border border-blue-200 rounded-xl bg-blue-50/50 cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all active:scale-95 group">
+                                {(data?.assets || []).filter((a: any) => a.customer_id === selectedCustomer?.id).length > 0 ? (data?.assets || []).filter((a: any) => a.customer_id === selectedCustomer?.id).map((a: any) => (
+                                    <div key={a.id} onClick={() => { setSelectedCustomer(null); setShowAssetDetail(a); }} className="p-4 border border-blue-200 rounded-xl bg-blue-50/50 cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all active:scale-95 group">
                                         <div className="font-bold text-sm text-blue-900 group-hover:text-blue-700 transition-colors">{a.name}</div>
                                         <div className="text-[11px] font-medium text-blue-600/80 mt-1 flex items-center gap-1"><MapPin size={10}/> {a.location || 'Konum Yok'}</div>
                                     </div>
@@ -149,7 +149,7 @@ export default function CustomerDetailModal({
                         <div>
                             <h4 className="text-[11px] font-black text-slate-500 mb-2 uppercase tracking-widest flex items-center gap-1.5"><Calendar size={14}/> Geçmiş İş Kayıtları</h4>
                             <div className="space-y-2">
-                                {(data?.jobs || []).filter((j: any) => j.customer_name === showCustomerDetail?.name).length > 0 ? (data?.jobs || []).filter((j: any) => j.customer_name === showCustomerDetail?.name).map((j: any) => (
+                                {(data?.jobs || []).filter((j: any) => j.customer_name === selectedCustomer?.name).length > 0 ? (data?.jobs || []).filter((j: any) => j.customer_name === selectedCustomer?.name).map((j: any) => (
                                     <div key={j.id} onClick={(e) => { e.stopPropagation(); setSelectedJob(j); }} className={`p-4 border rounded-xl flex items-center justify-between cursor-pointer transition-all active:scale-95 group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-500/20' : 'bg-white border-slate-200 hover:border-blue-200 hover:shadow-sm'}`}>
                                         <div className="min-w-0 pr-2">
                                             <div className="font-bold text-sm text-slate-800 group-hover:text-blue-700 transition-colors truncate">{j.work_type || 'Görev'}</div>
@@ -167,8 +167,8 @@ export default function CustomerDetailModal({
 
                     <div className="pt-5 border-t border-slate-100">
                         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
-                        <button onClick={() => { setIsEditingCustomer(true); setEditCustomerForm({ id: showCustomerDetail.id, name: showCustomerDetail.name, contact: showCustomerDetail.contact || '', address: parseAddressToState(showCustomerDetail.address || ''), tax_info: showCustomerDetail.tax_info || '' }); }} className="flex-[2] bg-slate-900 text-white py-3.5 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"><Settings size={16} /> Profili Düzenle</button>
-                            <button onClick={async () => { if(confirm(`${showCustomerDetail.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-customer', { id: showCustomerDetail.id }, handleCloseDetail, () => {}); } }} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 py-3.5 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"><Trash2 size={16} /> Sil</button>
+                        <button onClick={() => { setIsEditingCustomer(true); setEditCustomerForm({ id: selectedCustomer.id, name: selectedCustomer.name, contact: selectedCustomer.contact || '', address: parseAddressToState(selectedCustomer.address || ''), tax_info: selectedCustomer.tax_info || '' }); }} className="flex-[2] bg-slate-900 text-white py-3.5 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"><Settings size={16} /> Profili Düzenle</button>
+                            <button onClick={async () => { if(confirm(`${selectedCustomer.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-customer', { id: selectedCustomer.id }, handleCloseDetail, () => {}); } }} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 py-3.5 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"><Trash2 size={16} /> Sil</button>
                         </div>
                     </div>
                     </div>

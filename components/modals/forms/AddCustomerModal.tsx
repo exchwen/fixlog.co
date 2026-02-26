@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, User, Phone, MapPin, FileText, Box, ChevronDown, Search } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
@@ -23,6 +23,14 @@ export default function AddCustomerModal({
   // Özel Dropdown State'leri
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const [assetSearch, setAssetSearch] = useState('');
+
+  // 🚀 Stacking Takılmasını Önleyen Özel State
+  const [isPushedBack, setIsPushedBack] = useState(false);
+
+  // Eğer diğer modal kapanırsa, bu modalı tekrar öne getir
+  useEffect(() => {
+    if (!showAddAsset) setIsPushedBack(false);
+  }, [showAddAsset]);
 
   // Form doğrulama: Sadece Müşteri/Firma Adı zorunlu
   const isFormValid = newCustomer?.name?.trim() !== '';
@@ -61,37 +69,34 @@ const selectedAssetDisplay = selectedAssetObj
     : 'Bağımsız (Varlık Atanmayacak)';
 
 return (
-    <AnimatePresence>
-      {showAddCustomer && (
-        <motion.div 
-          key="modal-backdrop-customer"
-          // Z-index çakışmasını engelliyoruz: Varlık modalı açılırsa bu modalı z-90 ile arkaya atıyoruz.
-          className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${showAddAsset ? 'z-[90]' : 'z-[110]'}`}
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }} 
-          exit={{ opacity: 0, pointerEvents: "none" }} // Tıklanmama sorunu için exit anında pointer kapatılır
-          transition={{ duration: 0.15 }}
-        >
-          {/* Varlık ekleme açıkken kendi siyah arkaplanını şeffaflaştırıyoruz (çift karanlık olmasın diye) */}
-          <div 
-             className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${showAddAsset ? 'opacity-0' : 'opacity-100'} cursor-pointer`} 
-             onClick={() => !showAddAsset && handleClose()} 
-          />
-          
-          <motion.div 
-            key="modal-content-customer"
-            initial={{ opacity: 0, scale: 0.95, y: 10 }} 
-            // 🚀 STACKING EFEKTİ: Varlık modalı açıldığında arkaya doğru küçül, karar ve yukarı kay!
-            animate={{ 
-                opacity: 1, 
-                scale: showAddAsset ? 0.92 : 1,      
-                y: showAddAsset ? -20 : 0,           
-                filter: showAddAsset ? 'brightness(0.5)' : 'brightness(1)' 
-            }} 
-            exit={{ opacity: 0, scale: 0.95, y: 10 }} 
-            transition={{ duration: 0.25, ease: "easeInOut" }}
-            onClick={(e) => e.stopPropagation()}
-            style={{ pointerEvents: showAddAsset ? 'none' : 'auto' }} // Arkada beklerken etkileşimi keser
+  <AnimatePresence>
+  {showAddCustomer && (
+    <motion.div 
+      key="modal-backdrop-customer"
+      className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isPushedBack ? 'z-[90]' : 'z-[110]'}`}
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      exit={{ opacity: 0, pointerEvents: "none" }}
+      transition={{ duration: 0.15 }}
+    >
+      <div 
+         className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isPushedBack ? 'opacity-0' : 'opacity-100'} cursor-pointer`} 
+         onClick={() => !isPushedBack && handleClose()} 
+      />
+      
+      <motion.div 
+        key="modal-content-customer"
+        initial={{ opacity: 0, scale: 0.95, y: 10 }} 
+        animate={{ 
+            opacity: 1, 
+            scale: isPushedBack ? 0.92 : 1,      
+            y: isPushedBack ? -20 : 0,           
+            filter: isPushedBack ? 'brightness(0.5)' : 'brightness(1)' 
+        }} 
+        exit={{ opacity: 0, scale: 0.95, y: 10 }} 
+        transition={{ duration: 0.25, ease: "easeInOut" }}
+        onClick={(e) => e.stopPropagation()}
+        style={{ pointerEvents: isPushedBack ? 'none' : 'auto' }}
             className="bg-white w-full max-w-md rounded-2xl p-0 shadow-2xl relative z-10 overflow-hidden border border-slate-200 cursor-default flex flex-col max-h-[90vh]"
           >
             {/* HEADER */}
@@ -202,7 +207,7 @@ return (
                     </label>
                     <button 
                       type="button" 
-                      onClick={() => setShowAddAsset && setShowAddAsset(true)} 
+                      onClick={() => { setIsPushedBack(true); setShowAddAsset && setShowAddAsset(true); }} 
                       className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition-all active:scale-95 flex items-center gap-1"
                     >
                       + Yeni Varlık

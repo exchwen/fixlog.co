@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, Box, User, MapPin, FileText, Building2, ChevronDown, Search } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
@@ -23,6 +23,14 @@ export default function AddAssetModal({
   // Müşteri Seçimi Özel Dropdown State'leri
   const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
+
+  // 🚀 Stacking Takılmasını Önleyen Özel State
+  const [isPushedBack, setIsPushedBack] = useState(false);
+
+  // Eğer diğer modal kapanırsa, bu modalı tekrar öne getir
+  useEffect(() => {
+    if (!showAddCustomer) setIsPushedBack(false);
+  }, [showAddCustomer]);
 
   const getFullAddress = (rawAddress: string, bNo: string, city: string, district: string) => {
       let full = rawAddress ? rawAddress.trim() : '';
@@ -53,29 +61,30 @@ return (
       {showAddAsset && (
         <motion.div 
            key="modal-backdrop-add"
-           // Z-index çakışmasını engelliyoruz: Müşteri modalı açılırsa bu modalı z-90 ile arkaya atıyoruz.
-           className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${showAddCustomer ? 'z-[90]' : 'z-[110]'}`}
-           initial={{ opacity: 0, pointerEvents: "none" }} 
-           animate={{ opacity: 1, pointerEvents: "auto" }} 
+           className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isPushedBack ? 'z-[90]' : 'z-[110]'}`}
+           initial={{ opacity: 0 }} 
+           animate={{ opacity: 1 }} 
            exit={{ opacity: 0, pointerEvents: "none" }} 
            transition={{ duration: 0.15 }}
         >
-          {/* Müşteri ekleme açıkken tıklanmaları durdurur */}
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer" onClick={() => !showAddCustomer && handleClose()}></div>
+          <div 
+             className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isPushedBack ? 'opacity-0' : 'opacity-100'} cursor-pointer`} 
+             onClick={() => !isPushedBack && handleClose()} 
+          />
           
           <motion.div 
             key="modal-content-add"
             initial={{ opacity: 0, scale: 0.95, y: 10 }} 
             animate={{ 
-                opacity: 1, // Şeffaflığı tamamen 1 yaptık, içi görünmeyecek
-                scale: showAddCustomer ? 0.92 : 1,      // Arkaya doğru küçülür
-                y: showAddCustomer ? -20 : 0,           // Hafif yukarı kayar
-                filter: showAddCustomer ? 'brightness(0.5)' : 'brightness(1)' // Şeffaflaşmak yerine sadece kararır
+                opacity: 1,
+                scale: isPushedBack ? 0.92 : 1,
+                y: isPushedBack ? -20 : 0,
+                filter: isPushedBack ? 'brightness(0.5)' : 'brightness(1)'
             }} 
             exit={{ opacity: 0, scale: 0.95, y: 10 }} 
             transition={{ duration: 0.25, ease: "easeInOut" }}
             onClick={(e) => e.stopPropagation()}
-            style={{ pointerEvents: showAddCustomer ? 'none' : 'auto' }} // Arkada beklerken etkileşimi keser
+            style={{ pointerEvents: isPushedBack ? 'none' : 'auto' }}
             className="bg-white w-full max-w-md rounded-2xl p-0 shadow-2xl relative z-10 overflow-hidden border border-slate-200 cursor-default flex flex-col max-h-[90vh]"
           >
             {/* HEADER */}
@@ -131,7 +140,7 @@ return (
                       </label>
                       <button 
                           type="button" 
-                          onClick={() => setShowAddCustomer && setShowAddCustomer(true)} 
+                          onClick={() => { setIsPushedBack(true); setShowAddCustomer && setShowAddCustomer(true); }} 
                           className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition-all active:scale-95 flex items-center gap-1"
                       >
                           + Yeni Müşteri
