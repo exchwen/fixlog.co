@@ -9,7 +9,7 @@ const CITY_DATA: any = trCitiesData;
 
 export default function AddAssetModal({
   showAddAsset, setShowAddAsset,
-  setShowAddCustomer, // Yeni müşteri oluşturma modalını tetiklemek için eklendi
+  showAddCustomer, setShowAddCustomer, // Yeni müşteri ekleme modunu dinliyoruz
   newAsset, setNewAsset,
   isSaving, handleAction,
   data
@@ -40,20 +40,28 @@ export default function AddAssetModal({
       {showAddAsset && (
         <motion.div 
            key="modal-backdrop-add"
-           initial={{ opacity: 0 }} 
-           animate={{ opacity: 1 }} 
-           exit={{ opacity: 0 }} 
-           className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm pointer-events-auto"
+           className="fixed inset-0 z-[110] flex items-center justify-center p-4"
+           initial={{ opacity: 0, pointerEvents: "none" }} 
+           animate={{ opacity: 1, pointerEvents: "auto" }} 
+           exit={{ opacity: 0, pointerEvents: "none" }} 
+           transition={{ duration: 0.15 }}
         >
-          <div className="absolute inset-0 cursor-pointer" onClick={handleClose}></div>
+          {/* Müşteri ekleme açıkken tıklanmaları durdurur */}
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer" onClick={() => !showAddCustomer && handleClose()}></div>
           
           <motion.div 
             key="modal-content-add"
             initial={{ opacity: 0, scale: 0.95, y: 10 }} 
-            animate={{ opacity: 1, scale: 1, y: 0 }} 
+            animate={{ 
+                opacity: showAddCustomer ? 0.3 : 1,     // Müşteri açılınca kararır
+                scale: showAddCustomer ? 0.92 : 1,      // Arkaya doğru küçülür
+                y: showAddCustomer ? -20 : 0            // Hafif yukarı kayar
+            }} 
             exit={{ opacity: 0, scale: 0.95, y: 10 }} 
+            transition={{ duration: 0.25, ease: "easeInOut" }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white w-full max-w-md rounded-2xl p-0 shadow-2xl relative overflow-hidden border border-slate-200 cursor-default flex flex-col max-h-[90vh]"
+            style={{ pointerEvents: showAddCustomer ? 'none' : 'auto' }} // Arkada beklerken etkileşimi keser
+            className="bg-white w-full max-w-md rounded-2xl p-0 shadow-2xl relative z-10 overflow-hidden border border-slate-200 cursor-default flex flex-col max-h-[90vh]"
           >
             {/* HEADER */}
             <div className="flex justify-between items-center p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50 shrink-0">

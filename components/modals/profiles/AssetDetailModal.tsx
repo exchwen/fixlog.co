@@ -137,20 +137,23 @@ export default function AssetDetailModal({
       {selectedAsset && (
         <motion.div 
           key="modal-backdrop-detail"
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }} 
-          exit={{ opacity: 0 }} 
-          className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm pointer-events-auto"
+          className="fixed inset-0 z-[120] flex items-center justify-center p-4"
+          initial={{ opacity: 0, pointerEvents: "none" }} 
+          animate={{ opacity: 1, pointerEvents: "auto" }} 
+          exit={{ opacity: 0, pointerEvents: "none" }} 
+          transition={{ duration: 0.15 }}
         >
-          <div className="absolute inset-0 cursor-pointer" onClick={handleClose}></div>
+          {/* Çıkışta tıklanma bugunu önleyen ana arkaplan */}
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer" onClick={handleClose}></div>
 
           <motion.div 
             key="modal-content-detail"
             initial={{ opacity: 0, scale: 0.95 }} 
             animate={{ opacity: 1, scale: 1 }} 
             exit={{ opacity: 0, scale: 0.95 }} 
+            transition={{ duration: 0.2 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 cursor-default"
+            className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative z-10 flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 cursor-default"
           >
             {/* HEADER */}
             <div className="flex justify-between items-start p-5 sm:p-6 pb-0 border-b border-slate-100 bg-slate-50/50 z-10 flex-col sm:flex-row sm:items-center gap-4">
