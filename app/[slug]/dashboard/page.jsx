@@ -8,11 +8,10 @@ import { ShieldCheck, AlertTriangle, Filter, ShieldAlert, MapPin, Check, WifiOff
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import ChatPanel from '@/components/chat/ChatPanel';
-import DashboardModals from '@/components/modals/DashboardModals'; // MERKEZİ MODAL YÖNETİCİSİ
+import DashboardModals from '@/components/modals/DashboardModals'; 
 import DynamicPWA from '@/components/DynamicPWA';
 import AssetQRModal from '@/components/modals/AssetQRModal';
 
-// Tab Bileşenleri
 import HomeTab from '@/components/patron/HomeTab';
 import JobsTab from '@/components/patron/JobsTab';
 import TeamTab from '@/components/patron/TeamTab';
@@ -88,7 +87,6 @@ export default function PatronDashboard() {
   // =================================================================================
   // 2. FORM DATA STATES (Yeni Modallara Uyumlu)
   // =================================================================================
-  
   const [newJob, setNewJob] = useState({ 
     customer_id: '', asset_id: '', staff_id: '', work_type: 'Genel Görev', 
     priority: 'Normal', note: '', scheduled_date: '' 
@@ -131,7 +129,7 @@ export default function PatronDashboard() {
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '', username: '', password: '', is_active: 1 });
 
   // =================================================================================
-  // 3. JOB DETAIL & INTERACTION STATES (EKSİK OLANLAR BURADA)
+  // 3. İŞ DETAYI VE DÜZENLEME STATE'LERİ (DÜZELTİLEN KISIM)
   // =================================================================================
   const [previewPdfJob, setPreviewPdfJob] = useState(null);
   const [fullScreenImage, setFullScreenImage] = useState(null);
@@ -141,10 +139,10 @@ export default function PatronDashboard() {
     workCategory: '', workType: '', jobType: '', scheduledDate: '', 
     staffId: '', taskNote: '', customerName: '', assetId: '' 
   });
-  const [jobTargetMode, setJobTargetMode] = useState('CUSTOMER');
+  const [jobTargetMode, setJobTargetMode] = useState('CUSTOMER'); // BU EKSİKTİ
   const [jobPrice, setJobPrice] = useState('');
   const [isApproving, setIsApproving] = useState(false);
-  const [jobModalType, setJobModalType] = useState(null); // Approval flows vb.
+  const [jobModalType, setJobModalType] = useState(null);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -154,12 +152,12 @@ export default function PatronDashboard() {
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
 
-  // Yardımcı Arama State'leri
+  // Yardımcı Arama
   const [searchCust, setSearchCust] = useState('');
   const [searchAsset, setSearchAsset] = useState('');
 
   // =================================================================================
-  // PWA ve Fetching Logic
+  // PWA ve Fetching
   // =================================================================================
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -232,12 +230,9 @@ export default function PatronDashboard() {
   useEffect(() => { fetchData(true); const int = setInterval(() => fetchData(false), 15000); return () => clearInterval(int); }, [slug]);
   useEffect(() => { if (isChatOpen && activeChatId) fetchMessages(); }, [isChatOpen, activeChatId]);
 
-  // Modal Kapatma Yardımcıları
+  // Modal Kapatma
   const handleCloseJobModal = () => {
     setShowAddJob(false);
-    setTimeout(() => {
-        // Eski yapıdan kalma temizlik gerekirse buraya eklenebilir
-    }, 300);
   };
 
   const handleCloseDetail = (type) => {
@@ -312,7 +307,7 @@ export default function PatronDashboard() {
     'Beklemede': 'bg-amber-100 text-amber-700 border-amber-200', 
     'Tamamlandı': 'bg-emerald-100 text-emerald-700 border-emerald-200', 
     'Devam Ediyor': 'bg-blue-100 text-blue-700 border-blue-200', 
-    'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200',
+    'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200', 
     'İptal': 'bg-rose-100 text-rose-700 border-rose-200' 
   };
 
@@ -411,7 +406,7 @@ export default function PatronDashboard() {
 
         selectedJob={selectedJob} setSelectedJob={setSelectedJob}
         showAddJob={showAddJob} setShowAddJob={handleCloseJobModal}
-        showJobModal={showAddJob} setShowJobModal={setShowAddJob} // Alias for old tabs
+        showJobModal={showAddJob} setShowJobModal={setShowAddJob}
         newJob={newJob} setNewJob={setNewJob}
         
         selectedCustomer={selectedCustomer} setSelectedCustomer={setSelectedCustomer}
@@ -431,7 +426,7 @@ export default function PatronDashboard() {
         newStock={newStock} setNewStock={setNewStock}
 
         showSupplierModal={showSupplierModal} setShowSupplierModal={setShowSupplierModal}
-        showSupplierListModal={showSupplierModal} setShowSupplierListModal={setShowSupplierModal} // Alias
+        showSupplierListModal={showSupplierModal} setShowSupplierListModal={setShowSupplierModal} 
         showAddSupplier={showAddSupplier} setShowAddSupplier={setShowAddSupplier}
         newSupplier={newSupplier} setNewSupplier={setNewSupplier}
 
@@ -446,7 +441,7 @@ export default function PatronDashboard() {
         isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff}
         editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}
 
-        // 🔥 İŞ DETAY VE DÜZENLEME STATE'LERİ (Eksik olanlar eklendi)
+        // --- İŞ DETAY VE DÜZENLEME STATE'LERİ (KESİN EKLENDİ) ---
         previewPdfJob={previewPdfJob} setPreviewPdfJob={setPreviewPdfJob}
         fullScreenImage={fullScreenImage} setFullScreenImage={setFullScreenImage}
         isEditingJobDetail={isEditingJobDetail} setIsEditingJobDetail={setIsEditingJobDetail}

@@ -54,11 +54,13 @@ export default function ManagerDashboard() {
   const [isOffline, setIsOffline] = useState(false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
+  // PWA States
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showPwaPrompt, setShowPwaPrompt] = useState(false);
   const [isIos, setIsIos] = useState(false);
   const [installState, setInstallState] = useState('idle');
 
+  // Filtreleme
   const [stockCategory, setStockCategory] = useState('Tümü');
 
   // =================================================================================
@@ -89,7 +91,6 @@ export default function ManagerDashboard() {
   // =================================================================================
   // 2. FORM DATA STATES (Yeni Modallara Uyumlu)
   // =================================================================================
-  
   const [newJob, setNewJob] = useState({ 
     customer_id: '', asset_id: '', staff_id: '', work_type: 'Genel Görev', 
     priority: 'Normal', note: '', scheduled_date: '' 
@@ -127,10 +128,11 @@ export default function ManagerDashboard() {
   
   const [isEditingStaff, setIsEditingStaff] = useState(false);
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '', username: '', password: '', is_active: 1 });
+  
   const [isSaving, setIsSaving] = useState(false);
 
   // =================================================================================
-  // 3. JOB DETAIL & INTERACTION STATES (EKSİK OLANLAR BURADA)
+  // 3. İŞ DETAYI VE DÜZENLEME STATE'LERİ (DÜZELTİLEN KISIM)
   // =================================================================================
   const [previewPdfJob, setPreviewPdfJob] = useState(null);
   const [fullScreenImage, setFullScreenImage] = useState(null);
@@ -140,7 +142,7 @@ export default function ManagerDashboard() {
     workCategory: '', workType: '', jobType: '', scheduledDate: '', 
     staffId: '', taskNote: '', customerName: '', assetId: '' 
   });
-  const [jobTargetMode, setJobTargetMode] = useState('CUSTOMER');
+  const [jobTargetMode, setJobTargetMode] = useState('CUSTOMER'); // BU EKSİKTİ
   const [jobPrice, setJobPrice] = useState('');
   const [isApproving, setIsApproving] = useState(false);
   const [jobModalType, setJobModalType] = useState(null);
@@ -151,12 +153,12 @@ export default function ManagerDashboard() {
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
 
-  // Yardımcı State'ler
+  // Yardımcı Arama
   const [searchCust, setSearchCust] = useState('');
   const [searchAsset, setSearchAsset] = useState('');
 
   // =================================================================================
-  // PWA ve Fetching Logic
+  // PWA ve Fetching
   // =================================================================================
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -250,12 +252,9 @@ export default function ManagerDashboard() {
   useEffect(() => { fetchData(true); const int = setInterval(() => fetchData(false), 15000); return () => clearInterval(int); }, [slug]);
   useEffect(() => { if (isChatOpen && activeChatId) fetchMessages(); }, [isChatOpen, activeChatId]);
 
-  // Modal Kapatma Yardımcıları
+  // Modal Kapatma
   const handleCloseJobModal = () => {
     setShowAddJob(false);
-    setTimeout(() => {
-        // Eski yapıdan kalma temizlik gerekirse buraya eklenebilir
-    }, 300);
   };
 
   const handleCloseDetail = (type) => {
@@ -355,7 +354,9 @@ export default function ManagerDashboard() {
     'Tamamlandı': 'bg-emerald-100 text-emerald-700 border-emerald-200', 
     'Devam Ediyor': 'bg-blue-100 text-blue-700 border-blue-200', 
     'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200', 
-    'İptal': 'bg-rose-100 text-rose-700 border-rose-200' 
+    'İptal': 'bg-rose-100 text-rose-700 border-rose-200', 
+    'Onay Bekliyor': 'bg-purple-100 text-purple-700 border-purple-200',
+    'Usta Bekliyor': 'bg-indigo-100 text-indigo-700 border-indigo-200' 
   };
 
   return (
@@ -460,7 +461,7 @@ export default function ManagerDashboard() {
                 handleAction={handleAction} 
                 setShowStockModal={setShowStockModal} 
                 setShowSupplierModal={setShowSupplierModal} 
-                setShowSupplierListModal={setShowSupplierModal} 
+                setShowSupplierListModal={setShowSupplierListModal} 
                 setShowCategoryModal={setShowCategoryModal}
                 setShowOrderModal={setShowOrderModal}
                 setShowBulkOrderModal={setShowBulkOrderModal}
@@ -488,7 +489,7 @@ export default function ManagerDashboard() {
 
         selectedJob={selectedJob} setSelectedJob={setSelectedJob}
         showAddJob={showAddJob} setShowAddJob={handleCloseJobModal}
-        showJobModal={showAddJob} setShowJobModal={setShowAddJob} // Alias for old tabs
+        showJobModal={showAddJob} setShowJobModal={setShowAddJob}
         newJob={newJob} setNewJob={setNewJob}
         
         selectedCustomer={selectedCustomer} setSelectedCustomer={setSelectedCustomer}
@@ -523,7 +524,7 @@ export default function ManagerDashboard() {
         isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff}
         editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}
 
-        // 🔥 İŞ DETAY VE DÜZENLEME STATE'LERİ (Eksik olanlar eklendi)
+        // --- İŞ DETAY VE DÜZENLEME STATE'LERİ (KESİN EKLENDİ) ---
         previewPdfJob={previewPdfJob} setPreviewPdfJob={setPreviewPdfJob}
         fullScreenImage={fullScreenImage} setFullScreenImage={setFullScreenImage}
         isEditingJobDetail={isEditingJobDetail} setIsEditingJobDetail={setIsEditingJobDetail}
