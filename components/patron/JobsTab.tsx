@@ -73,9 +73,13 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                }
 
                const isCreatorSameAsManager = managerName && (creatorName === managerName);
+               
+               // 🚀 İlgili varlığı ve apartman adını buluyoruz
+               const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
+               const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
 
                return (
-                 <tr 
+                 <tr
                    key={j.id} 
                    onClick={() => setSelectedJob(j)}
                    className="hover:bg-blue-50/50 cursor-pointer transition-colors group"
@@ -83,15 +87,20 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                    {/* Müşteri ve Varlık */}
                    <td className="px-5 py-4 align-top">
                       <div className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors truncate max-w-[220px]">
-                        {j.customer_name}
+                        {/* 🚀 Apartman adı varsa sol başa ekle */}
+                        {aptName ? (
+                          <><span className="text-blue-600">{aptName}</span> - {j.customer_name}</>
+                        ) : (
+                          j.customer_name
+                        )}
                       </div>
                       {/* Varlık Adı */}
                       <div className="text-[11px] font-black text-slate-600 mt-1 mb-1 truncate max-w-[220px]">
-                        {data?.assets?.find((a:any) => String(a.id) === String(j.asset_id))?.name || 'Bağımsız İş'}
+                        {currentAsset?.name || 'Bağımsız İş'}
                       </div>
                       <div className="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 truncate max-w-[220px]">
                         <MapPin size={12} className="shrink-0" />
-                        <span className="truncate">{data?.assets?.find((a:any) => String(a.id) === String(j.asset_id))?.location || 'Konum Belirtilmedi'}</span>
+                        <span className="truncate">{currentAsset?.location || 'Konum Belirtilmedi'}</span>
                       </div>
                    </td>
 
@@ -220,6 +229,10 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
           }
 
           const isCreatorSameAsManager = managerName && (creatorName === managerName);
+          
+          // 🚀 İlgili varlığı ve apartman adını buluyoruz (MOBİL İÇİN EKLENDİ)
+          const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
+          const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
 
           return (
             <div 
@@ -229,14 +242,21 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
             >
               <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
                  <div className="min-w-0">
-                   <div className="font-black text-slate-800 text-sm truncate">{j.customer_name}</div>
+                   <div className="font-black text-slate-800 text-sm truncate">
+                     {/* 🚀 Apartman adı varsa sol başa ekle */}
+                     {aptName ? (
+                        <><span className="text-blue-600">{aptName}</span> - {j.customer_name}</>
+                     ) : (
+                        j.customer_name
+                     )}
+                   </div>
                    {/* Mobil Varlık Adı */}
                    <div className="text-xs font-bold text-slate-600 mt-0.5 mb-1 truncate">
-                     {data?.assets?.find((a:any) => String(a.id) === String(j.asset_id))?.name || 'Bağımsız İş'}
+                     {currentAsset?.name || 'Bağımsız İş'}
                    </div>
                    <div className="text-[10px] text-slate-500 font-medium flex items-start gap-1.5 line-clamp-2">
                      <MapPin size={12} className="shrink-0 mt-0.5 text-slate-400" />
-                     <span>{data?.assets?.find((a:any) => String(a.id) === String(j.asset_id))?.location || 'Konum Belirtilmedi'}</span>
+                     <span>{currentAsset?.location || 'Konum Belirtilmedi'}</span>
                    </div>
                  </div>
                  <span className={`px-2 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider border shrink-0 shadow-sm ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>
