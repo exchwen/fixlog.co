@@ -5,7 +5,7 @@ import { Plus, Calendar, ArrowRight, Clock, MapPin, ClipboardList, ShieldCheck, 
 
 export default function JobsTab({ data, setShowJobModal, statusColors, setSelectedJob, setJobModalType, handleAction }: any) {
   
-  // Tarih Formatlayıcı (Yıl ve Saat Eklendi)
+  // Tarih Formatlayıcı
   const formatFullDate = (dateString: string) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleString('tr-TR', {
@@ -15,6 +15,26 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // 🚀 YENİ: Dinamik Statü Kontrolü (Geciken İşleri Tespit Eder)
+  const getDynamicStatus = (job: any) => {
+    let label = job.status;
+    let colorClass = statusColors[job.status] || 'bg-slate-100 text-slate-500 border-slate-200';
+
+    if (job.status === 'Gelecek' && job.scheduled_date) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const sDate = new Date(job.scheduled_date.split(' ')[0]); // Saati yoksay, sadece tarihi al
+        sDate.setHours(0, 0, 0, 0);
+
+        if (sDate < today) {
+            label = 'Gecikti';
+            colorClass = 'bg-rose-100 text-rose-700 border-rose-200'; // Gecikme için uyarıcı kırmızı renk
+        }
+    }
+    return { label, colorClass };
   };
 
   return (
@@ -74,9 +94,12 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
 
                const isCreatorSameAsManager = managerName && (creatorName === managerName);
                
-               // 🚀 İlgili varlığı ve apartman adını buluyoruz
+               // İlgili varlığı ve apartman adını buluyoruz
                const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
                const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
+
+               // Gecikme kontrolünü çalıştır
+               const dynamicStatus = getDynamicStatus(j);
 
                return (
                  <tr
@@ -87,7 +110,6 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                    {/* Müşteri ve Varlık */}
                    <td className="px-5 py-4 align-top">
                       <div className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors truncate max-w-[220px]">
-                        {/* 🚀 Apartman adı varsa sol başa ekle */}
                         {aptName ? (
                           <><span className="text-blue-600">{aptName}</span> - {j.customer_name}</>
                         ) : (
@@ -104,17 +126,17 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                       </div>
                    </td>
 
-                   {/* Görev Tipi (Düzeltildi) */}
+                   {/* Görev Tipi */}
                    <td className="px-5 py-4 align-top font-bold text-slate-600 whitespace-nowrap">
                      <div className="flex items-center gap-1.5 bg-slate-50 w-fit px-2 py-1 rounded border border-slate-100 uppercase tracking-wide text-[10px]">
                        <ClipboardList size={14} className="text-slate-400" /> {j.work_type}
                      </div>
                    </td>
 
-                   {/* Tarih (Yıl ve Saat Eklendi) */}
+                   {/* Tarih */}
                    <td className="px-5 py-4 align-top">
                       <div className="flex items-center gap-1.5 text-slate-700 font-bold whitespace-nowrap">
-                         <Calendar size={14} className="text-blue-500"/> 
+                         <Calendar size={14} className={dynamicStatus.label === 'Gecikti' ? 'text-rose-500' : 'text-blue-500'}/> 
                          {j.scheduled_date || 'Plan Yok'}
                       </div>
                       <div className="text-[10px] text-slate-400 font-semibold mt-1 flex items-center gap-1.5 whitespace-nowrap ml-0.5">
@@ -181,9 +203,13 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                       </div>
                    </td>
 
+                   {/* 🚀 DİNAMİK DURUM ROZETİ */}
                    <td className="px-5 py-4 align-top text-right whitespace-nowrap">
-                      <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border shadow-sm ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span>
+                      <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border shadow-sm ${dynamicStatus.colorClass}`}>
+                          {dynamicStatus.label}
+                      </span>
                    </td>
+                   
                    <td className="px-5 py-4 align-middle text-slate-300 group-hover:text-blue-500 text-right">
                       <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
                    </td>
@@ -230,9 +256,11 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
 
           const isCreatorSameAsManager = managerName && (creatorName === managerName);
           
-          // 🚀 İlgili varlığı ve apartman adını buluyoruz (MOBİL İÇİN EKLENDİ)
           const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
           const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
+
+          // Gecikme kontrolünü çalıştır
+          const dynamicStatus = getDynamicStatus(j);
 
           return (
             <div 
@@ -243,14 +271,12 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
               <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
                  <div className="min-w-0">
                    <div className="font-black text-slate-800 text-sm truncate">
-                     {/* 🚀 Apartman adı varsa sol başa ekle */}
                      {aptName ? (
                         <><span className="text-blue-600">{aptName}</span> - {j.customer_name}</>
                      ) : (
                         j.customer_name
                      )}
                    </div>
-                   {/* Mobil Varlık Adı */}
                    <div className="text-xs font-bold text-slate-600 mt-0.5 mb-1 truncate">
                      {currentAsset?.name || 'Bağımsız İş'}
                    </div>
@@ -259,8 +285,9 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                      <span>{currentAsset?.location || 'Konum Belirtilmedi'}</span>
                    </div>
                  </div>
-                 <span className={`px-2 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider border shrink-0 shadow-sm ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>
-                   {j.status}
+                 {/* 🚀 DİNAMİK DURUM ROZETİ (MOBİL) */}
+                 <span className={`px-2 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider border shrink-0 shadow-sm ${dynamicStatus.colorClass}`}>
+                   {dynamicStatus.label}
                  </span>
               </div>
 
@@ -308,7 +335,8 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
               <div className="flex justify-between items-center pt-1">
                 <div className="flex flex-col gap-0.5">
                   <div className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5 w-fit">
-                     <Calendar size={14} className="text-blue-500" /> {j.scheduled_date || 'Tarih Yok'}
+                     <Calendar size={14} className={dynamicStatus.label === 'Gecikti' ? 'text-rose-500' : 'text-blue-500'} /> 
+                     {j.scheduled_date || 'Tarih Yok'}
                   </div>
                   <div className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
                      <Clock size={10} /> Kayıt: {formatFullDate(j.created_at)}
