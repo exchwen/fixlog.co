@@ -40,7 +40,8 @@ export default function AddAssetModal({
       {showAddAsset && (
         <motion.div 
            key="modal-backdrop-add"
-           className="fixed inset-0 z-[110] flex items-center justify-center p-4"
+           // Z-index çakışmasını engelliyoruz: Müşteri modalı açılırsa bu modalı z-90 ile arkaya atıyoruz.
+           className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${showAddCustomer ? 'z-[90]' : 'z-[110]'}`}
            initial={{ opacity: 0, pointerEvents: "none" }} 
            animate={{ opacity: 1, pointerEvents: "auto" }} 
            exit={{ opacity: 0, pointerEvents: "none" }} 
@@ -53,9 +54,10 @@ export default function AddAssetModal({
             key="modal-content-add"
             initial={{ opacity: 0, scale: 0.95, y: 10 }} 
             animate={{ 
-                opacity: showAddCustomer ? 0.3 : 1,     // Müşteri açılınca kararır
+                opacity: 1, // Şeffaflığı tamamen 1 yaptık, içi görünmeyecek
                 scale: showAddCustomer ? 0.92 : 1,      // Arkaya doğru küçülür
-                y: showAddCustomer ? -20 : 0            // Hafif yukarı kayar
+                y: showAddCustomer ? -20 : 0,           // Hafif yukarı kayar
+                filter: showAddCustomer ? 'brightness(0.5)' : 'brightness(1)' // Şeffaflaşmak yerine sadece kararır
             }} 
             exit={{ opacity: 0, scale: 0.95, y: 10 }} 
             transition={{ duration: 0.25, ease: "easeInOut" }}
