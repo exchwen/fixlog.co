@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, Phone, ShieldCheck, Box, MapPin, History, X, ShieldAlert, ChevronRight, User, MessageCircle, Info, WifiOff, Download, Share, Check, ArrowLeft } from 'lucide-react';
+import { AlertTriangle, Phone, ShieldCheck, Box, MapPin, History, X, ShieldAlert, ChevronRight, User, MessageCircle, WifiOff, Download, Share, Check, ArrowLeft, PenTool, ClipboardList, Wrench } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -14,6 +14,7 @@ export default function AssetScanPage() {
   
   // Modallar için State'ler
   const [showHistory, setShowHistory] = useState(false);
+  const [selectedHistoryJob, setSelectedHistoryJob] = useState<any>(null); // 🚀 YENİ: Tıklanan geçmiş işin detayı
   const [showEmergencyConfirm, setShowEmergencyConfirm] = useState(false);
   const [showFaultModal, setShowFaultModal] = useState(false);
   
@@ -52,8 +53,8 @@ export default function AssetScanPage() {
   // PWA Kurulum Dinleyicisi
   useEffect(() => {
     // 1. ZIRH: Eğer kullanıcı zaten sistemdeyse ve barkodu okuttuysa "Panele Dön" butonunu göster
-    const token = localStorage.getItem('authToken');
-    const role = localStorage.getItem('userRole');
+    const token = localStorage.getItem('authToken') || localStorage.getItem('staff_authToken');
+    const role = localStorage.getItem('userRole') || localStorage.getItem('staff_userRole');
     if (token && role) {
         setStaffRole(role);
     }
@@ -191,7 +192,6 @@ export default function AssetScanPage() {
         setLogoBgColor('#ffffff');
       }
     };
-    // asset.logo artık güvenli link olduğu için burası sorunsuz çalışır
     img.src = asset.logo + (asset.logo.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
   }, [asset?.logo]);
 
@@ -239,6 +239,7 @@ export default function AssetScanPage() {
 
   useEffect(() => {
     const closeAnyOpenModal = () => {
+      if (selectedHistoryJob) { setSelectedHistoryJob(null); return true; } // Detay açıksa önce onu kapat
       if (showHistory) { setShowHistory(false); return true; }
       if (showEmergencyConfirm) { setShowEmergencyConfirm(false); return true; }
       if (showFaultModal) { setShowFaultModal(false); return true; }
@@ -269,7 +270,7 @@ export default function AssetScanPage() {
       window.removeEventListener('keydown', handleKeyDown as EventListener);
       window.removeEventListener('popstate', handlePopState as EventListener);
     };
-  }, [showHistory, showEmergencyConfirm, showFaultModal]);
+  }, [showHistory, showEmergencyConfirm, showFaultModal, selectedHistoryJob]);
 
   const handleEmergencyConfirm = async () => {
     setIsSubmitting(true);
@@ -375,6 +376,13 @@ export default function AssetScanPage() {
   const mainTitle = aptName || asset?.name;
   const subTitle = aptName ? asset?.name : null;
 
+  // 🚀 BAKIM DURUMU KONTROLÜ
+  // Eğer asset.jobs listesinde statüsü "Devam Ediyor" olan bir iş varsa cihaz bakımda demektir.
+  const isUnderMaintenance = asset?.jobs?.some((j: any) => j.status === 'Devam Ediyor');
+
+  // Geçmiş listesi için sadece "Tamamlandı" olanları filtreliyoruz
+  const completedHistoryJobs = asset?.jobs?.filter((j: any) => j.status === 'Tamamlandı') || [];
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 font-sans relative selection:bg-blue-100">
 
@@ -384,7 +392,7 @@ export default function AssetScanPage() {
             <motion.button 
               initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
               onClick={() => {
-                  const savedSlug = localStorage.getItem('userSlug') || asset?.company_slug;
+                  const savedSlug = localStorage.getItem('userSlug') || localStorage.getItem('staff_userSlug') || asset?.company_slug;
                   if(staffRole === 'Patron') router.push(`/${savedSlug}/dashboard`);
                   else if(staffRole === 'Yönetici') router.push(`/${savedSlug}/manager`);
                   else if(staffRole === 'Usta') router.push(`/${savedSlug}/worker`);
@@ -466,9 +474,16 @@ export default function AssetScanPage() {
 
       <div className="bg-white shadow-2xl rounded-3xl w-full max-w-md overflow-hidden border border-slate-200 relative z-10">
         
-        <div className="absolute top-4 right-4 bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 border border-emerald-100 shadow-sm z-10">
-            <ShieldCheck size={12} /> SİSTEME KAYITLI
-        </div>
+        {/* 🚀 DİNAMİK BAKIM / KULLANILABİLİR ROZETİ */}
+        {isUnderMaintenance ? (
+          <div className="absolute top-4 right-4 bg-amber-500 text-amber-950 px-3 py-1.5 rounded-full text-[10px] font-black tracking-wider flex items-center gap-1.5 shadow-md z-10 animate-pulse">
+            <Wrench size={12} /> CİHAZ BAKIMDA
+          </div>
+        ) : (
+          <div className="absolute top-4 right-4 bg-emerald-500 text-white px-3 py-1.5 rounded-full text-[10px] font-black tracking-wider flex items-center gap-1.5 shadow-md z-10">
+            <ShieldCheck size={12} /> KULLANILABİLİR
+          </div>
+        )}
 
         <div className="bg-slate-900 pt-10 pb-8 px-8 text-center text-white relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-500 via-slate-900 to-slate-900"></div>
@@ -532,7 +547,7 @@ export default function AssetScanPage() {
                 <div className="bg-white p-2 rounded-lg text-blue-600 shadow-sm"><History size={20} /></div>
                 <div className="text-left">
                     <div className="text-sm font-bold">Servis Geçmişi</div>
-                    <div className="text-[10px] opacity-70">Son işlemleri görüntüle</div>
+                    <div className="text-[10px] opacity-70">Tamamlanan işlemleri görüntüle</div>
                 </div>
              </div>
              <ChevronRight size={18} className="opacity-50 group-hover:opacity-100 transition-opacity" />
@@ -666,53 +681,127 @@ export default function AssetScanPage() {
         </div>
       )}
 
+      {/* 🚀 ANA GEÇMİŞ MODALI (Sadece Tamamlanan İşler) */}
       {showHistory && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-200">
             <div className="bg-white w-full max-w-md h-[80vh] sm:h-auto sm:max-h-[80vh] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300">
-                <div className="flex justify-between items-center p-5 border-b border-slate-100">
+                <div className="flex justify-between items-center p-5 border-b border-slate-100 bg-slate-50/50">
                     <div>
                         <h3 className="text-lg font-bold text-slate-800">Servis Geçmişi</h3>
-                        <p className="text-xs text-slate-400">Bu cihaza yapılan son işlemler</p>
+                        <p className="text-xs text-slate-500">Sadece tamamlanan işlemler listelenir.</p>
                     </div>
-                    <button onClick={() => setShowHistory(false)} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-full text-slate-500 transition-colors active:scale-95">
+                    <button onClick={() => setShowHistory(false)} className="p-2 bg-white hover:bg-slate-100 rounded-xl border border-slate-200 text-slate-500 transition-colors active:scale-95">
                         <X size={20} />
                     </button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                    {asset?.jobs && asset.jobs.length > 0 ? (
+                    {completedHistoryJobs.length > 0 ? (
                         <div className="space-y-3">
-                            {asset.jobs.map((job: any, index: number) => (
-                                <div key={index} className="p-3 border border-slate-100 rounded-xl bg-slate-50 flex justify-between items-center">
+                            {completedHistoryJobs.map((job: any, index: number) => (
+                                <div 
+                                    key={index} 
+                                    onClick={() => setSelectedHistoryJob(job)}
+                                    className="p-4 border border-slate-200 rounded-xl bg-white hover:bg-blue-50 hover:border-blue-200 cursor-pointer flex justify-between items-center transition-all group active:scale-95 shadow-sm"
+                                >
                                     <div>
-                                        <div className="text-sm font-bold text-slate-800">{job.work_type}</div>
-                                        <div className="text-[10px] text-slate-500 mt-0.5">
+                                        <div className="text-sm font-bold text-slate-800 group-hover:text-blue-700 transition-colors flex items-center gap-2">
+                                            <ClipboardList size={14} className="text-slate-400 group-hover:text-blue-500" />
+                                            {job.work_type}
+                                        </div>
+                                        <div className="text-[11px] font-semibold text-slate-500 mt-1.5 flex items-center gap-1.5">
+                                            <Calendar size={12} className="text-blue-400"/>
                                             {job.scheduled_date 
                                                 ? new Date(job.scheduled_date).toLocaleDateString('tr-TR') 
                                                 : new Date(job.created_at).toLocaleDateString('tr-TR')}
                                         </div>
                                     </div>
-                                    <span className={`px-2 py-1 rounded text-[10px] font-bold border 
-                                        ${job.status === 'Tamamlandı' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 
-                                          job.status === 'İptal' ? 'bg-rose-50 text-rose-600 border-rose-100' : 
-                                          'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                                        {job.status}
-                                    </span>
+                                    <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                                        <ChevronRight size={16} className="text-slate-400 group-hover:text-white transition-colors" />
+                                    </div>
                                 </div>
                             ))}
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-40 text-slate-400 gap-2">
                             <History size={32} className="opacity-20" />
-                            <span className="text-xs">Henüz kayıtlı bir işlem yok.</span>
+                            <span className="text-sm font-medium">Henüz tamamlanan bir işlem yok.</span>
                         </div>
                     )}
                 </div>
-                <div className="p-4 border-t border-slate-100">
-                    <button onClick={() => setShowHistory(false)} className="w-full py-3 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-colors active:scale-95">Kapat</button>
+                <div className="p-4 border-t border-slate-100 bg-slate-50">
+                    <button onClick={() => setShowHistory(false)} className="w-full py-3.5 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-colors active:scale-95 shadow-md">Kapat</button>
                 </div>
             </div>
         </div>
       )}
+
+      {/* 🚀 TIKLANAN İŞİN DETAY MODALI */}
+      <AnimatePresence>
+        {selectedHistoryJob && (
+            <motion.div 
+                initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                className="fixed inset-0 z-[160] bg-white flex flex-col"
+            >
+                <div className="flex justify-between items-center p-5 border-b border-slate-100 bg-slate-50 shrink-0">
+                    <button onClick={() => setSelectedHistoryJob(null)} className="flex items-center gap-1 text-slate-600 font-bold text-sm bg-white border border-slate-200 px-3 py-1.5 rounded-lg active:scale-95 transition-all">
+                        <ArrowLeft size={16} /> Geri
+                    </button>
+                    <div className="text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md tracking-wider uppercase">
+                        TAMAMLANDI
+                    </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30">
+                    
+                    {/* Tipi ve Tarihi */}
+                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500"></div>
+                        <h2 className="text-xl font-black text-slate-800 mb-1">{selectedHistoryJob.work_type}</h2>
+                        <div className="text-sm font-semibold text-slate-500 flex items-center gap-1.5">
+                            <Calendar size={14} className="text-blue-500"/>
+                            {selectedHistoryJob.scheduled_date 
+                                ? new Date(selectedHistoryJob.scheduled_date).toLocaleDateString('tr-TR') 
+                                : new Date(selectedHistoryJob.created_at).toLocaleDateString('tr-TR')}
+                        </div>
+                    </div>
+
+                    {/* Görevli Bilgisi */}
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
+                        <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shrink-0">
+                            <PenTool size={20} />
+                        </div>
+                        <div>
+                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Saha Görevlisi</div>
+                            <div className="text-sm font-bold text-slate-800">{selectedHistoryJob.staff_name || 'Bilinmeyen Personel'}</div>
+                        </div>
+                    </div>
+
+                    {/* Usta/Görev Notu */}
+                    {selectedHistoryJob.details && (() => {
+                        let parsedDetails: any = {};
+                        try {
+                            parsedDetails = typeof selectedHistoryJob.details === 'string' ? JSON.parse(selectedHistoryJob.details) : selectedHistoryJob.details;
+                        } catch(e) {}
+
+                        if (parsedDetails.note) {
+                            return (
+                                <div>
+                                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                        <ClipboardList size={14} /> İşlem Detayları & Notlar
+                                    </h3>
+                                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                        {parsedDetails.note}
+                                    </div>
+                                </div>
+                            );
+                        }
+                        return null;
+                    })()}
+
+                </div>
+            </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );
