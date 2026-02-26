@@ -141,6 +141,12 @@ export default function PatronDashboard() {
   const [searchCust, setSearchCust] = useState('');
   const [searchAsset, setSearchAsset] = useState('');
 
+  const [isEditingJobDetail, setIsEditingJobDetail] = useState(false);
+  const [editJobDetailForm, setEditJobDetailForm] = useState({ 
+    workCategory: '', workType: '', jobType: '', scheduledDate: '', 
+    staffId: '', taskNote: '', customerName: '', assetId: '' 
+  });
+
   // =================================================================================
   // PWA ve Fetching Logic
   // =================================================================================
@@ -417,6 +423,11 @@ export default function PatronDashboard() {
 
         isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff}
         editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}
+
+        isEditingJobDetail={isEditingJobDetail} 
+        setIsEditingJobDetail={setIsEditingJobDetail}
+        editJobDetailForm={editJobDetailForm} 
+        setEditJobDetailForm={setEditJobDetailForm}
 
         searchCust={searchCust} setSearchCust={setSearchCust}
         searchAsset={searchAsset} setSearchAsset={setSearchAsset}
