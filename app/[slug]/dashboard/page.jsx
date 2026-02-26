@@ -85,7 +85,7 @@ export default function PatronDashboard() {
   const [selectedQRAsset, setSelectedQRAsset] = useState(null);
 
   // =================================================================================
-  // 2. FORM DATA STATES (Yeni Modallara Uyumlu)
+  // 2. FORM DATA STATES 
   // =================================================================================
   const [jobModalStep, setJobModalStep] = useState(1);
   const [jobForm, setJobForm] = useState({ 
@@ -130,7 +130,7 @@ export default function PatronDashboard() {
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '', username: '', password: '', is_active: 1 });
 
   // =================================================================================
-  // 3. İŞ DETAYI VE DÜZENLEME STATE'LERİ (DÜZELTİLEN KISIM)
+  // 3. İŞ DETAYI VE DÜZENLEME STATE'LERİ
   // =================================================================================
   const [previewPdfJob, setPreviewPdfJob] = useState(null);
   const [fullScreenImage, setFullScreenImage] = useState(null);
@@ -140,7 +140,7 @@ export default function PatronDashboard() {
     workCategory: '', workType: '', jobType: '', scheduledDate: '', 
     staffId: '', taskNote: '', customerName: '', assetId: '' 
   });
-  const [jobTargetMode, setJobTargetMode] = useState('CUSTOMER'); // BU EKSİKTİ
+  const [jobTargetMode, setJobTargetMode] = useState('CUSTOMER'); 
   const [jobPrice, setJobPrice] = useState('');
   const [isApproving, setIsApproving] = useState(false);
   const [jobModalType, setJobModalType] = useState(null);
@@ -232,10 +232,6 @@ export default function PatronDashboard() {
   useEffect(() => { if (isChatOpen && activeChatId) fetchMessages(); }, [isChatOpen, activeChatId]);
 
   // Modal Kapatma
-  const handleCloseJobModal = () => {
-    setShowAddJob(false);
-  };
-
   const handleCloseDetail = (type) => {
     if(type === 'asset') setSelectedAsset(null);
     if(type === 'customer') setSelectedCustomer(null);
@@ -353,13 +349,14 @@ export default function PatronDashboard() {
 
         <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">
           
-          {activeTab === 'home' && <HomeTab data={data} setShowAddJob={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} />}
-          {activeTab === 'jobs' && <JobsTab data={data} setShowAddJob={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} />}
-          {activeTab === 'pending' && <PendingJobsTab data={data} setSelectedJob={setSelectedJob} />}
-          {activeTab === 'completed' && <CompletedJobsTab data={data} setSelectedJob={setSelectedJob} statusColors={statusColors} />}
-          {activeTab === 'alerts' && <AlertsTab data={data} />} 
-          {activeTab === 'team' && <TeamTab data={data} setShowAddStaff={setShowAddStaff} setShowAddJob={setShowAddJob} setSelectedStaff={setSelectedStaff} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} setSelectedJob={setSelectedJob} />}
-          {activeTab === 'customers' && <CustomersTab data={data} setShowAddCustomer={setShowAddCustomer} setSelectedCustomer={setSelectedCustomer} />}
+          {/* TAB'LERE GÖNDERİLEN EKSİK PROPLAR EKLENDİ */}
+          {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} handleAction={handleAction} setJobModalType={setJobModalType} />}
+          {activeTab === 'jobs' && <JobsTab data={data} setShowJobModal={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} setJobModalType={setJobModalType} handleAction={handleAction} />}
+          {activeTab === 'pending' && <PendingJobsTab data={data} setSelectedJob={setSelectedJob} setJobModalType={setJobModalType} handleAction={handleAction} />}
+          {activeTab === 'completed' && <CompletedJobsTab data={data} setSelectedJob={setSelectedJob} statusColors={statusColors} setJobModalType={setJobModalType} handleAction={handleAction} />}
+          {activeTab === 'alerts' && <AlertsTab data={data} handleAction={handleAction} />} 
+          {activeTab === 'team' && <TeamTab data={data} setShowAddStaff={setShowAddStaff} setShowJobModal={setShowAddJob} setSelectedStaff={setSelectedStaff} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} setSelectedJob={setSelectedJob} setJobModalType={setJobModalType} handleAction={handleAction} />}
+          {activeTab === 'customers' && <CustomersTab data={data} setShowAddCustomer={setShowAddCustomer} setSelectedCustomer={setSelectedCustomer} handleAction={handleAction} />}
           {activeTab === 'support' && <SupportTab handleAction={handleAction} isSaving={isSaving} />} 
           
           {activeTab === 'stock' && (
@@ -399,17 +396,15 @@ export default function PatronDashboard() {
       <ChatPanel isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} activeChatId={activeChatId} setActiveChatId={setActiveChatId} data={data} messages={messages} setMessages={setMessages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} />
       {data && <DynamicPWA companyName={data?.name} companyLogo={data?.logo} />}
 
-      {/* MERKEZİ MODAL YÖNETİCİSİ */}
       <DashboardModals 
         data={data}
-        refreshData={() => fetchData(true)} // BU EKLENDİ: Modallar işlem bitince listeyi yenileyebilsin diye
+        refreshData={() => fetchData(true)}
         handleAction={handleAction}
         isSaving={isSaving}
         handleCloseDetail={handleCloseDetail}
 
         selectedJob={selectedJob} setSelectedJob={setSelectedJob}
         
-        // DÜZELTME: showAddJob ve setShowJobModal karışıklığı giderildi
         showAddJob={showAddJob} setShowAddJob={setShowAddJob} 
         showJobModal={showAddJob} setShowJobModal={setShowAddJob}
         
@@ -448,7 +443,6 @@ export default function PatronDashboard() {
         isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff}
         editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}
 
-        // --- İŞ DETAY VE DÜZENLEME STATE'LERİ ---
         previewPdfJob={previewPdfJob} setPreviewPdfJob={setPreviewPdfJob}
         fullScreenImage={fullScreenImage} setFullScreenImage={setFullScreenImage}
         isEditingJobDetail={isEditingJobDetail} setIsEditingJobDetail={setIsEditingJobDetail}
@@ -459,7 +453,6 @@ export default function PatronDashboard() {
         isApproving={isApproving} setIsApproving={setIsApproving}
         jobModalType={jobModalType} setJobModalType={setJobModalType}
 
-        // BU KISIM EKSİKTİ (QR Kod Modal Yönetimi İçin)
         showQRModal={showQRModal} setShowQRModal={setShowQRModal}
         selectedQRAsset={selectedQRAsset} setSelectedQRAsset={setSelectedQRAsset}
 

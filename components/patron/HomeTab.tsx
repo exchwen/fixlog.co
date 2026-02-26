@@ -21,7 +21,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   
   const [isApproving, setIsApproving] = useState<string | null>(null);
-  const [showSuccessModal, setShowSuccessModal] = useState(false); // YENİ EKLENEN SATIR
+  const [showSuccessModal, setShowSuccessModal] = useState(false); 
 
   const [newJobNotification, setNewJobNotification] = useState<{show: boolean, jobName: string}>({show: false, jobName: ''});
   const prevJobIds = useRef<string[]>([]);
@@ -69,9 +69,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const pendingJobs = jobs.filter((j: any) => j.status === 'Beklemede' || j.status === 'Devam Ediyor').length;
   const plannedJobs = jobs.filter((j: any) => j.status === 'Gelecek').length;
 
-  // --- YENİ AYRIŞTIRILMIŞ LİSTELER ---
-  
-  // 1. Onay Bekleyenler (İlk Adım)
   const incomingJobs = useMemo(() => {
      if (!currentUserId || userRole === 'Patron') return [];
      return jobs.filter((j: any) => 
@@ -80,7 +77,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
      );
   }, [jobs, currentUserId, userRole]);
 
-  // 2. Onaylanmış Ama Usta Bekleyenler (İkinci Adım)
   const waitingForAssignmentJobs = useMemo(() => {
     if (!currentUserId || userRole === 'Patron') return [];
     return jobs.filter((j: any) => 
@@ -89,7 +85,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
     );
  }, [jobs, currentUserId, userRole]);
 
-  // Bildirim Mantığı (Gelen İşler İçin)
   useEffect(() => {
     if (incomingJobs.length > 0) {
         const currentIds = incomingJobs.map((j: any) => String(j.id));
@@ -135,9 +130,9 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         }, null, null);
 
         if (success) {
-            setShowSuccessModal(true); // YENİ: Alert yerine modalı aç
-            setTimeout(() => setShowSuccessModal(false), 2500); // 2.5 saniye sonra kapat
-            if (setShowJobModal) setShowJobModal(false); // Eğer detay penceresi açıksa kapat
+            setShowSuccessModal(true); 
+            setTimeout(() => setShowSuccessModal(false), 2500); 
+            if (setShowJobModal) setShowJobModal(false); 
         }
     } catch (e) {
         console.error(e);
@@ -369,7 +364,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         </div>
       </div>
 
-      {/* --- KUTU 1: ONAY BEKLEYEN İŞLER (ÖNCE BUNLAR GÖRÜNÜR) --- */}
       {incomingJobs.length > 0 && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-amber-500 rounded-3xl p-5 shadow-xl shadow-amber-500/20 text-white relative overflow-hidden">
            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
@@ -407,7 +401,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                             <button 
                                 onClick={(e) => { 
                                     e.stopPropagation(); 
-                                    if (setJobModalType) setJobModalType('APPROVAL_FIRST_STEP'); // Modal türünü belirt
+                                    if (setJobModalType) setJobModalType('APPROVAL_FIRST_STEP');
                                     setSelectedJob(job); 
                                 }}
                                 className="mt-2 w-full bg-white text-amber-600 hover:bg-amber-50 py-2.5 rounded-xl text-xs font-black transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
@@ -422,7 +416,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         </motion.div>
       )}
 
-      {/* --- KUTU 2: ONAYLANMIŞ FAKAT USTA BEKLEYEN İŞLER (İKİNCİ ADIM) --- */}
       {waitingForAssignmentJobs.length > 0 && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-indigo-600 rounded-3xl p-5 shadow-xl shadow-indigo-600/20 text-white relative overflow-hidden">
            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
@@ -693,7 +686,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
           </div>
       )}
 
-      {/* ALT BÖLÜM: YENİLENMİŞ SON İŞLER TABLOSU VE MOBİL KARTLARI */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
         <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-50/50">
           <div className="flex items-center gap-2">
@@ -718,7 +710,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
             <tbody className="divide-y divide-slate-50">
               {jobs.slice(0, 10).map((j: any) => {
                 
-                // MÜKEMMEL DEDEKTİF KODU: JSON içindeki mühürleri okur
                 const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
                 const createdBy = j.details?.createdBy || ownerName;
                 const creatorRole = j.details?.creatorRole || (createdBy === ownerName ? 'Patron' : 'Yönetici');
@@ -853,7 +844,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
           </table>
         </div>
 
-        {/* MOBİL GÖRÜNÜM KARTLARI */}
         <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50/50 max-h-[500px] overflow-y-auto custom-scrollbar">
           {jobs.slice(0, 10).map((j: any) => {
              const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
@@ -879,13 +869,13 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
 
              return (
               <div 
-              key={j.id} 
-              onClick={() => {
-                  if (setJobModalType) setJobModalType('');
-                  setSelectedJob && setSelectedJob(j);
-              }}
-              className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col gap-4 active:scale-95 transition-all cursor-pointer"
-            >
+                key={j.id} 
+                onClick={() => {
+                    if (setJobModalType) setJobModalType('');
+                    setSelectedJob && setSelectedJob(j);
+                }}
+                className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col gap-4 active:scale-95 transition-all cursor-pointer"
+              >
                  <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
                     <div className="min-w-0">
                       <div className="font-black text-slate-800 text-sm truncate">{j.customer_name}</div>
@@ -965,7 +955,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                    </div>
                    <ArrowUpRight size={16} className="text-blue-500" />
                  </div>
-               </div>
+              </div>
              );
           })}
           {jobs.length === 0 && (

@@ -19,7 +19,6 @@ export default function AddJobModal({
     ? Object.keys(safeSectors.sectors[currentSector].subTypes) 
     : [];
 
-  // Güvenli validasyon kontrolü
   const isJobValid = jobForm?.workCategory === 'Genel İş Atama' ? true : (jobForm?.customerName || jobForm?.assetId);
 
   return (
@@ -29,7 +28,6 @@ export default function AddJobModal({
           <div className="absolute inset-0" onClick={() => { setShowJobModal(false); if (jobModalType === 'APPROVAL') { setSelectedJob(null); setJobModalType(''); } }}></div>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-2xl p-0 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh] pointer-events-auto">
             
-            {/* HEADER: Geri Butonu ve Başlık */}
             <div className="flex justify-between items-center p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50">
                <div className="flex items-center gap-3">
                   {jobModalStep === 2 && (
@@ -47,10 +45,8 @@ export default function AddJobModal({
                <button onClick={() => { setShowJobModal(false); if (jobModalType === 'APPROVAL') { setSelectedJob(null); setJobModalType(''); } }} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-xl transition-all active:scale-95"><X size={20} /></button>
             </div>
 
-            {/* BODY */}
             <div className="p-5 sm:p-6 overflow-y-auto custom-scrollbar flex-1">
               
-              {/* EĞER MODAL TİPİ 'APPROVAL' İSE SADECE ONAY EKRANI GÖSTER */}
               {jobModalType === 'APPROVAL' && selectedJob ? (
                   <div className="space-y-6 flex flex-col h-full justify-center">
                       <div className="bg-amber-50 p-5 rounded-2xl border border-amber-100 flex items-start gap-4">
@@ -103,9 +99,7 @@ export default function AddJobModal({
                       </div>
                   </div>
               ) : (
-                  /* NORMAL YENİ İŞ / DÜZENLEME EKRANI */
                   <>
-                      {/* ADIM 1: SEÇİM EKRANI */}
                       {jobModalStep === 1 && (
                           <div className="space-y-4 py-2">
                               <p className="text-sm text-slate-500 mb-4 font-medium">Lütfen oluşturmak istediğiniz iş türünü seçin:</p>
@@ -144,11 +138,9 @@ export default function AddJobModal({
                           </div>
                       )}
 
-                      {/* ADIM 2: FORM EKRANI */}
                       {jobModalStep === 2 && (
                           <div className="space-y-5">
                               
-                              {/* Ortak Alan: Tarih */}
                               <div>
                                 <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Tarih / Zamanlama</label>
                                 <div className="grid grid-cols-2 gap-2">
@@ -162,7 +154,6 @@ export default function AddJobModal({
                                 )}
                               </div>
 
-                              {/* Sadece Normal İş İse: Müşteri/Varlık Seçimi */}
                               {jobForm?.workCategory !== 'Genel İş Atama' && (
                                 <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 shadow-sm">
                                   <div className="flex flex-col sm:flex-row gap-2 mb-2">
@@ -196,7 +187,6 @@ export default function AddJobModal({
                                               <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500" value={jobForm?.assetId || ''} onChange={e => setJobForm({...jobForm, assetId: e.target.value})}>
                                                   <option value="">-- Varlık Seçilmedi (Genel Müşteri İşi) --</option>
                                                   {customerAssets.map((a:any) => {
-                                                     /* 🟢 DÜZELTME: Apartman Adı Öne Çıkarıldı */
                                                      const aptName = a.apartmentName || a.apartment_name || '';
                                                      const displayName = aptName ? `${aptName} - ${a.name}` : a.name;
                                                      return <option key={a.id} value={a.id}>{displayName}</option>;
@@ -220,7 +210,6 @@ export default function AddJobModal({
                                       }}>
                                         <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- Listeden Varlık Seçin --</option>
                                         
-                                        {/* 🟢 DÜZELTME: Bina Adında da Arama + Görünüm Güncellemesi */}
                                         {(data?.assets || []).filter((a: any) => {
                                             const term = (searchAsset || '').toLowerCase();
                                             const aptName = (a.apartmentName || a.apartment_name || '').toLowerCase();
@@ -242,7 +231,6 @@ export default function AddJobModal({
                                 </div>
                               )}
 
-                              {/* Ortak Alan: Personel Seçimi */}
                               <div>
                                 <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Sorumlu Personel</label>
                                 <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={jobForm?.staffId || ''} onChange={e => setJobForm({...jobForm, staffId: e.target.value})}>
@@ -255,7 +243,6 @@ export default function AddJobModal({
                                 </select>
                               </div>
                               
-                              {/* Ortak Alan: Not */}
                               <div>
                                 <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Görev Özeti / Talimatlar</label>
                                 <textarea rows={3} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none resize-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="İşin detayı nedir?..." value={jobForm?.taskNote || ''} onChange={e => setJobForm({...jobForm, taskNote: e.target.value})} />
@@ -266,7 +253,6 @@ export default function AddJobModal({
               )}
             </div>
 
-            {/* FOOTER: Sadece Step 2'de Göster */}
             {jobModalStep === 2 && (
                 <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50">
                     <button disabled={isSaving || !isJobValid} onClick={() => handleAction('add-job', { ...jobForm, workCategory: jobForm.workCategory || 'Normal İş Atama', details: { note: jobForm.taskNote } }, setShowJobModal, () => setJobForm({ customerName: '', assetId: '', staffId: '', workType: 'Görev', workCategory: 'Normal İş Atama', jobType: 'Anlık', scheduledDate: '', taskNote: '' }))} className="w-full bg-blue-600 text-white py-3.5 sm:py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex justify-center items-center disabled:opacity-50">
