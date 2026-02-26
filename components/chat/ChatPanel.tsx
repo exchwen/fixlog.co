@@ -562,8 +562,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   }, [allMessages, activeChatId, currentUserId, currentUserRole]);
 
   return (
-    // DÜZENLEME: pointer-events-none kaldırıldı.
-    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 md:right-auto md:left-6 z-[30] flex flex-col items-end md:items-start gap-3">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[100] flex flex-col items-end gap-3 pointer-events-none">
       
       <AnimatePresence>
         {msgToast.show && !isChatOpen && (
@@ -591,7 +590,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
             initial={{ opacity: 0, y: 20, scale: 0.95 }} 
             animate={{ opacity: 1, y: 0, scale: 1 }} 
             exit={{ opacity: 0, y: 20, scale: 0.95 }} 
-            className="w-[calc(100vw-32px)] sm:w-[340px] h-[70vh] max-h-[550px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden origin-bottom-right md:origin-bottom-left pointer-events-auto"
+            className="w-[calc(100vw-32px)] sm:w-[340px] h-[70vh] max-h-[550px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden origin-bottom-right pointer-events-auto"
           >
             
             <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between shadow-md z-10 shrink-0">

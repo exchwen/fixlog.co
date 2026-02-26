@@ -311,10 +311,15 @@ export default function PatronDashboard() {
   return (
     <div className={`min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 ${hasEmergency ? 'bg-rose-950' : 'bg-[#F8FAFC] text-slate-900'}`}>
       
-      {/* 🟢 DÜZELTME: Sadece 'home' sekmesindeyken görünsün ve bottom-24 ile sohbet balonunun üstüne çıksın */}
+      {/* 🟢 DÜZELTME: Sohbet açıksa 'bottom-[600px]' (ya da istediğin kadar yukarı), değilse 'bottom-24' */}
       <AnimatePresence>
         {showPwaPrompt && !hasEmergency && activeTab === 'home' && (
-           <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }} className="fixed bottom-24 right-4 sm:right-6 z-[9999] bg-slate-900 text-white p-4 rounded-xl shadow-2xl w-80">
+           <motion.div 
+             initial={{ y: 100 }} 
+             animate={{ y: 0 }} 
+             exit={{ y: 100 }} 
+             className={`fixed right-4 sm:right-6 z-[9999] bg-slate-900 text-white p-4 rounded-xl shadow-2xl w-80 transition-all duration-300 ${isChatOpen ? 'bottom-[600px]' : 'bottom-24'}`}
+           >
               <div className="flex gap-3"><Download className="text-blue-400" /><div><div className="font-bold">Uygulamayı Yükle</div><div className="text-xs text-slate-400 mt-1">Daha hızlı erişim için ana ekrana ekle.</div></div></div>
               {!isIos && <button onClick={handleInstallPwa} className="mt-3 w-full bg-blue-600 py-2 rounded-lg text-xs font-bold">Yükle</button>}
            </motion.div>
