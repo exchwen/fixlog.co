@@ -126,8 +126,25 @@ export default function PatronDashboard() {
 
   const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', landlinePhone: '', emergencyPhone: '', whatsappPhone: '', website: '', logo: '' });
   
+  // Personel Düzenleme
   const [isEditingStaff, setIsEditingStaff] = useState(false);
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '', username: '', password: '', is_active: 1 });
+
+  // =================================================================================
+  // 3. JOB DETAIL & INTERACTION STATES (EKSİK OLANLAR BURADA)
+  // =================================================================================
+  const [previewPdfJob, setPreviewPdfJob] = useState(null);
+  const [fullScreenImage, setFullScreenImage] = useState(null);
+  const [isEditingJobDetail, setIsEditingJobDetail] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [editJobDetailForm, setEditJobDetailForm] = useState({ 
+    workCategory: '', workType: '', jobType: '', scheduledDate: '', 
+    staffId: '', taskNote: '', customerName: '', assetId: '' 
+  });
+  const [jobTargetMode, setJobTargetMode] = useState('CUSTOMER');
+  const [jobPrice, setJobPrice] = useState('');
+  const [isApproving, setIsApproving] = useState(false);
+  const [jobModalType, setJobModalType] = useState(null); // Approval flows vb.
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -137,15 +154,9 @@ export default function PatronDashboard() {
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
 
-  // Yardımcı State'ler (Orchestrator için gerekli)
+  // Yardımcı Arama State'leri
   const [searchCust, setSearchCust] = useState('');
   const [searchAsset, setSearchAsset] = useState('');
-
-  const [isEditingJobDetail, setIsEditingJobDetail] = useState(false);
-  const [editJobDetailForm, setEditJobDetailForm] = useState({ 
-    workCategory: '', workType: '', jobType: '', scheduledDate: '', 
-    staffId: '', taskNote: '', customerName: '', assetId: '' 
-  });
 
   // =================================================================================
   // PWA ve Fetching Logic
@@ -221,6 +232,24 @@ export default function PatronDashboard() {
   useEffect(() => { fetchData(true); const int = setInterval(() => fetchData(false), 15000); return () => clearInterval(int); }, [slug]);
   useEffect(() => { if (isChatOpen && activeChatId) fetchMessages(); }, [isChatOpen, activeChatId]);
 
+  // Modal Kapatma Yardımcıları
+  const handleCloseJobModal = () => {
+    setShowAddJob(false);
+    setTimeout(() => {
+        // Eski yapıdan kalma temizlik gerekirse buraya eklenebilir
+    }, 300);
+  };
+
+  const handleCloseDetail = (type) => {
+    if(type === 'asset') setSelectedAsset(null);
+    if(type === 'customer') setSelectedCustomer(null);
+    if(type === 'staff') setSelectedStaff(null);
+    if(type === 'job') {
+        setSelectedJob(null);
+        setIsEditingJobDetail(false);
+    }
+  };
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
@@ -228,6 +257,8 @@ export default function PatronDashboard() {
         setShowStockModal(false); setShowSupplierModal(false); setShowCategoryModal(false);
         setSelectedJob(null); setSelectedAsset(null); setSelectedStaff(null); setSelectedCustomer(null);
         setShowQRModal(false);
+        setPreviewPdfJob(null);
+        setFullScreenImage(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -263,14 +294,6 @@ export default function PatronDashboard() {
 
   const handleResolveEmergency = async (id) => handleAction('resolve-emergency', { id }, null, null);
   const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, null, null);
-
-  // Detay Modalları için Kapatma Yardımcısı
-  const handleCloseDetail = (type) => {
-    if(type === 'asset') setSelectedAsset(null);
-    if(type === 'customer') setSelectedCustomer(null);
-    if(type === 'staff') setSelectedStaff(null);
-    if(type === 'job') setSelectedJob(null);
-  };
 
   const filteredDataForTabs = useMemo(() => {
     if (!data) return null;
@@ -361,6 +384,7 @@ export default function PatronDashboard() {
                 handleAction={handleAction} 
                 setShowStockModal={setShowStockModal} 
                 setShowSupplierModal={setShowSupplierModal} 
+                setShowSupplierListModal={setShowSupplierModal} 
                 setShowCategoryModal={setShowCategoryModal}
                 setShowOrderModal={setShowOrderModal}
                 setShowBulkOrderModal={setShowBulkOrderModal}
@@ -386,12 +410,10 @@ export default function PatronDashboard() {
         handleCloseDetail={handleCloseDetail}
 
         selectedJob={selectedJob} setSelectedJob={setSelectedJob}
-        showAddJob={showAddJob} setShowAddJob={setShowAddJob}
+        showAddJob={showAddJob} setShowAddJob={handleCloseJobModal}
+        showJobModal={showAddJob} setShowJobModal={setShowAddJob} // Alias for old tabs
         newJob={newJob} setNewJob={setNewJob}
         
-        // Prop mapping for showJobModal compatibility with some tabs if they use the old name
-        showJobModal={showAddJob} setShowJobModal={setShowAddJob} 
-
         selectedCustomer={selectedCustomer} setSelectedCustomer={setSelectedCustomer}
         selectedAsset={selectedAsset} setSelectedAsset={setSelectedAsset}
         selectedStaff={selectedStaff} setSelectedStaff={setSelectedStaff}
@@ -424,10 +446,16 @@ export default function PatronDashboard() {
         isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff}
         editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}
 
-        isEditingJobDetail={isEditingJobDetail} 
-        setIsEditingJobDetail={setIsEditingJobDetail}
-        editJobDetailForm={editJobDetailForm} 
-        setEditJobDetailForm={setEditJobDetailForm}
+        // 🔥 İŞ DETAY VE DÜZENLEME STATE'LERİ (Eksik olanlar eklendi)
+        previewPdfJob={previewPdfJob} setPreviewPdfJob={setPreviewPdfJob}
+        fullScreenImage={fullScreenImage} setFullScreenImage={setFullScreenImage}
+        isEditingJobDetail={isEditingJobDetail} setIsEditingJobDetail={setIsEditingJobDetail}
+        showCancelConfirm={showCancelConfirm} setShowCancelConfirm={setShowCancelConfirm}
+        editJobDetailForm={editJobDetailForm} setEditJobDetailForm={setEditJobDetailForm}
+        jobTargetMode={jobTargetMode} setJobTargetMode={setJobTargetMode}
+        jobPrice={jobPrice} setJobPrice={setJobPrice}
+        isApproving={isApproving} setIsApproving={setIsApproving}
+        jobModalType={jobModalType} setJobModalType={setJobModalType}
 
         searchCust={searchCust} setSearchCust={setSearchCust}
         searchAsset={searchAsset} setSearchAsset={setSearchAsset}

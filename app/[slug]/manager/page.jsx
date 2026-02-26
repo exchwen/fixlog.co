@@ -129,6 +129,22 @@ export default function ManagerDashboard() {
   const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '', username: '', password: '', is_active: 1 });
   const [isSaving, setIsSaving] = useState(false);
 
+  // =================================================================================
+  // 3. JOB DETAIL & INTERACTION STATES (EKSİK OLANLAR BURADA)
+  // =================================================================================
+  const [previewPdfJob, setPreviewPdfJob] = useState(null);
+  const [fullScreenImage, setFullScreenImage] = useState(null);
+  const [isEditingJobDetail, setIsEditingJobDetail] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [editJobDetailForm, setEditJobDetailForm] = useState({ 
+    workCategory: '', workType: '', jobType: '', scheduledDate: '', 
+    staffId: '', taskNote: '', customerName: '', assetId: '' 
+  });
+  const [jobTargetMode, setJobTargetMode] = useState('CUSTOMER');
+  const [jobPrice, setJobPrice] = useState('');
+  const [isApproving, setIsApproving] = useState(false);
+  const [jobModalType, setJobModalType] = useState(null);
+
   // Chat
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeChatId, setActiveChatId] = useState(null);
@@ -138,12 +154,6 @@ export default function ManagerDashboard() {
   // Yardımcı State'ler
   const [searchCust, setSearchCust] = useState('');
   const [searchAsset, setSearchAsset] = useState('');
-
-  const [isEditingJobDetail, setIsEditingJobDetail] = useState(false);
-  const [editJobDetailForm, setEditJobDetailForm] = useState({ 
-    workCategory: '', workType: '', jobType: '', scheduledDate: '', 
-    staffId: '', taskNote: '', customerName: '', assetId: '' 
-  });
 
   // =================================================================================
   // PWA ve Fetching Logic
@@ -240,6 +250,24 @@ export default function ManagerDashboard() {
   useEffect(() => { fetchData(true); const int = setInterval(() => fetchData(false), 15000); return () => clearInterval(int); }, [slug]);
   useEffect(() => { if (isChatOpen && activeChatId) fetchMessages(); }, [isChatOpen, activeChatId]);
 
+  // Modal Kapatma Yardımcıları
+  const handleCloseJobModal = () => {
+    setShowAddJob(false);
+    setTimeout(() => {
+        // Eski yapıdan kalma temizlik gerekirse buraya eklenebilir
+    }, 300);
+  };
+
+  const handleCloseDetail = (type) => {
+    if(type === 'asset') setSelectedAsset(null);
+    if(type === 'customer') setSelectedCustomer(null);
+    if(type === 'staff') setSelectedStaff(null);
+    if(type === 'job') {
+        setSelectedJob(null);
+        setIsEditingJobDetail(false);
+    }
+  };
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
@@ -247,6 +275,8 @@ export default function ManagerDashboard() {
         setShowStockModal(false); setShowSupplierModal(false); setShowCategoryModal(false);
         setSelectedJob(null); setSelectedAsset(null); setSelectedStaff(null); setSelectedCustomer(null);
         setShowQRModal(false);
+        setPreviewPdfJob(null);
+        setFullScreenImage(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -298,14 +328,6 @@ export default function ManagerDashboard() {
   const handleResolveEmergency = async (id) => handleAction('resolve-emergency', { id }, null, null);
   const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, null, null);
 
-  // Detay Modalları için Kapatma Yardımcısı
-  const handleCloseDetail = (type) => {
-    if(type === 'asset') setSelectedAsset(null);
-    if(type === 'customer') setSelectedCustomer(null);
-    if(type === 'staff') setSelectedStaff(null);
-    if(type === 'job') setSelectedJob(null);
-  };
-
   // Yönetici kısıtlaması (Ayarlar'a erişemez)
   useEffect(() => {
       if (activeTab === 'settings') {
@@ -333,9 +355,7 @@ export default function ManagerDashboard() {
     'Tamamlandı': 'bg-emerald-100 text-emerald-700 border-emerald-200', 
     'Devam Ediyor': 'bg-blue-100 text-blue-700 border-blue-200', 
     'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200', 
-    'İptal': 'bg-rose-100 text-rose-700 border-rose-200', 
-    'Onay Bekliyor': 'bg-purple-100 text-purple-700 border-purple-200',
-    'Usta Bekliyor': 'bg-indigo-100 text-indigo-700 border-indigo-200' 
+    'İptal': 'bg-rose-100 text-rose-700 border-rose-200' 
   };
 
   return (
@@ -440,7 +460,7 @@ export default function ManagerDashboard() {
                 handleAction={handleAction} 
                 setShowStockModal={setShowStockModal} 
                 setShowSupplierModal={setShowSupplierModal} 
-                setShowSupplierListModal={setShowSupplierListModal} 
+                setShowSupplierListModal={setShowSupplierModal} 
                 setShowCategoryModal={setShowCategoryModal}
                 setShowOrderModal={setShowOrderModal}
                 setShowBulkOrderModal={setShowBulkOrderModal}
@@ -459,6 +479,7 @@ export default function ManagerDashboard() {
 
       {data && <DynamicPWA companyName={data?.name} companyLogo={data?.logo} />}
 
+      {/* MERKEZİ MODAL YÖNETİCİSİ */}
       <DashboardModals 
         data={data}
         handleAction={handleAction}
@@ -466,11 +487,10 @@ export default function ManagerDashboard() {
         handleCloseDetail={handleCloseDetail}
 
         selectedJob={selectedJob} setSelectedJob={setSelectedJob}
-        showAddJob={showAddJob} setShowAddJob={setShowAddJob}
+        showAddJob={showAddJob} setShowAddJob={handleCloseJobModal}
+        showJobModal={showAddJob} setShowJobModal={setShowAddJob} // Alias for old tabs
         newJob={newJob} setNewJob={setNewJob}
         
-        showJobModal={showAddJob} setShowJobModal={setShowAddJob} // Alias
-
         selectedCustomer={selectedCustomer} setSelectedCustomer={setSelectedCustomer}
         selectedAsset={selectedAsset} setSelectedAsset={setSelectedAsset}
         selectedStaff={selectedStaff} setSelectedStaff={setSelectedStaff}
@@ -503,10 +523,16 @@ export default function ManagerDashboard() {
         isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff}
         editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}
 
-        isEditingJobDetail={isEditingJobDetail} 
-        setIsEditingJobDetail={setIsEditingJobDetail}
-        editJobDetailForm={editJobDetailForm} 
-        setEditJobDetailForm={setEditJobDetailForm}
+        // 🔥 İŞ DETAY VE DÜZENLEME STATE'LERİ (Eksik olanlar eklendi)
+        previewPdfJob={previewPdfJob} setPreviewPdfJob={setPreviewPdfJob}
+        fullScreenImage={fullScreenImage} setFullScreenImage={setFullScreenImage}
+        isEditingJobDetail={isEditingJobDetail} setIsEditingJobDetail={setIsEditingJobDetail}
+        showCancelConfirm={showCancelConfirm} setShowCancelConfirm={setShowCancelConfirm}
+        editJobDetailForm={editJobDetailForm} setEditJobDetailForm={setEditJobDetailForm}
+        jobTargetMode={jobTargetMode} setJobTargetMode={setJobTargetMode}
+        jobPrice={jobPrice} setJobPrice={setJobPrice}
+        isApproving={isApproving} setIsApproving={setIsApproving}
+        jobModalType={jobModalType} setJobModalType={setJobModalType}
 
         searchCust={searchCust} setSearchCust={setSearchCust}
         searchAsset={searchAsset} setSearchAsset={setSearchAsset}
