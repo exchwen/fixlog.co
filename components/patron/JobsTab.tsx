@@ -80,10 +80,16 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                    onClick={() => setSelectedJob(j)}
                    className="hover:bg-blue-50/50 cursor-pointer transition-colors group"
                  >
-                   {/* Müşteri */}
+                   {/* Müşteri ve Varlık */}
                    <td className="px-5 py-4 align-top">
-                      <div className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors truncate max-w-[200px]">{j.customer_name}</div>
-                      <div className="text-[10px] text-slate-500 font-semibold mt-1 flex items-center gap-1.5 truncate max-w-[200px]">
+                      <div className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors truncate max-w-[220px]">
+                        {j.customer_name}
+                      </div>
+                      {/* Varlık Adı */}
+                      <div className="text-[11px] font-black text-slate-600 mt-1 mb-1 truncate max-w-[220px]">
+                        {data?.assets?.find((a:any) => String(a.id) === String(j.asset_id))?.name || 'Bağımsız İş'}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 truncate max-w-[220px]">
                         <MapPin size={12} className="shrink-0" />
                         <span className="truncate">{data?.assets?.find((a:any) => String(a.id) === String(j.asset_id))?.location || 'Konum Belirtilmedi'}</span>
                       </div>
@@ -110,49 +116,57 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                    
                    {/* Personel Hiyerarşisi */}
                    <td className="px-5 py-4 align-top">
-                      <div className="flex flex-col gap-1.5">
+                      <div className="flex flex-col gap-1.5 w-fit">
                         {isCreatorSameAsManager ? (
-                            <div className="flex items-center gap-2">
-                                <ShieldCheck size={14} className="text-blue-600" />
-                                <span className="text-[9px] font-black text-slate-400 uppercase w-[105px] tracking-wider">ATAYAN & SORUMLU:</span>
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-1.5 min-w-[125px]">
+                                  <ShieldCheck size={14} className="text-blue-600" />
+                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ATAYAN & SORUMLU:</span>
+                                </div>
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200 bg-blue-50 text-blue-700 whitespace-nowrap">
                                     {managerName}
                                 </span>
                             </div>
                         ) : (
                             <>
-                                <div className="flex items-center gap-2">
-                                    <UserPlus size={14} className="text-slate-400" />
-                                    <span className="text-[9px] font-black text-slate-400 uppercase w-[60px] tracking-wider">ATAYAN:</span>
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-1.5 min-w-[125px]">
+                                      <UserPlus size={14} className="text-slate-400" />
+                                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ATAYAN:</span>
+                                    </div>
                                     <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-600 whitespace-nowrap">
                                         {creatorName}
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <UserCheck size={14} className={managerName ? 'text-blue-500' : 'text-slate-300'} />
-                                    <span className="text-[9px] font-black text-slate-400 uppercase w-[60px] tracking-wider">SORUMLU:</span>
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-1.5 min-w-[125px]">
+                                      <UserCheck size={14} className={managerName ? 'text-blue-500' : 'text-slate-300'} />
+                                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">SORUMLU:</span>
+                                    </div>
                                     {managerName ? (
                                         <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200 bg-blue-50 text-blue-700 whitespace-nowrap">
                                             {managerName}
                                         </span>
                                     ) : (
-                                        <span className="text-[10px] font-medium text-slate-400 italic">-</span>
+                                        <span className="text-[10px] font-medium text-slate-400 italic px-2 py-0.5">-</span>
                                     )}
                                 </div>
                             </>
                         )}
-                        <div className="ml-[7px] w-[1px] h-2 bg-slate-200 my-0.5"></div>
-                        <div className="flex items-center gap-2">
-                            <Wrench size={14} className={workerName ? 'text-indigo-500' : 'text-slate-300'} />
-                            <span className="text-[9px] font-black text-slate-400 uppercase w-[105px] tracking-wider">
-                                SAHA USTASI:
-                            </span>
+                        <div className="ml-1.5 w-[1px] h-2 bg-slate-200 my-0.5"></div>
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-1.5 min-w-[125px]">
+                              <Wrench size={14} className={workerName ? 'text-indigo-500' : 'text-slate-400'} />
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">SAHA USTASI:</span>
+                            </div>
                             {workerName ? (
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-indigo-700 whitespace-nowrap">
                                     {workerName}
                                 </span>
                             ) : (
-                                <span className="text-[10px] font-medium text-slate-400 italic">Atanmadı</span>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-600 whitespace-nowrap">
+                                    Atanmadı
+                                </span>
                             )}
                         </div>
                       </div>
@@ -216,7 +230,11 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
               <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
                  <div className="min-w-0">
                    <div className="font-black text-slate-800 text-sm truncate">{j.customer_name}</div>
-                   <div className="text-[10px] text-slate-500 font-semibold mt-1 flex items-start gap-1.5 line-clamp-2">
+                   {/* Mobil Varlık Adı */}
+                   <div className="text-xs font-bold text-slate-600 mt-0.5 mb-1 truncate">
+                     {data?.assets?.find((a:any) => String(a.id) === String(j.asset_id))?.name || 'Bağımsız İş'}
+                   </div>
+                   <div className="text-[10px] text-slate-500 font-medium flex items-start gap-1.5 line-clamp-2">
                      <MapPin size={12} className="shrink-0 mt-0.5 text-slate-400" />
                      <span>{data?.assets?.find((a:any) => String(a.id) === String(j.asset_id))?.location || 'Konum Belirtilmedi'}</span>
                    </div>
@@ -261,7 +279,7 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
                          <Wrench size={10} /> SAHA USTASI
                       </span>
-                      <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${workerName ? 'text-indigo-700 bg-indigo-50 border-indigo-100' : 'text-slate-400 bg-slate-100 border-slate-200'}`}>
+                      <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${workerName ? 'text-indigo-700 bg-indigo-50 border-indigo-100' : 'text-rose-600 bg-rose-50 border-rose-200'}`}>
                           {workerName || 'Atanmadı'}
                       </div>
                   </div>
