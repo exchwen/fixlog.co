@@ -73,9 +73,9 @@ export default function CustomerDetailModal({
 
   const getFullAddress = (rawAddress: string, bNo: string, city: string, district: string) => {
       let full = rawAddress ? rawAddress.trim() : '';
-      if (bNo) full += ` No:${bNo}`;
-      if (district) full += ` / ${district}`;
-      if (city) full += ` / ${city}`;
+      if (bNo) full += (full ? ` No:${bNo}` : `No:${bNo}`);
+      if (district) full += (full ? ` / ${district}` : district);
+      if (city) full += (full ? ` / ${city}` : city);
       return full;
   };
 
@@ -96,9 +96,9 @@ export default function CustomerDetailModal({
           key="modal-backdrop-customer-detail"
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
-          exit={{ opacity: 0, pointerEvents: "none" }} // Ekrana tıklanamama sorunu çözüldü
+          exit={{ opacity: 0, pointerEvents: "none" }} // Ekrana tıklanamama sorunu kökten çözüldü
           transition={{ duration: 0.15 }}
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 pointer-events-auto"
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4"
         >
           <div className="absolute inset-0 cursor-pointer" onClick={handleCloseDetail}></div>
           <motion.div 
@@ -108,7 +108,7 @@ export default function CustomerDetailModal({
             exit={{ opacity: 0, scale: 0.95, x: selectedJob && !isMobile ? -280 : 0 }} 
             transition={{ duration: 0.2 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[85vh] transition-transform duration-300 pointer-events-auto overflow-hidden cursor-default"
+            className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[85vh] transition-transform duration-300 overflow-hidden cursor-default pointer-events-auto"
           >
             
             <div className="flex justify-between items-start p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50">
