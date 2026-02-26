@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, Phone, ShieldCheck, Box, MapPin, History, X, ShieldAlert, ChevronRight, User, MessageCircle, WifiOff, Download, Share, Check, ArrowLeft, PenTool, ClipboardList, Wrench, Calendar } from 'lucide-react';
+import { AlertTriangle, Phone, ShieldCheck, Box, MapPin, History, X, ShieldAlert, ChevronRight, User, MessageCircle, WifiOff, Check, ArrowLeft, PenTool, ClipboardList, Wrench, Calendar, Tag } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -14,15 +14,9 @@ export default function AssetScanPage() {
   
   // Modallar için State'ler
   const [showHistory, setShowHistory] = useState(false);
-  const [selectedHistoryJob, setSelectedHistoryJob] = useState<any>(null); // 🚀 YENİ: Tıklanan geçmiş işin detayı
+  const [selectedHistoryJob, setSelectedHistoryJob] = useState<any>(null); 
   const [showEmergencyConfirm, setShowEmergencyConfirm] = useState(false);
   const [showFaultModal, setShowFaultModal] = useState(false);
-  
-  // PWA ANA EKRANA EKLE STATE'LERİ
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showPwaPrompt, setShowPwaPrompt] = useState(false);
-  const [isIos, setIsIos] = useState(false);
-  const [installState, setInstallState] = useState('idle');
 
   // Form ve İstek State'leri
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,63 +37,20 @@ export default function AssetScanPage() {
   // 🚀 GÜVENLİ LİNK DÖNÜŞÜTÜRÜCÜ (PROXY)
   const getSafeImageUrl = (url: string) => {
     if (!url) return '';
-    // Eğer link bizim R2 bucket ise, onu Vercel proxy'sine çevir
     if (url.includes('pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev')) {
        return url.replace('https://pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev', '/dosya-deposu');
     }
     return url;
   };
 
-  // PWA Kurulum Dinleyicisi
   useEffect(() => {
-    // 1. ZIRH: Eğer kullanıcı zaten sistemdeyse ve barkodu okuttuysa "Panele Dön" butonunu göster
+    // ZIRH: Eğer kullanıcı zaten sistemdeyse ve barkodu okuttuysa "Panele Dön" butonunu göster
     const token = localStorage.getItem('authToken') || localStorage.getItem('staff_authToken');
     const role = localStorage.getItem('userRole') || localStorage.getItem('staff_userRole');
     if (token && role) {
         setStaffRole(role);
     }
-
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
-    if (isStandalone) return;
-
-    const userAgent = window.navigator.userAgent.toLowerCase();
-    const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
-
-    if (isIOSDevice) {
-      setIsIos(true);
-      setTimeout(() => setShowPwaPrompt(true), 2000);
-    } else {
-      const handler = (e: any) => {
-        e.preventDefault();
-        setDeferredPrompt(e);
-        setTimeout(() => setShowPwaPrompt(true), 2000);
-      };
-      window.addEventListener('beforeinstallprompt', handler);
-
-      const handleInstalled = () => {
-        setInstallState('success');
-        setTimeout(() => setShowPwaPrompt(false), 3000);
-      };
-      window.addEventListener('appinstalled', handleInstalled);
-
-      return () => {
-        window.removeEventListener('beforeinstallprompt', handler);
-        window.removeEventListener('appinstalled', handleInstalled);
-      };
-    }
   }, []);
-
-  const handleInstallPwa = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setInstallState('success');
-        setTimeout(() => setShowPwaPrompt(false), 3000);
-      }
-      setDeferredPrompt(null);
-    }
-  };
 
   // Ağ (Online First) ve Cache Stratejisi
   useEffect(() => {
@@ -109,7 +60,7 @@ export default function AssetScanPage() {
         if (!res.ok) throw new Error('Varlık bulunamadı');
         const data = await res.json();
         
-        // 🔥 LOGOYU GÜVENLİ LİNKE ÇEVİR (Data gelince hemen)
+        // LOGOYU GÜVENLİ LİNKE ÇEVİR
         if (data.logo) {
             data.logo = getSafeImageUrl(data.logo);
         }
@@ -134,7 +85,7 @@ export default function AssetScanPage() {
     if (uuid) fetchAsset();
   }, [uuid]);
 
-  // LOGODAN ZIT RENK SEÇİMİ (Mavi, Siyah veya Beyaz)
+  // LOGODAN ZIT RENK SEÇİMİ
   useEffect(() => {
     if (!asset?.logo) {
       setLogoBgColor('#ffffff');
@@ -239,7 +190,7 @@ export default function AssetScanPage() {
 
   useEffect(() => {
     const closeAnyOpenModal = () => {
-      if (selectedHistoryJob) { setSelectedHistoryJob(null); return true; } // Detay açıksa önce onu kapat
+      if (selectedHistoryJob) { setSelectedHistoryJob(null); return true; } 
       if (showHistory) { setShowHistory(false); return true; }
       if (showEmergencyConfirm) { setShowEmergencyConfirm(false); return true; }
       if (showFaultModal) { setShowFaultModal(false); return true; }
@@ -377,7 +328,6 @@ export default function AssetScanPage() {
   const subTitle = aptName ? asset?.name : null;
 
   // 🚀 BAKIM DURUMU KONTROLÜ
-  // Eğer asset.jobs listesinde statüsü "Devam Ediyor" olan bir iş varsa cihaz bakımda demektir.
   const isUnderMaintenance = asset?.jobs?.some((j: any) => j.status === 'Devam Ediyor');
 
   // Geçmiş listesi için sadece "Tamamlandı" olanları filtreliyoruz
@@ -403,54 +353,6 @@ export default function AssetScanPage() {
                <ArrowLeft size={16} /> Panele Dön
             </motion.button>
          )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showPwaPrompt && (
-          <motion.div 
-            initial={{ y: 100, opacity: 0 }} 
-            animate={{ y: 0, opacity: 1 }} 
-            exit={{ y: 100, opacity: 0 }} 
-            className="fixed bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[420px] bg-slate-900 text-white p-4 rounded-2xl shadow-2xl z-[9999] flex flex-row items-center justify-between border border-slate-700"
-          >
-            {installState === 'success' ? (
-              <div className="flex items-center gap-3 w-full justify-center py-1">
-                <div className="bg-emerald-500 p-2 rounded-full shrink-0">
-                  <Check size={20} className="text-white" />
-                </div>
-                <div className="flex flex-col flex-1 min-w-0 pr-2">
-                  <span className="font-bold text-sm text-emerald-400">Kurulum Başarılı!</span>
-                  <span className="text-xs text-slate-400 mt-0.5">Cihazınızın ana ekranından giriş yapabilirsiniz.</span>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-3 w-full">
-                  <div className="bg-blue-500 p-2.5 rounded-xl shrink-0">
-                    <Download size={20} className="text-white" />
-                  </div>
-                  <div className="flex flex-col flex-1 min-w-0 pr-2">
-                    <span className="font-bold text-sm">Uygulamayı Yükle</span>
-                    {isIos ? (
-                       <span className="text-[11px] text-slate-400 mt-0.5 leading-tight">
-                         Yüklemek için <Share size={12} className="inline-block mx-0.5 mb-0.5" /> <b>Paylaş</b> ikonuna basıp <br/> <b>Ana Ekrana Ekle</b>'yi seçin.
-                       </span>
-                    ) : (
-                       <span className="text-xs text-slate-400 mt-0.5">Daha hızlı ve kolay erişim</span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex gap-2 shrink-0 items-center">
-                  {!isIos && (
-                     <button onClick={handleInstallPwa} className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95">
-                       Yükle
-                     </button>
-                  )}
-                </div>
-              </>
-            )}
-          </motion.div>
-        )}
       </AnimatePresence>
       
       <AnimatePresence>
@@ -701,21 +603,27 @@ export default function AssetScanPage() {
                                 <div 
                                     key={index} 
                                     onClick={() => setSelectedHistoryJob(job)}
-                                    className="p-4 border border-slate-200 rounded-xl bg-white hover:bg-blue-50 hover:border-blue-200 cursor-pointer flex justify-between items-center transition-all group active:scale-95 shadow-sm"
+                                    className="p-4 border border-slate-200 rounded-xl bg-white hover:bg-blue-50 hover:border-blue-200 cursor-pointer flex justify-between items-center transition-all group active:scale-95 shadow-sm relative overflow-hidden"
                                 >
                                     <div>
-                                        <div className="text-sm font-bold text-slate-800 group-hover:text-blue-700 transition-colors flex items-center gap-2">
+                                        <div className="text-sm font-bold text-slate-800 group-hover:text-blue-700 transition-colors flex items-center gap-2 mb-1.5">
                                             <ClipboardList size={14} className="text-slate-400 group-hover:text-blue-500" />
                                             {job.work_type}
                                         </div>
-                                        <div className="text-[11px] font-semibold text-slate-500 mt-1.5 flex items-center gap-1.5">
-                                            <Calendar size={12} className="text-blue-400"/>
-                                            {job.scheduled_date 
-                                                ? new Date(job.scheduled_date).toLocaleDateString('tr-TR') 
-                                                : new Date(job.created_at).toLocaleDateString('tr-TR')}
+                                        
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                               <Tag size={10} /> {job.job_type || 'Belirtilmedi'}
+                                            </span>
+                                            <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
+                                                <Calendar size={12} className="text-blue-400"/>
+                                                {job.scheduled_date 
+                                                    ? new Date(job.scheduled_date).toLocaleDateString('tr-TR') 
+                                                    : new Date(job.created_at).toLocaleDateString('tr-TR')}
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                                    <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-blue-600 transition-colors shrink-0">
                                         <ChevronRight size={16} className="text-slate-400 group-hover:text-white transition-colors" />
                                     </div>
                                 </div>
@@ -743,11 +651,16 @@ export default function AssetScanPage() {
                 className="fixed inset-0 z-[160] bg-white flex flex-col"
             >
                 <div className="flex justify-between items-center p-5 border-b border-slate-100 bg-slate-50 shrink-0">
-                    <button onClick={() => setSelectedHistoryJob(null)} className="flex items-center gap-1 text-slate-600 font-bold text-sm bg-white border border-slate-200 px-3 py-1.5 rounded-lg active:scale-95 transition-all">
+                    <button onClick={() => setSelectedHistoryJob(null)} className="flex items-center gap-1 text-slate-600 font-bold text-sm bg-white border border-slate-200 px-3 py-1.5 rounded-lg active:scale-95 transition-all shadow-sm">
                         <ArrowLeft size={16} /> Geri
                     </button>
-                    <div className="text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md tracking-wider uppercase">
-                        TAMAMLANDI
+                    <div className="flex gap-2">
+                        <div className="text-[10px] font-black text-slate-600 bg-slate-200 border border-slate-300 px-2.5 py-1 rounded-md tracking-wider uppercase">
+                            {selectedHistoryJob.job_type || 'İŞ KAYDI'}
+                        </div>
+                        <div className="text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md tracking-wider uppercase">
+                            TAMAMLANDI
+                        </div>
                     </div>
                 </div>
 
