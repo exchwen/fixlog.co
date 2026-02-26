@@ -15,7 +15,7 @@ export default function StaffDetailModal({
 }: any) {
 
   const [activeTab, setActiveTab] = useState('info'); // 'info' | 'jobs'
-  const [jobFilter, setJobFilter] = useState('Tümü'); // 'Tümü' | 'Tamamlandı' | 'Aktif' YENİ EKLENDİ
+  const [jobFilter, setJobFilter] = useState('Tümü'); // 'Tümü' | 'Tamamlandı' | 'Aktif' 
 
   // Personele atanmış tüm işleri buluyoruz
   const staffJobs = (data?.jobs || []).filter((j:any) => String(j.staff_id) === String(selectedStaff?.id));
@@ -48,7 +48,6 @@ export default function StaffDetailModal({
     'Usta Bekliyor': 'bg-orange-100 text-orange-700 border-orange-200'
   };
 
-  // 🟢 DONMA ÇÖZÜMÜ: Modalı güvenli bir şekilde kapatan ve stateleri sıfırlayan ana fonksiyon
   const closeThisModal = () => {
     setSelectedStaff(null);
     if (handleCloseDetail) handleCloseDetail('staff');
@@ -60,21 +59,23 @@ export default function StaffDetailModal({
   return (
     <AnimatePresence>
       {selectedStaff && (
-        // 🟢 DONMA ÇÖZÜMÜ: En dıştaki div artık bir motion.div
         <motion.div 
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
           exit={{ opacity: 0 }} 
-          className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm pointer-events-auto"
         >
           {/* Arka plan tıklaması ile kapatma */}
-          <div className="absolute inset-0" onClick={closeThisModal}></div>
+          <div className="absolute inset-0 cursor-pointer" onClick={closeThisModal}></div>
 
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }} 
             animate={{ opacity: 1, scale: 1 }} 
             exit={{ opacity: 0, scale: 0.95 }} 
-            className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 pointer-events-auto"
+            transition={{ duration: 0.15 }}
+            className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 cursor-default"
+            onClick={(e) => e.stopPropagation()}
           >
             {/* HEADER (Üst Başlık Alanı) */}
             <div className="flex justify-between items-start p-5 sm:p-6 pb-0 border-b border-slate-100 bg-slate-50/50 z-10 flex-col sm:flex-row sm:items-center gap-4 shrink-0">
@@ -91,7 +92,7 @@ export default function StaffDetailModal({
                       <button onClick={closeThisModal} className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-xl transition-all active:scale-95 sm:hidden"><X size={20} /></button>
                   </div>
 
-                  {/* SEKMELER (Tabs) - Sadece düzenleme modunda değilse göster */}
+                  {/* SEKMELER (Tabs) */}
                   {!isEditingStaff && (
                     <div className="flex gap-4 mt-4 border-b border-slate-200 w-full">
                         <button 
@@ -121,14 +122,12 @@ export default function StaffDetailModal({
                 <AnimatePresence mode="wait">
                   {/* BİLGİ SEKMESİ */}
                   {activeTab === 'info' && (
-                    <motion.div key="info" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-5">
+                    <motion.div key="info" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.15 }} className="space-y-5">
                         
                         {!isEditingStaff ? (
                             <>
                                 {/* -- GÖRÜNTÜLEME MODU -- */}
-                                {/* Performans Özeti */}
                                 <div className="grid grid-cols-2 gap-3 mb-2">
-                                    {/* 🟢 TIKLANABİLİR KUTULAR */}
                                     <div 
                                       onClick={() => { setActiveTab('jobs'); setJobFilter('Tamamlandı'); }} 
                                       className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-sm cursor-pointer hover:bg-emerald-100 transition-colors group"
@@ -147,7 +146,6 @@ export default function StaffDetailModal({
                                     </div>
                                 </div>
 
-                                {/* İletişim Bilgileri */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm flex items-start gap-3">
                                         <div className="p-2 bg-blue-50 text-blue-600 rounded-lg shrink-0"><Phone size={18} /></div>
@@ -217,9 +215,8 @@ export default function StaffDetailModal({
 
                   {/* İŞ GEÇMİŞİ SEKMESİ */}
                   {activeTab === 'jobs' && !isEditingStaff && (
-                    <motion.div key="jobs" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex flex-col h-full">
+                    <motion.div key="jobs" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.15 }} className="flex flex-col h-full">
                         
-                        {/* Filtre Bilgi Çubuğu */}
                         {jobFilter !== 'Tümü' && (
                             <div className="bg-blue-50 text-blue-700 px-3 py-2 rounded-lg text-xs font-bold mb-4 flex justify-between items-center border border-blue-100 shrink-0">
                                 <span className="flex items-center gap-1.5"><Filter size={14}/> Sadece "{jobFilter}" durumundaki işler gösteriliyor.</span>
@@ -235,7 +232,6 @@ export default function StaffDetailModal({
                                       onClick={() => setSelectedJob && setSelectedJob(job)}
                                       className="relative pl-12 cursor-pointer group"
                                     >
-                                        {/* Timeline Noktası */}
                                         <div className={`absolute left-[13px] top-4 w-3.5 h-3.5 rounded-full border-2 border-white z-10 transition-transform group-hover:scale-125 ${job.status === 'Tamamlandı' ? 'bg-emerald-500' : job.status === 'İptal' ? 'bg-rose-500' : 'bg-blue-500'}`}></div>
                                         
                                         <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm group-hover:shadow-md group-hover:border-blue-300 transition-all">

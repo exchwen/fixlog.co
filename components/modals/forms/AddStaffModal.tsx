@@ -27,16 +27,19 @@ export default function AddStaffModal({
         <motion.div 
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
-          exit={{ opacity: 0 }} 
-          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }} // Çıkış animasyonu kısaltıldı
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm pointer-events-auto"
         >
-          <div className="absolute inset-0" onClick={() => setShowAddStaff(false)}></div>
+          <div className="absolute inset-0 cursor-pointer" onClick={() => setShowAddStaff(false)}></div>
           
           <motion.div 
             initial={{ opacity: 0, scale: 0.95, y: 10 }} 
             animate={{ opacity: 1, scale: 1, y: 0 }} 
             exit={{ opacity: 0, scale: 0.95, y: 10 }} 
-            className="bg-white w-full max-w-md rounded-2xl p-0 shadow-2xl relative overflow-hidden border border-slate-200 pointer-events-auto flex flex-col max-h-[90vh]"
+            transition={{ duration: 0.15 }} // Çıkış animasyonu kısaltıldı
+            className="bg-white w-full max-w-md rounded-2xl p-0 shadow-2xl relative overflow-hidden border border-slate-200 flex flex-col max-h-[90vh] cursor-default"
+            onClick={(e) => e.stopPropagation()} // Arka plana tıklanmasını engelle
           >
             {/* HEADER */}
             <div className="flex justify-between items-center p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50 shrink-0">
