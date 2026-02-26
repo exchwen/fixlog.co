@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, AlertTriangle, ArrowRight, Filter, ShieldAlert, Info, MapPin, Check, WifiOff, Download, Share, Lock } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, Filter, ShieldAlert, MapPin, Check, WifiOff, Download, Share } from 'lucide-react';
 
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
@@ -51,7 +51,6 @@ export default function ManagerDashboard() {
   const [data, setData] = useState(null); 
   
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
   const [isOffline, setIsOffline] = useState(false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
@@ -62,86 +61,96 @@ export default function ManagerDashboard() {
 
   const [stockCategory, setStockCategory] = useState('Tümü');
 
-  // Modal States
-  const [showJobModal, setShowJobModal] = useState(false);
-  const [jobModalStep, setJobModalStep] = useState(1);
-  const [jobModalType, setJobModalType] = useState(null);
+  // =================================================================================
+  // 1. MODAL VISIBILITY STATES
+  // =================================================================================
+  const [showAddJob, setShowAddJob] = useState(false);
+  const [selectedJob, setSelectedJob] = useState(null); 
 
-  const [showAssetModal, setShowAssetModal] = useState(false);
-  const [showStaffModal, setShowStaffModal] = useState(false);
-  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [showAddAsset, setShowAddAsset] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState(null);
+
+  const [showAddStaff, setShowAddStaff] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState(null);
+
+  const [showAddCustomer, setShowAddCustomer] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+
   const [showStockModal, setShowStockModal] = useState(false);
   const [showSupplierModal, setShowSupplierModal] = useState(false);
-  const [showSupplierListModal, setShowSupplierListModal] = useState(false);
+  const [showAddSupplier, setShowAddSupplier] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [showBulkOrderModal, setShowBulkOrderModal] = useState(false);
 
-  const [showStaffDetail, setShowStaffDetail] = useState(null);
-  const [showCustomerDetail, setShowCustomerDetail] = useState(null);
-  const [showAssetDetail, setShowAssetDetail] = useState(null);
-  
-  const [selectedJob, setSelectedJob] = useState(null); 
   const [showQRModal, setShowQRModal] = useState(false);
   const [selectedQRAsset, setSelectedQRAsset] = useState(null);
 
+  // =================================================================================
+  // 2. FORM DATA STATES (Yeni Modallara Uyumlu)
+  // =================================================================================
+  
+  const [newJob, setNewJob] = useState({ 
+    customer_id: '', asset_id: '', staff_id: '', work_type: 'Genel Görev', 
+    priority: 'Normal', note: '', scheduled_date: '' 
+  });
+
+  const [newAsset, setNewAsset] = useState({ 
+    name: '', location: '', customer_id: '', type: '', serial_number: '' 
+  });
+
+  const [newStaff, setNewStaff] = useState({ 
+    name: '', role: '', contact: '', email: '' 
+  });
+
+  const [newCustomer, setNewCustomer] = useState({ 
+    name: '', contact: '', address: '', tax_info: '' 
+  });
+
+  const [newStock, setNewStock] = useState({ 
+    name: '', quantity: '', unit: 'Adet', category: '', min_alert: '' 
+  });
+
+  const [newSupplier, setNewSupplier] = useState({ 
+    name: '', contact: '', address: '' 
+  });
+
+  const [newCategory, setNewCategory] = useState({ name: '' });
+
+  const [newOrder, setNewOrder] = useState({ 
+    supplier_id: '', item_name: '', quantity: '', unit: 'Adet' 
+  });
+  
+  const [bulkOrderList, setBulkOrderList] = useState([
+    { supplier_id: '', item_name: '', quantity: '', unit: 'Adet' }
+  ]);
+  
   const [isEditingStaff, setIsEditingStaff] = useState(false);
+  const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '', username: '', password: '', is_active: 1 });
   const [isSaving, setIsSaving] = useState(false);
 
+  // Chat
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeChatId, setActiveChatId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
 
-  // 🔥 EKLENEN EKSİK STATE'LER (Manager için de gerekli)
+  // Yardımcı State'ler
   const [searchCust, setSearchCust] = useState('');
   const [searchAsset, setSearchAsset] = useState('');
-  const [jobTargetMode, setJobTargetMode] = useState('CUSTOMER');
-  // ---------------------------------------------------
 
-  const [jobForm, setJobForm] = useState({ customerName: '', assetId: '', staffId: '', workType: 'Genel Görev', jobType: 'Anlık', scheduledDate: '', taskNote: '' });
-  const [assetForm, setAssetForm] = useState({ name: '', location: '', apartmentName: '', deviceDetails: '', customerId: '', customerMode: 'NONE', newCustomer: { name: '', contact: '', address: '', taxInfo: '' } });
-  const [staffForm, setStaffForm] = useState({ name: '', phone: '', role: 'Usta', branch: '', status: 'Aktif', username: '', password: '' });
-  const [customerForm, setCustomerForm] = useState({ name: '', contact: '', address: '', taxInfo: '', assetAction: '', assetMode: 'NONE', newAsset: { name: '', location: '', apartmentName: '', deviceDetails: '' } });
-  const [stockForm, setStockForm] = useState({ itemName: '', quantity: '', unitName: 'Adet', unitPrice: '', category: '', supplierId: '', supplierMode: 'NONE', newSupplier: { name: '', phone: '' } });
-  const [supplierForm, setSupplierForm] = useState({ name: '', phone: '' });
-  const [editStaffForm, setEditStaffForm] = useState({ name: '', phone: '', role: '', branch: '', status: '', username: '', password: '', is_active: 1 });
-
-  // Job Modal Kapatma Yardımcısı
-  const handleCloseJobModal = () => {
-    setShowJobModal(false);
-    setTimeout(() => {
-        setJobModalStep(1);
-        setJobModalType(null);
-    }, 300);
-  };
-
+  // =================================================================================
+  // PWA ve Fetching Logic
+  // =================================================================================
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     if (isStandalone) return;
-
     const userAgent = window.navigator.userAgent.toLowerCase();
-    const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
-
-    if (isIOSDevice) {
-      setIsIos(true);
-      setTimeout(() => setShowPwaPrompt(true), 2000);
+    if (/iphone|ipad|ipod/.test(userAgent)) {
+      setIsIos(true); setTimeout(() => setShowPwaPrompt(true), 2000);
     } else {
-      const handler = (e) => {
-        e.preventDefault();
-        setDeferredPrompt(e);
-        setTimeout(() => setShowPwaPrompt(true), 2000);
-      };
-      window.addEventListener('beforeinstallprompt', handler);
-
-      const handleInstalled = () => {
-        setInstallState('success');
-        setTimeout(() => setShowPwaPrompt(false), 3000);
-      };
-      window.addEventListener('appinstalled', handleInstalled);
-
-      return () => {
-        window.removeEventListener('beforeinstallprompt', handler);
-        window.removeEventListener('appinstalled', handleInstalled);
-      };
+      window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); setDeferredPrompt(e); setTimeout(() => setShowPwaPrompt(true), 2000); });
+      window.addEventListener('appinstalled', () => { setInstallState('success'); setTimeout(() => setShowPwaPrompt(false), 3000); });
     }
   }, []);
 
@@ -149,10 +158,7 @@ export default function ManagerDashboard() {
     if (deferredPrompt) {
       deferredPrompt.prompt(); 
       const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setInstallState('success');
-        setTimeout(() => setShowPwaPrompt(false), 3000); 
-      }
+      if (outcome === 'accepted') { setInstallState('success'); setTimeout(() => setShowPwaPrompt(false), 3000); }
       setDeferredPrompt(null);
     }
   };
@@ -200,81 +206,46 @@ export default function ManagerDashboard() {
       setData(result);
       
     } catch (err) { 
-      console.error("Veri çekilemedi:", err); 
       setIsOffline(true);
       const cachedData = localStorage.getItem(`manager_cache_${slug}`);
       if (cachedData) setData(JSON.parse(cachedData));
-    } finally { 
-      setLoading(false); 
-    }
+    } finally { setLoading(false); }
   };
 
   const fetchMessages = async () => {
     if (!activeChatId) return;
     const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken'); 
     try {
-      const res = await fetch(`${API_URL}/get-messages?slug=${slug}&staffId=${activeChatId}`, {
-         headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await fetch(`${API_URL}/get-messages?slug=${slug}&staffId=${activeChatId}`, { headers: { 'Authorization': `Bearer ${token}` } });
       setMessages(await res.json() || []);
     } catch (err) {}
   };
 
-  const syncOfflineActions = async () => {
-    const pending = JSON.parse(localStorage.getItem(`offline_actions_${slug}`) || '[]');
-    if (pending.length === 0) {
-      setPendingSyncCount(0);
-      return;
-    }
-    
-    const remaining = [];
+  const sendMessage = async () => {
+    if (!messageInput.trim() || !activeChatId) return;
     const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken'); 
-
-    for (const item of pending) {
-      try {
-        const res = await fetch(`${API_URL}/${item.endpoint}`, { 
-          method: 'POST', 
-          headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-          }, 
-          body: JSON.stringify({ ...item.body, slug }) 
-        });
-        if (!res.ok) remaining.push(item);
-      } catch (e) {
-        remaining.push(item);
-      }
-    }
-    localStorage.setItem(`offline_actions_${slug}`, JSON.stringify(remaining));
-    setPendingSyncCount(remaining.length);
-    if (remaining.length < pending.length) fetchData(true);
+    await fetch(`${API_URL}/send-message`, { 
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ slug, senderId: userData?.role === 'Patron' ? 'PATRON' : userData?.id, receiverId: activeChatId, message: messageInput }) 
+    });
+    setMessageInput(''); fetchMessages();
   };
 
+  useEffect(() => { fetchData(true); const int = setInterval(() => fetchData(false), 15000); return () => clearInterval(int); }, [slug]);
+  useEffect(() => { if (isChatOpen && activeChatId) fetchMessages(); }, [isChatOpen, activeChatId]);
+
   useEffect(() => {
-    const handleOnline = () => { setIsOffline(false); syncOfflineActions(); };
-    const handleOffline = () => setIsOffline(true);
-    
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    const pending = JSON.parse(localStorage.getItem(`offline_actions_${slug}`) || '[]');
-    setPendingSyncCount(pending.length);
-    if (navigator.onLine) syncOfflineActions();
-
-    return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); };
-  }, [slug]);
-
-  useEffect(() => { 
-    fetchData(true); 
-    const int = setInterval(() => fetchData(false), 15000); 
-    return () => clearInterval(int); 
-  }, [slug]);
-  
-  useEffect(() => { 
-      if (isChatOpen && activeChatId) { 
-          fetchMessages(); 
-      } 
-  }, [isChatOpen, activeChatId]);
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setShowAddJob(false); setShowAddAsset(false); setShowAddStaff(false); setShowAddCustomer(false);
+        setShowStockModal(false); setShowSupplierModal(false); setShowCategoryModal(false);
+        setSelectedJob(null); setSelectedAsset(null); setSelectedStaff(null); setSelectedCustomer(null);
+        setShowQRModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleAction = async (endpoint, body, closeFn, resetFn) => {
     if (endpoint.startsWith('delete-') || endpoint === 'update-settings') {
@@ -285,7 +256,7 @@ export default function ManagerDashboard() {
     setIsSaving(true);
     const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken'); 
 
-    // 🚀 GÜNCELLEME: İş güncellenirken Manager ID'yi kaydet
+    // İş güncellenirken Manager ID'yi kaydet
     if (endpoint === 'update-job' && userData && userData.role === 'Yönetici') {
          const details = body.details ? { ...JSON.parse(JSON.stringify(body.details)) } : {};
          details.managerName = userData.name;
@@ -296,67 +267,40 @@ export default function ManagerDashboard() {
     try {
       const res = await fetch(`${API_URL}/${endpoint}`, { 
           method: 'POST', 
-          headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-          }, 
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
           body: JSON.stringify({ ...body, slug }) 
       });
 
       if (res.ok) { 
         if(closeFn) closeFn(false); 
-        if(endpoint === 'create-job' || endpoint === 'add-job') {
-             setJobModalStep(1);
-             setJobModalType(null);
-        }
         if(resetFn) resetFn(); 
         await fetchData(true); 
         return true; 
       } else { 
-        alert("İşlem reddedildi. Yetkiniz olmayabilir."); 
-        return false; 
+        alert("İşlem reddedildi. Yetkiniz olmayabilir."); return false; 
       }
     } catch (err) { 
-      const pending = JSON.parse(localStorage.getItem(`offline_actions_${slug}`) || '[]');
-      pending.push({ endpoint, body, timestamp: new Date().toISOString() });
-      localStorage.setItem(`offline_actions_${slug}`, JSON.stringify(pending));
-      
-      setPendingSyncCount(pending.length);
-      setIsOffline(true);
-
-      if(closeFn) closeFn(false); 
-      if(resetFn) resetFn(); 
-      return true; 
-    } finally { 
-      setIsSaving(false); 
-    }
-  };
-
-  const sendMessage = async () => {
-    if (!messageInput.trim() || !activeChatId) return;
-    const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken'); 
-    await fetch(`${API_URL}/send-message`, { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ slug, senderId: userData?.role === 'Patron' ? 'PATRON' : userData?.id, receiverId: activeChatId, message: messageInput }) 
-    });
-    setMessageInput(''); fetchMessages();
+      alert("Bağlantı hatası. İşlem kaydedilemedi."); return false; 
+    } finally { setIsSaving(false); }
   };
 
   const activeEmergencies = data?.activeEmergencies || [];
   const hasEmergency = activeEmergencies.length > 0;
-
-  const handleResolveEmergency = async (emergencyId) => {
-    handleAction('resolve-emergency', { id: emergencyId }, null, null);
-  };
-
   const pendingFaults = data?.pendingFaults || [];
   const hasFault = pendingFaults.length > 0;
 
-  const handleResolveFault = async (faultId) => {
-    handleAction('resolve-fault', { id: faultId }, null, null);
+  const handleResolveEmergency = async (id) => handleAction('resolve-emergency', { id }, null, null);
+  const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, null, null);
+
+  // Detay Modalları için Kapatma Yardımcısı
+  const handleCloseDetail = (type) => {
+    if(type === 'asset') setSelectedAsset(null);
+    if(type === 'customer') setSelectedCustomer(null);
+    if(type === 'staff') setSelectedStaff(null);
+    if(type === 'job') setSelectedJob(null);
   };
 
+  // Yönetici kısıtlaması (Ayarlar'a erişemez)
   useEffect(() => {
       if (activeTab === 'settings') {
           alert("Yetkisiz Erişim: Sadece Patron firma ayarlarını görüntüleyebilir.");
@@ -367,9 +311,8 @@ export default function ManagerDashboard() {
   const filteredDataForTabs = useMemo(() => {
     if (!data) return null;
     if (activeTab !== 'stock' || stockCategory === 'Tümü') return data;
-    const stockArray = data.stock || data.stocks || [];
-    const filteredStocks = stockArray.filter((item) => item?.category === stockCategory);
-    return { ...data, stock: data.stock ? filteredStocks : undefined, stocks: data.stocks ? filteredStocks : undefined };
+    const filteredStocks = (data.stock || []).filter((item) => item?.category === stockCategory);
+    return { ...data, stock: filteredStocks };
   }, [data, stockCategory, activeTab]);
 
   if (loading) return (
@@ -424,12 +367,9 @@ export default function ManagerDashboard() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[99999] bg-rose-600 flex flex-col items-center justify-center text-white p-6">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden"><div className="w-[800px] h-[800px] bg-rose-500/30 rounded-full animate-ping" style={{ animationDuration: '3s' }}></div></div>
             <div className="relative z-10 flex flex-col items-center max-w-lg text-center w-full">
-                <ShieldAlert size={80} className="text-white mb-6 animate-pulse md:w-[100px] md:h-[100px]" />
-                <h1 className="text-4xl md:text-5xl font-black mb-2 tracking-tight uppercase">Acil Durum Bildirildi!</h1>
-                <p className="text-lg md:text-xl text-rose-100 mb-8 font-medium">Sahadan veya bir müşteriden acil durum butonu tetiklendi.</p>
+                <ShieldAlert size={80} className="text-white mb-6 animate-pulse md:w-[100px] md:h-[100px]" /><h1 className="text-4xl md:text-5xl font-black mb-2 tracking-tight uppercase">Acil Durum Bildirildi!</h1><p className="text-lg md:text-xl text-rose-100 mb-8 font-medium">Sahadan veya bir müşteriden acil durum butonu tetiklendi.</p>
                 <div className="bg-white/10 p-5 md:p-6 rounded-3xl backdrop-blur-md border border-white/20 mb-8 w-full max-w-md text-left shadow-2xl">
-                   <div className="text-rose-200 text-xs font-bold uppercase tracking-wider mb-1">İlgili Varlık & Konum</div>
-                   <div className="text-xl md:text-2xl font-black text-white mb-2">{activeEmergencies[0]?.asset_apartment || activeEmergencies[0]?.asset_name || 'Bilinmeyen Varlık'}</div>
+                   <div className="text-rose-200 text-xs font-bold uppercase tracking-wider mb-1">İlgili Varlık & Konum</div><div className="text-xl md:text-2xl font-black text-white mb-2">{activeEmergencies[0]?.asset_apartment || activeEmergencies[0]?.asset_name || 'Bilinmeyen Varlık'}</div>
                    <div className="flex items-start md:items-center gap-2 text-rose-100 text-sm md:text-base"><MapPin size={18} className="mt-0.5 md:mt-0 flex-shrink-0" /> <span>{activeEmergencies[0]?.asset_location ? activeEmergencies[0].asset_location.replace(activeEmergencies[0].asset_apartment || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : 'Konum alınamadı'}</span></div>
                 </div>
                 <button onClick={() => handleResolveEmergency(activeEmergencies[0]?.id)} disabled={isSaving} className="bg-white text-rose-600 px-6 py-4 md:px-10 md:py-5 w-full sm:w-auto rounded-2xl font-black text-base md:text-xl shadow-2xl hover:bg-rose-50 hover:scale-105 transition-all active:scale-95 flex flex-col sm:flex-row items-center justify-center gap-3 disabled:opacity-50"><ShieldCheck size={28} />{isSaving ? 'Kapatılıyor...' : 'KONTROL ETTİM, ALARMI KAPAT'}</button>
@@ -458,17 +398,6 @@ export default function ManagerDashboard() {
       </div>
 
       <main className="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-y-auto relative z-10">
-        
-        <AnimatePresence>
-            {(isOffline || pendingSyncCount > 0) && !hasEmergency && (
-              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="bg-amber-500 text-amber-950 px-4 py-2.5 text-xs font-bold flex flex-wrap items-center justify-center gap-2 z-40 border-b border-amber-600/20">
-                <WifiOff size={16} />
-                <span className="text-center">{isOffline ? 'Bağlantı koptu. Veriler önbellekten okunuyor.' : 'İnternet bağlantısı sağlandı.'}</span>
-                {pendingSyncCount > 0 && (<span className="bg-amber-950 text-amber-400 px-2.5 py-1 rounded-full ml-0 sm:ml-2 animate-pulse flex items-center gap-1 w-full sm:w-auto justify-center mt-1 sm:mt-0">Kuyrukta bekleyen {pendingSyncCount} işlem var...</span>)}
-              </motion.div>
-            )}
-        </AnimatePresence>
-
         <Header data={data} setIsMobileMenuOpen={setIsMobileMenuOpen} setSelectedJob={setSelectedJob} />
 
         <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">
@@ -477,22 +406,43 @@ export default function ManagerDashboard() {
              <ShieldCheck size={14} /> Yönetici Yetkisi
           </div>
 
-          {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} handleAction={handleAction} />}
-          {activeTab === 'my-jobs' && <MyJobsTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} handleAction={handleAction} />}
-          {activeTab === 'jobs' && <JobsTab data={data} setShowJobModal={setShowJobModal} statusColors={statusColors} setSelectedJob={setSelectedJob} />}
+          {activeTab === 'home' && <HomeTab data={data} setShowAddJob={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} handleAction={handleAction} />}
+          {activeTab === 'my-jobs' && <MyJobsTab data={data} setShowAddJob={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} handleAction={handleAction} />}
+          {activeTab === 'jobs' && <JobsTab data={data} setShowAddJob={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} />}
           {activeTab === 'pending' && <PendingJobsTab data={data} setSelectedJob={setSelectedJob} />}
           {activeTab === 'completed' && <CompletedJobsTab data={data} setSelectedJob={setSelectedJob} statusColors={statusColors} />}
           {activeTab === 'alerts' && <AlertsTab data={data} />} 
-          {activeTab === 'team' && <TeamTab data={data} setShowStaffModal={setShowStaffModal} setShowJobModal={setShowJobModal} setShowStaffDetail={setShowStaffDetail} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} setSelectedJob={setSelectedJob} />}
-          {activeTab === 'customers' && <CustomersTab data={data} setShowCustomerModal={setShowCustomerModal} setShowCustomerDetail={setShowCustomerDetail} />}
+          {activeTab === 'team' && <TeamTab data={data} setShowAddStaff={setShowAddStaff} setShowAddJob={setShowAddJob} setSelectedStaff={setSelectedStaff} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} setSelectedJob={setSelectedJob} />}
+          {activeTab === 'customers' && <CustomersTab data={data} setShowAddCustomer={setShowAddCustomer} setSelectedCustomer={setSelectedCustomer} />}
           {activeTab === 'support' && <SupportTab handleAction={handleAction} isSaving={isSaving} />} 
           
           {activeTab === 'stock' && (
             <div className="flex flex-col space-y-4">
-              <StockTab data={filteredDataForTabs} handleAction={handleAction} setShowStockModal={setShowStockModal} setShowSupplierModal={setShowSupplierModal} setShowSupplierListModal={setShowSupplierListModal} setShowCategoryModal={setShowCategoryModal} />
+              <div className="flex justify-end w-full">
+                <div className="bg-white border border-slate-200 rounded-xl p-2 shadow-sm flex items-center gap-2">
+                  <Filter size={16} className="text-slate-400 ml-2" />
+                  <select value={stockCategory} onChange={(e) => setStockCategory(e.target.value)} className="text-sm font-bold text-slate-700 outline-none cursor-pointer bg-transparent">
+                    <option value="Tümü">Tüm Kategoriler</option>
+                    {Array.from(new Set((data?.stock || []).map((s) => s?.category).filter(Boolean))).map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <StockTab 
+                data={filteredDataForTabs} 
+                handleAction={handleAction} 
+                setShowStockModal={setShowStockModal} 
+                setShowSupplierModal={setShowSupplierModal} 
+                setShowSupplierListModal={setShowSupplierListModal} 
+                setShowCategoryModal={setShowCategoryModal}
+                setShowOrderModal={setShowOrderModal}
+                setShowBulkOrderModal={setShowBulkOrderModal}
+              />
             </div>
           )}
-          {activeTab === 'assets' && <AssetsTab data={data} setShowAssetModal={setShowAssetModal} setShowAssetDetail={setShowAssetDetail} setShowQRModal={setShowQRModal} setSelectedQRAsset={setSelectedQRAsset} />}
+          
+          {activeTab === 'assets' && <AssetsTab data={data} setShowAddAsset={setShowAddAsset} setSelectedAsset={setSelectedAsset} setShowQRModal={setShowQRModal} setSelectedQRAsset={setSelectedQRAsset} />}
           
           {activeTab === 'finance' && <FinanceTab data={data} userRole="Yönetici" />}
 
@@ -501,44 +451,58 @@ export default function ManagerDashboard() {
 
       <ChatPanel isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} activeChatId={activeChatId} setActiveChatId={setActiveChatId} data={data} messages={messages} setMessages={setMessages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} />
 
-      {/* 🚀 DÜZELTİLEN VE DOĞRU YERE ALINAN KISIM */}
-      {data && (
-        <DynamicPWA 
-          companyName={data?.name} 
-          companyLogo={data?.logo} 
-        />
-      )}
+      {data && <DynamicPWA companyName={data?.name} companyLogo={data?.logo} />}
 
       <DashboardModals 
-        showStaffDetail={showStaffDetail} setShowStaffDetail={setShowStaffDetail} isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff} editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}
-        showCustomerDetail={showCustomerDetail} setShowCustomerDetail={setShowCustomerDetail}
-        showAssetDetail={showAssetDetail} setShowAssetDetail={setShowAssetDetail}
-        
-        // GÜNCELLENDİ: Yeni Modal Propsları Eklendi
-        showJobModal={showJobModal} setShowJobModal={handleCloseJobModal}
-        jobModalStep={jobModalStep} setJobModalStep={setJobModalStep}
-        jobModalType={jobModalType} setJobModalType={setJobModalType}
+        data={data}
+        handleAction={handleAction}
+        isSaving={isSaving}
+        handleCloseDetail={handleCloseDetail}
 
-        jobForm={jobForm} setJobForm={setJobForm}
-        showAssetModal={showAssetModal} setShowAssetModal={setShowAssetModal} assetForm={assetForm} setAssetForm={setAssetForm}
-        showStaffModal={showStaffModal} setShowStaffModal={setShowStaffModal} staffForm={staffForm} setStaffForm={setStaffForm}
-        showCustomerModal={showCustomerModal} setShowCustomerModal={setShowCustomerModal} customerForm={customerForm} setCustomerForm={setCustomerForm}
-        showStockModal={showStockModal} setShowStockModal={setShowStockModal} stockForm={stockForm} setStockForm={setStockForm}
-        showSupplierModal={showSupplierModal} setShowSupplierModal={setShowSupplierModal} supplierForm={supplierForm} setSupplierForm={setSupplierForm}
-        showSupplierListModal={showSupplierListModal} setShowSupplierListModal={setShowSupplierListModal}
-        showCategoryModal={showCategoryModal} setShowCategoryModal={setShowCategoryModal}
-        handleAction={handleAction} isSaving={isSaving} data={data}
         selectedJob={selectedJob} setSelectedJob={setSelectedJob}
-        jobTargetMode={jobTargetMode} 
-        setJobTargetMode={setJobTargetMode}
+        showAddJob={showAddJob} setShowAddJob={setShowAddJob}
+        newJob={newJob} setNewJob={setNewJob}
+        
+        showJobModal={showAddJob} setShowJobModal={setShowAddJob} // Alias
 
-        // 🔥 BURAYA DİKKAT: Eksik state'ler buraya eklendi
+        selectedCustomer={selectedCustomer} setSelectedCustomer={setSelectedCustomer}
+        selectedAsset={selectedAsset} setSelectedAsset={setSelectedAsset}
+        selectedStaff={selectedStaff} setSelectedStaff={setSelectedStaff}
+        
+        showAddStaff={showAddStaff} setShowAddStaff={setShowAddStaff}
+        newStaff={newStaff} setNewStaff={setNewStaff}
+        
+        showAddCustomer={showAddCustomer} setShowAddCustomer={setShowAddCustomer}
+        newCustomer={newCustomer} setNewCustomer={setNewCustomer}
+
+        showAddAsset={showAddAsset} setShowAddAsset={setShowAddAsset}
+        newAsset={newAsset} setNewAsset={setNewAsset}
+
+        showStockModal={showStockModal} setShowStockModal={setShowStockModal}
+        newStock={newStock} setNewStock={setNewStock}
+
+        showSupplierModal={showSupplierModal} setShowSupplierModal={setShowSupplierModal}
+        showSupplierListModal={showSupplierModal} setShowSupplierListModal={setShowSupplierListModal} // Alias
+        showAddSupplier={showAddSupplier} setShowAddSupplier={setShowAddSupplier}
+        newSupplier={newSupplier} setNewSupplier={setNewSupplier}
+
+        showCategoryModal={showCategoryModal} setShowCategoryModal={setShowCategoryModal}
+        newCategory={newCategory} setNewCategory={setNewCategory}
+
+        showOrderModal={showOrderModal} setShowOrderModal={setShowOrderModal}
+        showBulkOrderModal={showBulkOrderModal} setShowBulkOrderModal={setShowBulkOrderModal}
+        newOrder={newOrder} setNewOrder={setNewOrder}
+        bulkOrderList={bulkOrderList} setBulkOrderList={setBulkOrderList}
+
+        isEditingStaff={isEditingStaff} setIsEditingStaff={setIsEditingStaff}
+        editStaffForm={editStaffForm} setEditStaffForm={setEditStaffForm}
+
         searchCust={searchCust} setSearchCust={setSearchCust}
         searchAsset={searchAsset} setSearchAsset={setSearchAsset}
-        
-        userRole="Yönetici" // Yönetici için sabit rol
+        userRole="Yönetici"
       />
-      <AssetQRModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} asset={selectedQRAsset} companyName={data?.name} companyLogo={data?.logo} landlinePhone={data?.landlinePhone} whatsappPhone={data?.whatsappPhone} companyWebsite={data?.website} />
+      
+      <AssetQRModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} asset={selectedQRAsset} companyName={data?.name} companyLogo={data?.logo} />
 
     </div>
   );
