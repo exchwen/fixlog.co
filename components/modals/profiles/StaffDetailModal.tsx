@@ -8,6 +8,7 @@ import sectorsData from '@/lib/data/sectors.json';
 export default function StaffDetailModal({
   selectedStaff, setSelectedStaff,
   data, handleCloseDetail,
+  selectedJob, // 🚀 iOS Stacking için eklendi
   setSelectedJob,
   isEditingStaff, setIsEditingStaff,
   editStaffForm, setEditStaffForm,
@@ -45,7 +46,32 @@ export default function StaffDetailModal({
     'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200',
     'İptal': 'bg-rose-100 text-rose-700 border-rose-200',
     'Onay Bekliyor': 'bg-purple-100 text-purple-700 border-purple-200',
-    'Usta Bekliyor': 'bg-orange-100 text-orange-700 border-orange-200'
+    'Usta Bekliyor': 'bg-indigo-100 text-indigo-700 border-indigo-200'
+  };
+
+  // 🚀 DİNAMİK STATÜ KONTROLÜ (Gecikme ve Usta Atama Mantığı)
+  const getDynamicStatus = (job: any, hasWorker: boolean) => {
+    if (!job) return { label: '', colorClass: '' };
+    let label = job.status || 'Beklemede';
+
+    if (label === 'Usta Bekliyor' || label === 'Devam Ediyor') {
+        label = hasWorker ? 'Devam Ediyor' : 'Usta Bekliyor';
+    }
+
+    let colorClass = statusColors[label] || 'bg-slate-100 text-slate-500 border-slate-200';
+
+    if ((label === 'Gelecek' || label === 'Beklemede' || label === 'Usta Bekliyor') && job.scheduled_date) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const sDate = new Date(job.scheduled_date.split(' ')[0]);
+        sDate.setHours(0, 0, 0, 0);
+
+        if (sDate < today) {
+            label = 'Gecikti';
+            colorClass = 'bg-rose-100 text-rose-700 border-rose-200';
+        }
+    }
+    return { label, colorClass };
   };
 
   const closeThisModal = () => {
@@ -56,25 +82,41 @@ export default function StaffDetailModal({
     setJobFilter('Tümü');
   };
 
+  // 🚀 iOS Stacking Kontrolü
+  const isStacked = Boolean(selectedJob);
+
   return (
     <AnimatePresence>
       {selectedStaff && (
         <motion.div 
+          key="staff-modal-backdrop"
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
-          exit={{ opacity: 0 }} 
+          exit={{ opacity: 0, pointerEvents: "none" }} 
           transition={{ duration: 0.15 }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm pointer-events-auto"
+          /* 🚀 Z-Index 9999'dan 120'ye düşürüldü, Stack olunca 10'a inerek arkada kalır */
+          className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-10' : 'z-[120]'}`}
         >
-          {/* Arka plan tıklaması ile kapatma */}
-          <div className="absolute inset-0 cursor-pointer" onClick={closeThisModal}></div>
+          {/* Arka plan tıklaması ile kapatma - Stack varken tıklamaları yok sayar */}
+          <div 
+             className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isStacked ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'} cursor-pointer`} 
+             onClick={() => !isStacked && closeThisModal()}
+          ></div>
 
           <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }} 
-            animate={{ opacity: 1, scale: 1 }} 
-            exit={{ opacity: 0, scale: 0.95 }} 
-            transition={{ duration: 0.15 }}
-            className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 cursor-default"
+            key="staff-modal-content"
+            /* 🚀 iOS Geriye Yaslanma (Stacking) Animasyonu */
+            initial={{ opacity: 0, scale: 0.95, y: 10 }} 
+            animate={{ 
+                opacity: 1, 
+                scale: isStacked ? 0.92 : 1, 
+                y: isStacked ? -20 : 0, 
+                filter: isStacked ? 'brightness(0.5)' : 'brightness(1)' 
+            }} 
+            exit={{ opacity: 0, scale: 0.95, y: 10 }} 
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            style={{ pointerEvents: isStacked ? 'none' : 'auto' }}
+            className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 z-10"
             onClick={(e) => e.stopPropagation()}
           >
             {/* HEADER (Üst Başlık Alanı) */}
@@ -226,36 +268,61 @@ export default function StaffDetailModal({
 
                         {displayJobs.length > 0 ? (
                             <div className="space-y-3 relative before:absolute before:inset-y-0 before:left-[19px] before:w-0.5 before:bg-slate-100 pb-4">
-                                {displayJobs.sort((a:any, b:any) => new Date(b.created_at || b.scheduled_date).getTime() - new Date(a.created_at || a.scheduled_date).getTime()).map((job: any) => (
-                                    <div 
-                                      key={job.id}
-                                      onClick={() => setSelectedJob && setSelectedJob(job)}
-                                      className="relative pl-12 cursor-pointer group"
-                                    >
-                                        <div className={`absolute left-[13px] top-4 w-3.5 h-3.5 rounded-full border-2 border-white z-10 transition-transform group-hover:scale-125 ${job.status === 'Tamamlandı' ? 'bg-emerald-500' : job.status === 'İptal' ? 'bg-rose-500' : 'bg-blue-500'}`}></div>
-                                        
-                                        <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm group-hover:shadow-md group-hover:border-blue-300 transition-all">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <div className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors line-clamp-1 pr-2">
-                                                    {job.customer_name || 'Genel Görev'}
+                                {displayJobs.sort((a:any, b:any) => new Date(b.created_at || b.scheduled_date).getTime() - new Date(a.created_at || a.scheduled_date).getTime()).map((job: any) => {
+                                    
+                                    // 🚀 Varlık, Apartman ve Dinamik Durum Hesaplamaları
+                                    const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(job.asset_id));
+                                    const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
+                                    const detailWorker = job.details?.worker_id ? true : false;
+                                    const staffWorker = job.staff_id && data?.staff?.find((s:any) => String(s.id) === String(job.staff_id) && s.role !== 'Yönetici');
+                                    const hasWorker = !!(detailWorker || staffWorker);
+                                    const dynamicStatus = getDynamicStatus(job, hasWorker);
+
+                                    return (
+                                        <div 
+                                          key={job.id}
+                                          onClick={() => setSelectedJob && setSelectedJob(job)}
+                                          className="relative pl-12 cursor-pointer group"
+                                        >
+                                            <div className={`absolute left-[13px] top-4 w-3.5 h-3.5 rounded-full border-2 border-white z-10 transition-transform group-hover:scale-125 ${job.status === 'Tamamlandı' ? 'bg-emerald-500' : job.status === 'İptal' ? 'bg-rose-500' : 'bg-blue-500'}`}></div>
+                                            
+                                            <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm group-hover:shadow-md group-hover:border-blue-300 transition-all">
+                                                <div className="flex justify-between items-start mb-2 gap-2">
+                                                    <div className="min-w-0 flex flex-col gap-1 pr-2">
+                                                        <div className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors truncate">
+                                                            {aptName ? (
+                                                                <><span className="text-blue-600">{aptName}</span> - {job.customer_name}</>
+                                                            ) : (
+                                                                job.customer_name || 'Genel Görev'
+                                                            )}
+                                                        </div>
+                                                        {currentAsset && (
+                                                            <div className="text-[11px] font-bold text-slate-500 truncate">
+                                                                {currentAsset.name}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <span className={`px-2 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider border shrink-0 shadow-sm ${dynamicStatus.colorClass}`}>
+                                                        {dynamicStatus.label}
+                                                    </span>
                                                 </div>
-                                                <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider border shrink-0 ${statusColors[job.status] || 'bg-slate-100 text-slate-600'}`}>
-                                                    {job.status}
-                                                </span>
-                                            </div>
-                                            <div className="text-xs font-medium text-slate-500 flex items-center gap-1.5 mt-1">
-                                                <Briefcase size={12} className="opacity-70" /> {job.work_type}
-                                                <span className="mx-1 text-slate-300">•</span>
-                                                <Calendar size={12} className="opacity-70" /> {job.created_at?.split('T')[0] || job.scheduled_date || 'Tarih Yok'}
-                                            </div>
-                                            {job.details?.note && (
-                                                <div className="mt-3 pt-3 border-t border-slate-100 text-xs font-medium text-slate-600 line-clamp-2 italic">
-                                                    "{job.details.note.replace(/\[📍 Konum Kaydı\].*/g, '')}"
+                                                <div className="text-xs font-medium text-slate-500 flex items-center gap-1.5 mt-2">
+                                                    <Briefcase size={12} className="opacity-70 shrink-0" /> <span className="truncate">{job.work_type}</span>
+                                                    <span className="mx-1 text-slate-300 shrink-0">•</span>
+                                                    <Calendar size={12} className={`shrink-0 ${dynamicStatus.label === 'Gecikti' ? 'text-rose-500' : 'text-slate-400'}`} /> 
+                                                    <span className={dynamicStatus.label === 'Gecikti' ? 'text-rose-600 font-bold whitespace-nowrap' : 'whitespace-nowrap'}>
+                                                        {job.created_at?.split('T')[0] || job.scheduled_date || 'Tarih Yok'}
+                                                    </span>
                                                 </div>
-                                            )}
+                                                {job.details?.note && (
+                                                    <div className="mt-3 pt-3 border-t border-slate-100 text-xs font-medium text-slate-600 line-clamp-2 italic">
+                                                        "{job.details.note.replace(/\[📍 Konum Kaydı\].*/g, '')}"
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center py-10 text-center px-4">
