@@ -655,101 +655,108 @@ export default function JobDetailModal({
               ) : (
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6 space-y-5">
                     
-                    <div>
-                      <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">İş Türü</label>
-                      <div className="grid grid-cols-2 gap-2">
-                          <button onClick={() => setEditJobDetailForm({...editJobDetailForm, workCategory: 'Normal İş Atama'})} className={`py-2.5 sm:py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 ${editJobDetailForm.workCategory !== 'Genel İş Atama' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Normal İş Atama</button>
-                          <button onClick={() => setEditJobDetailForm({...editJobDetailForm, workCategory: 'Genel İş Atama', customerName: '', assetId: ''})} className={`py-2.5 sm:py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 ${editJobDetailForm.workCategory === 'Genel İş Atama' ? 'bg-slate-900 text-white border-slate-900 shadow-sm' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Genel İş Atama</button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Tarih / Zamanlama</label>
-                      <div className="grid grid-cols-2 gap-2">
-                          <button onClick={() => setEditJobDetailForm({...editJobDetailForm, jobType: 'Anlık', scheduledDate: ''})} className={`py-2.5 sm:py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 ${editJobDetailForm.jobType === 'Anlık' ? 'bg-blue-50 text-blue-700 border-blue-300 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>Anlık Görev</button>
-                          <button onClick={() => setEditJobDetailForm({...editJobDetailForm, jobType: 'Planlı'})} className={`py-2.5 sm:py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 ${editJobDetailForm.jobType === 'Planlı' ? 'bg-blue-50 text-blue-700 border-blue-300 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>Tarih Planla</button>
-                      </div>
-                      {editJobDetailForm.jobType === 'Planlı' && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-3">
-                          <input type="date" value={editJobDetailForm.scheduledDate} className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" onChange={e => setEditJobDetailForm({...editJobDetailForm, scheduledDate: e.target.value})} />
-                        </motion.div>
-                      )}
-                    </div>
-
-                    {editJobDetailForm.workCategory !== 'Genel İş Atama' && (
-                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 shadow-sm">
-                        <div className="flex flex-col sm:flex-row gap-2 mb-2">
-                          <button onClick={() => setJobTargetMode('CUSTOMER')} className={`flex-1 py-2.5 sm:py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 ${jobTargetMode === 'CUSTOMER' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-200'}`}>👤 Müşteri Seçerek İlerle</button>
-                          <button onClick={() => setJobTargetMode('ASSET')} className={`flex-1 py-2.5 sm:py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 ${jobTargetMode === 'ASSET' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-200'}`}>📦 Varlık Seçerek İlerle</button>
-                        </div>
-
-                        {jobTargetMode === 'CUSTOMER' ? (
-                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-                            <div className="relative">
-                              <Search className="absolute left-3 top-3 sm:top-2.5 text-slate-400" size={16} />
-                              <input type="text" placeholder="İsim veya TC ile Müşteri Ara..." className="w-full pl-9 pr-3 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 bg-white" value={searchCust} onChange={e => setSearchCust(e.target.value)} />
+                    {/* 🚀 EĞER MOD "ASSIGN" (USTA ATAMA) İSE SADECE PERSONEL SEÇİMİ VE NOT GÖRÜNÜR */}
+                    {jobModalType !== 'ASSIGN' && (
+                        <>
+                            <div>
+                            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">İş Türü</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button onClick={() => setEditJobDetailForm({...editJobDetailForm, workCategory: 'Normal İş Atama'})} className={`py-2.5 sm:py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 ${editJobDetailForm.workCategory !== 'Genel İş Atama' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Normal İş Atama</button>
+                                <button onClick={() => setEditJobDetailForm({...editJobDetailForm, workCategory: 'Genel İş Atama', customerName: '', assetId: ''})} className={`py-2.5 sm:py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 ${editJobDetailForm.workCategory === 'Genel İş Atama' ? 'bg-slate-900 text-white border-slate-900 shadow-sm' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>Genel İş Atama</button>
                             </div>
-                            <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500 custom-scrollbar" size={4} value={editJobDetailForm.customerName} onChange={e => setEditJobDetailForm({...editJobDetailForm, customerName: e.target.value, assetId: ''})}>
-                              <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- 1. Listeden Müşteri Seçin --</option>
-                              {(data?.customers || []).filter((c:any) => c.name?.toLowerCase().includes(searchCust?.toLowerCase()) || c.tax_info?.includes(searchCust)).map((c: any) => <option key={c.id} value={c.name} className="py-2 border-b border-slate-50 last:border-0">{c.name} {c.tax_info ? `(${c.tax_info})` : ''}</option>)}
-                            </select>
-                            
-                            {editJobDetailForm.customerName && (() => {
-                               const selectedCustomer = (data?.customers || []).find((c:any) => c.name === editJobDetailForm.customerName);
-                               const customerAssets = (data?.assets || []).filter((a:any) => String(a.customer_id) === String(selectedCustomer?.id));
-                               
-                               return (
-                                 <div className="pt-2 border-t border-slate-100">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">2. Bu Müşteriye Ait Varlık (İsteğe Bağlı)</label>
-                                    <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500" value={editJobDetailForm.assetId} onChange={e => setEditJobDetailForm({...editJobDetailForm, assetId: e.target.value})}>
-                                        <option value="">-- Varlık Seçilmedi (Genel Müşteri İşi) --</option>
-                                        {customerAssets.map((a:any) => (
-                                           <option key={a.id} value={a.id}>{a.name} - {a.location}</option>
-                                        ))}
-                                    </select>
-                                    {customerAssets.length === 0 && <div className="text-[10px] text-amber-500 mt-1.5 font-bold px-1">Bu müşteriye ait kayıtlı varlık bulunamadı.</div>}
-                                 </div>
-                               );
-                            })()}
-                          </motion.div>
-                        ) : (
-                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                            <div className="relative mb-2">
-                              <Search className="absolute left-3 top-3 sm:top-2.5 text-slate-400" size={16} />
-                              <input type="text" placeholder="Cihaz Adı Ara..." className="w-full pl-9 pr-3 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 bg-white" value={searchAsset} onChange={e => setSearchAsset(e.target.value)} />
                             </div>
-                            <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500 custom-scrollbar" size={4} value={editJobDetailForm.assetId} onChange={e => {
-                              const selectedAsset = (data?.assets || []).find((a:any) => String(a.id) === String(e.target.value));
-                              const parentCust = (data?.customers || []).find((c:any) => String(c.id) === String(selectedAsset?.customer_id));
-                              setEditJobDetailForm({...editJobDetailForm, assetId: e.target.value, customerName: parentCust?.name || ''});
-                            }}>
-                              <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- Listeden Varlık Seçin --</option>
-                              {(data?.assets || []).filter((a: any) => a.name?.toLowerCase().includes(searchAsset?.toLowerCase())).map((a: any) => (
-                                <option key={a.id} value={a.id} className="py-2 border-b border-slate-50 last:border-0">{a.name} - {a.location}</option>
-                              ))}
-                            </select>
-                            {editJobDetailForm.assetId && (
-                                <div className="mt-3 text-[10px] font-bold text-blue-700 bg-blue-50/80 p-2.5 rounded-lg border border-blue-100 flex items-center gap-1.5">
-                                    <CheckCircle size={14} className="text-blue-500 shrink-0"/> Müşteri Eşleşti: <span className="text-slate-800 truncate">{editJobDetailForm.customerName || 'Bağımsız Varlık'}</span>
-                                </div>
+
+                            <div>
+                            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Tarih / Zamanlama</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button onClick={() => setEditJobDetailForm({...editJobDetailForm, jobType: 'Anlık', scheduledDate: ''})} className={`py-2.5 sm:py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 ${editJobDetailForm.jobType === 'Anlık' ? 'bg-blue-50 text-blue-700 border-blue-300 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>Anlık Görev</button>
+                                <button onClick={() => setEditJobDetailForm({...editJobDetailForm, jobType: 'Planlı'})} className={`py-2.5 sm:py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 ${editJobDetailForm.jobType === 'Planlı' ? 'bg-blue-50 text-blue-700 border-blue-300 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>Tarih Planla</button>
+                            </div>
+                            {editJobDetailForm.jobType === 'Planlı' && (
+                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-3">
+                                <input type="date" value={editJobDetailForm.scheduledDate} className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" onChange={e => setEditJobDetailForm({...editJobDetailForm, scheduledDate: e.target.value})} />
+                                </motion.div>
                             )}
-                          </motion.div>
-                        )}
-                      </div>
+                            </div>
+
+                            {editJobDetailForm.workCategory !== 'Genel İş Atama' && (
+                            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 shadow-sm">
+                                <div className="flex flex-col sm:flex-row gap-2 mb-2">
+                                <button onClick={() => setJobTargetMode('CUSTOMER')} className={`flex-1 py-2.5 sm:py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 ${jobTargetMode === 'CUSTOMER' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-200'}`}>👤 Müşteri Seçerek İlerle</button>
+                                <button onClick={() => setJobTargetMode('ASSET')} className={`flex-1 py-2.5 sm:py-2 text-xs font-bold rounded-xl border transition-all active:scale-95 ${jobTargetMode === 'ASSET' ? 'bg-white text-blue-700 border-blue-300 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-200'}`}>📦 Varlık Seçerek İlerle</button>
+                                </div>
+
+                                {jobTargetMode === 'CUSTOMER' ? (
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+                                    <div className="relative">
+                                    <Search className="absolute left-3 top-3 sm:top-2.5 text-slate-400" size={16} />
+                                    <input type="text" placeholder="İsim veya TC ile Müşteri Ara..." className="w-full pl-9 pr-3 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 bg-white" value={searchCust} onChange={e => setSearchCust(e.target.value)} />
+                                    </div>
+                                    <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500 custom-scrollbar" size={4} value={editJobDetailForm.customerName} onChange={e => setEditJobDetailForm({...editJobDetailForm, customerName: e.target.value, assetId: ''})}>
+                                    <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- 1. Listeden Müşteri Seçin --</option>
+                                    {(data?.customers || []).filter((c:any) => c.name?.toLowerCase().includes(searchCust?.toLowerCase()) || c.tax_info?.includes(searchCust)).map((c: any) => <option key={c.id} value={c.name} className="py-2 border-b border-slate-50 last:border-0">{c.name} {c.tax_info ? `(${c.tax_info})` : ''}</option>)}
+                                    </select>
+                                    
+                                    {editJobDetailForm.customerName && (() => {
+                                    const selectedCustomer = (data?.customers || []).find((c:any) => c.name === editJobDetailForm.customerName);
+                                    const customerAssets = (data?.assets || []).filter((a:any) => String(a.customer_id) === String(selectedCustomer?.id));
+                                    
+                                    return (
+                                        <div className="pt-2 border-t border-slate-100">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">2. Bu Müşteriye Ait Varlık (İsteğe Bağlı)</label>
+                                            <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500" value={editJobDetailForm.assetId} onChange={e => setEditJobDetailForm({...editJobDetailForm, assetId: e.target.value})}>
+                                                <option value="">-- Varlık Seçilmedi (Genel Müşteri İşi) --</option>
+                                                {customerAssets.map((a:any) => (
+                                                <option key={a.id} value={a.id}>{a.name} - {a.location}</option>
+                                                ))}
+                                            </select>
+                                            {customerAssets.length === 0 && <div className="text-[10px] text-amber-500 mt-1.5 font-bold px-1">Bu müşteriye ait kayıtlı varlık bulunamadı.</div>}
+                                        </div>
+                                    );
+                                    })()}
+                                </motion.div>
+                                ) : (
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                                    <div className="relative mb-2">
+                                    <Search className="absolute left-3 top-3 sm:top-2.5 text-slate-400" size={16} />
+                                    <input type="text" placeholder="Cihaz Adı Ara..." className="w-full pl-9 pr-3 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 bg-white" value={searchAsset} onChange={e => setSearchAsset(e.target.value)} />
+                                    </div>
+                                    <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500 custom-scrollbar" size={4} value={editJobDetailForm.assetId} onChange={e => {
+                                    const selectedAsset = (data?.assets || []).find((a:any) => String(a.id) === String(e.target.value));
+                                    const parentCust = (data?.customers || []).find((c:any) => String(c.id) === String(selectedAsset?.customer_id));
+                                    setEditJobDetailForm({...editJobDetailForm, assetId: e.target.value, customerName: parentCust?.name || ''});
+                                    }}>
+                                    <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- Listeden Varlık Seçin --</option>
+                                    {(data?.assets || []).filter((a: any) => a.name?.toLowerCase().includes(searchAsset?.toLowerCase())).map((a: any) => (
+                                        <option key={a.id} value={a.id} className="py-2 border-b border-slate-50 last:border-0">{a.name} - {a.location}</option>
+                                    ))}
+                                    </select>
+                                    {editJobDetailForm.assetId && (
+                                        <div className="mt-3 text-[10px] font-bold text-blue-700 bg-blue-50/80 p-2.5 rounded-lg border border-blue-100 flex items-center gap-1.5">
+                                            <CheckCircle size={14} className="text-blue-500 shrink-0"/> Müşteri Eşleşti: <span className="text-slate-800 truncate">{editJobDetailForm.customerName || 'Bağımsız Varlık'}</span>
+                                        </div>
+                                    )}
+                                </motion.div>
+                                )}
+                            </div>
+                            )}
+
+                            <div>
+                            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Görev Tipi / Branş</label>
+                            <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={editJobDetailForm.workType} onChange={e => setEditJobDetailForm({...editJobDetailForm, workType: e.target.value})}>
+                                <option value="Genel Görev">Genel Görev</option>
+                                {branchList.map((subType: any) => (
+                                <option key={subType} value={subType}>{subType}</option>
+                                ))}
+                            </select>
+                            </div>
+                        </>
                     )}
 
                     <div>
-                      <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Görev Tipi / Branş</label>
-                      <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={editJobDetailForm.workType} onChange={e => setEditJobDetailForm({...editJobDetailForm, workType: e.target.value})}>
-                        <option value="Genel Görev">Genel Görev</option>
-                        {branchList.map((subType: any) => (
-                          <option key={subType} value={subType}>{subType}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Sorumlu Personel</label>
+                      <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">
+                        {jobModalType === 'ASSIGN' ? 'Atanacak Usta / Personel Seçimi' : 'Sorumlu Personel'}
+                      </label>
                       <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={editJobDetailForm.staffId} onChange={e => setEditJobDetailForm({...editJobDetailForm, staffId: e.target.value})}>
                         <option value="">Seçiniz...</option>
                         {(data?.staff || [])
@@ -775,7 +782,7 @@ export default function JobDetailModal({
                             }, () => setSelectedJob(null), () => setIsEditingJobDetail(false))} 
                             className="flex-1 bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 shadow-md"
                         >
-                            {isSaving ? <Loader2 className="animate-spin mx-auto" size={18} /> : 'Değişiklikleri Kaydet'}
+                            {isSaving ? <Loader2 className="animate-spin mx-auto" size={18} /> : (jobModalType === 'ASSIGN' ? 'Ustayı Ata' : 'Değişiklikleri Kaydet')}
                         </button>
                         <button 
                             onClick={() => handleSmartClose()} 
