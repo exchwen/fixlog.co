@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Loader2, ArrowDownRight, ArrowUpRight, Trash2, Download, Eye, Calendar, Clock, Filter, WifiOff, Wallet } from 'lucide-react';
+import { Plus, X, Loader2, ArrowDownRight, ArrowUpRight, Trash2, Download, Eye, Calendar, Clock, Filter, WifiOff, Wallet, User } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
 
@@ -9,7 +9,7 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
   const params = useParams();
   const router = useRouter();
   
-  // YENİ: URL'ye göre 100% güvenilir yol ve slug tespiti (Bilet İzolasyonu)
+  // URL'ye göre 100% güvenilir yol ve slug tespiti (Bilet İzolasyonu)
   const isPatronPath = typeof window !== 'undefined' && window.location.pathname.includes('/dashboard');
   const activeSlug = params?.slug || (typeof window !== 'undefined' ? localStorage.getItem(isPatronPath ? 'patron_userSlug' : 'staff_userSlug') : '');
   
@@ -80,17 +80,33 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
     setIsSavingFinance(true);
     
     const endpoint = financeModal.type === 'Gelir' ? 'add-income' : 'add-expense';
-    const bodyData = { slug: activeSlug, description, amount: parseFloat(financeAmount) };
+    
+    // 🚀 KİM EKLEDİ BİLGİSİ
+    // Patron dashboard'daysa ownerName kullanılır, staff panelindeyse mevcut personelin adı bulunur
+    let currentUserName = data?.ownerName || 'Patron';
+    if (!isPatronPath) {
+       const currentUserToken = localStorage.getItem('staff_authToken');
+       // Not: Eğer data objesinin içinde staff listesi ve mevcut staff ID varsa daha kesin bir eşleştirme yapılabilir.
+       // Şimdilik genel olarak "Yönetici" veya data.staffName vs var ise onu alıyoruz.
+       currentUserName = data?.staffName || 'Yönetici / Usta';
+    }
+
+    const bodyData = { 
+        slug: activeSlug, 
+        description, 
+        amount: parseFloat(financeAmount),
+        addedBy: currentUserName // 🚀 Backend'e de gönderiyoruz (Destekliyorsa kaydeder)
+    };
     
     const newRecord = {
         id: Date.now().toString(),
         description,
         amount: parseFloat(financeAmount),
         type: financeModal.type,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        addedBy: currentUserName // 🚀 UI'da anında göstermek için eklendi
     };
 
-    // YENİ: Prop yerine URL'ye dayalı kusursuz Token bulucu
     const token = localStorage.getItem(isPatronPath ? 'patron_authToken' : 'staff_authToken');
 
     try {
@@ -106,7 +122,7 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
       if (res.ok) {
         setLocalFinances([newRecord, ...localFinances]);
         closeFinanceModal();
-        if (!isPatronPath) { // URL'den Yönetici/Usta olduğunu anlar
+        if (!isPatronPath) {
             alert('İşlem başarıyla kaydedildi. Patron hesabına aktarıldı.');
         }
         router.refresh(); 
@@ -146,7 +162,8 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
         'İşlem Saati': timeStr,
         'Açıklama / Kalemler': f.description.replace(/\n|,/g, ' - '), 
         'Miktar (TL)': f.amount,
-        'İşlem Tipi': f.type
+        'İşlem Tipi': f.type,
+        'Ekleyen Kişi': f.addedBy || 'Belirtilmedi' // 🚀 Excel çıktısına eklendi
       };
     });
 
@@ -245,10 +262,12 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
         
         <div className="hidden md:flex bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex-col">
           <div className="overflow-x-auto overflow-y-auto max-h-[400px] custom-scrollbar">
-            <table className="w-full text-left text-xs relative border-collapse min-w-[600px]">
+            <table className="w-full text-left text-xs relative border-collapse min-w-[700px]">
               <thead className="bg-slate-50 text-slate-600 font-black border-b border-slate-200 sticky top-0 z-10 shadow-sm uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="px-5 py-4 w-1/2 border-r border-slate-200 last:border-r-0 whitespace-nowrap">Açıklama (Kalemler)</th>
+                  {/* 🚀 TABLO BAŞLIĞINA EKLENDİ */}
+                  <th className="px-5 py-4 border-r border-slate-200 last:border-r-0 whitespace-nowrap">Ekleyen</th>
                   <th className="px-5 py-4 border-r border-slate-200 last:border-r-0 whitespace-nowrap">Tarih ve Saat</th>
                   <th className="px-5 py-4 border-r border-slate-200 last:border-r-0 whitespace-nowrap">Miktar (₺)</th>
                   <th className="px-5 py-4 text-right border-r border-slate-200 last:border-r-0 whitespace-nowrap">Tip</th>
@@ -281,6 +300,13 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
                         </button>
                       )}
                     </td>
+                    {/* 🚀 TABLO HÜCRESİNE EKLENDİ */}
+                    <td className="px-5 py-4 align-top border-r border-slate-100 last:border-r-0">
+                      <div className="flex items-center gap-1.5 text-slate-600 font-medium bg-slate-50 border border-slate-200 px-2 py-1 rounded-md w-max">
+                        <User size={12} className="text-slate-400" />
+                        {f.addedBy || 'Patron / Sistem'}
+                      </div>
+                    </td>
                     <td className="px-5 py-4 align-top border-r border-slate-100 last:border-r-0">
                       <div className="flex flex-col gap-1">
                         <div className="font-bold text-slate-800 flex items-center gap-1.5"><Calendar size={12} className="text-slate-400"/> {dateObj.toLocaleDateString('tr-TR')}</div>
@@ -297,7 +323,7 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
                       <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black border ${f.type === 'Gelir' ? 'bg-emerald-50 text-emerald-600 border-emerald-200 shadow-sm' : 'bg-rose-50 text-rose-600 border-rose-200 shadow-sm'}`}>{f.type}</span>
                     </td>
                   </tr>
-                )}) : <tr><td colSpan={4} className="p-16 text-center text-slate-400 font-medium bg-slate-50">Bu filtreye uygun finansal hareket bulunmuyor.</td></tr>}
+                )}) : <tr><td colSpan={5} className="p-16 text-center text-slate-400 font-medium bg-slate-50">Bu filtreye uygun finansal hareket bulunmuyor.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -310,8 +336,14 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
             const dateObj = new Date(f.created_at);
 
             return (
-              <div key={f.id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col gap-3">
-                <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
+              <div key={f.id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col gap-3 relative">
+                
+                {/* 🚀 MOBİL KART İÇİNE EKLENDİ */}
+                <div className="absolute top-4 right-4 flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
+                    <User size={10} /> {f.addedBy || 'Sistem'}
+                </div>
+
+                <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3 pr-24">
                   <div className="flex flex-col gap-1">
                     <span className={`px-2 py-1 w-max rounded-md text-[9px] font-black border uppercase tracking-wider ${f.type === 'Gelir' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
                       {f.type}
