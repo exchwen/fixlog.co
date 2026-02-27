@@ -207,31 +207,30 @@ export default function JobDetailModal({
         {selectedJob && jobModalType !== 'APPROVAL' && (
           <motion.div 
              key="job-modal-backdrop"
-             className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[120]' : 'z-[130]'}`}
+             /* 🚀 Stack edildiğinde z-index düşürüldü ki yeni modal öne çıksın */
+             className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[40]' : 'z-[130]'}`}
              initial={{ opacity: 0 }} 
              animate={{ opacity: 1 }} 
              exit={{ opacity: 0, pointerEvents: "none" }} 
              transition={{ duration: 0.15 }}
           >
             {/* Arka Plan Tıklama Alanı (Stacking varken saydamlaşır ve tıklamayı devre dışı bırakır ki yeni modalın arkasında kalkan oluşturmasın) */}
-            {!(isAnyProfileDetailOpen && !isMobile) && (
-                <div 
-                   className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isStacked ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'} cursor-pointer`} 
-                   onClick={() => !isStacked && handleCloseDetail('job')}
-                />
-            )}
+            <div 
+               className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isStacked ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'} cursor-pointer`} 
+               onClick={() => !isStacked && handleCloseDetail('job')}
+            />
 
             <motion.div 
                 key="job-modal-content"
-                initial={{ opacity: 0, scale: 0.95, y: 10, x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 }} 
+                /* 🚀 Saf iOS Stacking efekti için "x" kaymaları tamamen kaldırıldı */
+                initial={{ opacity: 0, scale: 0.95, y: 10 }} 
                 animate={{ 
                     opacity: 1, 
                     scale: isStacked ? 0.92 : 1, 
                     y: isStacked ? -20 : 0, 
-                    filter: isStacked ? 'brightness(0.5)' : 'brightness(1)',
-                    x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 
+                    filter: isStacked ? 'brightness(0.5)' : 'brightness(1)'
                 }} 
-                exit={{ opacity: 0, scale: 0.95, y: 10, x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 }} 
+                exit={{ opacity: 0, scale: 0.95, y: 10 }} 
                 transition={{ duration: 0.25, ease: "easeInOut" }}
                 style={{ pointerEvents: isStacked ? 'none' : 'auto' }}
                 onClick={(e) => e.stopPropagation()}
@@ -462,47 +461,50 @@ export default function JobDetailModal({
                             </button>
                         )}
 
-                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full pt-2">
-                            {jobModalType === 'APPROVAL_FIRST_STEP' ? (
-                                <button 
-                                    onClick={async () => {
-                                        setIsApproving(true);
-                                        const isGeneralJob = selectedJob.work_type === 'Genel Görev';
-                                        const newStatus = isGeneralJob ? 'Devam Ediyor' : 'Usta Bekliyor';
-                                        await handleAction('update-job', {
-                                            id: selectedJob.id,
-                                            status: newStatus,
-                                            lastEditedBy: data?.ownerName || 'Yönetici',
-                                        }, () => {
-                                            setSelectedJob(null);
-                                            if (setJobModalType) setJobModalType('');
-                                        }, null);
-                                        setIsApproving(false);
-                                    }}
-                                    disabled={isApproving}
-                                    className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-black transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
-                                >
-                                    {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckSquare size={16} />}
-                                    İŞİ ONAYLIYORUM
-                                </button>
-                            ) : (
-                                <button 
-                                    onClick={handleEditClick}
-                                    className="flex-1 bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"
-                                >
-                                    <Settings size={16} /> Düzenle / Ata
-                                </button>
-                            )}
-                            
-                            {selectedJob.status !== 'İptal' && selectedJob.status !== 'Tamamlandı' && (
-                                <button 
-                                    onClick={() => setShowCancelConfirm(true)}
-                                    className="sm:w-1/3 bg-rose-50 text-rose-600 border border-rose-200 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"
-                                >
-                                    <X size={16} strokeWidth={3} /> İptal Et
-                                </button>
-                            )}
-                        </div>
+                        {/* 🚀 Eğer İş Tamamlandı ise butonları içeren satır tamamen gizlenecek */}
+                        {selectedJob.status !== 'Tamamlandı' && (
+                            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full pt-2">
+                                {jobModalType === 'APPROVAL_FIRST_STEP' ? (
+                                    <button 
+                                        onClick={async () => {
+                                            setIsApproving(true);
+                                            const isGeneralJob = selectedJob.work_type === 'Genel Görev';
+                                            const newStatus = isGeneralJob ? 'Devam Ediyor' : 'Usta Bekliyor';
+                                            await handleAction('update-job', {
+                                                id: selectedJob.id,
+                                                status: newStatus,
+                                                lastEditedBy: data?.ownerName || 'Yönetici',
+                                            }, () => {
+                                                setSelectedJob(null);
+                                                if (setJobModalType) setJobModalType('');
+                                            }, null);
+                                            setIsApproving(false);
+                                        }}
+                                        disabled={isApproving}
+                                        className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-black transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+                                    >
+                                        {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckSquare size={16} />}
+                                        İŞİ ONAYLIYORUM
+                                    </button>
+                                ) : (
+                                    <button 
+                                        onClick={handleEditClick}
+                                        className="flex-1 bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"
+                                    >
+                                        <Settings size={16} /> Düzenle / Ata
+                                    </button>
+                                )}
+                                
+                                {selectedJob.status !== 'İptal' && (
+                                    <button 
+                                        onClick={() => setShowCancelConfirm(true)}
+                                        className="sm:w-1/3 bg-rose-50 text-rose-600 border border-rose-200 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                    >
+                                        <X size={16} strokeWidth={3} /> İptal Et
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
               ) : (
