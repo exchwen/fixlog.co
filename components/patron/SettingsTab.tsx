@@ -18,6 +18,9 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
   
   // Çevrimdışı kontrolü için State
   const [isOffline, setIsOffline] = useState(false);
+  
+  // 🚀 LOGO ARKA PLAN RENK SİSTEMİ İÇİN STATE
+  const [logoBgColor, setLogoBgColor] = useState<string>('#ffffff');
 
   // İnternet durumunu dinleyen useEffect
   useEffect(() => {
@@ -52,6 +55,92 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
       setLocalDetail(settingsForm.address);
     }
   }, [settingsForm?.address]);
+
+  // 🚀 GÜVENLİ LİNK DÖNÜŞÜTÜRÜCÜ (PROXY)
+  const getSafeImageUrl = (url: string | undefined) => {
+    if (!url) return '';
+    if (url.includes('pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev')) {
+       return url.replace('https://pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev', '/dosya-deposu');
+    }
+    return url;
+  };
+
+  // 🚀 LOGO YÜKLENDİĞİNDE VEYA MEVCUT LOGO VARSA RENK ANALİZİ YAP
+  useEffect(() => {
+    if (!settingsForm?.logo) {
+      setLogoBgColor('#ffffff');
+      return;
+    }
+
+    // Seçilen logo base64 (yeni yüklendi) veya url (zaten var) olabilir.
+    let logoSource = settingsForm.logo;
+    
+    // Sadece url ise proxy'den geçir. Base64 ise dokunma.
+    if (logoSource.startsWith('http')) {
+        logoSource = getSafeImageUrl(logoSource);
+    }
+
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    
+    img.onerror = () => {
+      setLogoBgColor('#ffffff');
+    };
+
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      
+      try {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        let r = 0, g = 0, b = 0, count = 0;
+        
+        for (let i = 0; i < data.length; i += 4) {
+          // Saydam pikselleri atla
+          if (data[i + 3] < 128) continue; 
+          r += data[i];
+          g += data[i + 1];
+          b += data[i + 2];
+          count++;
+        }
+        
+        if (count > 0) {
+          r = Math.floor(r / count);
+          g = Math.floor(g / count);
+          b = Math.floor(b / count);
+
+          const palette = [
+            { name: 'white', rgb: [255, 255, 255], hex: '#ffffff' },
+            { name: 'black', rgb: [15, 23, 42], hex: '#0f172a' }, 
+            { name: 'blue', rgb: [37, 99, 235], hex: '#2563eb' }
+          ];
+
+          let maxDist = -1;
+          let selectedColor = '#ffffff';
+
+          for (const color of palette) {
+            const dist = Math.sqrt(Math.pow(r - color.rgb[0], 2) + Math.pow(g - color.rgb[1], 2) + Math.pow(b - color.rgb[2], 2));
+            if (dist > maxDist) {
+              maxDist = dist;
+              selectedColor = color.hex;
+            }
+          }
+          setLogoBgColor(selectedColor);
+        }
+      } catch (e) {
+        console.error("Renk analizi yapılamadı:", e);
+      }
+    };
+    
+    // Cache kırma
+    img.src = logoSource + (logoSource.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
+  }, [settingsForm?.logo]);
 
   const updateAddress = (newDetail: string, newCity: string, newDistrict: string) => {
     setLocalDetail(newDetail);
@@ -95,7 +184,6 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
         const ctx = canvas.getContext('2d');
         if(ctx) {
             ctx.drawImage(img, 0, 0, width, height);
-            // Optimizasyon: Frontend küçük boyutta çevirir, Backend (worker.js) bunu yakalayıp R2'ye yükler
             const dataUrl = canvas.toDataURL('image/png');
             setSettingsForm({ ...(settingsForm || {}), logo: dataUrl });
         }
@@ -211,7 +299,11 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
         
         {/* Logo Yükleme Alanı */}
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-center sm:items-start bg-slate-50 p-4 border border-slate-200 rounded-xl">
-          <div className="w-20 h-20 bg-white border border-slate-200 rounded-xl flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+          <div 
+             className="w-20 h-20 rounded-xl flex items-center justify-center overflow-hidden shrink-0 shadow-sm border border-slate-200 transition-colors duration-300"
+             // 🚀 BURASI SİHİRLİ ALAN: Renk analizi sonucunu arka plana atarız
+             style={{ backgroundColor: settingsForm?.logo ? logoBgColor : '#ffffff' }}
+          >
             {settingsForm?.logo ? (
               <img src={settingsForm.logo} alt="Logo" className="max-w-full max-h-full object-contain p-2" />
             ) : (
@@ -227,7 +319,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
                 Logo Seç
               </label>
               {settingsForm?.logo && (
-                <button onClick={() => setSettingsForm({...settingsForm, logo: ''})} className="bg-rose-50 border border-rose-200 text-rose-600 px-4 py-2.5 rounded-lg text-xs font-bold hover:bg-rose-100 transition-all active:scale-95 shadow-sm">
+                <button onClick={() => { setSettingsForm({...settingsForm, logo: ''}); setLogoBgColor('#ffffff'); }} className="bg-rose-50 border border-rose-200 text-rose-600 px-4 py-2.5 rounded-lg text-xs font-bold hover:bg-rose-100 transition-all active:scale-95 shadow-sm">
                   Kaldır
                 </button>
               )}
