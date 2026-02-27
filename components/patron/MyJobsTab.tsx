@@ -62,58 +62,55 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
     }
 
     if (savedName) {
-      setCurrentUserName(savedName.split(' ')[0]); 
-    }
-  }, []);
+        setCurrentUserName(savedName); // 🚀 DÜZELTİLDİ: İsim artık bölünmeyecek, tam eşleşme sağlanacak.
+      }
+    }, []);
 
   const jobs = data?.jobs || [];
   const staff = data?.staff || [];
 
   // 1. ADIM: İZOLASYON (Sadece bana ait veya benim sorumlu olduğum işler)
   const myAllJobs = useMemo(() => {
-    if (!currentUserId) return [];
-    return jobs.filter((j: any) => 
-       String(j.staff_id) === String(currentUserId) || // Direkt bende olanlar
-       String(j.details?.managerId) === String(currentUserId) || // Benim ID ile atadığım
-       j.details?.managerName === currentUserName || // Benim İsim ile atadığım
-       (j.details?.createdBy === currentUserName && j.details?.creatorRole === 'Yönetici') // Benim oluşturduğum iş (Usta atansa bile bende kalır)
-    );
+    if (!currentUserId || !currentUserName) return [];
+    
+    return jobs.filter((j: any) => {
+       const staffMatch = String(j.staff_id) === String(currentUserId);
+       const managerIdMatch = String(j.details?.managerId) === String(currentUserId);
+       
+       // İsim eşleşmelerini tam ve esnek (includes) olarak garantiliyoruz
+       const managerNameMatch = j.details?.managerName && (j.details.managerName === currentUserName || j.details.managerName.includes(currentUserName));
+       const creatorMatch = j.details?.createdBy && (j.details.createdBy === currentUserName || j.details.createdBy.includes(currentUserName)) && j.details?.creatorRole === 'Yönetici';
+
+       return staffMatch || managerIdMatch || managerNameMatch || creatorMatch;
+    });
  }, [jobs, currentUserId, currentUserName]);
 
-  // --- GRUPLANDIRMA MANTIĞI (GÜNCELLENDİ) ---
+  // --- GRUPLANDIRMA MANTIĞI (SADELEŞTİRİLDİ VE GÜNCELLENDİ) ---
+  // myAllJobs zaten sadece bu yöneticiyle ilgili işleri getirdiği için, 
+  // alt tarafta tekrar staff_id kontrolü yapmaya gerek yoktur. (Çünkü usta atandığında staff_id değişir)
 
-  // 1. Onay Bekleyenler (Patrondan Yeni Gelmiş, Henüz Kabul Etmemişim)
+  // 1. Onay Bekleyenler (Patrondan Yeni Gelmiş)
   const incomingJobs = myAllJobs.filter((j: any) => 
-    (j.status === 'Beklemede' || j.status === 'Gelecek') && 
-    String(j.staff_id) === String(currentUserId) // Sadece direkt üzerimdeyse
+    j.status === 'Beklemede' || j.status === 'Gelecek'
   );
 
   // 2. Atama Bekleyenler (Kabul Ettim ama Henüz Usta Seçmedim)
   const waitingForAssignment = myAllJobs.filter((j: any) => 
-    j.status === 'Usta Bekliyor' && 
-    !j.details?.worker_id && 
-    String(j.staff_id) === String(currentUserId)
+    j.status === 'Usta Bekliyor' && !j.details?.worker_id
   );
 
-  // 3. Devam Edenler & Takiptekiler (KRİTİK GÜNCELLEME BURADA)
-  // - Kendim yapıyorsam (Devam Ediyor)
-  // - Ustaya atadıysam ve usta henüz onaylamadıysa (Usta Bekliyor + worker_id var)
-  // - Usta onayladı ve çalışıyorsa (Devam Ediyor / Sahada + worker_id var)
- // 3. Devam Edenler & Takiptekiler (KRİTİK GÜNCELLEME BURADA)
-  // - Kendim yapıyorsam (Devam Ediyor)
-  // - Ustaya atadıysam ve usta henüz onaylamadıysa (Usta Bekliyor + worker_id var)
-  // - Usta onayladı ve çalışıyorsa (Devam Ediyor / Sahada + worker_id var)
+  // 3. Devam Edenler & Takiptekiler (Ustaya atananlar DAHİL)
   const ongoingJobs = myAllJobs.filter((j: any) => {
     // Tamamlananlar ve İptal edilenler hariç
     if (j.status === 'Tamamlandı' || j.status === 'İptal') return false;
     
     // Zaten yukarıdaki kategorilere (Onay Bekleyen veya Atama Bekleyen) girenleri çıkar
-    const isIncoming = (j.status === 'Beklemede' || j.status === 'Gelecek') && String(j.staff_id) === String(currentUserId);
-    const isWaitingAssign = j.status === 'Usta Bekliyor' && !j.details?.worker_id && String(j.staff_id) === String(currentUserId);
+    const isIncoming = (j.status === 'Beklemede' || j.status === 'Gelecek');
+    const isWaitingAssign = (j.status === 'Usta Bekliyor' && !j.details?.worker_id);
     
     if (isIncoming || isWaitingAssign) return false;
 
-    // 🚀 Geriye kalanlar ("Devam Ediyor", "Sahada", worker_id olan "Usta Bekliyor" vb.) bu tabloya düşer
+    // 🚀 Usta atanmış ve devam eden TÜM işler buraya düşer
     return true; 
   });
 
