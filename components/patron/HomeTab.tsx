@@ -245,6 +245,27 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // 🚀 Dinamik Statü Kontrolü (Geciken İşleri Tespit Eder)
+  const getDynamicStatus = (job: any) => {
+    if (!job) return { label: '', colorClass: '' };
+    let label = job.status;
+    let colorClass = statusColors[job.status] || 'bg-slate-100 text-slate-500 border-slate-200';
+
+    if ((job.status === 'Gelecek' || job.status === 'Beklemede' || job.status === 'Usta Bekliyor') && job.scheduled_date) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const sDate = new Date(job.scheduled_date.split(' ')[0]);
+        sDate.setHours(0, 0, 0, 0);
+
+        if (sDate < today) {
+            label = 'Gecikti';
+            colorClass = 'bg-rose-100 text-rose-700 border-rose-200';
+        }
+    }
+    return { label, colorClass };
+  };
+  
   if (!isProfileComplete) {
     return (
       <div className="relative h-[80vh] flex flex-col items-center justify-center bg-white rounded-2xl border border-rose-100 shadow-sm overflow-hidden p-4">
@@ -817,13 +838,18 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                       </div>
                     </td>
 
-                    <td className="px-5 py-4 align-middle font-semibold text-slate-600 whitespace-nowrap">
-                      {j.scheduled_date || 'Anlık Kayıt'}
+                    {/* 🚀 Gecikme Detayı Eklendi (Masaüstü) */}
+                    <td className="px-5 py-4 align-middle whitespace-nowrap">
+                      <div className="flex items-center gap-1.5 font-semibold text-slate-600">
+                         <Calendar size={14} className={getDynamicStatus(j).label === 'Gecikti' ? 'text-rose-500' : 'text-blue-500'} />
+                         {j.scheduled_date || 'Anlık Kayıt'}
+                      </div>
                     </td>
                     <td className="px-5 py-4 align-middle text-right">
                       <div className="flex items-center justify-end gap-3">
-                         <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black tracking-wide border shadow-sm ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'} whitespace-nowrap uppercase`}>
-                           {j.status}
+                         {/* 🚀 Dinamik Rozet Eklendi */}
+                         <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black tracking-wide border shadow-sm ${getDynamicStatus(j).colorClass} whitespace-nowrap uppercase`}>
+                           {getDynamicStatus(j).label}
                          </span>
                          <div className="w-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <ArrowUpRight size={16} className="text-blue-500" />
@@ -881,8 +907,9 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                       <div className="font-black text-slate-800 text-sm truncate">{j.customer_name}</div>
                       <div className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-wider truncate bg-slate-50 w-fit px-2 py-0.5 rounded border border-slate-100">{j.work_type}</div>
                     </div>
-                    <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border shrink-0 shadow-sm ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>
-                      {j.status}
+                    {/* 🚀 Dinamik Rozet Eklendi (Mobil) */}
+                    <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border shrink-0 shadow-sm ${getDynamicStatus(j).colorClass}`}>
+                      {getDynamicStatus(j).label}
                     </span>
                  </div>
 
@@ -951,7 +978,9 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
 
                  <div className="flex justify-between items-center pt-2 border-t border-slate-50">
                    <div className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-md border border-slate-100 flex items-center gap-1.5 w-fit">
-                      <Calendar size={12} className="text-slate-400" /> {j.scheduled_date || 'Tarih Planlanmadı'}
+                      {/* 🚀 Tarih ikonu gecikince kırmızı olur */}
+                      <Calendar size={12} className={getDynamicStatus(j).label === 'Gecikti' ? 'text-rose-500' : 'text-slate-400'} /> 
+                      {j.scheduled_date || 'Tarih Planlanmadı'}
                    </div>
                    <ArrowUpRight size={16} className="text-blue-500" />
                  </div>
