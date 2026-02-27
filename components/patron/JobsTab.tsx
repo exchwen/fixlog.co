@@ -17,7 +17,7 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
     });
   };
 
-  // 🚀 YENİ: Dinamik Statü Kontrolü (Geciken İşleri Tespit Eder)
+  // Dinamik Statü Kontrolü (Geciken İşleri Tespit Eder)
   const getDynamicStatus = (job: any) => {
     let label = job.status;
     let colorClass = statusColors[job.status] || 'bg-slate-100 text-slate-500 border-slate-200';
@@ -71,23 +71,24 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
            <tbody className="divide-y divide-slate-100">
              {data?.jobs?.length > 0 ? data.jobs.map((j: any) => {
                
-               // --- 🛠️ DÜZELTİLMİŞ ROL BAZLI HİYERARŞİ ---
+               // --- 🚀 DÜZELTİLMİŞ ROL BAZLI HİYERARŞİ ---
                const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
                const creatorName = j.details?.createdBy || ownerName;
                const assignedPerson = data?.staff?.find((s: any) => String(s.id) === String(j.staff_id));
+               const detailWorker = data?.staff?.find((s: any) => String(s.id) === String(j.details?.worker_id));
                
-               let managerName = null;
+               // Eğer ustaya atanmışsa eski yöneticiyi details içinden kurtarıyoruz
+               let managerName = j.details?.managerName || null;
                let workerName = null;
 
                if (assignedPerson) {
                    if (assignedPerson.role === 'Yönetici') {
-                       managerName = assignedPerson.name;
+                       if (!managerName) managerName = assignedPerson.name;
                    } else {
                        workerName = assignedPerson.name;
                    }
                }
 
-               const detailWorker = data?.staff?.find((s: any) => String(s.id) === String(j.details?.worker_id));
                if (detailWorker) {
                    workerName = detailWorker.name;
                }
@@ -203,7 +204,7 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                       </div>
                    </td>
 
-                   {/* 🚀 DİNAMİK DURUM ROZETİ */}
+                   {/* DİNAMİK DURUM ROZETİ */}
                    <td className="px-5 py-4 align-top text-right whitespace-nowrap">
                       <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border shadow-sm ${dynamicStatus.colorClass}`}>
                           {dynamicStatus.label}
@@ -233,23 +234,23 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
       <div className="md:hidden flex flex-col gap-3">
         {data?.jobs?.length > 0 ? data.jobs.map((j: any) => {
           
-          // --- MOBİL İÇİN HİYERARŞİ (AYNI MANTIK) ---
+          // --- 🚀 MOBİL İÇİN HİYERARŞİ (AYNI MANTIK) ---
           const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
           const creatorName = j.details?.createdBy || ownerName;
           const assignedPerson = data?.staff?.find((s: any) => String(s.id) === String(j.staff_id));
+          const detailWorker = data?.staff?.find((s: any) => String(s.id) === String(j.details?.worker_id));
           
-          let managerName = null;
+          let managerName = j.details?.managerName || null;
           let workerName = null;
 
           if (assignedPerson) {
               if (assignedPerson.role === 'Yönetici') {
-                  managerName = assignedPerson.name;
+                  if (!managerName) managerName = assignedPerson.name;
               } else {
                   workerName = assignedPerson.name;
               }
           }
 
-          const detailWorker = data?.staff?.find((s: any) => String(s.id) === String(j.details?.worker_id));
           if (detailWorker) {
               workerName = detailWorker.name;
           }
@@ -285,7 +286,7 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                      <span>{currentAsset?.location || 'Konum Belirtilmedi'}</span>
                    </div>
                  </div>
-                 {/* 🚀 DİNAMİK DURUM ROZETİ (MOBİL) */}
+                 {/* DİNAMİK DURUM ROZETİ (MOBİL) */}
                  <span className={`px-2 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider border shrink-0 shadow-sm ${dynamicStatus.colorClass}`}>
                    {dynamicStatus.label}
                  </span>
