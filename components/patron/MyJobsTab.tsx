@@ -73,9 +73,10 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
   const myAllJobs = useMemo(() => {
     if (!currentUserId) return [];
     return jobs.filter((j: any) => 
-       String(j.staff_id) === String(currentUserId) || // Direkt bende olanlar (veya kendime aldıklarım)
-       String(j.details?.managerId) === String(currentUserId) || // Benim yönetici olarak ID ile atadığım
-       j.details?.managerName === currentUserName // Benim yönetici olarak İsim ile atadığım (Backend bunu yazar)
+       String(j.staff_id) === String(currentUserId) || // Direkt bende olanlar
+       String(j.details?.managerId) === String(currentUserId) || // Benim ID ile atadığım
+       j.details?.managerName === currentUserName || // Benim İsim ile atadığım
+       (j.details?.createdBy === currentUserName && j.details?.creatorRole === 'Yönetici') // Benim oluşturduğum iş (Usta atansa bile bende kalır)
     );
  }, [jobs, currentUserId, currentUserName]);
 
@@ -286,13 +287,13 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                           </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">
-                      {ongoingJobs.length > 0 ? ongoingJobs.map((job: any) => {
+                          {ongoingJobs.length > 0 ? ongoingJobs.map((job: any) => {
                               // USTA BİLGİSİ: İş bende değilse başkasına (ustaya) atanmıştır
                               let worker = null;
-                              if (String(job.staff_id) !== String(currentUserId)) {
-                                  worker = staff.find((s:any) => String(s.id) === String(job.staff_id));
-                              } else if (job.details?.worker_id) {
+                              if (job.details?.worker_id) {
                                   worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                              } else if (String(job.staff_id) !== String(currentUserId)) {
+                                  worker = staff.find((s:any) => String(s.id) === String(job.staff_id));
                               }
                               
                               // AKILLI DURUM METNİ (Yönetici Gözüyle)
@@ -367,10 +368,10 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
               <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50">
                   {ongoingJobs.length > 0 ? ongoingJobs.map((job: any) => {
                       let worker = null;
-                      if (String(job.staff_id) !== String(currentUserId)) {
-                          worker = staff.find((s:any) => String(s.id) === String(job.staff_id));
-                      } else if (job.details?.worker_id) {
+                      if (job.details?.worker_id) {
                           worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                      } else if (String(job.staff_id) !== String(currentUserId)) {
+                          worker = staff.find((s:any) => String(s.id) === String(job.staff_id));
                       }
                       
                       let displayStatus = job.status;
