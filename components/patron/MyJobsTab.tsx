@@ -71,12 +71,13 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
 
   // 1. ADIM: İZOLASYON (Sadece bana ait veya benim sorumlu olduğum işler)
   const myAllJobs = useMemo(() => {
-     if (!currentUserId) return [];
-     return jobs.filter((j: any) => 
-        String(j.staff_id) === String(currentUserId) || // Direkt bana atanan
-        String(j.details?.managerId) === String(currentUserId) // Benim yönetici olarak atadığım
-     );
-  }, [jobs, currentUserId]);
+    if (!currentUserId) return [];
+    return jobs.filter((j: any) => 
+       String(j.staff_id) === String(currentUserId) || // Direkt bende olanlar (veya kendime aldıklarım)
+       String(j.details?.managerId) === String(currentUserId) || // Benim yönetici olarak ID ile atadığım
+       j.details?.managerName === currentUserName // Benim yönetici olarak İsim ile atadığım (Backend bunu yazar)
+    );
+ }, [jobs, currentUserId, currentUserName]);
 
   // --- GRUPLANDIRMA MANTIĞI (GÜNCELLENDİ) ---
 
@@ -97,17 +98,22 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
   // - Kendim yapıyorsam (Devam Ediyor)
   // - Ustaya atadıysam ve usta henüz onaylamadıysa (Usta Bekliyor + worker_id var)
   // - Usta onayladı ve çalışıyorsa (Devam Ediyor / Sahada + worker_id var)
+ // 3. Devam Edenler & Takiptekiler (KRİTİK GÜNCELLEME BURADA)
+  // - Kendim yapıyorsam (Devam Ediyor)
+  // - Ustaya atadıysam ve usta henüz onaylamadıysa (Usta Bekliyor + worker_id var)
+  // - Usta onayladı ve çalışıyorsa (Devam Ediyor / Sahada + worker_id var)
   const ongoingJobs = myAllJobs.filter((j: any) => {
-    // Tamamlananlar hariç
+    // Tamamlananlar ve İptal edilenler hariç
     if (j.status === 'Tamamlandı' || j.status === 'İptal') return false;
     
-    // Zaten yukarıdaki kategorilere girenleri çıkar
+    // Zaten yukarıdaki kategorilere (Onay Bekleyen veya Atama Bekleyen) girenleri çıkar
     const isIncoming = (j.status === 'Beklemede' || j.status === 'Gelecek') && String(j.staff_id) === String(currentUserId);
-    const isWaitingAssign = j.status === 'Usta Bekliyor' && !j.details?.worker_id;
+    const isWaitingAssign = j.status === 'Usta Bekliyor' && !j.details?.worker_id && String(j.staff_id) === String(currentUserId);
     
     if (isIncoming || isWaitingAssign) return false;
 
-    return true; // Geriye kalan her şey "Aktif/Takip edilen" işlerdir.
+    // 🚀 Geriye kalanlar ("Devam Ediyor", "Sahada", worker_id olan "Usta Bekliyor" vb.) bu tabloya düşer
+    return true; 
   });
 
   // 4. Tamamlananlar
@@ -280,16 +286,21 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                           </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">
-                          {ongoingJobs.length > 0 ? ongoingJobs.map((job: any) => {
-                              // USTA BİLGİSİ
-                              const worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                      {ongoingJobs.length > 0 ? ongoingJobs.map((job: any) => {
+                              // USTA BİLGİSİ: İş bende değilse başkasına (ustaya) atanmıştır
+                              let worker = null;
+                              if (String(job.staff_id) !== String(currentUserId)) {
+                                  worker = staff.find((s:any) => String(s.id) === String(job.staff_id));
+                              } else if (job.details?.worker_id) {
+                                  worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                              }
                               
                               // AKILLI DURUM METNİ (Yönetici Gözüyle)
                               let displayStatus = job.status;
                               let statusClass = 'bg-blue-50 text-blue-700 border-blue-200';
                               let StatusIcon = Activity;
 
-                              if (job.status === 'Usta Bekliyor' && worker) {
+                              if ((job.status === 'Usta Bekliyor' || job.status === 'Beklemede' || job.status === 'Gelecek') && worker) {
                                   displayStatus = 'Usta Onayı Bekleniyor';
                                   statusClass = 'bg-amber-50 text-amber-700 border-amber-200';
                                   StatusIcon = Clock;
@@ -301,6 +312,10 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                                   } else {
                                       displayStatus = 'Siz Çalışıyorsunuz'; // Yönetici kendi üzerine aldıysa
                                   }
+                              } else if (job.status === 'Onay Bekliyor') {
+                                  displayStatus = 'Onayınız Bekleniyor';
+                                  statusClass = 'bg-purple-50 text-purple-700 border-purple-200';
+                                  StatusIcon = CheckCircle;
                               }
 
                               return (
@@ -351,17 +366,25 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
               {/* Mobil Görünüm (Cards) */}
               <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50">
                   {ongoingJobs.length > 0 ? ongoingJobs.map((job: any) => {
-                      const worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                      let worker = null;
+                      if (String(job.staff_id) !== String(currentUserId)) {
+                          worker = staff.find((s:any) => String(s.id) === String(job.staff_id));
+                      } else if (job.details?.worker_id) {
+                          worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                      }
                       
                       let displayStatus = job.status;
                       let statusClass = 'bg-blue-50 text-blue-600 border-blue-100';
 
-                      if (job.status === 'Usta Bekliyor' && worker) {
+                      if ((job.status === 'Usta Bekliyor' || job.status === 'Beklemede' || job.status === 'Gelecek') && worker) {
                           displayStatus = 'Usta Onayı Bekleniyor';
                           statusClass = 'bg-amber-50 text-amber-600 border-amber-200';
                       } else if ((job.status === 'Sahada' || job.status === 'Devam Ediyor') && worker) {
                           displayStatus = 'Usta Çalışıyor';
                           statusClass = 'bg-indigo-50 text-indigo-600 border-indigo-200';
+                      } else if (job.status === 'Onay Bekliyor') {
+                          displayStatus = 'Onay Bekleniyor';
+                          statusClass = 'bg-purple-50 text-purple-600 border-purple-200';
                       }
 
                       return (
@@ -410,7 +433,12 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                       </thead>
                       <tbody className="divide-y divide-slate-50">
                           {completedJobs.length > 0 ? completedJobs.map((job: any) => {
-                              const worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                              let worker = null;
+                              if (String(job.staff_id) !== String(currentUserId)) {
+                                  worker = staff.find((s:any) => String(s.id) === String(job.staff_id));
+                              } else if (job.details?.worker_id) {
+                                  worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                              }
                               return (
                                   <tr key={job.id} onClick={() => handleOpenModal(job)} className="hover:bg-emerald-50/50 transition-colors cursor-pointer group">
                                       <td className="px-6 py-4">
@@ -442,7 +470,12 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
               {/* Mobil Görünüm */}
               <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50">
                   {completedJobs.length > 0 ? completedJobs.map((job: any) => {
-                      const worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                      let worker = null;
+                      if (String(job.staff_id) !== String(currentUserId)) {
+                          worker = staff.find((s:any) => String(s.id) === String(job.staff_id));
+                      } else if (job.details?.worker_id) {
+                          worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                      }
                       return (
                         <div key={job.id} onClick={() => handleOpenModal(job)} className="bg-white rounded-xl border border-emerald-100 p-4 shadow-sm flex flex-col gap-3 active:scale-95 transition-all">
                            <div className="flex justify-between items-start gap-2">
