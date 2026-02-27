@@ -7,7 +7,7 @@ import {
   ClipboardList, Users, Box, Wallet, Plus, ArrowUpRight, 
   CheckCircle, Clock, Calendar, TrendingUp, TrendingDown, 
   Package, AlertTriangle, ShieldCheck, Activity, User, Lock, 
-  Settings, X, Wrench, Link as LinkIcon, Check, Database, Image as ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2, Bell, CheckSquare, UserPlus
+  Settings, X, Wrench, Link as LinkIcon, Check, Database, Image as ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2, Bell, CheckSquare, UserPlus, UserCheck
 } from 'lucide-react';
 
 export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob, setActiveTab, userRole: propRole, handleAction, isMyJobsTab, setJobModalType }: any) {
@@ -265,7 +265,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
     }
     return { label, colorClass };
   };
-  
+
   if (!isProfileComplete) {
     return (
       <div className="relative h-[80vh] flex flex-col items-center justify-center bg-white rounded-2xl border border-rose-100 shadow-sm overflow-hidden p-4">
@@ -733,25 +733,26 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                 
                 const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
                 const createdBy = j.details?.createdBy || ownerName;
-                const creatorRole = j.details?.creatorRole || (createdBy === ownerName ? 'Patron' : 'Yönetici');
-                const isPatronCreated = creatorRole === 'Patron' || createdBy === ownerName;
+                const assignedPerson = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
                 
                 let managerName = j.details?.managerName || null;
                 let workerName = null;
 
-                const assignedStaff = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
-
-                if (assignedStaff) {
-                    if (assignedStaff.role === 'Yönetici') {
-                        if (!managerName) managerName = assignedStaff.name; 
+                if (assignedPerson) {
+                    if (assignedPerson.role === 'Yönetici') {
+                        if (!managerName) managerName = assignedPerson.name; 
                     } else {
-                        workerName = assignedStaff.name; 
+                        workerName = assignedPerson.name; 
                     }
                 }
 
                 const isApproved = j.status === 'Tamamlandı';
                 const staffColor = isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200';
                 
+                // 🚀 İlgili varlığı ve apartman adını buluyoruz
+                const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
+                const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
+
                 return (
                   <tr 
                     key={j.id} 
@@ -762,83 +763,82 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                     className="hover:bg-blue-50/50 transition-colors group cursor-pointer relative"
                   >
                     <td className="px-5 py-4 align-middle">
-                      <div className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">{j.customer_name}</div>
-                      <div className="text-[10px] text-slate-500 mt-1 font-semibold flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span> {j.work_type}
+                      <div className="font-bold text-slate-800 text-sm mb-1 group-hover:text-blue-700 transition-colors truncate max-w-[220px]">
+                        {/* 🚀 Apartman adı varsa sol başa ekle */}
+                        {aptName ? (
+                          <><span className="text-blue-600">{aptName}</span> - {j.customer_name}</>
+                        ) : (
+                          j.customer_name
+                        )}
+                      </div>
+                      {/* 🚀 Varlık Türü / Adı */}
+                      <div className="text-[11px] font-black text-slate-600 mb-1.5 truncate max-w-[220px]">
+                        {currentAsset?.name || 'Bağımsız İş'}
+                      </div>
+                      <div className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1 bg-slate-50 w-max px-2 py-0.5 rounded border border-slate-100">
+                        {j.work_type}
                       </div>
                     </td>
                     
                     <td className="px-5 py-4 align-middle">
-                      <div className="flex flex-col gap-1.5">
+                      <div className="flex flex-col gap-1.5 w-fit">
                         
-                        {isPatronCreated ? (
-                          <>
-                            <div className="flex items-center gap-1.5">
-                              <ShieldCheck size={14} className={isApproved ? 'text-emerald-500' : 'text-slate-400'} />
-                              <span className="text-[9px] font-black text-slate-400 uppercase w-[56px] tracking-wider">Atayan:</span>
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-slate-600 bg-slate-50 border-slate-200'} whitespace-nowrap shadow-sm`}>
-                                {createdBy}
-                              </span>
-                            </div>
-                    
-                            <div className="flex items-center gap-1.5">
-                              <User size={14} className={managerName ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
-                              <span className="text-[9px] font-black text-slate-400 uppercase w-[56px] tracking-wider">Sorumlu:</span>
-                              {managerName ? (
+                        {createdBy === managerName ? (
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-1.5 min-w-[100px]">
+                                  <ShieldCheck size={14} className="text-blue-600" />
+                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ATAYAN & SORUMLU:</span>
+                                </div>
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
-                                  {managerName}
+                                    {managerName}
                                 </span>
-                              ) : (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-100 text-slate-400 whitespace-nowrap">
-                                  Atanmadı
-                                </span>
-                              )}
                             </div>
-                    
-                            <div className="flex items-center gap-1.5">
-                              <Wrench size={14} className={workerName ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
-                              <span className="text-[9px] font-black text-slate-400 uppercase w-[56px] tracking-wider">Usta:</span>
-                              {workerName ? (
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
-                                  {workerName}
-                                </span>
-                              ) : (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-100 text-slate-400 whitespace-nowrap">
-                                  Atanmadı
-                                </span>
-                              )}
-                            </div>
-                          </>
                         ) : (
-                          <>
-                            <div className="flex items-center gap-1.5">
-                              <ShieldCheck size={14} className={isApproved ? 'text-emerald-500' : 'text-amber-500'} />
-                              <span className="text-[9px] font-black text-slate-400 uppercase w-[100px] tracking-wider">Sorumlu (Atayan):</span>
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
-                                {createdBy}
-                              </span>
-                            </div>
-                    
-                            <div className="flex items-center gap-1.5">
-                              <Wrench size={14} className={workerName ? (isApproved ? 'text-emerald-500' : 'text-amber-500') : 'text-slate-300'} />
-                              <span className="text-[9px] font-black text-slate-400 uppercase w-[100px] tracking-wider">Saha Ustası:</span>
-                              {workerName ? (
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
-                                  {workerName}
-                                </span>
-                              ) : (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-100 text-slate-400 whitespace-nowrap">
-                                  Atanmadı
-                                </span>
-                              )}
-                            </div>
-                          </>
+                            <>
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-1.5 min-w-[100px]">
+                                      <UserPlus size={14} className="text-slate-400" />
+                                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ATAYAN:</span>
+                                    </div>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-600 whitespace-nowrap shadow-sm">
+                                        {createdBy}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-1.5 min-w-[100px]">
+                                      <UserCheck size={14} className={managerName ? 'text-blue-500' : 'text-slate-300'} />
+                                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">SORUMLU:</span>
+                                    </div>
+                                    {managerName ? (
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
+                                            {managerName}
+                                        </span>
+                                    ) : (
+                                        <span className="text-[10px] font-medium text-slate-400 italic px-2 py-0.5">-</span>
+                                    )}
+                                </div>
+                            </>
                         )}
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-1.5 min-w-[100px]">
+                              <Wrench size={14} className={workerName ? 'text-indigo-500' : 'text-slate-400'} />
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">SAHA USTASI:</span>
+                            </div>
+                            {workerName ? (
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
+                                    {workerName}
+                                </span>
+                            ) : (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-600 whitespace-nowrap shadow-sm">
+                                    Atanmadı
+                                </span>
+                            )}
+                        </div>
 
                       </div>
                     </td>
 
-                    {/* 🚀 Gecikme Detayı Eklendi (Masaüstü) */}
+                    {/* 🚀 Gecikme Detayı (Masaüstü) */}
                     <td className="px-5 py-4 align-middle whitespace-nowrap">
                       <div className="flex items-center gap-1.5 font-semibold text-slate-600">
                          <Calendar size={14} className={getDynamicStatus(j).label === 'Gecikti' ? 'text-rose-500' : 'text-blue-500'} />
@@ -847,7 +847,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                     </td>
                     <td className="px-5 py-4 align-middle text-right">
                       <div className="flex items-center justify-end gap-3">
-                         {/* 🚀 Dinamik Rozet Eklendi */}
+                         {/* 🚀 Dinamik Rozet */}
                          <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black tracking-wide border shadow-sm ${getDynamicStatus(j).colorClass} whitespace-nowrap uppercase`}>
                            {getDynamicStatus(j).label}
                          </span>
@@ -874,24 +874,25 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
           {jobs.slice(0, 10).map((j: any) => {
              const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
              const createdBy = j.details?.createdBy || ownerName;
-             const creatorRole = j.details?.creatorRole || (createdBy === ownerName ? 'Patron' : 'Yönetici');
-             const isPatronCreated = creatorRole === 'Patron' || createdBy === ownerName;
+             const assignedPerson = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
              
              let managerName = j.details?.managerName || null;
              let workerName = null;
 
-             const assignedStaff = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
-
-             if (assignedStaff) {
-                 if (assignedStaff.role === 'Yönetici') {
-                     if (!managerName) managerName = assignedStaff.name; 
+             if (assignedPerson) {
+                 if (assignedPerson.role === 'Yönetici') {
+                     if (!managerName) managerName = assignedPerson.name; 
                  } else {
-                     workerName = assignedStaff.name; 
+                     workerName = assignedPerson.name; 
                  }
              }
 
              const isApproved = j.status === 'Tamamlandı';
              const staffColor = isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200';
+
+             // 🚀 İlgili varlığı ve apartman adını buluyoruz (Mobil)
+             const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
+             const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
 
              return (
               <div 
@@ -903,9 +904,22 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                 className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col gap-4 active:scale-95 transition-all cursor-pointer"
               >
                  <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
-                    <div className="min-w-0">
-                      <div className="font-black text-slate-800 text-sm truncate">{j.customer_name}</div>
-                      <div className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-wider truncate bg-slate-50 w-fit px-2 py-0.5 rounded border border-slate-100">{j.work_type}</div>
+                    <div className="min-w-0 flex flex-col gap-1">
+                      <div className="font-black text-slate-800 text-sm truncate">
+                        {/* 🚀 Apartman adı varsa sol başa ekle */}
+                        {aptName ? (
+                          <><span className="text-blue-600">{aptName}</span> - {j.customer_name}</>
+                        ) : (
+                          j.customer_name
+                        )}
+                      </div>
+                      {/* 🚀 Mobil Varlık Adı */}
+                      <div className="text-[11px] font-bold text-slate-600 truncate">
+                        {currentAsset?.name || 'Bağımsız İş'}
+                      </div>
+                      <div className="text-[10px] font-bold text-slate-500 mt-0.5 uppercase tracking-wider truncate bg-slate-50 w-fit px-2 py-0.5 rounded border border-slate-100">
+                        {j.work_type}
+                      </div>
                     </div>
                     {/* 🚀 Dinamik Rozet Eklendi (Mobil) */}
                     <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border shrink-0 shadow-sm ${getDynamicStatus(j).colorClass}`}>
@@ -913,67 +927,45 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                     </span>
                  </div>
 
-                 <div className="flex flex-col gap-2">
-                    {isPatronCreated ? (
-                      <>
-                        <div className="flex items-center gap-2">
-                          <ShieldCheck size={14} className={isApproved ? 'text-emerald-500 shrink-0' : 'text-slate-400 shrink-0'} />
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0 w-[55px]">Atayan:</span>
-                          <span className={`text-[10px] font-bold px-2 py-1 rounded-md border truncate ${isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-slate-600 bg-slate-50 border-slate-200'}`}>
-                            {createdBy}
-                          </span>
+                 <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-2">
+                    {createdBy === managerName ? (
+                        <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                               <ShieldCheck size={10} /> ATAYAN & SORUMLU
+                            </span>
+                            <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${staffColor}`}>
+                                {managerName}
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <User size={14} className={managerName ? (isApproved ? 'text-emerald-500 shrink-0' : 'text-amber-500 shrink-0') : 'text-slate-300 shrink-0'} />
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0 w-[55px]">Sorumlu:</span>
-                          {managerName ? (
-                            <span className={`text-[10px] font-bold px-2 py-1 rounded-md border truncate ${staffColor}`}>
-                              {managerName}
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-bold px-2 py-1 rounded-md border border-slate-200 bg-slate-100 text-slate-400 truncate">
-                              Atanmadı
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Wrench size={14} className={workerName ? (isApproved ? 'text-emerald-500 shrink-0' : 'text-amber-500 shrink-0') : 'text-slate-300 shrink-0'} />
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0 w-[55px]">Usta:</span>
-                          {workerName ? (
-                            <span className={`text-[10px] font-bold px-2 py-1 rounded-md border truncate ${staffColor}`}>
-                              {workerName}
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-bold px-2 py-1 rounded-md border border-slate-200 bg-slate-100 text-slate-400 truncate">
-                              Atanmadı
-                            </span>
-                          )}
-                        </div>
-                      </>
                     ) : (
-                      <>
-                        <div className="flex items-center gap-2">
-                          <ShieldCheck size={14} className={isApproved ? 'text-emerald-500 shrink-0' : 'text-amber-500 shrink-0'} />
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0 w-[105px]">Sorumlu (Atayan):</span>
-                          <span className={`text-[10px] font-bold px-2 py-1 rounded-md border truncate ${staffColor}`}>
-                            {createdBy}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Wrench size={14} className={workerName ? (isApproved ? 'text-emerald-500 shrink-0' : 'text-amber-500 shrink-0') : 'text-slate-300 shrink-0'} />
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0 w-[105px]">Saha Ustası:</span>
-                          {workerName ? (
-                            <span className={`text-[10px] font-bold px-2 py-1 rounded-md border truncate ${staffColor}`}>
-                              {workerName}
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-bold px-2 py-1 rounded-md border border-slate-200 bg-slate-100 text-slate-400 truncate">
-                              Atanmadı
-                            </span>
-                          )}
-                        </div>
-                      </>
+                        <>
+                          <div className="flex items-center justify-between">
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                 <UserPlus size={10} /> ATAYAN
+                              </span>
+                              <div className="text-[11px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
+                                  {createdBy}
+                              </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                 <UserCheck size={10} /> SORUMLU
+                              </span>
+                              <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${managerName ? staffColor : 'text-slate-400 bg-slate-100 border-slate-200'}`}>
+                                  {managerName || '-'}
+                              </div>
+                          </div>
+                        </>
                     )}
+                    
+                    <div className="flex items-center justify-between border-t border-slate-200 pt-2 border-dashed">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                           <Wrench size={10} /> SAHA USTASI
+                        </span>
+                        <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${workerName ? staffColor : 'text-rose-600 bg-rose-50 border-rose-200'}`}>
+                            {workerName || 'Atanmadı'}
+                        </div>
+                    </div>
                  </div>
 
                  <div className="flex justify-between items-center pt-2 border-t border-slate-50">
