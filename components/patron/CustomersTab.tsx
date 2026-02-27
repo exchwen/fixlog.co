@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Box, Search, MessageCircle, Phone, MapPin, Users, Info } from 'lucide-react';
+import { Plus, Box, Search, MessageCircle, Phone, MapPin, Users, Info, Building2 } from 'lucide-react';
 
 export default function CustomersTab({ data, setShowAddCustomer, setSelectedCustomer, handleAction }: any) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -61,7 +61,7 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
              <tr>
                <th className="px-5 py-3.5 whitespace-nowrap uppercase tracking-wider text-[10px]">İsim / Kurum</th>
                <th className="px-5 py-3.5 whitespace-nowrap uppercase tracking-wider text-[10px]">İletişim</th>
-               <th className="px-5 py-3.5 whitespace-nowrap uppercase tracking-wider text-[10px]">Kayıtlı Cihazlar</th>
+               <th className="px-5 py-3.5 whitespace-nowrap uppercase tracking-wider text-[10px]">Kayıtlı Cihazlar / Konum</th>
                <th className="px-5 py-3.5 text-right whitespace-nowrap uppercase tracking-wider text-[10px]">Adres & Vergi</th>
              </tr>
            </thead>
@@ -94,12 +94,23 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
                    </td>
                    <td className="px-5 py-4">
                      {customerAssets.length > 0 ? (
-                       <div className="flex flex-wrap gap-1.5">
-                         {customerAssets.map((a: any) => (
-                           <span key={a.id} className="px-2 py-1 bg-slate-50 text-slate-600 border border-slate-200 rounded-md text-[10px] font-bold flex items-center gap-1.5 whitespace-nowrap shadow-sm">
-                             <Box size={10} className="text-blue-500" /> {a.name}
-                           </span>
-                         ))}
+                       <div className="flex flex-col gap-1.5">
+                         {customerAssets.map((a: any) => {
+                           const aptName = a.apartmentName || a.apartment_name;
+                           return (
+                             <div key={a.id} className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-md px-2 py-1 w-fit shadow-sm">
+                               <Box size={12} className="text-blue-500 shrink-0" />
+                               <span className="text-[10px] text-slate-700 font-bold whitespace-nowrap">{a.name}</span>
+                               {aptName && (
+                                 <>
+                                    <span className="text-slate-300 mx-0.5">•</span>
+                                    <Building2 size={10} className="text-slate-400 shrink-0" />
+                                    <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap truncate max-w-[150px]">{aptName}</span>
+                                 </>
+                               )}
+                             </div>
+                           );
+                         })}
                        </div>
                      ) : (
                        <span className="text-[10px] text-slate-400 italic font-medium px-2 py-1 bg-slate-50 rounded-md border border-slate-100">Cihaz atanmamış</span>
@@ -180,12 +191,22 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
               {/* Cihazlar */}
               {customerAssets.length > 0 && (
                 <div className="pt-3 mt-1 border-t border-slate-100">
-                  <div className="flex flex-wrap gap-1.5">
-                    {customerAssets.map((a: any) => (
-                      <span key={a.id} className="px-2.5 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-lg text-[10px] font-bold flex items-center gap-1.5 shadow-sm">
-                        <Box size={12} className="opacity-70" /> {a.name}
-                      </span>
-                    ))}
+                  <div className="flex flex-col gap-2">
+                    {customerAssets.map((a: any) => {
+                       const aptName = a.apartmentName || a.apartment_name;
+                       return (
+                         <div key={a.id} className="bg-blue-50/50 border border-blue-100 rounded-lg p-2.5 flex flex-col gap-1 shadow-sm">
+                            <div className="flex items-center gap-1.5 text-blue-700 font-bold text-[11px]">
+                               <Box size={12} className="opacity-70" /> {a.name}
+                            </div>
+                            {aptName && (
+                               <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-medium ml-4">
+                                  <Building2 size={10} className="text-slate-400" /> {aptName}
+                               </div>
+                            )}
+                         </div>
+                       );
+                    })}
                   </div>
                 </div>
               )}

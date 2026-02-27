@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MapPin, Box, Calendar, Clock, ArrowRight, Settings, Trash2, Loader2 } from 'lucide-react';
+import { X, MapPin, Box, Calendar, Clock, ArrowRight, Settings, Trash2, Loader2, Building2 } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
 
 const CITY_DATA: any = trCitiesData;
@@ -34,7 +34,40 @@ export default function CustomerDetailModal({
     'Devam Ediyor': 'bg-blue-100 text-blue-700 border-blue-200', 
     'Gelecek': 'bg-slate-100 text-slate-600 border-slate-200',
     'İptal': 'bg-rose-100 text-rose-700 border-rose-200',
-    'Onay Bekliyor': 'bg-purple-100 text-purple-700 border-purple-200'
+    'Onay Bekliyor': 'bg-purple-100 text-purple-700 border-purple-200',
+    'Usta Bekliyor': 'bg-indigo-100 text-indigo-700 border-indigo-200'
+  };
+
+  // 🚀 Dinamik Statü Kontrolü (Mantık Hatalarını ve Gecikmeleri Tespit Eder)
+  const getDynamicStatus = (job: any) => {
+    if (!job) return { label: '', colorClass: '' };
+    let label = job.status || 'Beklemede';
+
+    // İşin usta atanma durumunu kontrol et
+    const detailWorker = job.details?.worker_id ? true : false;
+    const staffWorker = job.staff_id && data?.staff?.find((s:any) => String(s.id) === String(job.staff_id) && s.role !== 'Yönetici');
+    const hasWorker = detailWorker || staffWorker;
+
+    // Mantık Hatası Düzeltmesi
+    if (label === 'Usta Bekliyor' || label === 'Devam Ediyor') {
+        label = hasWorker ? 'Devam Ediyor' : 'Usta Bekliyor';
+    }
+
+    let colorClass = statusColors[label] || 'bg-slate-100 text-slate-500 border-slate-200';
+
+    // Gecikme Kontrolü
+    if ((label === 'Gelecek' || label === 'Beklemede' || label === 'Usta Bekliyor') && job.scheduled_date) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const sDate = new Date(job.scheduled_date.split(' ')[0]);
+        sDate.setHours(0, 0, 0, 0);
+
+        if (sDate < today) {
+            label = 'Gecikti';
+            colorClass = 'bg-rose-100 text-rose-700 border-rose-200';
+        }
+    }
+    return { label, colorClass };
   };
 
   const parseAddressToState = (fullAddress: string) => {
@@ -92,6 +125,9 @@ export default function CustomerDetailModal({
     }
   };
 
+  // 🚀 iOS Stacking Kontrolü (İş Detayı Modalı açılırsa bu modal geriye gider)
+  const isStacked = Boolean(selectedJob || showDeleteConfirm);
+
   return (
     <>
       <AnimatePresence>
@@ -102,17 +138,28 @@ export default function CustomerDetailModal({
             animate={{ opacity: 1, pointerEvents: "auto" }} 
             exit={{ opacity: 0, pointerEvents: "none" }} 
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4"
+            className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[110]' : 'z-[120]'}`}
           >
-            <div className="absolute inset-0 cursor-pointer" onClick={handleCloseDetail}></div>
+            {/* Stacking sırasında arkadaki modalın kapanmasını engellemek için pointer-events kontrolü */}
+            <div 
+               className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isStacked ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'} cursor-pointer`} 
+               onClick={() => !isStacked && handleCloseDetail()}
+            ></div>
+            
             <motion.div 
               key="modal-content-customer-detail"
-              initial={{ opacity: 0, scale: 0.95, x: selectedJob && !isMobile ? -280 : 0 }} 
-              animate={{ opacity: 1, scale: 1, x: selectedJob && !isMobile ? -280 : 0 }} 
-              exit={{ opacity: 0, scale: 0.95, x: selectedJob && !isMobile ? -280 : 0 }} 
-              transition={{ duration: 0.2 }}
+              initial={{ opacity: 0, scale: 0.95, y: 10 }} 
+              animate={{ 
+                  opacity: 1, 
+                  scale: isStacked ? 0.92 : 1, 
+                  y: isStacked ? -20 : 0, 
+                  filter: isStacked ? 'brightness(0.5)' : 'brightness(1)' 
+              }} 
+              exit={{ opacity: 0, scale: 0.95, y: 10 }} 
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+              style={{ pointerEvents: isStacked ? 'none' : 'auto' }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[85vh] transition-transform duration-300 overflow-hidden cursor-default pointer-events-auto"
+              className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[85vh] overflow-hidden cursor-default pointer-events-auto z-10"
             >
               
               <div className="flex justify-between items-start p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50">
@@ -141,30 +188,53 @@ export default function CustomerDetailModal({
                           <div>
                               <h4 className="text-[11px] font-black text-blue-600 mb-2 uppercase tracking-widest flex items-center gap-1.5"><Box size={14}/> Kayıtlı Cihazları / Varlıkları</h4>
                               <div className="space-y-2">
-                                  {(data?.assets || []).filter((a: any) => a.customer_id === selectedCustomer?.id).length > 0 ? (data?.assets || []).filter((a: any) => a.customer_id === selectedCustomer?.id).map((a: any) => (
-                                      <div key={a.id} onClick={() => { setSelectedCustomer(null); setShowAssetDetail(a); }} className="p-4 border border-blue-200 rounded-xl bg-blue-50/50 cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all active:scale-95 group">
-                                          <div className="font-bold text-sm text-blue-900 group-hover:text-blue-700 transition-colors">{a.name}</div>
-                                          <div className="text-[11px] font-medium text-blue-600/80 mt-1 flex items-center gap-1"><MapPin size={10}/> {a.location || 'Konum Yok'}</div>
-                                      </div>
-                                  )) : <div className="text-center p-5 text-slate-400 text-sm font-medium border-2 border-dashed border-slate-200 rounded-xl">Müşteriye ait cihaz bulunmuyor.</div>}
+                                  {(data?.assets || []).filter((a: any) => a.customer_id === selectedCustomer?.id).length > 0 ? (data?.assets || []).filter((a: any) => a.customer_id === selectedCustomer?.id).map((a: any) => {
+                                      // 🚀 Varlık Apartman Adı Eklentisi
+                                      const aptName = a.apartmentName || a.apartment_name;
+                                      return (
+                                          <div key={a.id} onClick={() => { setSelectedCustomer(null); setShowAssetDetail(a); }} className="p-4 border border-blue-200 rounded-xl bg-blue-50/50 cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all active:scale-95 group flex flex-col justify-center">
+                                              <div className="flex items-center gap-2 mb-1">
+                                                  <div className="font-bold text-sm text-blue-900 group-hover:text-blue-700 transition-colors">{a.name}</div>
+                                                  {aptName && (
+                                                      <>
+                                                          <span className="text-blue-300">•</span>
+                                                          <div className="text-[10px] font-bold bg-blue-100 text-blue-600 px-2 py-0.5 rounded flex items-center gap-1">
+                                                              <Building2 size={10} /> {aptName}
+                                                          </div>
+                                                      </>
+                                                  )}
+                                              </div>
+                                              <div className="text-[11px] font-medium text-blue-600/80 flex items-center gap-1"><MapPin size={10}/> {a.location || 'Konum Yok'}</div>
+                                          </div>
+                                      );
+                                  }) : <div className="text-center p-5 text-slate-400 text-sm font-medium border-2 border-dashed border-slate-200 rounded-xl">Müşteriye ait cihaz bulunmuyor.</div>}
                               </div>
                           </div>
                           
                           <div>
                               <h4 className="text-[11px] font-black text-slate-500 mb-2 uppercase tracking-widest flex items-center gap-1.5"><Calendar size={14}/> Geçmiş İş Kayıtları</h4>
                               <div className="space-y-2">
-                                  {(data?.jobs || []).filter((j: any) => j.customer_name === selectedCustomer?.name).length > 0 ? (data?.jobs || []).filter((j: any) => j.customer_name === selectedCustomer?.name).map((j: any) => (
-                                      <div key={j.id} onClick={(e) => { e.stopPropagation(); setSelectedJob(j); }} className={`p-4 border rounded-xl flex items-center justify-between cursor-pointer transition-all active:scale-95 group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-500/20' : 'bg-white border-slate-200 hover:border-blue-200 hover:shadow-sm'}`}>
-                                          <div className="min-w-0 pr-2">
-                                              <div className="font-bold text-sm text-slate-800 group-hover:text-blue-700 transition-colors truncate">{j.work_type || 'Görev'}</div>
-                                              <div className="text-[10px] font-medium text-slate-500 mt-1 flex items-center gap-1"><Clock size={10}/> {j.scheduled_date || 'Anlık Kayıt'}</div>
+                                  {(data?.jobs || []).filter((j: any) => j.customer_name === selectedCustomer?.name).length > 0 ? (data?.jobs || []).filter((j: any) => j.customer_name === selectedCustomer?.name).map((j: any) => {
+                                      // 🚀 Dinamik Rozet Hesaplaması
+                                      const dynamicStatus = getDynamicStatus(j);
+                                      return (
+                                          <div key={j.id} onClick={(e) => { e.stopPropagation(); setSelectedJob(j); }} className={`p-4 border rounded-xl flex items-center justify-between cursor-pointer transition-all active:scale-95 group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-500/20' : 'bg-white border-slate-200 hover:border-blue-200 hover:shadow-sm'}`}>
+                                              <div className="min-w-0 pr-2">
+                                                  <div className="font-bold text-sm text-slate-800 group-hover:text-blue-700 transition-colors truncate">{j.work_type || 'Görev'}</div>
+                                                  <div className="text-[10px] font-medium text-slate-500 mt-1 flex items-center gap-1">
+                                                      <Clock size={10} className={dynamicStatus.label === 'Gecikti' ? 'text-rose-500' : 'text-slate-400'}/> 
+                                                      {j.scheduled_date || 'Anlık Kayıt'}
+                                                  </div>
+                                              </div>
+                                              <div className="flex items-center gap-3 shrink-0">
+                                                  <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border shadow-sm ${dynamicStatus.colorClass}`}>
+                                                      {dynamicStatus.label}
+                                                  </span>
+                                                  <ArrowRight size={16} className={`transition-all ${selectedJob?.id === j.id ? 'text-blue-600 opacity-100' : 'text-slate-300 opacity-0 group-hover:opacity-100'}`} />
+                                              </div>
                                           </div>
-                                          <div className="flex items-center gap-3 shrink-0">
-                                              <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border shadow-sm ${statusColors[j.status] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>{j.status}</span>
-                                              <ArrowRight size={16} className={`transition-all ${selectedJob?.id === j.id ? 'text-blue-600 opacity-100' : 'text-slate-300 opacity-0 group-hover:opacity-100'}`} />
-                                          </div>
-                                      </div>
-                                  )) : <div className="text-center p-5 text-slate-400 text-sm font-medium border-2 border-dashed border-slate-200 rounded-xl">Müşteriye ait iş kaydı bulunmuyor.</div>}
+                                      );
+                                  }) : <div className="text-center p-5 text-slate-400 text-sm font-medium border-2 border-dashed border-slate-200 rounded-xl">Müşteriye ait iş kaydı bulunmuyor.</div>}
                               </div>
                           </div>
                       </div>
@@ -172,7 +242,6 @@ export default function CustomerDetailModal({
                       <div className="pt-5 border-t border-slate-100">
                           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
                           <button onClick={() => { setIsEditingCustomer(true); setEditCustomerForm({ id: selectedCustomer.id, name: selectedCustomer.name, contact: selectedCustomer.contact || '', address: parseAddressToState(selectedCustomer.address || ''), tax_info: selectedCustomer.tax_info || '' }); }} className="flex-[2] bg-slate-900 text-white py-3.5 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"><Settings size={16} /> Profili Düzenle</button>
-                              {/* Alert yerine state'i true yapıyoruz */}
                               <button onClick={() => setShowDeleteConfirm(true)} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 py-3.5 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"><Trash2 size={16} /> Sil</button>
                           </div>
                       </div>
@@ -232,12 +301,12 @@ export default function CustomerDetailModal({
         )}
       </AnimatePresence>
 
-      {/* 🚀 ŞIK SİLME ONAY MODALI */}
+      {/* 🚀 ŞIK SİLME ONAY MODALI (Z-Index Yükseltildi) */}
       <AnimatePresence>
         {showDeleteConfirm && (
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[130] flex items-center justify-center p-4"
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
           >
             <motion.div 
               initial={{ scale: 0.95, opacity: 0, y: 10 }} 
