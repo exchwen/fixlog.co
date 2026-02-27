@@ -13,7 +13,8 @@ export default function JobDetailModal({
   jobModalType, setJobModalType, handleAction, isSaving, data,
   isAnyProfileDetailOpen, isMobile, handleCloseDetail, userRole,
   searchCust, setSearchCust, searchAsset, setSearchAsset,
-  setSelectedCustomer, setSelectedAsset
+  selectedCustomer, setSelectedCustomer, // 🚀 EKLENDİ: Stacking için ebeveynden okunacak
+  selectedAsset, setSelectedAsset        // 🚀 EKLENDİ: Stacking için ebeveynden okunacak
 }: any) {
 
   const sendCustomerWhatsApp = (jobData: any) => {
@@ -86,8 +87,8 @@ export default function JobDetailModal({
   };
 
   // 🚀 iOS Stacking Kontrolü
-  // PDF açık, Fotoğraf büyütülmüş VEYA Müşteri/Varlık profili açıksa ana modal geriye itilecek.
-  const isStacked = Boolean(previewPdfJob || fullScreenImage || isAnyProfileDetailOpen);
+  // PDF, Fotoğraf, Müşteri veya Varlık profillerinden biri açıksa modalı geriye iter.
+  const isStacked = Boolean(previewPdfJob || fullScreenImage || isAnyProfileDetailOpen || selectedCustomer || selectedAsset);
 
   return (
     <>
@@ -207,30 +208,32 @@ export default function JobDetailModal({
         {selectedJob && jobModalType !== 'APPROVAL' && (
           <motion.div 
              key="job-modal-backdrop"
-             /* 🚀 Stack edildiğinde z-index düşürüldü ki yeni modal öne çıksın */
-             className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[40]' : 'z-[130]'}`}
+             /* 🚀 Z-Index Düzeltmesi: Stack edildiğinde z-10 seviyesine inerek yeni açılan modalın arkasında kalmasını sağlar */
+             className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-10' : 'z-[130]'}`}
              initial={{ opacity: 0 }} 
              animate={{ opacity: 1 }} 
              exit={{ opacity: 0, pointerEvents: "none" }} 
              transition={{ duration: 0.15 }}
           >
-            {/* Arka Plan Tıklama Alanı (Stacking varken saydamlaşır ve tıklamayı devre dışı bırakır ki yeni modalın arkasında kalkan oluşturmasın) */}
-            <div 
-               className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isStacked ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'} cursor-pointer`} 
-               onClick={() => !isStacked && handleCloseDetail('job')}
-            />
+            {/* Arka Plan Tıklama Alanı (Stacking varken karanlığı kaldırır ve tıklamayı devre dışı bırakır ki yeni modal net görünsün) */}
+            {!(isAnyProfileDetailOpen && !isMobile) && (
+                <div 
+                   className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isStacked ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'} cursor-pointer`} 
+                   onClick={() => !isStacked && handleCloseDetail('job')}
+                />
+            )}
 
             <motion.div 
                 key="job-modal-content"
-                /* 🚀 Saf iOS Stacking efekti için "x" kaymaları tamamen kaldırıldı */
-                initial={{ opacity: 0, scale: 0.95, y: 10 }} 
+                initial={{ opacity: 0, scale: 0.95, y: 10, x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 }} 
                 animate={{ 
                     opacity: 1, 
                     scale: isStacked ? 0.92 : 1, 
                     y: isStacked ? -20 : 0, 
-                    filter: isStacked ? 'brightness(0.5)' : 'brightness(1)'
+                    filter: isStacked ? 'brightness(0.5)' : 'brightness(1)',
+                    x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 
                 }} 
-                exit={{ opacity: 0, scale: 0.95, y: 10 }} 
+                exit={{ opacity: 0, scale: 0.95, y: 10, x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 }} 
                 transition={{ duration: 0.25, ease: "easeInOut" }}
                 style={{ pointerEvents: isStacked ? 'none' : 'auto' }}
                 onClick={(e) => e.stopPropagation()}
@@ -314,7 +317,6 @@ export default function JobDetailModal({
                             </button>
                         </div>
                         
-                        {/* 🚀 VARLIK KARTI & SADECE APARTMAN ADI EKLENTİSİ */}
                         {(() => {
                             const theAsset = selectedJob.asset_id ? (data?.assets || []).find((a:any) => String(a.id) === String(selectedJob.asset_id)) : null;
                             return (
@@ -461,8 +463,8 @@ export default function JobDetailModal({
                             </button>
                         )}
 
-                        {/* 🚀 Eğer İş Tamamlandı ise butonları içeren satır tamamen gizlenecek */}
-                        {selectedJob.status !== 'Tamamlandı' && (
+                        {/* 🚀 EKSİLTME GİDERİLDİ: SADECE İş Tamamlandıysa bu satır GİZLENİR */}
+                        {selectedJob.status !== 'Tamamlandı' && selectedJob.status !== 'İptal' && (
                             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full pt-2">
                                 {jobModalType === 'APPROVAL_FIRST_STEP' ? (
                                     <button 
@@ -495,14 +497,12 @@ export default function JobDetailModal({
                                     </button>
                                 )}
                                 
-                                {selectedJob.status !== 'İptal' && (
-                                    <button 
-                                        onClick={() => setShowCancelConfirm(true)}
-                                        className="sm:w-1/3 bg-rose-50 text-rose-600 border border-rose-200 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"
-                                    >
-                                        <X size={16} strokeWidth={3} /> İptal Et
-                                    </button>
-                                )}
+                                <button 
+                                    onClick={() => setShowCancelConfirm(true)}
+                                    className="sm:w-1/3 bg-rose-50 text-rose-600 border border-rose-200 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                >
+                                    <X size={16} strokeWidth={3} /> İptal Et
+                                </button>
                             </div>
                         )}
                     </div>
