@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Tag, Plus, List } from 'lucide-react';
+import { X, Loader2, Tag, Plus, List, Edit2 } from 'lucide-react';
 
 export default function CategoryModal({
   showCategoryModal, setShowCategoryModal,
@@ -46,11 +46,22 @@ export default function CategoryModal({
             {/* BODY */}
             <div className="p-5 sm:p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1">
                 
-                {/* Yeni Ekleme Alanı */}
-                <div className="bg-slate-50 p-4 border border-slate-200 rounded-xl shadow-sm">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
-                      <Plus size={14} /> Yeni Kategori Ekle
-                  </label>
+                {/* 🚀 Yeni Ekleme / Düzenleme Alanı */}
+                <div className={`p-4 border rounded-xl shadow-sm transition-colors ${newCategory?.id ? 'bg-blue-50/50 border-blue-200' : 'bg-slate-50 border-slate-200'}`}>
+                  <div className="flex justify-between items-center mb-2">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                          {newCategory?.id ? <Edit2 size={14} className="text-blue-500" /> : <Plus size={14} />} 
+                          {newCategory?.id ? 'Kategoriyi Düzenle' : 'Yeni Kategori Ekle'}
+                      </label>
+                      {newCategory?.id && (
+                          <button 
+                             onClick={() => setNewCategory({ name: '' })}
+                             className="text-[10px] font-bold text-rose-500 hover:bg-rose-50 px-2 py-0.5 rounded transition-colors"
+                          >
+                             İptal Et
+                          </button>
+                      )}
+                  </div>
                   <div className="flex gap-2">
                       <input 
                           type="text" 
@@ -61,10 +72,14 @@ export default function CategoryModal({
                       />
                       <button 
                           disabled={isSaving || !isFormValid} 
-                          onClick={() => handleAction('add-category', newCategory, null, () => setNewCategory({ name: '' }))} 
-                          className="px-4 bg-amber-500 text-white rounded-xl font-bold shadow-md hover:bg-amber-600 transition-all active:scale-95 disabled:opacity-50 disabled:hover:bg-amber-500 flex items-center justify-center shrink-0"
+                          onClick={() => {
+                              // 🚀 Düzenleme veya Ekleme işlemine karar veren yönlendirici
+                              const actionType = newCategory?.id ? 'update-category' : 'add-category';
+                              handleAction(actionType, newCategory, null, () => setNewCategory({ name: '' }));
+                          }} 
+                          className={`px-4 text-white rounded-xl font-bold shadow-md transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center shrink-0 ${newCategory?.id ? 'bg-blue-600 hover:bg-blue-700 disabled:hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-600 disabled:hover:bg-amber-500'}`}
                       >
-                          {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Ekle'}
+                          {isSaving ? <Loader2 className="animate-spin" size={18} /> : (newCategory?.id ? 'Kaydet' : 'Ekle')}
                       </button>
                   </div>
                 </div>
@@ -77,9 +92,19 @@ export default function CategoryModal({
                     <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
                         {(data?.categories || []).length > 0 ? (
                             (data?.categories || []).map((cat: any) => (
-                                <div key={cat.id} className="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 shadow-sm flex items-center gap-2 hover:border-amber-300 transition-colors">
-                                    <div className="w-2 h-2 rounded-full bg-amber-400 shrink-0"></div>
-                                    {cat.name}
+                                <div key={cat.id} className="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 shadow-sm flex items-center justify-between group hover:border-amber-300 transition-colors">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-amber-400 shrink-0"></div>
+                                        {cat.name}
+                                    </div>
+                                    
+                                    {/* 🚀 Düzenle Butonu (Sadece üzerine gelindiğinde veya mobilde görünür) */}
+                                    <button 
+                                        onClick={() => setNewCategory({ id: cat.id, name: cat.name })}
+                                        className="text-[10px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all active:scale-95 opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                                    >
+                                        <Edit2 size={12} /> Düzenle
+                                    </button>
                                 </div>
                             ))
                         ) : (

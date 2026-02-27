@@ -54,12 +54,20 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
     'Usta Bekliyor': 'bg-indigo-100 text-indigo-700 border-indigo-200'
   };
 
-  // 🚀 Dinamik Statü Kontrolü (Geciken İşleri Tespit Eder)
-  const getDynamicStatus = (job: any) => {
-    let label = job.status;
-    let colorClass = statusColors[job.status] || 'bg-slate-100 text-slate-500 border-slate-200';
+  // 🚀 DÜZELTİLMİŞ: Dinamik Statü Kontrolü (Mantık Hatalarını ve Gecikmeleri Tespit Eder)
+  const getDynamicStatus = (job: any, hasWorker: boolean) => {
+    let label = job.status || 'Beklemede';
 
-    if ((job.status === 'Gelecek' || job.status === 'Beklemede' || job.status === 'Usta Bekliyor') && job.scheduled_date) {
+    // 🛠️ MANTIK HATASI DÜZELTMESİ: 
+    // İş tamamlanmadıysa, iptal edilmediyse ve onay beklemiyorsa ustanın varlığına göre durumu otomatik düzelt.
+    if (label === 'Usta Bekliyor' || label === 'Devam Ediyor') {
+        label = hasWorker ? 'Devam Ediyor' : 'Usta Bekliyor';
+    }
+
+    let colorClass = statusColors[label] || 'bg-slate-100 text-slate-500 border-slate-200';
+
+    // Gecikme Kontrolü
+    if ((label === 'Gelecek' || label === 'Beklemede' || label === 'Usta Bekliyor') && job.scheduled_date) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -155,23 +163,23 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
               <tbody className="divide-y divide-slate-100">
                 {pendingJobs.length > 0 ? pendingJobs.map((j: any) => {
                   
-                  // 🚀 HİYERARŞİ MANTIĞI 
+                  // --- 🚀 MASAÜSTÜ İÇİN DÜZELTİLMİŞ HİYERARŞİ ---
                   const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
                   const creatorName = j.details?.createdBy || ownerName;
                   const assignedPerson = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
+                  const detailWorker = j.details?.worker_id ? staff.find((s:any) => String(s.id) === String(j.details.worker_id)) : null;
                   
-                  let managerName = null;
+                  let managerName = j.details?.managerName || null;
                   let workerName = null;
 
                   if (assignedPerson) {
                       if (assignedPerson.role === 'Yönetici') {
-                          managerName = assignedPerson.name;
+                          if (!managerName) managerName = assignedPerson.name;
                       } else {
                           workerName = assignedPerson.name;
                       }
                   }
 
-                  const detailWorker = j.details?.worker_id ? staff.find((s:any) => String(s.id) === String(j.details.worker_id)) : null;
                   if (detailWorker) {
                       workerName = detailWorker.name;
                   }
@@ -181,7 +189,8 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                   // 🚀 İlgili varlığı ve apartman adını bul
                   const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
                   const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
-                  const dynamicStatus = getDynamicStatus(j);
+                  
+                  const dynamicStatus = getDynamicStatus(j, !!workerName);
 
                   return (
                     <tr key={j.id} className="hover:bg-amber-50/50 transition-colors group">
@@ -212,11 +221,12 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                         )}
                       </td>
                       
+                      {/* 🚀 DÜZELTİLMİŞ: Masaüstü Personel Hiyerarşisi UI (Sabit Genişlikli Izgara) */}
                       <td className="px-5 py-4 align-top border-r border-slate-50">
-                        <div className="flex flex-col gap-1.5 w-fit">
+                        <div className="flex flex-col gap-2 w-fit">
                           {isCreatorSameAsManager ? (
-                              <div className="flex items-center justify-between gap-3">
-                                  <div className="flex items-center gap-1.5 min-w-[125px]">
+                              <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1.5 w-[130px] shrink-0">
                                     <ShieldCheck size={14} className="text-blue-600" />
                                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ATAYAN & SORUMLU:</span>
                                   </div>
@@ -226,8 +236,8 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                               </div>
                           ) : (
                               <>
-                                  <div className="flex items-center justify-between gap-3">
-                                      <div className="flex items-center gap-1.5 min-w-[125px]">
+                                  <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-1.5 w-[130px] shrink-0">
                                         <UserPlus size={14} className="text-slate-400" />
                                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ATAYAN:</span>
                                       </div>
@@ -235,8 +245,8 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                                           {creatorName}
                                       </span>
                                   </div>
-                                  <div className="flex items-center justify-between gap-3">
-                                      <div className="flex items-center gap-1.5 min-w-[125px]">
+                                  <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-1.5 w-[130px] shrink-0">
                                         <UserCheck size={14} className={managerName ? 'text-blue-500' : 'text-slate-300'} />
                                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">SORUMLU:</span>
                                       </div>
@@ -250,9 +260,8 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                                   </div>
                               </>
                           )}
-                          <div className="ml-1.5 w-[1px] h-2 bg-slate-200 my-0.5"></div>
-                          <div className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-1.5 min-w-[125px]">
+                          <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1.5 w-[130px] shrink-0">
                                 <Wrench size={14} className={workerName ? 'text-indigo-500' : 'text-slate-400'} />
                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">SAHA USTASI:</span>
                               </div>
@@ -310,22 +319,23 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
          {/* MOBİL GÖRÜNÜM (ONAY BEKLEYENLER) */}
          <div className="md:hidden flex flex-col gap-3">
            {pendingJobs.length > 0 ? pendingJobs.map((j: any) => {
+              // --- 🚀 MOBİL İÇİN DÜZELTİLMİŞ HİYERARŞİ ---
               const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
               const creatorName = j.details?.createdBy || ownerName;
               const assignedPerson = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
+              const detailWorker = j.details?.worker_id ? staff.find((s:any) => String(s.id) === String(j.details.worker_id)) : null;
               
-              let managerName = null;
+              let managerName = j.details?.managerName || null;
               let workerName = null;
 
               if (assignedPerson) {
                   if (assignedPerson.role === 'Yönetici') {
-                      managerName = assignedPerson.name;
+                      if (!managerName) managerName = assignedPerson.name;
                   } else {
                       workerName = assignedPerson.name;
                   }
               }
 
-              const detailWorker = j.details?.worker_id ? staff.find((s:any) => String(s.id) === String(j.details.worker_id)) : null;
               if (detailWorker) {
                   workerName = detailWorker.name;
               }
@@ -333,7 +343,7 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
               const isCreatorSameAsManager = managerName && (creatorName === managerName);
               const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
               const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
-              const dynamicStatus = getDynamicStatus(j);
+              const dynamicStatus = getDynamicStatus(j, !!workerName);
 
               return (
                 <div key={j.id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col gap-4">
@@ -365,11 +375,11 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                     )}
                   </div>
 
-                  {/* Personel Bilgisi */}
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-2">
+                  {/* 🚀 DÜZELTİLMİŞ: Mobil Personel Hiyerarşisi UI (Sabit Genişlikli Izgara) */}
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-2.5">
                       {isCreatorSameAsManager ? (
-                          <div className="flex items-center justify-between">
-                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                          <div className="flex items-center gap-2">
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
                                  <ShieldCheck size={10} /> ATAYAN & SORUMLU
                               </span>
                               <div className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
@@ -378,16 +388,16 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                           </div>
                       ) : (
                           <>
-                            <div className="flex items-center justify-between">
-                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
                                    <UserPlus size={10} /> ATAYAN
                                 </span>
                                 <div className="text-[11px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
                                     {creatorName}
                                 </div>
                             </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
                                    <UserCheck size={10} /> SORUMLU
                                 </span>
                                 <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${managerName ? 'text-blue-700 bg-blue-50 border-blue-100' : 'text-slate-400 bg-slate-100 border-slate-200'}`}>
@@ -397,8 +407,8 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                           </>
                       )}
                       
-                      <div className="flex items-center justify-between border-t border-slate-200 pt-2 border-dashed">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                      <div className="flex items-center gap-2 border-t border-slate-200 pt-2 border-dashed">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
                              <Wrench size={10} /> SAHA USTASI
                           </span>
                           <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${workerName ? 'text-indigo-700 bg-indigo-50 border-indigo-100' : 'text-rose-600 bg-rose-50 border-rose-200'}`}>
@@ -461,22 +471,23 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
 
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 relative z-10">
              {waitingForWorkerJobs.map((j: any) => {
+               // --- 🚀 MASAÜSTÜ İÇİN DÜZELTİLMİŞ HİYERARŞİ ---
                const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
                const creatorName = j.details?.createdBy || ownerName;
                const assignedPerson = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
+               const detailWorker = j.details?.worker_id ? staff.find((s:any) => String(s.id) === String(j.details.worker_id)) : null;
                
-               let managerName = null;
+               let managerName = j.details?.managerName || null;
                let workerName = null;
 
                if (assignedPerson) {
                    if (assignedPerson.role === 'Yönetici') {
-                       managerName = assignedPerson.name;
+                       if (!managerName) managerName = assignedPerson.name;
                    } else {
                        workerName = assignedPerson.name;
                    }
                }
 
-               const detailWorker = j.details?.worker_id ? staff.find((s:any) => String(s.id) === String(j.details.worker_id)) : null;
                if (detailWorker) {
                    workerName = detailWorker.name;
                }
@@ -484,7 +495,7 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                const isCreatorSameAsManager = managerName && (creatorName === managerName);
                const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
                const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
-               const dynamicStatus = getDynamicStatus(j);
+               const dynamicStatus = getDynamicStatus(j, !!workerName);
 
                return (
                  <div key={j.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-3 group hover:border-blue-300 transition-colors">
@@ -506,10 +517,11 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                      </span>
                    </div>
                    
-                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-2">
+                   {/* 🚀 DÜZELTİLMİŞ: Mobil Personel Hiyerarşisi UI (Sabit Genişlikli Izgara) */}
+                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-2.5">
                       {isCreatorSameAsManager ? (
-                          <div className="flex items-center justify-between">
-                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                          <div className="flex items-center gap-2">
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
                                  <ShieldCheck size={10} /> ATAYAN & SORUMLU
                               </span>
                               <div className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
@@ -518,16 +530,16 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                           </div>
                       ) : (
                           <>
-                            <div className="flex items-center justify-between">
-                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
                                    <UserPlus size={10} /> ATAYAN
                                 </span>
                                 <div className="text-[11px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
                                     {creatorName}
                                 </div>
                             </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
                                    <UserCheck size={10} /> SORUMLU
                                 </span>
                                 <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${managerName ? 'text-blue-700 bg-blue-50 border-blue-100' : 'text-slate-400 bg-slate-100 border-slate-200'}`}>
@@ -537,8 +549,8 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                           </>
                       )}
                       
-                      <div className="flex items-center justify-between border-t border-slate-200 pt-2 border-dashed">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                      <div className="flex items-center gap-2 border-t border-slate-200 pt-2 border-dashed">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
                              <Wrench size={10} /> SAHA USTASI
                           </span>
                           <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${workerName ? 'text-indigo-700 bg-indigo-50 border-indigo-100' : 'text-rose-600 bg-rose-50 border-rose-200'}`}>

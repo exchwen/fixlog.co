@@ -18,59 +18,95 @@ export default function JobDetailModal({
 }: any) {
 
   // 🚀 DIŞ KATMAN KONTROLÜ
-  // Eğer Müşteri veya Varlık profili açıksa, bu modal tamamen sağır kalacak.
   const hasExternalModal = Boolean(isAnyProfileDetailOpen || selectedCustomer || selectedAsset);
 
-  // 🚀 AKILLI KAPATMA (SMART CLOSE) MANTIĞI
-  const handleSmartClose = React.useCallback((e?: Event) => {
+  // 🚀 AKILLI VE KADEMELİ KAPATMA MANTIĞI (EVENT INTERCEPTION)
+  // TypeScript hatasını önlemek için (e?: any) kullanıyoruz.
+  const handleSmartClose = React.useCallback((e?: any) => {
     
-    // Eğer önümüzde Müşteri veya Varlık modalı varsa, biz KARIŞMIYORUZ. O modal kendi ESC'sini yönetecek.
-    if (hasExternalModal) {
-        return;
-    }
+    // Olayın diğer bileşenlere (özellikle ana sayfaya) sıçramasını durduran kalkan
+    const stopEvent = () => {
+      if (e) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        
+        // Native (Saf) JS olayıysa:
+        if (typeof e.stopImmediatePropagation === 'function') {
+            e.stopImmediatePropagation();
+        } 
+        // React Synthetic (Sanal) olayıysa:
+        else if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') {
+            e.nativeEvent.stopImmediatePropagation();
+        }
+      }
+    };
 
-    // 1. En üst katmanlar (Görsel veya PDF)
+    // 1. Kademe: En üst katmanlar (Görsel veya PDF)
     if (fullScreenImage) {
-      if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
+      stopEvent();
       setFullScreenImage(null);
-      return;
+      return true;
     }
     if (previewPdfJob) {
-      if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
+      stopEvent();
       setPreviewPdfJob(null);
-      return;
+      return true;
     }
-    
-    // 2. Aksiyon Onayları
+
+    // 2. Kademe: Aksiyon Onayları
     if (showCancelConfirm) {
-      if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
+      stopEvent();
       setShowCancelConfirm(false);
-      return;
+      return true;
     }
-    
-    // 3. Düzenleme Modu
+
+    // 3. Kademe: Dışarıdan açılan profil modalları (Müşteri veya Varlık)
+    if (selectedCustomer) {
+      stopEvent();
+      if (setSelectedCustomer) setSelectedCustomer(null);
+      return true;
+    }
+    if (selectedAsset) {
+      stopEvent();
+      if (setSelectedAsset) setSelectedAsset(null);
+      return true;
+    }
+
+    // 4. Kademe: Düzenleme Modu
     if (isEditingJobDetail) {
-      if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
+      stopEvent();
       setIsEditingJobDetail(false);
-      return;
+      return true;
     }
-    
-    // 4. En alt katman (Ana Job Modalı)
+
+    // 5. Kademe: En alt katman (Ana Job Modalı)
     if (selectedJob) {
-      if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
+      // Eğer bizim yönetmediğimiz başka bir dış profil açıksa, olaya dokunmuyoruz.
+      if (isAnyProfileDetailOpen && !selectedCustomer && !selectedAsset) {
+        return false;
+      }
+      stopEvent();
       setSelectedJob(null);
       if (handleCloseDetail) handleCloseDetail('job');
-      return;
+      return true;
     }
-  }, [hasExternalModal, fullScreenImage, previewPdfJob, showCancelConfirm, isEditingJobDetail, selectedJob, setFullScreenImage, setPreviewPdfJob, setShowCancelConfirm, setIsEditingJobDetail, setSelectedJob, handleCloseDetail]);
 
-  // 🚀 ESC Tuşu Dinleyicisi - "Capture" fazında çalışır, olayı en önce biz yakalarız
+    return false;
+  }, [
+    fullScreenImage, previewPdfJob, showCancelConfirm, selectedCustomer, selectedAsset, 
+    isEditingJobDetail, selectedJob, isAnyProfileDetailOpen, 
+    setFullScreenImage, setPreviewPdfJob, setShowCancelConfirm, 
+    setSelectedCustomer, setSelectedAsset, setIsEditingJobDetail, setSelectedJob, handleCloseDetail
+  ]);
+
+  // 🚀 ESC Tuşu Dinleyicisi - "Capture Phase" ile en önce biz yakalarız
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         handleSmartClose(e);
       }
     };
+    // 'true' parametresi olayı en tepeden yakalamamızı sağlar (Böylece arkadaki ana sayfa ESC'yi duyamaz)
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [handleSmartClose]);
@@ -82,12 +118,12 @@ export default function JobDetailModal({
     }
   }, [selectedJob]);
 
-  // 🚀 İç Katmanlar (PDF/Foto) Açıldığında History'i Güncelle (Geri tuşu uygulamadan atmasın diye)
+  // 🚀 İç Katmanlar (PDF/Foto/Profil) Açıldığında History'i Güncelle (Geri tuşu uygulamadan atmasın diye)
   React.useEffect(() => {
-    if (fullScreenImage || previewPdfJob || showCancelConfirm || isEditingJobDetail) {
+    if (fullScreenImage || previewPdfJob || showCancelConfirm || isEditingJobDetail || selectedCustomer || selectedAsset) {
         window.history.pushState({ internalLayer: true }, '');
     }
-  }, [fullScreenImage, previewPdfJob, showCancelConfirm, isEditingJobDetail]);
+  }, [fullScreenImage, previewPdfJob, showCancelConfirm, isEditingJobDetail, selectedCustomer, selectedAsset]);
 
   // 🚀 Mobil Geri Tuşu (Popstate) Dinleyicisi
   React.useEffect(() => {
@@ -95,7 +131,7 @@ export default function JobDetailModal({
 
     const handlePopState = (e: PopStateEvent) => {
       // Dış modal açıksa biz popstate'e karışmıyoruz, dış modal kapansın.
-      if (hasExternalModal) return;
+      if (isAnyProfileDetailOpen && !selectedCustomer && !selectedAsset) return;
 
       // İç katmanları sırayla kapat
       handleSmartClose(e);
@@ -103,7 +139,7 @@ export default function JobDetailModal({
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [selectedJob, hasExternalModal, handleSmartClose]);
+  }, [selectedJob, isAnyProfileDetailOpen, selectedCustomer, selectedAsset, handleSmartClose]);
 
   const sendCustomerWhatsApp = (jobData: any) => {
      const custPhone = (data?.customers || []).find((c:any) => c.name === jobData.customer_name)?.contact;
@@ -129,12 +165,17 @@ export default function JobDetailModal({
     'Onay Bekliyor': 'bg-purple-100 text-purple-700 border-purple-200'
   };
 
-  const getDynamicStatus = (job: any) => {
+  const getDynamicStatus = (job: any, hasWorker: boolean) => {
     if (!job) return { label: '', colorClass: '' };
-    let label = job.status;
-    let colorClass = statusColors[job.status] || 'bg-slate-100 text-slate-500 border-slate-200';
+    let label = job.status || 'Beklemede';
 
-    if (job.status === 'Gelecek' && job.scheduled_date) {
+    if (label === 'Usta Bekliyor' || label === 'Devam Ediyor') {
+        label = hasWorker ? 'Devam Ediyor' : 'Usta Bekliyor';
+    }
+
+    let colorClass = statusColors[label] || 'bg-slate-100 text-slate-500 border-slate-200';
+
+    if ((label === 'Gelecek' || label === 'Beklemede' || label === 'Usta Bekliyor') && job.scheduled_date) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const sDate = new Date(job.scheduled_date.split(' ')[0]);
@@ -304,7 +345,12 @@ export default function JobDetailModal({
             {!(isAnyProfileDetailOpen && !isMobile) && (
                 <div 
                    className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isStacked ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'} cursor-pointer`} 
-                   onClick={() => !isStacked && handleSmartClose()}
+                   onClick={() => {
+                       if (!isStacked) {
+                           setSelectedJob(null);
+                           if (handleCloseDetail) handleCloseDetail('job');
+                       }
+                   }}
                 />
             )}
 
@@ -340,152 +386,150 @@ export default function JobDetailModal({
               {!isEditingJobDetail ? (
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6 space-y-4 sm:space-y-5 relative">
                     
-                    <AnimatePresence>
-                    {showCancelConfirm && (
-                        <motion.div 
-                           initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-                           className="absolute inset-0 z-20 bg-white/95 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 sm:p-8 text-center rounded-b-2xl"
-                        >
-                           <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-4 shadow-inner">
-                              <AlertTriangle size={32} />
-                           </div>
-                           <h3 className="text-xl font-black text-slate-800 mb-2">İşi İptal Etmek İstiyor musun?</h3>
-                           <p className="text-sm font-medium text-slate-500 mb-8 max-w-[250px] leading-relaxed">Bu işlem sonucunda iş emri 'İptal' durumuna geçecek ve listeden kaldırılmayacaktır.</p>
-                           <div className="flex flex-col sm:flex-row gap-3 w-full max-w-[250px] sm:max-w-none">
-                               <button 
-                                  onClick={async () => {
-                                      await handleAction('update-job', { 
-                                          id: selectedJob.id, 
-                                          status: 'İptal',
-                                          lastEditedBy: data?.ownerName || 'Yönetici' 
-                                      }, () => setSelectedJob(null), () => {});
-                                  }}
-                                  className="flex-1 bg-rose-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-700 shadow-md shadow-rose-200 transition-all active:scale-95"
-                               >
-                                  {isSaving ? <Loader2 className="animate-spin mx-auto" size={18} /> : 'Evet, İptal Et'}
-                               </button>
-                               <button 
-                                  onClick={() => handleSmartClose()}
-                                  className="flex-1 bg-white border-2 border-slate-200 text-slate-700 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95"
-                               >
-                                  Vazgeç
-                               </button>
-                           </div>
-                        </motion.div>
-                    )}
-                    </AnimatePresence>
-
-                    <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200">
-                        <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">GÜNCEL DURUM</span>
-                        {(() => {
-                            const dynamic = getDynamicStatus(selectedJob);
-                            return (
-                                <span className={`px-3 py-1.5 rounded-lg text-xs font-black border uppercase tracking-wider ${dynamic.colorClass}`}>
-                                    {dynamic.label}
-                                </span>
-                            );
-                        })()}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                        <div 
-                          onClick={() => {
-                              const theCustomer = (data?.customers || []).find((c:any) => c.name === selectedJob.customer_name);
-                              if(theCustomer && setSelectedCustomer) setSelectedCustomer(theCustomer);
-                          }}
-                          className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 transition-colors group cursor-pointer active:scale-95 relative"
-                        >
-                            <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Müşteri Profili</div>
-                            <div className="text-sm font-black text-slate-800 pr-5">{selectedJob.customer_name}</div>
-                            <button className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">
-                                <ArrowUpRight size={16} />
-                            </button>
-                        </div>
+                    {(() => {
+                        const assignedStaff = selectedJob.staff_id ? (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.staff_id)) : null;
+                        const workerStaff = selectedJob.details?.worker_id ? (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.details.worker_id)) : null;
                         
-                        {(() => {
-                            const theAsset = selectedJob.asset_id ? (data?.assets || []).find((a:any) => String(a.id) === String(selectedJob.asset_id)) : null;
-                            return (
-                                <div 
-                                   onClick={() => {
-                                      if(selectedJob.asset_id && setSelectedAsset && theAsset) {
-                                          setSelectedAsset(theAsset);
-                                      }
-                                   }}
-                                   className={`bg-white p-4 border border-slate-200 rounded-xl shadow-sm transition-colors relative ${selectedJob.asset_id ? 'hover:border-blue-300 cursor-pointer group active:scale-95' : 'opacity-70'}`}
-                                >
-                                    <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">İlgili Varlık / Cihaz</div>
-                                    
-                                    {theAsset?.apartmentName && (
-                                        <div className="inline-block bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-[11px] font-bold mb-2 border border-blue-100">
-                                            🏢 {theAsset.apartmentName}
-                                        </div>
-                                    )}
+                        let managerName = selectedJob.details?.managerName || null;
+                        let finalWorkerName = null;
 
-                                    <div className={`text-sm font-bold flex items-center gap-1.5 pr-5 ${selectedJob.asset_id ? 'text-slate-800' : 'text-slate-400 italic'}`}>
-                                        <Box size={16} className={selectedJob.asset_id ? 'text-blue-500' : 'text-slate-300'}/>
-                                        {theAsset ? theAsset.name : 'Varlık Seçilmemiş'}
-                                    </div>
-                                    {selectedJob.asset_id && (
+                        if (assignedStaff) {
+                            if (assignedStaff.role === 'Yönetici') {
+                                if (!managerName) managerName = assignedStaff.name; 
+                            } else {
+                                finalWorkerName = assignedStaff.name; 
+                            }
+                        }
+
+                        if (workerStaff) {
+                            finalWorkerName = workerStaff.name;
+                        }
+
+                        const hasWorker = !!finalWorkerName;
+                        const dynamicStatus = getDynamicStatus(selectedJob, hasWorker);
+
+                        return (
+                            <>
+                                <AnimatePresence>
+                                {showCancelConfirm && (
+                                    <motion.div 
+                                       initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
+                                       className="absolute inset-0 z-20 bg-white/95 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 sm:p-8 text-center rounded-b-2xl"
+                                    >
+                                       <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                                          <AlertTriangle size={32} />
+                                       </div>
+                                       <h3 className="text-xl font-black text-slate-800 mb-2">İşi İptal Etmek İstiyor musun?</h3>
+                                       <p className="text-sm font-medium text-slate-500 mb-8 max-w-[250px] leading-relaxed">Bu işlem sonucunda iş emri 'İptal' durumuna geçecek ve listeden kaldırılmayacaktır.</p>
+                                       <div className="flex flex-col sm:flex-row gap-3 w-full max-w-[250px] sm:max-w-none">
+                                           <button 
+                                              onClick={async () => {
+                                                  await handleAction('update-job', { 
+                                                      id: selectedJob.id, 
+                                                      status: 'İptal',
+                                                      lastEditedBy: data?.ownerName || 'Yönetici' 
+                                                  }, () => setSelectedJob(null), () => {});
+                                              }}
+                                              className="flex-1 bg-rose-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-700 shadow-md shadow-rose-200 transition-all active:scale-95"
+                                           >
+                                              {isSaving ? <Loader2 className="animate-spin mx-auto" size={18} /> : 'Evet, İptal Et'}
+                                           </button>
+                                           <button 
+                                              onClick={() => handleSmartClose()}
+                                              className="flex-1 bg-white border-2 border-slate-200 text-slate-700 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95"
+                                           >
+                                              Vazgeç
+                                           </button>
+                                       </div>
+                                    </motion.div>
+                                )}
+                                </AnimatePresence>
+
+                                <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">GÜNCEL DURUM</span>
+                                    <span className={`px-3 py-1.5 rounded-lg text-xs font-black border uppercase tracking-wider ${dynamicStatus.colorClass}`}>
+                                        {dynamicStatus.label}
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                    <div 
+                                      onClick={() => {
+                                          const theCustomer = (data?.customers || []).find((c:any) => c.name === selectedJob.customer_name);
+                                          if(theCustomer && setSelectedCustomer) setSelectedCustomer(theCustomer);
+                                      }}
+                                      className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 transition-colors group cursor-pointer active:scale-95 relative"
+                                    >
+                                        <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Müşteri Profili</div>
+                                        <div className="text-sm font-black text-slate-800 pr-5">{selectedJob.customer_name}</div>
                                         <button className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">
                                             <ArrowUpRight size={16} />
                                         </button>
-                                    )}
+                                    </div>
+                                    
+                                    {(() => {
+                                        const theAsset = selectedJob.asset_id ? (data?.assets || []).find((a:any) => String(a.id) === String(selectedJob.asset_id)) : null;
+                                        return (
+                                            <div 
+                                               onClick={() => {
+                                                  if(selectedJob.asset_id && setSelectedAsset && theAsset) {
+                                                      setSelectedAsset(theAsset);
+                                                  }
+                                               }}
+                                               className={`bg-white p-4 border border-slate-200 rounded-xl shadow-sm transition-colors relative ${selectedJob.asset_id ? 'hover:border-blue-300 cursor-pointer group active:scale-95' : 'opacity-70'}`}
+                                            >
+                                                <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">İlgili Varlık / Cihaz</div>
+                                                
+                                                {theAsset?.apartmentName && (
+                                                    <div className="inline-block bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-[11px] font-bold mb-2 border border-blue-100">
+                                                        🏢 {theAsset.apartmentName}
+                                                    </div>
+                                                )}
+
+                                                <div className={`text-sm font-bold flex items-center gap-1.5 pr-5 ${selectedJob.asset_id ? 'text-slate-800' : 'text-slate-400 italic'}`}>
+                                                    <Box size={16} className={selectedJob.asset_id ? 'text-blue-500' : 'text-slate-300'}/>
+                                                    {theAsset ? theAsset.name : 'Varlık Seçilmemiş'}
+                                                </div>
+                                                {selectedJob.asset_id && (
+                                                    <button className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">
+                                                        <ArrowUpRight size={16} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
+                                    
+                                    <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
+                                         <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Görev Tipi</div>
+                                         <div className="text-sm font-bold text-slate-800">{selectedJob.work_type}</div>
+                                    </div>
+                                    
+                                    <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
+                                         <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Planlanan Tarih</div>
+                                         <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                            <Calendar size={16} className={dynamicStatus.label === 'Gecikti' ? 'text-rose-500' : 'text-blue-500'}/>
+                                            {selectedJob.scheduled_date || 'Anlık / Acil'}
+                                         </div>
+                                    </div>
+
+                                    <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
+                                         <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Sorumlu Yönetici</div>
+                                         <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                            <User size={16} className={managerName ? 'text-blue-500' : 'text-slate-300'}/>
+                                            {managerName ? managerName : <span className="text-slate-400 italic">Yönetici Yok</span>}
+                                         </div>
+                                    </div>
+                                    <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
+                                         <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Atanan Usta</div>
+                                         <div className={`text-sm font-bold flex items-center gap-2 ${finalWorkerName ? 'text-emerald-700' : 'text-rose-600'}`}>
+                                            <Wrench size={16} className={finalWorkerName ? 'text-emerald-500' : 'text-rose-400'}/>
+                                            {finalWorkerName ? finalWorkerName : 'Henüz Atanmadı'}
+                                         </div>
+                                    </div>
                                 </div>
-                            );
-                        })()}
-                        
-                        <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
-                             <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Görev Tipi</div>
-                             <div className="text-sm font-bold text-slate-800">{selectedJob.work_type}</div>
-                        </div>
-                        
-                        <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
-                             <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Planlanan Tarih</div>
-                             <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                <Calendar size={16} className={getDynamicStatus(selectedJob).label === 'Gecikti' ? 'text-rose-500' : 'text-blue-500'}/>
-                                {selectedJob.scheduled_date || 'Anlık / Acil'}
-                             </div>
-                        </div>
-
-                        {(() => {
-                           const assignedStaff = selectedJob.staff_id ? (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.staff_id)) : null;
-                           const workerStaff = selectedJob.details?.worker_id ? (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.details.worker_id)) : null;
-                           
-                           let managerName = selectedJob.details?.managerName || null;
-                           let finalWorkerName = null;
-
-                           if (assignedStaff) {
-                               if (assignedStaff.role === 'Yönetici') {
-                                   if (!managerName) managerName = assignedStaff.name; 
-                               } else {
-                                   finalWorkerName = assignedStaff.name; 
-                               }
-                           }
-
-                           if (workerStaff) {
-                               finalWorkerName = workerStaff.name;
-                           }
-
-                           return (
-                               <>
-                                <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
-                                     <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Sorumlu Yönetici</div>
-                                     <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                        <User size={16} className={managerName ? 'text-blue-500' : 'text-slate-300'}/>
-                                        {managerName ? managerName : <span className="text-slate-400 italic">Yönetici Yok</span>}
-                                     </div>
-                                </div>
-                                <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
-                                     <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Atanan Usta</div>
-                                     <div className={`text-sm font-bold flex items-center gap-2 ${finalWorkerName ? 'text-emerald-700' : 'text-rose-600'}`}>
-                                        <Wrench size={16} className={finalWorkerName ? 'text-emerald-500' : 'text-rose-400'}/>
-                                        {finalWorkerName ? finalWorkerName : 'Henüz Atanmadı'}
-                                     </div>
-                                </div>
-                               </>
-                           );
-                        })()}
-                    </div>
+                            </>
+                        );
+                    })()}
 
                     {selectedJob.photos && selectedJob.photos.length > 0 && (
                         <div className="bg-slate-50 p-4 sm:p-5 rounded-xl border border-slate-200">

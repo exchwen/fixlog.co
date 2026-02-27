@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Truck, Phone, MapPin, Plus, Search } from 'lucide-react';
+import { X, Loader2, Truck, Phone, MapPin, Plus, Search, Edit2 } from 'lucide-react';
 
 export default function SupplierModals({
   showSupplierModal, setShowSupplierModal,
@@ -17,9 +17,10 @@ export default function SupplierModals({
   // Form doğrulama: Sadece tedarikçi/firma adı zorunlu
   const isFormValid = newSupplier?.name?.trim() !== '';
 
+  // 🚀 DÜZELTME: Arama filtresinde contact yerine phone kullanıldı
   const filteredSuppliers = (data?.suppliers || []).filter((s:any) => 
      s.name?.toLowerCase().includes(searchSupplier.toLowerCase()) ||
-     s.contact?.includes(searchSupplier)
+     s.phone?.includes(searchSupplier)
   );
 
   return (
@@ -71,11 +72,28 @@ export default function SupplierModals({
                   <div className="space-y-3">
                       {filteredSuppliers.length > 0 ? (
                           filteredSuppliers.map((supplier: any) => (
-                              <div key={supplier.id} className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all group">
-                                  <div className="font-bold text-slate-800 text-base mb-2 group-hover:text-blue-700 transition-colors">{supplier.name}</div>
-                                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-xs font-medium text-slate-500">
-                                      <div className="flex items-center gap-1.5"><Phone size={14} className="text-slate-400" /> {supplier.contact || 'Telefon Yok'}</div>
-                                      <div className="flex items-center gap-1.5"><MapPin size={14} className="text-slate-400" /> <span className="line-clamp-1">{supplier.address || 'Adres Yok'}</span></div>
+                              <div key={supplier.id} className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all group flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                  <div>
+                                    <div className="font-bold text-slate-800 text-base mb-2 group-hover:text-blue-700 transition-colors">{supplier.name}</div>
+                                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-xs font-medium text-slate-500">
+                                        {/* 🚀 DÜZELTME: contact yerine phone kullanıldı */}
+                                        <div className="flex items-center gap-1.5"><Phone size={14} className="text-slate-400" /> {supplier.phone || 'Telefon Yok'}</div>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* 🚀 YENİ EKLENEN: Düzenle Butonu */}
+                                  <div className="shrink-0 flex justify-end">
+                                      <button 
+                                         onClick={() => {
+                                             // Modalı açarken mevcut veriyi state'e dolduruyoruz ki form dolu gelsin
+                                             setNewSupplier({ id: supplier.id, name: supplier.name, phone: supplier.phone || '', address: supplier.address || '' });
+                                             setShowSupplierModal(false);
+                                             setShowAddSupplier(true);
+                                         }}
+                                         className="text-[11px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100 px-3 py-2 rounded-lg flex items-center gap-1.5 transition-all active:scale-95"
+                                      >
+                                         <Edit2 size={12} /> Düzenle
+                                      </button>
                                   </div>
                               </div>
                           ))
@@ -92,7 +110,12 @@ export default function SupplierModals({
               {/* FOOTER */}
               <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0">
                  <button 
-                    onClick={() => { setShowSupplierModal(false); setShowAddSupplier(true); }} 
+                    onClick={() => { 
+                        // Yeni ekleme moduna girerken formun içini temizle
+                        setNewSupplier({ name: '', phone: '', address: '' });
+                        setShowSupplierModal(false); 
+                        setShowAddSupplier(true); 
+                    }} 
                     className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:bg-blue-700 transition-all active:scale-95 flex justify-center items-center gap-2"
                  >
                     <Plus size={18} strokeWidth={3} /> Yeni Tedarikçi Ekle
@@ -105,7 +128,7 @@ export default function SupplierModals({
       </AnimatePresence>
 
 
-      {/* 2. YENİ TEDARİKÇİ EKLEME MODALI */}
+      {/* 2. YENİ TEDARİKÇİ EKLEME / DÜZENLEME MODALI */}
       <AnimatePresence>
         {showAddSupplier && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
@@ -119,8 +142,13 @@ export default function SupplierModals({
             >
               <div className="flex justify-between items-center p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50 shrink-0">
                  <div>
-                    <h2 className="text-xl font-black text-slate-800 tracking-tight">Yeni Tedarikçi Ekle</h2>
-                    <div className="text-xs font-medium text-slate-500 mt-1">Sisteme yeni bir toptancı kaydedin.</div>
+                    {/* 🚀 DÜZELTME: Düzenleme modundaysa başlık değişir */}
+                    <h2 className="text-xl font-black text-slate-800 tracking-tight">
+                        {newSupplier?.id ? 'Tedarikçiyi Düzenle' : 'Yeni Tedarikçi Ekle'}
+                    </h2>
+                    <div className="text-xs font-medium text-slate-500 mt-1">
+                        {newSupplier?.id ? 'Firma bilgilerini güncelleyin.' : 'Sisteme yeni bir toptancı kaydedin.'}
+                    </div>
                  </div>
                  <button 
                     onClick={() => setShowAddSupplier(false)} 
@@ -152,14 +180,15 @@ export default function SupplierModals({
                         type="tel" 
                         placeholder="05XX XXX XX XX veya Sabit Hat" 
                         className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400" 
-                        value={newSupplier?.contact || ''} 
-                        onChange={e => setNewSupplier({...newSupplier, contact: e.target.value})} 
+                        value={newSupplier?.phone || ''} // 🚀 DÜZELTME: contact yerine phone kullanıldı
+                        onChange={e => setNewSupplier({...newSupplier, phone: e.target.value})} // 🚀 DÜZELTME: phone güncelleniyor
                     />
                   </div>
 
+                  {/* Not: Backend'de address alanı olmasa da formda durabilir, zararı yok */}
                   <div>
                     <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
-                        <MapPin size={14} /> Adres / Konum
+                        <MapPin size={14} /> Adres / Konum Notları
                     </label>
                     <textarea 
                         rows={3}
@@ -174,10 +203,14 @@ export default function SupplierModals({
               <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0">
                  <button 
                     disabled={isSaving || !isFormValid} 
-                    onClick={() => handleAction('add-supplier', newSupplier, setShowAddSupplier, () => setNewSupplier({ name: '', contact: '', address: '' }))} 
+                    onClick={() => {
+                        // 🚀 DÜZELTME: ID varsa update-supplier çalışır, yoksa add-supplier
+                        const actionType = newSupplier?.id ? 'update-supplier' : 'add-supplier';
+                        handleAction(actionType, newSupplier, setShowAddSupplier, () => setNewSupplier({ name: '', phone: '', address: '' }))
+                    }} 
                     className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:bg-slate-800 transition-all active:scale-95 flex justify-center items-center disabled:opacity-50 disabled:hover:bg-slate-900"
                  >
-                    {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Tedarikçiyi Kaydet'}
+                    {isSaving ? <Loader2 className="animate-spin" size={18} /> : (newSupplier?.id ? 'Değişiklikleri Kaydet' : 'Tedarikçiyi Kaydet')}
                  </button>
               </div>
             </motion.div>

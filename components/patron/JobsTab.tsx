@@ -17,12 +17,20 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
     });
   };
 
-  // Dinamik Statü Kontrolü (Geciken İşleri Tespit Eder)
-  const getDynamicStatus = (job: any) => {
+  // 🚀 DÜZELTİLMİŞ: Dinamik Statü Kontrolü (Mantık Hatalarını ve Gecikmeleri Tespit Eder)
+  const getDynamicStatus = (job: any, hasWorker: boolean) => {
     let label = job.status;
-    let colorClass = statusColors[job.status] || 'bg-slate-100 text-slate-500 border-slate-200';
 
-    if (job.status === 'Gelecek' && job.scheduled_date) {
+    // 🛠️ MANTIK HATASI DÜZELTMESİ: 
+    // İş tamamlanmadıysa, iptal edilmediyse ve onay beklemiyorsa ustanın varlığına göre durumu otomatik düzelt.
+    if (label === 'Usta Bekliyor' || label === 'Devam Ediyor') {
+        label = hasWorker ? 'Devam Ediyor' : 'Usta Bekliyor';
+    }
+
+    let colorClass = statusColors[label] || 'bg-slate-100 text-slate-500 border-slate-200';
+
+    // Gecikme Kontrolü
+    if (label === 'Gelecek' && job.scheduled_date) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -71,7 +79,7 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
            <tbody className="divide-y divide-slate-100">
              {data?.jobs?.length > 0 ? data.jobs.map((j: any) => {
                
-               // --- 🚀 DÜZELTİLMİŞ ROL BAZLI HİYERARŞİ ---
+               // --- ROL BAZLI HİYERARŞİ ---
                const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
                const creatorName = j.details?.createdBy || ownerName;
                const assignedPerson = data?.staff?.find((s: any) => String(s.id) === String(j.staff_id));
@@ -99,8 +107,8 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
                const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
 
-               // Gecikme kontrolünü çalıştır
-               const dynamicStatus = getDynamicStatus(j);
+               // 🚀 MANTIK HATASI DÜZELTMESİ: İşin durumunu ustanın varlığına göre hesapla
+               const dynamicStatus = getDynamicStatus(j, !!workerName);
 
                return (
                  <tr
@@ -117,7 +125,6 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                           j.customer_name
                         )}
                       </div>
-                      {/* Varlık Adı */}
                       <div className="text-[11px] font-black text-slate-600 mt-1 mb-1 truncate max-w-[220px]">
                         {currentAsset?.name || 'Bağımsız İş'}
                       </div>
@@ -146,12 +153,12 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                       </div>
                    </td>
                    
-                   {/* Personel Hiyerarşisi */}
+                   {/* 🚀 DÜZELTİLMİŞ: Personel Hiyerarşisi (Sıkı ve Düzenli Izgara Görünümü) */}
                    <td className="px-5 py-4 align-top">
-                      <div className="flex flex-col gap-1.5 w-fit">
+                      <div className="flex flex-col gap-2 w-fit">
                         {isCreatorSameAsManager ? (
-                            <div className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-1.5 min-w-[125px]">
+                            <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5 w-[130px] shrink-0">
                                   <ShieldCheck size={14} className="text-blue-600" />
                                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ATAYAN & SORUMLU:</span>
                                 </div>
@@ -161,8 +168,8 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                             </div>
                         ) : (
                             <>
-                                <div className="flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-1.5 min-w-[125px]">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1.5 w-[130px] shrink-0">
                                       <UserPlus size={14} className="text-slate-400" />
                                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ATAYAN:</span>
                                     </div>
@@ -170,8 +177,8 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                                         {creatorName}
                                     </span>
                                 </div>
-                                <div className="flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-1.5 min-w-[125px]">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1.5 w-[130px] shrink-0">
                                       <UserCheck size={14} className={managerName ? 'text-blue-500' : 'text-slate-300'} />
                                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">SORUMLU:</span>
                                     </div>
@@ -185,9 +192,8 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                                 </div>
                             </>
                         )}
-                        <div className="ml-1.5 w-[1px] h-2 bg-slate-200 my-0.5"></div>
-                        <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-1.5 min-w-[125px]">
+                        <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 w-[130px] shrink-0">
                               <Wrench size={14} className={workerName ? 'text-indigo-500' : 'text-slate-400'} />
                               <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">SAHA USTASI:</span>
                             </div>
@@ -234,7 +240,7 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
       <div className="md:hidden flex flex-col gap-3">
         {data?.jobs?.length > 0 ? data.jobs.map((j: any) => {
           
-          // --- 🚀 MOBİL İÇİN HİYERARŞİ (AYNI MANTIK) ---
+          // --- MOBİL İÇİN HİYERARŞİ ---
           const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
           const creatorName = j.details?.createdBy || ownerName;
           const assignedPerson = data?.staff?.find((s: any) => String(s.id) === String(j.staff_id));
@@ -260,8 +266,8 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
           const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
           const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
 
-          // Gecikme kontrolünü çalıştır
-          const dynamicStatus = getDynamicStatus(j);
+          // 🚀 MANTIK HATASI DÜZELTMESİ (MOBİL)
+          const dynamicStatus = getDynamicStatus(j, !!workerName);
 
           return (
             <div 
@@ -292,11 +298,12 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                  </span>
               </div>
 
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-2">
+              {/* 🚀 DÜZELTİLMİŞ: Mobil Personel Hiyerarşisi (Düzenli Izgara) */}
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-2.5">
                   {isCreatorSameAsManager ? (
-                      <div className="flex items-center justify-between">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                             <ShieldCheck size={10} /> ATAYAN & SORUMLU
+                      <div className="flex items-center gap-2">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
+                             <ShieldCheck size={12} /> ATAYAN & SORUMLU
                           </span>
                           <div className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
                               {managerName}
@@ -304,17 +311,17 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                       </div>
                   ) : (
                       <>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                               <UserPlus size={10} /> ATAYAN
+                        <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
+                               <UserPlus size={12} /> ATAYAN
                             </span>
                             <div className="text-[11px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
                                 {creatorName}
                             </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                               <UserCheck size={10} /> SORUMLU
+                        <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
+                               <UserCheck size={12} /> SORUMLU
                             </span>
                             <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${managerName ? 'text-blue-700 bg-blue-50 border-blue-100' : 'text-slate-400 bg-slate-100 border-slate-200'}`}>
                                 {managerName || '-'}
@@ -323,9 +330,9 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                       </>
                   )}
                   
-                  <div className="flex items-center justify-between border-t border-slate-200 pt-2 border-dashed">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                         <Wrench size={10} /> SAHA USTASI
+                  <div className="flex items-center gap-2 border-t border-slate-200 pt-2 border-dashed">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
+                         <Wrench size={12} /> SAHA USTASI
                       </span>
                       <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${workerName ? 'text-indigo-700 bg-indigo-50 border-indigo-100' : 'text-rose-600 bg-rose-50 border-rose-200'}`}>
                           {workerName || 'Atanmadı'}
