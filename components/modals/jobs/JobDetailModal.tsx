@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Search, User, Box, Calendar, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle, Clock, Image as ImageIcon, Download, MessageSquareText, Settings, CheckSquare, Tag } from 'lucide-react';
+import { X, Loader2, Search, User, Box, Calendar, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle, Clock, Image as ImageIcon, Download, MessageSquareText, Settings, CheckSquare, Tag, Wrench } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 
 export default function JobDetailModal({
@@ -252,7 +252,7 @@ export default function JobDetailModal({
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                        <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm hover:border-blue-200 transition-colors">
+                        <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm hover:border-blue-200 transition-colors sm:col-span-2">
                             <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Müşteri / Lokasyon</div>
                             <div className="text-sm font-black text-slate-800">{selectedJob.customer_name}</div>
                             {selectedJob.asset_id && (
@@ -262,24 +262,60 @@ export default function JobDetailModal({
                                 </div>
                             )}
                         </div>
+                        
                         <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
                              <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Görev Tipi</div>
                              <div className="text-sm font-bold text-slate-800">{selectedJob.work_type}</div>
                         </div>
+                        
                         <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
                              <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Planlanan Tarih</div>
                              <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                {/* 🚀 Tarih ikonunun rengi duruma göre değişir */}
                                 <Calendar size={16} className={getDynamicStatus(selectedJob).label === 'Gecikti' ? 'text-rose-500' : 'text-blue-500'}/>
                                 {selectedJob.scheduled_date || 'Anlık / Acil'}
                              </div>
                         </div>
-                        <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
-                             <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Sorumlu Personel</div>
-                             <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                <User size={16} className="text-amber-500"/>
-                                {(data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.staff_id))?.name || 'Atanmamış'}
-                             </div>
-                        </div>
+
+                        {/* 🚀 Personel Hiyerarşisi Kartları (Sorumlu & Usta) */}
+                        {(() => {
+                           const assignedStaff = selectedJob.staff_id ? (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.staff_id)) : null;
+                           const workerStaff = selectedJob.details?.worker_id ? (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.details.worker_id)) : null;
+                           
+                           let managerName = selectedJob.details?.managerName || null;
+                           let finalWorkerName = null;
+
+                           if (assignedStaff) {
+                               if (assignedStaff.role === 'Yönetici') {
+                                   if (!managerName) managerName = assignedStaff.name; 
+                               } else {
+                                   finalWorkerName = assignedStaff.name; 
+                               }
+                           }
+
+                           if (workerStaff) {
+                               finalWorkerName = workerStaff.name;
+                           }
+
+                           return (
+                               <>
+                                <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
+                                     <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Sorumlu Yönetici</div>
+                                     <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                        <User size={16} className={managerName ? 'text-blue-500' : 'text-slate-300'}/>
+                                        {managerName ? managerName : <span className="text-slate-400 italic">Yönetici Yok</span>}
+                                     </div>
+                                </div>
+                                <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
+                                     <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Atanan Usta</div>
+                                     <div className={`text-sm font-bold flex items-center gap-2 ${finalWorkerName ? 'text-emerald-700' : 'text-rose-600'}`}>
+                                        <Wrench size={16} className={finalWorkerName ? 'text-emerald-500' : 'text-rose-400'}/>
+                                        {finalWorkerName ? finalWorkerName : 'Henüz Atanmadı'}
+                                     </div>
+                                </div>
+                               </>
+                           );
+                        })()}
                     </div>
 
                     {selectedJob.photos && selectedJob.photos.length > 0 && (
