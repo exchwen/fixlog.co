@@ -92,14 +92,14 @@ export default function StaffDetailModal({
           key="staff-modal-backdrop"
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
-          exit={{ opacity: 0, pointerEvents: "none" }} 
+          exit={{ opacity: 0 }} 
           transition={{ duration: 0.15 }}
-          /* 🚀 Z-Index 9999'dan 120'ye düşürüldü, Stack olunca 10'a inerek arkada kalır */
-          className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-10' : 'z-[120]'}`}
+          /* 🚀 TIKLANAMA BUG'I ÇÖZÜMÜ: pointer-events sınıfı buradan tamamen kaldırıldı. Ana div daima etkileşime açık (kapandığında zaten yok olacak) */
+          className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[10]' : 'z-[120]'}`}
         >
           {/* Arka plan tıklaması ile kapatma - Stack varken tıklamaları yok sayar */}
           <div 
-             className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isStacked ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'} cursor-pointer`} 
+             className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isStacked ? 'opacity-0' : 'opacity-100'} cursor-pointer`} 
              onClick={() => !isStacked && closeThisModal()}
           ></div>
 
@@ -115,6 +115,7 @@ export default function StaffDetailModal({
             }} 
             exit={{ opacity: 0, scale: 0.95, y: 10 }} 
             transition={{ duration: 0.25, ease: "easeInOut" }}
+            /* 🚀 SADECE bu iç kutu stacked olduğunda tıklanamaz hale gelir */
             style={{ pointerEvents: isStacked ? 'none' : 'auto' }}
             className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 z-10"
             onClick={(e) => e.stopPropagation()}
