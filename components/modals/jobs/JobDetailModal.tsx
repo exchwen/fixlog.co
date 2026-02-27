@@ -86,22 +86,34 @@ export default function JobDetailModal({
   };
 
   // 🚀 iOS Stacking Kontrolü
-  // Eğer PDF açık veya Fotoğraf büyütülmüşse, ana modal geriye itilecek.
-  const isStacked = Boolean(previewPdfJob || fullScreenImage);
+  // PDF açık, Fotoğraf büyütülmüş VEYA Müşteri/Varlık profili açıksa ana modal geriye itilecek.
+  const isStacked = Boolean(previewPdfJob || fullScreenImage || isAnyProfileDetailOpen);
 
   return (
     <>
       {/* 0. PDF ÖNİZLEME MODALI */}
       <AnimatePresence>
         {previewPdfJob && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-[200] flex items-center justify-center p-4 pointer-events-auto" onClick={() => setPreviewPdfJob(null)}>
+          <motion.div 
+             key="pdf-modal-backdrop"
+             className="fixed inset-0 flex items-center justify-center p-4 z-[200]"
+             initial={{ opacity: 0 }} 
+             animate={{ opacity: 1 }} 
+             exit={{ opacity: 0, pointerEvents: "none" }} 
+             transition={{ duration: 0.15 }}
+          >
+             <div 
+               className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer"
+               onClick={() => setPreviewPdfJob(null)}
+             />
              <motion.div 
-               initial={{ y: '100%', opacity: 0 }} 
-               animate={{ y: 0, opacity: 1 }} 
-               exit={{ y: '100%', opacity: 0 }} 
-               transition={{ type: "spring", stiffness: 300, damping: 30 }}
+               key="pdf-modal-content"
+               initial={{ opacity: 0, scale: 0.95, y: 10 }} 
+               animate={{ opacity: 1, scale: 1, y: 0 }} 
+               exit={{ opacity: 0, scale: 0.95, y: 10 }} 
+               transition={{ duration: 0.25, ease: "easeInOut" }}
                onClick={(e) => e.stopPropagation()}
-               className="bg-white w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col max-h-[90vh] shadow-2xl relative"
+               className="bg-white w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col max-h-[90vh] shadow-2xl relative z-10"
              >
                 <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 no-print z-10">
                    <h2 className="font-black text-lg text-slate-800">Servis Formu & Fiyat Özeti</h2>
@@ -130,11 +142,11 @@ export default function JobDetailModal({
                           <div className="font-bold text-sm text-slate-800">{previewPdfJob.customer_name}</div>
                        </div>
                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
-                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Cihaz / Konum</div>
+                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Cihaz / Apartman</div>
                           <div className="font-bold text-sm text-slate-800">
                               {(() => {
                                   const asset = (data?.assets || []).find((a:any) => a.id === previewPdfJob.asset_id);
-                                  return asset ? `${asset.name} ${asset.location ? `- ${asset.location}` : ''}` : 'Belirtilmedi';
+                                  return asset ? `${asset.name} ${asset.apartmentName ? `- ${asset.apartmentName}` : ''}` : 'Belirtilmedi';
                               })()}
                           </div>
                        </div>
@@ -186,34 +198,44 @@ export default function JobDetailModal({
                  .no-print { display: none !important; }
                }
              `}} />
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
       {/* 1. SEÇİLİ İŞ (GÖREV) DETAY MODALI */}
       <AnimatePresence>
         {selectedJob && jobModalType !== 'APPROVAL' && (
-          <div className={`fixed inset-0 z-[130] flex items-center justify-center p-4 ${isAnyProfileDetailOpen && !isMobile ? 'bg-transparent pointer-events-none' : 'bg-slate-900/60 backdrop-blur-sm'}`}>
-            
-            {/* Arka Plan Tıklama Alanı (Sadece Stacking Yokken Kapatır) */}
+          <motion.div 
+             key="job-modal-backdrop"
+             className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[120]' : 'z-[130]'}`}
+             initial={{ opacity: 0 }} 
+             animate={{ opacity: 1 }} 
+             exit={{ opacity: 0, pointerEvents: "none" }} 
+             transition={{ duration: 0.15 }}
+          >
+            {/* Arka Plan Tıklama Alanı (Stacking varken saydamlaşır ve tıklamayı devre dışı bırakır ki yeni modalın arkasında kalkan oluşturmasın) */}
             {!(isAnyProfileDetailOpen && !isMobile) && (
-                <div className={`absolute inset-0 ${isStacked ? 'pointer-events-none' : 'pointer-events-auto'}`} onClick={() => { if(!isStacked) handleCloseDetail('job'); }}></div>
+                <div 
+                   className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isStacked ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'} cursor-pointer`} 
+                   onClick={() => !isStacked && handleCloseDetail('job')}
+                />
             )}
 
             <motion.div 
-                initial={{ opacity: 0, scale: 0.95, y: 20, x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 }} 
+                key="job-modal-content"
+                initial={{ opacity: 0, scale: 0.95, y: 10, x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 }} 
                 animate={{ 
                     opacity: 1, 
-                    scale: isStacked ? 0.93 : 1, 
-                    y: isStacked ? -15 : 0, 
-                    filter: isStacked ? 'brightness(0.6)' : 'brightness(1)',
+                    scale: isStacked ? 0.92 : 1, 
+                    y: isStacked ? -20 : 0, 
+                    filter: isStacked ? 'brightness(0.5)' : 'brightness(1)',
                     x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 
                 }} 
-                exit={{ opacity: 0, scale: 0.95, y: 20, x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 }} 
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10, x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 }} 
+                transition={{ duration: 0.25, ease: "easeInOut" }}
                 style={{ pointerEvents: isStacked ? 'none' : 'auto' }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200"
+                className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 z-10"
             >
               
               <div className="flex justify-between items-start p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50 z-10">
@@ -293,7 +315,7 @@ export default function JobDetailModal({
                             </button>
                         </div>
                         
-                        {/* 🚀 VARLIK KARTI & APARTMAN ADI EKLENTİSİ */}
+                        {/* 🚀 VARLIK KARTI & SADECE APARTMAN ADI EKLENTİSİ */}
                         {(() => {
                             const theAsset = selectedJob.asset_id ? (data?.assets || []).find((a:any) => String(a.id) === String(selectedJob.asset_id)) : null;
                             return (
@@ -307,9 +329,9 @@ export default function JobDetailModal({
                                 >
                                     <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">İlgili Varlık / Cihaz</div>
                                     
-                                    {theAsset?.location && (
+                                    {theAsset?.apartmentName && (
                                         <div className="inline-block bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-[11px] font-bold mb-2 border border-blue-100">
-                                            🏢 {theAsset.location}
+                                            🏢 {theAsset.apartmentName}
                                         </div>
                                     )}
 
@@ -618,7 +640,7 @@ export default function JobDetailModal({
                 </div>
               )}
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -626,23 +648,32 @@ export default function JobDetailModal({
       <AnimatePresence>
         {fullScreenImage && (
           <motion.div 
+            key="image-modal-backdrop"
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }} 
-            className="fixed inset-0 z-[210] bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-4"
-            onClick={() => setFullScreenImage(null)}
+            exit={{ opacity: 0, pointerEvents: "none" }} 
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-[210] flex items-center justify-center p-4"
           >
+            <div 
+               className="absolute inset-0 bg-slate-900/90 backdrop-blur-md cursor-pointer"
+               onClick={() => setFullScreenImage(null)}
+            />
             <button 
                onClick={() => setFullScreenImage(null)} 
-               className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-rose-500 text-white rounded-full transition-colors backdrop-blur-sm z-10"
+               className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-rose-500 text-white rounded-full transition-colors backdrop-blur-sm z-20"
             >
                <X size={24} />
             </button>
             <motion.img 
-               initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
+               key="image-modal-content"
+               initial={{ scale: 0.95, y: 10 }} 
+               animate={{ scale: 1, y: 0 }} 
+               exit={{ scale: 0.95, y: 10 }} 
+               transition={{ duration: 0.25, ease: "easeInOut" }}
                src={fullScreenImage} 
                alt="Büyütülmüş Fotoğraf" 
-               className="max-w-full max-h-full object-contain rounded-xl shadow-2xl relative z-0"
+               className="max-w-full max-h-full object-contain rounded-xl shadow-2xl relative z-10"
                onClick={(e) => e.stopPropagation()} 
             />
           </motion.div>
