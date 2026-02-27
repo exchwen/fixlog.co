@@ -126,17 +126,33 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {pendingJobs.length > 0 ? pendingJobs.map((j: any) => {
+              {pendingJobs.length > 0 ? pendingJobs.map((j: any) => {
                   
                   const assignedManager = j.staff_id ? staff.find((s:any) => s.id === j.staff_id) : null;
                   const assignedWorker = j.details?.worker_id ? staff.find((s:any) => s.id === j.details?.worker_id) : null;
                   const actionBy = j.details?.lastEditedBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
                   const isSamePerson = assignedManager && assignedManager.name === actionBy;
+
+                  // 🚀 İlgili varlığı ve apartman adını bul
+                  const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
+                  const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
                   
                   return (
                     <tr key={j.id} className="hover:bg-amber-50/50 transition-colors group">
                       <td className="px-5 py-4 align-top border-r border-slate-50">
-                        <div className="font-bold text-slate-800 text-sm mb-1 group-hover:text-amber-700 transition-colors">{j.customer_name}</div>
+                        <div className="font-bold text-slate-800 text-sm mb-1.5 group-hover:text-amber-700 transition-colors">
+                          {aptName ? (
+                            <><span className="text-amber-600">{aptName}</span> - {j.customer_name}</>
+                          ) : (
+                            j.customer_name
+                          )}
+                        </div>
+                        
+                        {/* 🚀 Varlık Adı */}
+                        <div className="text-[10px] font-black text-slate-600 mb-2 truncate max-w-[200px]">
+                           {currentAsset?.name || 'Bağımsız İş'}
+                        </div>
+
                         <div className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1.5 mb-3 bg-slate-50 w-max px-2 py-0.5 rounded border border-slate-100">
                            <FileText size={12} className="text-slate-400" /> {j.work_type}
                         </div>
@@ -234,20 +250,36 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
 
          {/* MOBİL GÖRÜNÜM: DİKEY KARTLAR (Yatay Scroll'u Engeller) */}
          <div className="md:hidden flex flex-col gap-3">
-           {pendingJobs.length > 0 ? pendingJobs.map((j: any) => {
+         {pendingJobs.length > 0 ? pendingJobs.map((j: any) => {
               const assignedManager = j.staff_id ? staff.find((s:any) => s.id === j.staff_id) : null;
               const assignedWorker = j.details?.worker_id ? staff.find((s:any) => s.id === j.details?.worker_id) : null;
               const actionBy = j.details?.lastEditedBy || data?.ownerName?.split(' ')[0] || 'Yönetici';
               const isSamePerson = assignedManager && assignedManager.name === actionBy;
+
+              // 🚀 İlgili varlığı ve apartman adını bul
+              const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
+              const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
 
               return (
                 <div key={j.id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col gap-4">
                   
                   {/* Müşteri ve İş Tipi */}
                   <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
-                    <div className="min-w-0">
-                      <div className="font-black text-slate-800 text-sm truncate">{j.customer_name}</div>
-                      <div className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1 mt-1 bg-slate-50 w-max px-2 py-0.5 rounded border border-slate-100">
+                    <div className="min-w-0 flex flex-col gap-1">
+                      <div className="font-black text-slate-800 text-sm truncate">
+                        {aptName ? (
+                            <><span className="text-amber-600">{aptName}</span> - {j.customer_name}</>
+                        ) : (
+                            j.customer_name
+                        )}
+                      </div>
+                      
+                      {/* 🚀 Mobil Varlık Adı */}
+                      <div className="text-[11px] font-bold text-slate-600 truncate">
+                        {currentAsset?.name || 'Bağımsız İş'}
+                      </div>
+
+                      <div className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1 mt-0.5 bg-slate-50 w-max px-2 py-0.5 rounded border border-slate-100">
                          <FileText size={10} className="text-slate-400" /> {j.work_type}
                       </div>
                     </div>
@@ -336,11 +368,28 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 relative z-10">
              {waitingForWorkerJobs.map((j: any) => {
                const assignedWorker = j.staff_id ? staff.find((s:any) => s.id === j.staff_id) : null;
+               
+               // 🚀 İlgili varlığı ve apartman adını bul
+               const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
+               const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
+
                return (
                  <div key={j.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-3 group hover:border-blue-300 transition-colors">
-                   <div className="flex justify-between items-start gap-2">
-                     <div className="font-bold text-slate-800 text-sm truncate pr-2">{j.customer_name}</div>
-                     <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider whitespace-nowrap border border-slate-200 shadow-sm">
+                   <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-2">
+                     <div className="min-w-0">
+                       <div className="font-bold text-slate-800 text-sm truncate pr-2">
+                          {aptName ? (
+                              <><span className="text-blue-600">{aptName}</span> - {j.customer_name}</>
+                          ) : (
+                              j.customer_name
+                          )}
+                       </div>
+                       {/* 🚀 Varlık Adı */}
+                       <div className="text-[10px] font-bold text-slate-500 mt-1 truncate">
+                          {currentAsset?.name || 'Bağımsız İş'}
+                       </div>
+                     </div>
+                     <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider whitespace-nowrap border border-slate-200 shadow-sm shrink-0">
                        {j.status}
                      </span>
                    </div>
