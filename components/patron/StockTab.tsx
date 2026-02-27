@@ -81,7 +81,8 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
         unitName: editingStock.unitName, 
         unitPrice: editingStock.unitPrice, 
         category: editingStock.category || '', 
-        supplierId: editingStock.supplierId || null 
+        supplierId: editingStock.supplierId || null,
+        minAlert: editingStock.minAlert || 5
     }, () => setEditingStock(null), null);
     setIsSavingLocal(false);
   };
@@ -172,6 +173,61 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
     setSentSuppliers([]);
     setSelectedSupplierForOrder(null);
   };
+
+  // 🚀 AKILLI POPSTATE VE ESC YÖNETİMİ
+  const handleSmartClose = React.useCallback((e?: any) => {
+    const stopEvent = () => {
+      if (e) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        else if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') {
+          e.nativeEvent.stopImmediatePropagation();
+        }
+      }
+    };
+
+    // Önce Sipariş modalını kapatmayı deneriz
+    if (showOrderModal) {
+        stopEvent();
+        handleCloseOrderModal();
+        return true;
+    }
+
+    // Sonra Düzenleme modalını kapatmayı deneriz
+    if (editingStock) {
+        stopEvent();
+        setEditingStock(null);
+        return true;
+    }
+
+    return false;
+  }, [showOrderModal, editingStock]);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleSmartClose(e);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [handleSmartClose]);
+
+  React.useEffect(() => {
+    if (showOrderModal || editingStock) {
+        window.history.pushState({ internalStockLayer: true }, '');
+    }
+  }, [showOrderModal, editingStock]);
+
+  React.useEffect(() => {
+    if (!showOrderModal && !editingStock) return;
+    const handlePopState = (e: PopStateEvent) => {
+      handleSmartClose(e);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [showOrderModal, editingStock, handleSmartClose]);
 
   return (
     <div className="space-y-6 relative pb-10 sm:pb-0">
@@ -373,13 +429,13 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                     <td className="px-5 py-4 align-middle text-right">
                       <div className="flex items-center justify-end gap-2">
                          <button 
-                            onClick={() => setEditingStock({ id: item.id, itemName: item.item_name, quantity: item.quantity, unitName: item.unit_name, unitPrice: item.unit_price, category: item.category || '', supplierId: item.supplier_id || '' })} 
+                            onClick={() => setEditingStock({ id: item.id, itemName: item.item_name, quantity: item.quantity, unitName: item.unit_name, unitPrice: item.unit_price, category: item.category || '', supplierId: item.supplier_id || '', minAlert: item.min_alert || 5 })} 
                             className="p-2 text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-600 hover:text-white rounded-lg transition-all active:scale-95 shadow-sm"
                             title="Düzenle"
                          >
                            <Edit2 size={16} />
                          </button>
-                         <button 
+                         <button
                             onClick={() => handleDelete(item.id)} 
                             className="p-2 text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-600 hover:text-white rounded-lg transition-all active:scale-95 shadow-sm"
                             title="Sil"
@@ -437,12 +493,12 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                      <button 
-                        onClick={() => setEditingStock({ id: item.id, itemName: item.item_name, quantity: item.quantity, unitName: item.unit_name, unitPrice: item.unit_price, category: item.category || '', supplierId: item.supplier_id || '' })} 
+                        onClick={() => setEditingStock({ id: item.id, itemName: item.item_name, quantity: item.quantity, unitName: item.unit_name, unitPrice: item.unit_price, category: item.category || '', supplierId: item.supplier_id || '', minAlert: item.min_alert || 5 })} 
                         className="p-2 text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-600 hover:text-white rounded-lg transition-all active:scale-95"
                      >
                        <Edit2 size={14} />
                      </button>
-                     <button 
+                     <button
                         onClick={() => handleDelete(item.id)} 
                         className="p-2 text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-600 hover:text-white rounded-lg transition-all active:scale-95"
                      >
@@ -466,6 +522,7 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
        <AnimatePresence>
          {showOrderModal && (
            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+              <div className="absolute inset-0 cursor-pointer" onClick={(e) => handleSmartClose(e)}></div>
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl relative border border-slate-200 flex flex-col max-h-[90vh]">
                 
                 {/* Header */}
@@ -687,10 +744,11 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
          )}
        </AnimatePresence>
 
-       {/* ... (DÜZENLEME MODALI AYNI KALIYOR SADECE MOBİL İÇİN ESNETİLDİ) ... */}
+       {/* DÜZENLEME MODALI */}
        <AnimatePresence>
          {editingStock && (
            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+              <div className="absolute inset-0 cursor-pointer" onClick={(e) => handleSmartClose(e)}></div>
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-md rounded-2xl p-5 sm:p-6 shadow-2xl relative border border-slate-200">
                 <div className="flex justify-between items-center mb-6 pb-3 border-b border-slate-100">
                   <div>
@@ -734,6 +792,25 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                   <div className="col-span-2">
                     <label className="text-[10px] font-black text-emerald-600 tracking-wider block mb-1.5">BİRİM FİYAT (₺)</label>
                     <input type="number" className="w-full px-4 py-2.5 border border-slate-200 shadow-sm rounded-xl text-sm font-black outline-none focus:border-emerald-400 focus:bg-white bg-slate-50 transition-all text-slate-800" value={editingStock.unitPrice} onChange={e => setEditingStock({...editingStock, unitPrice: e.target.value})} />
+                  </div>
+
+                  <div className="col-span-2">
+                    <label className="text-[10px] font-black text-amber-600 tracking-wider block mb-1.5 flex items-center gap-1">
+                        <AlertTriangle size={12} /> UYARI EŞİĞİ (Minimum Stok)
+                    </label>
+                    <div className="relative">
+                        <input 
+                            type="number" 
+                            min="0"
+                            className="w-full px-4 py-2.5 border border-slate-200 shadow-sm rounded-xl text-sm font-bold outline-none focus:border-amber-400 focus:bg-white bg-slate-50 transition-all text-slate-800" 
+                            value={editingStock.minAlert || ''} 
+                            placeholder="Örn: 5"
+                            onChange={e => setEditingStock({...editingStock, minAlert: e.target.value})} 
+                        />
+                        <div className="absolute right-3 top-3 text-[10px] font-bold text-slate-400 uppercase">
+                            Altına Düşünce Uyar
+                        </div>
+                    </div>
                   </div>
                   
                   <div className="col-span-2 mt-2 pt-4 border-t border-slate-100">

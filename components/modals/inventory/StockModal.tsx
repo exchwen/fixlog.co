@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, Package, Hash, Tag, AlertTriangle } from 'lucide-react';
 
@@ -14,14 +14,52 @@ export default function StockModal({
   // Form doğrulama: Parça adı ve miktarı zorunlu
   const isFormValid = newStock?.name?.trim() !== '' && newStock?.quantity !== '' && Number(newStock?.quantity) >= 0;
 
+  const handleSmartClose = useCallback((e?: any) => {
+    if (e) {
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      if (typeof e.stopPropagation === 'function') e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+      else if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') {
+        e.nativeEvent.stopImmediatePropagation();
+      }
+    }
+    setShowStockModal(false);
+    return true;
+  }, [setShowStockModal]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showStockModal) {
+        handleSmartClose(e);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [handleSmartClose, showStockModal]);
+
+  useEffect(() => {
+    if (showStockModal) {
+        window.history.pushState({ stockAddModal: true }, '');
+    }
+  }, [showStockModal]);
+
+  useEffect(() => {
+    if (!showStockModal) return;
+    const handlePopState = (e: PopStateEvent) => {
+      handleSmartClose(e);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [showStockModal, handleSmartClose]);
+
   return (
     <AnimatePresence>
       {showStockModal && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
           {/* Arka plan tıklaması ile kapatma */}
-          <div className="absolute inset-0" onClick={() => setShowStockModal(false)}></div>
+          <div className="absolute inset-0 cursor-pointer" onClick={(e) => handleSmartClose(e)}></div>
           
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 10 }} 
             animate={{ opacity: 1, scale: 1, y: 0 }} 
             exit={{ opacity: 0, scale: 0.95, y: 10 }} 
