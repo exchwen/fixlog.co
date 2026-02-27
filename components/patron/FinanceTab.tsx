@@ -9,37 +9,30 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
   const params = useParams();
   const router = useRouter();
   
-  // URL'ye göre 100% güvenilir yol ve slug tespiti (Bilet İzolasyonu)
   const isPatronPath = typeof window !== 'undefined' && window.location.pathname.includes('/dashboard');
   const activeSlug = params?.slug || (typeof window !== 'undefined' ? localStorage.getItem(isPatronPath ? 'patron_userSlug' : 'staff_userSlug') : '');
   
-  // Gelir / Gider Modalı State'leri
   const [financeModal, setFinanceModal] = useState<{isOpen: boolean, type: 'Gelir' | 'Gider'}>({ isOpen: false, type: 'Gider' });
   const [financeItems, setFinanceItems] = useState([{ name: '', qty: '1' }]);
   const [financeAmount, setFinanceAmount] = useState('');
   const [isSavingFinance, setIsSavingFinance] = useState(false);
 
-  // Çevrimdışı kontrolü için State
   const [isOffline, setIsOffline] = useState(false);
 
-  // Filtre State'leri (Her tablo için ayrı tutuluyor)
   const [timeFilters, setTimeFilters] = useState<any>({
     'Tüm Hesap Hareketleri': 'Tümü',
     'Sadece Gelirler': 'Tümü',
     'Sadece Giderler': 'Tümü'
   });
 
-  // Özel Tarih Aralığı State'leri
   const [customDateRanges, setCustomDateRanges] = useState<any>({
     'Tüm Hesap Hareketleri': { start: '', end: '' },
     'Sadece Gelirler': { start: '', end: '' },
     'Sadece Giderler': { start: '', end: '' }
   });
 
-  // İş Detayı Gösterim Modalı State'i
   const [selectedJobDetail, setSelectedJobDetail] = useState<any>(null);
 
-  // Ekranda anında göstermek için yerel (Local) State'ler
   const [localFinances, setLocalFinances] = useState(data?.finances || []);
   const [localJobs, setLocalJobs] = useState(data?.jobs || []);
 
@@ -48,7 +41,6 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
     setLocalJobs(data?.jobs || []);
   }, [data]);
 
-  // İnternet durumunu dinleyen useEffect
   useEffect(() => {
     setIsOffline(!navigator.onLine);
     const handleOnline = () => setIsOffline(false);
@@ -81,30 +73,27 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
     
     const endpoint = financeModal.type === 'Gelir' ? 'add-income' : 'add-expense';
     
-    // 🚀 KİM EKLEDİ BİLGİSİ
-    // Patron dashboard'daysa ownerName kullanılır, staff panelindeyse mevcut personelin adı bulunur
+    // 🚀 Ekleyen kişinin adını tespit ediyoruz
     let currentUserName = data?.ownerName || 'Patron';
     if (!isPatronPath) {
-       const currentUserToken = localStorage.getItem('staff_authToken');
-       // Not: Eğer data objesinin içinde staff listesi ve mevcut staff ID varsa daha kesin bir eşleştirme yapılabilir.
-       // Şimdilik genel olarak "Yönetici" veya data.staffName vs var ise onu alıyoruz.
        currentUserName = data?.staffName || 'Yönetici / Usta';
     }
 
+    // 🚀 BACKEND'İ YORMADAN VERİYİ GİZLİCE AÇIKLAMAYA GÖMÜYORUZ (Sihirli Kısım)
+    const finalDescription = `[Ekleyen:${currentUserName}]\n${description}`;
+
     const bodyData = { 
         slug: activeSlug, 
-        description, 
-        amount: parseFloat(financeAmount),
-        addedBy: currentUserName // 🚀 Backend'e de gönderiyoruz (Destekliyorsa kaydeder)
+        description: finalDescription, // Gönderirken gömülü halini atıyoruz
+        amount: parseFloat(financeAmount)
     };
     
     const newRecord = {
         id: Date.now().toString(),
-        description,
+        description: finalDescription,
         amount: parseFloat(financeAmount),
         type: financeModal.type,
-        created_at: new Date().toISOString(),
-        addedBy: currentUserName // 🚀 UI'da anında göstermek için eklendi
+        created_at: new Date().toISOString()
     };
 
     const token = localStorage.getItem(isPatronPath ? 'patron_authToken' : 'staff_authToken');
@@ -157,13 +146,18 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
       const dateStr = dateObj.toLocaleDateString('tr-TR');
       const timeStr = dateObj.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
       
+      // 🚀 Excel'e aktarırken de gizli veriyi çözümlüyoruz
+      const addedByMatch = f.description?.match(/\[Ekleyen:(.*?)\]/);
+      const actualAddedBy = f.addedBy || (addedByMatch ? addedByMatch[1].trim() : 'Sistem / Patron');
+      const cleanDescription = f.description?.replace(/\[Ekleyen:.*?\]\n?/g, '').replace(/\n|,/g, ' - ') || '';
+
       return {
         'İşlem Tarihi': dateStr,
         'İşlem Saati': timeStr,
-        'Açıklama / Kalemler': f.description.replace(/\n|,/g, ' - '), 
+        'Açıklama / Kalemler': cleanDescription, 
         'Miktar (TL)': f.amount,
         'İşlem Tipi': f.type,
-        'Ekleyen Kişi': f.addedBy || 'Belirtilmedi' // 🚀 Excel çıktısına eklendi
+        'Ekleyen Kişi': actualAddedBy
       };
     });
 
@@ -266,7 +260,6 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
               <thead className="bg-slate-50 text-slate-600 font-black border-b border-slate-200 sticky top-0 z-10 shadow-sm uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="px-5 py-4 w-1/2 border-r border-slate-200 last:border-r-0 whitespace-nowrap">Açıklama (Kalemler)</th>
-                  {/* 🚀 TABLO BAŞLIĞINA EKLENDİ */}
                   <th className="px-5 py-4 border-r border-slate-200 last:border-r-0 whitespace-nowrap">Ekleyen</th>
                   <th className="px-5 py-4 border-r border-slate-200 last:border-r-0 whitespace-nowrap">Tarih ve Saat</th>
                   <th className="px-5 py-4 border-r border-slate-200 last:border-r-0 whitespace-nowrap">Miktar (₺)</th>
@@ -275,8 +268,14 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredData.length > 0 ? filteredData.map((f: any, index: number) => {
-                  const relatedJob = localJobs.find((j: any) => f.type === 'Gelir' && j.status === 'Tamamlandı' && f.description.includes(j.customer_name));
-                  const descriptionItems = f.description.split(/,|\n/).map((item: string) => item.trim()).filter((item: string) => item.length > 0);
+                  
+                  // 🚀 GİZLİ VERİYİ ÇÖZÜMLEME
+                  const addedByMatch = f.description?.match(/\[Ekleyen:(.*?)\]/);
+                  const actualAddedBy = f.addedBy || (addedByMatch ? addedByMatch[1].trim() : 'Sistem / Patron');
+                  const cleanDescriptionStr = f.description?.replace(/\[Ekleyen:.*?\]\n?/g, '') || '';
+
+                  const relatedJob = localJobs.find((j: any) => f.type === 'Gelir' && j.status === 'Tamamlandı' && cleanDescriptionStr.includes(j.customer_name));
+                  const descriptionItems = cleanDescriptionStr.split(/,|\n/).map((item: string) => item.trim()).filter((item: string) => item.length > 0);
                   const dateObj = new Date(f.created_at);
 
                   return (
@@ -300,11 +299,10 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
                         </button>
                       )}
                     </td>
-                    {/* 🚀 TABLO HÜCRESİNE EKLENDİ */}
                     <td className="px-5 py-4 align-top border-r border-slate-100 last:border-r-0">
                       <div className="flex items-center gap-1.5 text-slate-600 font-medium bg-slate-50 border border-slate-200 px-2 py-1 rounded-md w-max">
                         <User size={12} className="text-slate-400" />
-                        {f.addedBy || 'Patron / Sistem'}
+                        {actualAddedBy}
                       </div>
                     </td>
                     <td className="px-5 py-4 align-top border-r border-slate-100 last:border-r-0">
@@ -331,16 +329,21 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
 
         <div className="md:hidden flex flex-col gap-3">
           {filteredData.length > 0 ? filteredData.map((f: any) => {
-            const relatedJob = localJobs.find((j: any) => f.type === 'Gelir' && j.status === 'Tamamlandı' && f.description.includes(j.customer_name));
-            const descriptionItems = f.description.split(/,|\n/).map((item: string) => item.trim()).filter((item: string) => item.length > 0);
+
+            // 🚀 GİZLİ VERİYİ ÇÖZÜMLEME (Mobil)
+            const addedByMatch = f.description?.match(/\[Ekleyen:(.*?)\]/);
+            const actualAddedBy = f.addedBy || (addedByMatch ? addedByMatch[1].trim() : 'Sistem');
+            const cleanDescriptionStr = f.description?.replace(/\[Ekleyen:.*?\]\n?/g, '') || '';
+
+            const relatedJob = localJobs.find((j: any) => f.type === 'Gelir' && j.status === 'Tamamlandı' && cleanDescriptionStr.includes(j.customer_name));
+            const descriptionItems = cleanDescriptionStr.split(/,|\n/).map((item: string) => item.trim()).filter((item: string) => item.length > 0);
             const dateObj = new Date(f.created_at);
 
             return (
               <div key={f.id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col gap-3 relative">
                 
-                {/* 🚀 MOBİL KART İÇİNE EKLENDİ */}
                 <div className="absolute top-4 right-4 flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
-                    <User size={10} /> {f.addedBy || 'Sistem'}
+                    <User size={10} /> {actualAddedBy}
                 </div>
 
                 <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3 pr-24">
