@@ -755,16 +755,16 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                     <h2 className="text-lg font-black text-slate-800 leading-none">Stok Kaydını Güncelle</h2>
                     <p className="text-[10px] text-slate-500 font-medium mt-1.5">Sistemdeki mevcut parça verisini değiştiriyorsunuz.</p>
                   </div>
-                  <button onClick={() => setEditingStock(null)} className="text-slate-400 hover:bg-slate-100 p-2 rounded-xl transition-colors active:scale-95"><X size={18} /></button>
+                  <button onClick={(e) => handleSmartClose(e)} className="text-slate-400 hover:bg-slate-100 p-2 rounded-xl transition-colors active:scale-95"><X size={18} /></button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <label className="text-[10px] font-black text-blue-600 tracking-wider block mb-1.5">PARÇA ADI</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="text-[10px] font-black text-blue-600 tracking-wider block mb-1.5">PARÇA ADI <span className="text-rose-500">*</span></label>
                     <input className="w-full px-4 py-2.5 border border-slate-200 shadow-sm rounded-xl text-sm font-bold outline-none focus:border-blue-400 focus:bg-white bg-slate-50 transition-all text-slate-800" value={editingStock.itemName} onChange={e => setEditingStock({...editingStock, itemName: e.target.value})} />
                   </div>
 
-                  <div className="col-span-2">
+                  <div className="sm:col-span-2">
                     <label className="text-[10px] font-black text-slate-500 tracking-wider block mb-1.5">KATEGORİ (Opsiyonel)</label>
                     <select className="w-full px-4 py-2.5 border border-slate-200 shadow-sm rounded-xl text-sm font-bold outline-none bg-slate-50 focus:bg-white focus:border-blue-400 transition-all text-slate-700" value={editingStock.category} onChange={e => setEditingStock({...editingStock, category: e.target.value})}>
                       <option value="">Kategori Seçin veya Boş Bırakın</option>
@@ -772,12 +772,12 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                     </select>
                   </div>
                   
-                  <div>
-                    <label className="text-[10px] font-black text-slate-500 tracking-wider block mb-1.5">MİKTAR</label>
-                    <input type="number" className="w-full px-4 py-2.5 border border-slate-200 shadow-sm rounded-xl text-sm font-bold outline-none focus:border-blue-400 focus:bg-white bg-slate-50 transition-all text-slate-800" value={editingStock.quantity} onChange={e => setEditingStock({...editingStock, quantity: e.target.value})} />
+                  <div className="col-span-1">
+                    <label className="text-[10px] font-black text-slate-500 tracking-wider block mb-1.5">MİKTAR <span className="text-rose-500">*</span></label>
+                    <input type="number" min="0" className="w-full px-4 py-2.5 border border-slate-200 shadow-sm rounded-xl text-sm font-bold outline-none focus:border-blue-400 focus:bg-white bg-slate-50 transition-all text-slate-800" value={editingStock.quantity} onChange={e => setEditingStock({...editingStock, quantity: e.target.value})} />
                   </div>
                   
-                  <div>
+                  <div className="col-span-1">
                     <label className="text-[10px] font-black text-slate-500 tracking-wider block mb-1.5">BİRİM</label>
                     <select className="w-full px-4 py-2.5 border border-slate-200 shadow-sm rounded-xl text-sm font-bold outline-none bg-slate-50 focus:bg-white focus:border-blue-400 transition-all text-slate-700" value={editingStock.unitName} onChange={e => setEditingStock({...editingStock, unitName: e.target.value})}>
                       <option value="Adet">Adet</option>
@@ -789,14 +789,14 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                     </select>
                   </div>
                   
-                  <div className="col-span-2">
+                  <div className="col-span-1">
                     <label className="text-[10px] font-black text-emerald-600 tracking-wider block mb-1.5">BİRİM FİYAT (₺)</label>
-                    <input type="number" className="w-full px-4 py-2.5 border border-slate-200 shadow-sm rounded-xl text-sm font-black outline-none focus:border-emerald-400 focus:bg-white bg-slate-50 transition-all text-slate-800" value={editingStock.unitPrice} onChange={e => setEditingStock({...editingStock, unitPrice: e.target.value})} />
+                    <input type="number" min="0" className="w-full px-4 py-2.5 border border-slate-200 shadow-sm rounded-xl text-sm font-black outline-none focus:border-emerald-400 focus:bg-white bg-slate-50 transition-all text-slate-800" value={editingStock.unitPrice} onChange={e => setEditingStock({...editingStock, unitPrice: e.target.value})} />
                   </div>
 
-                  <div className="col-span-2">
+                  <div className="col-span-1">
                     <label className="text-[10px] font-black text-amber-600 tracking-wider block mb-1.5 flex items-center gap-1">
-                        <AlertTriangle size={12} /> UYARI EŞİĞİ (Minimum Stok)
+                        <AlertTriangle size={12} /> UYARI EŞİĞİ
                     </label>
                     <div className="relative">
                         <input 
@@ -807,18 +807,15 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                             placeholder="Örn: 5"
                             onChange={e => setEditingStock({...editingStock, minAlert: e.target.value})} 
                         />
-                        <div className="absolute right-3 top-3 text-[10px] font-bold text-slate-400 uppercase">
-                            Altına Düşünce Uyar
+                        <div className="absolute right-3 top-3 text-[10px] font-bold text-slate-400 uppercase hidden sm:block">
+                            ALTINA DÜŞÜNCE UYAR
                         </div>
                     </div>
                   </div>
                   
-                  <div className="col-span-2 mt-2 pt-4 border-t border-slate-100">
-                     <label className="text-[10px] font-black text-slate-400 tracking-wider block mb-2">TEDARİKÇİ BİLGİSİ</label>
-                  </div>
-
-                  <div className="col-span-2">
-                    <select className="w-full px-4 py-2.5 border border-slate-200 shadow-sm rounded-xl text-sm font-bold outline-none bg-slate-50 focus:bg-white focus:border-blue-400 transition-all text-slate-700" value={editingStock.supplierId} onChange={e => setEditingStock({...editingStock, supplierId: e.target.value})}>
+                  <div className="sm:col-span-2 mt-1 pt-3 border-t border-slate-100">
+                     <label className="text-[10px] font-black text-slate-400 tracking-wider block mb-1.5">TEDARİKÇİ BİLGİSİ</label>
+                     <select className="w-full px-4 py-2.5 border border-slate-200 shadow-sm rounded-xl text-sm font-bold outline-none bg-slate-50 focus:bg-white focus:border-blue-400 transition-all text-slate-700" value={editingStock.supplierId} onChange={e => setEditingStock({...editingStock, supplierId: e.target.value})}>
                       <option value="">-- Bağımsız / Tedarikçi Seçilmedi --</option>
                       {suppliers.map((s:any) => (
                         <option key={s.id} value={s.id}>{s.name} {s.phone ? `(${s.phone})` : ''}</option>
@@ -828,10 +825,14 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                 </div>
 
                 <div className="flex gap-2 mt-6 pt-4 border-t border-slate-100">
-                  <button disabled={isSavingLocal} className="flex-[2] bg-blue-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-700 flex justify-center items-center shadow-lg shadow-blue-200 transition-all active:scale-95" onClick={handleUpdate}>
+                  <button 
+                    disabled={isSavingLocal || !editingStock.itemName || editingStock.quantity === ''} 
+                    className="flex-[2] bg-blue-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-700 flex justify-center items-center shadow-lg shadow-blue-200 transition-all active:scale-95 disabled:opacity-50" 
+                    onClick={handleUpdate}
+                  >
                     {isSavingLocal ? <Loader2 className="animate-spin" size={18} /> : 'Kaydet'}
                   </button>
-                  <button onClick={() => setEditingStock(null)} className="flex-1 px-4 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all active:scale-95">
+                  <button onClick={(e) => handleSmartClose(e)} className="flex-1 px-4 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all active:scale-95">
                     İptal
                   </button>
                 </div>
