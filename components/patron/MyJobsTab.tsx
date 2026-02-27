@@ -76,41 +76,41 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
     return jobs.filter((j: any) => {
        const staffMatch = String(j.staff_id) === String(currentUserId);
        const managerIdMatch = String(j.details?.managerId) === String(currentUserId);
+       const workerIdMatch = String(j.details?.worker_id) === String(currentUserId);
        
-       // İsim eşleşmelerini tam ve esnek (includes) olarak garantiliyoruz
        const managerNameMatch = j.details?.managerName && (j.details.managerName === currentUserName || j.details.managerName.includes(currentUserName));
-       const creatorMatch = j.details?.createdBy && (j.details.createdBy === currentUserName || j.details.createdBy.includes(currentUserName)) && j.details?.creatorRole === 'Yönetici';
+       const creatorMatch = j.details?.createdBy && (j.details.createdBy === currentUserName || j.details.createdBy.includes(currentUserName));
+       const editorMatch = j.details?.lastEditedBy && (j.details.lastEditedBy === currentUserName || j.details.lastEditedBy.includes(currentUserName));
 
-       return staffMatch || managerIdMatch || managerNameMatch || creatorMatch;
+       // İş "Onay Bekliyor" ise ve yöneticinin ekranındaysa (veya yönetici işlem yaptıysa) onu da kapsar
+       return staffMatch || managerIdMatch || workerIdMatch || managerNameMatch || creatorMatch || editorMatch;
     });
  }, [jobs, currentUserId, currentUserName]);
 
   // --- GRUPLANDIRMA MANTIĞI (SADELEŞTİRİLDİ VE GÜNCELLENDİ) ---
-  // myAllJobs zaten sadece bu yöneticiyle ilgili işleri getirdiği için, 
-  // alt tarafta tekrar staff_id kontrolü yapmaya gerek yoktur. (Çünkü usta atandığında staff_id değişir)
 
-  // 1. Onay Bekleyenler (Patrondan Yeni Gelmiş)
+  // 1. Onay Bekleyenler (Patrondan Yeni Gelmiş, Sadece benim üzerimde olanlar)
   const incomingJobs = myAllJobs.filter((j: any) => 
-    j.status === 'Beklemede' || j.status === 'Gelecek'
+    (j.status === 'Beklemede' || j.status === 'Gelecek') && String(j.staff_id) === String(currentUserId)
   );
 
-  // 2. Atama Bekleyenler (Kabul Ettim ama Henüz Usta Seçmedim)
+  // 2. Atama Bekleyenler (Kabul Ettim ama Henüz Usta Seçmedim, Sadece benim üzerimde olanlar)
   const waitingForAssignment = myAllJobs.filter((j: any) => 
-    j.status === 'Usta Bekliyor' && !j.details?.worker_id
+    j.status === 'Usta Bekliyor' && !j.details?.worker_id && String(j.staff_id) === String(currentUserId)
   );
 
-  // 3. Devam Edenler & Takiptekiler (Ustaya atananlar DAHİL)
+  // 3. Devam Edenler & Takiptekiler (Ustaya atananlar ve Onay Bekleyenler DAHİL)
   const ongoingJobs = myAllJobs.filter((j: any) => {
     // Tamamlananlar ve İptal edilenler hariç
     if (j.status === 'Tamamlandı' || j.status === 'İptal') return false;
     
-    // Zaten yukarıdaki kategorilere (Onay Bekleyen veya Atama Bekleyen) girenleri çıkar
-    const isIncoming = (j.status === 'Beklemede' || j.status === 'Gelecek');
-    const isWaitingAssign = (j.status === 'Usta Bekliyor' && !j.details?.worker_id);
+    // Zaten yukarıdaki kategorilere (Onay Bekleyen veya Atama Bekleyen) GİRENLERİ ÇIKAR
+    const isIncoming = (j.status === 'Beklemede' || j.status === 'Gelecek') && String(j.staff_id) === String(currentUserId) && !j.details?.worker_id;
+    const isWaitingAssign = (j.status === 'Usta Bekliyor' && !j.details?.worker_id && String(j.staff_id) === String(currentUserId));
     
     if (isIncoming || isWaitingAssign) return false;
 
-    // 🚀 Usta atanmış ve devam eden TÜM işler buraya düşer
+    // İşin ustası atanmışsa VEYA onay bekliyorsa VEYA bizzat yönetici üstündeyse buraya düşer.
     return true; 
   });
 
