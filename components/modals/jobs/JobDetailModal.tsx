@@ -13,9 +13,82 @@ export default function JobDetailModal({
   jobModalType, setJobModalType, handleAction, isSaving, data,
   isAnyProfileDetailOpen, isMobile, handleCloseDetail, userRole,
   searchCust, setSearchCust, searchAsset, setSearchAsset,
-  selectedCustomer, setSelectedCustomer, // 🚀 EKLENDİ: Stacking için ebeveynden okunacak
-  selectedAsset, setSelectedAsset        // 🚀 EKLENDİ: Stacking için ebeveynden okunacak
+  selectedCustomer, setSelectedCustomer,
+  selectedAsset, setSelectedAsset
 }: any) {
+
+  // 🚀 AKILLI KAPATMA (SMART CLOSE) MANTIĞI - Katmanlı Hiyerarşi
+  const handleSmartClose = React.useCallback(() => {
+    // 1. En üst katmanlar (Görsel veya PDF)
+    if (fullScreenImage) {
+      setFullScreenImage(null);
+      return true;
+    }
+    if (previewPdfJob) {
+      setPreviewPdfJob(null);
+      return true;
+    }
+    // 2. Aksiyon Onayları
+    if (showCancelConfirm) {
+      setShowCancelConfirm(false);
+      return true;
+    }
+    // 3. 🚀 YENİ: Dışarıdan açılan profil modalları (Müşteri veya Varlık)
+    if (selectedCustomer) {
+      if (setSelectedCustomer) setSelectedCustomer(null);
+      return true;
+    }
+    if (selectedAsset) {
+      if (setSelectedAsset) setSelectedAsset(null);
+      return true;
+    }
+    // 4. Düzenleme Modu
+    if (isEditingJobDetail) {
+      setIsEditingJobDetail(false);
+      return true;
+    }
+    // 5. En alt katman (Ana Job Modalı)
+    if (selectedJob) {
+      setSelectedJob(null);
+      if (handleCloseDetail) handleCloseDetail('job');
+      return true;
+    }
+    return false;
+  }, [
+    fullScreenImage, previewPdfJob, showCancelConfirm, selectedCustomer, selectedAsset, isEditingJobDetail, selectedJob, 
+    setFullScreenImage, setPreviewPdfJob, setShowCancelConfirm, setSelectedCustomer, setSelectedAsset, setIsEditingJobDetail, setSelectedJob, handleCloseDetail
+  ]);
+
+  // 🚀 ESC Tuşu Dinleyicisi
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleSmartClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleSmartClose]);
+
+  // 🚀 Mobil Geri Tuşu (Popstate) Dinleyicisi
+  React.useEffect(() => {
+    if (!selectedJob) return;
+
+    window.history.pushState({ jobModal: true }, '');
+
+    const handlePopState = (e: PopStateEvent) => {
+      handleSmartClose();
+      
+      // Eğer kapanan katmandan sonra HÂLÂ açık olan bir alt katman varsa 
+      // kullanıcının bir sonraki "geri" basışını yakalamak için history'e tekrar state ekliyoruz.
+      if (fullScreenImage || previewPdfJob || showCancelConfirm || isEditingJobDetail || selectedCustomer || selectedAsset) {
+        window.history.pushState({ jobModal: true }, '');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedJob, fullScreenImage, previewPdfJob, showCancelConfirm, isEditingJobDetail, selectedCustomer, selectedAsset, handleSmartClose]);
 
   const sendCustomerWhatsApp = (jobData: any) => {
      const custPhone = (data?.customers || []).find((c:any) => c.name === jobData.customer_name)?.contact;
@@ -86,8 +159,7 @@ export default function JobDetailModal({
     }
   };
 
-  // 🚀 iOS Stacking Kontrolü
-  // PDF, Fotoğraf, Müşteri veya Varlık profillerinden biri açıksa modalı geriye iter.
+  // iOS Stacking Kontrolü
   const isStacked = Boolean(previewPdfJob || fullScreenImage || isAnyProfileDetailOpen || selectedCustomer || selectedAsset);
 
   return (
@@ -105,7 +177,7 @@ export default function JobDetailModal({
           >
              <div 
                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer"
-               onClick={() => setPreviewPdfJob(null)}
+               onClick={() => handleSmartClose()}
              />
              <motion.div 
                key="pdf-modal-content"
@@ -118,7 +190,7 @@ export default function JobDetailModal({
              >
                 <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 no-print z-10">
                    <h2 className="font-black text-lg text-slate-800">Servis Formu & Fiyat Özeti</h2>
-                   <button onClick={() => setPreviewPdfJob(null)} className="p-2 bg-white rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"><X size={18} /></button>
+                   <button onClick={() => handleSmartClose()} className="p-2 bg-white rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"><X size={18} /></button>
                 </div>
                 
                 <div id="pdf-printable-area" className="p-8 overflow-y-auto custom-scrollbar bg-white text-black print-area flex-1 relative">
@@ -208,18 +280,16 @@ export default function JobDetailModal({
         {selectedJob && jobModalType !== 'APPROVAL' && (
           <motion.div 
              key="job-modal-backdrop"
-             /* 🚀 Z-Index Düzeltmesi: Stack edildiğinde z-10 seviyesine inerek yeni açılan modalın arkasında kalmasını sağlar */
              className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-10' : 'z-[130]'}`}
              initial={{ opacity: 0 }} 
              animate={{ opacity: 1 }} 
              exit={{ opacity: 0, pointerEvents: "none" }} 
              transition={{ duration: 0.15 }}
           >
-            {/* Arka Plan Tıklama Alanı (Stacking varken karanlığı kaldırır ve tıklamayı devre dışı bırakır ki yeni modal net görünsün) */}
             {!(isAnyProfileDetailOpen && !isMobile) && (
                 <div 
                    className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isStacked ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'} cursor-pointer`} 
-                   onClick={() => !isStacked && handleCloseDetail('job')}
+                   onClick={() => !isStacked && handleSmartClose()}
                 />
             )}
 
@@ -249,7 +319,7 @@ export default function JobDetailModal({
                        <span className="flex items-center gap-1"><Clock size={12}/> {selectedJob.created_at?.split('T')[0] || ''}</span>
                     </div>
                 </div>
-                <button onClick={() => { setSelectedJob(null); setIsEditingJobDetail(false); setShowCancelConfirm(false); setFullScreenImage(null); }} className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-xl transition-all active:scale-95"><X size={20} /></button>
+                <button onClick={() => handleSmartClose()} className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-xl transition-all active:scale-95"><X size={20} /></button>
               </div>
 
               {!isEditingJobDetail ? (
@@ -280,7 +350,7 @@ export default function JobDetailModal({
                                   {isSaving ? <Loader2 className="animate-spin mx-auto" size={18} /> : 'Evet, İptal Et'}
                                </button>
                                <button 
-                                  onClick={() => setShowCancelConfirm(false)}
+                                  onClick={() => handleSmartClose()}
                                   className="flex-1 bg-white border-2 border-slate-200 text-slate-700 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95"
                                >
                                   Vazgeç
@@ -463,7 +533,6 @@ export default function JobDetailModal({
                             </button>
                         )}
 
-                        {/* 🚀 EKSİLTME GİDERİLDİ: SADECE İş Tamamlandıysa bu satır GİZLENİR */}
                         {selectedJob.status !== 'Tamamlandı' && selectedJob.status !== 'İptal' && (
                             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full pt-2">
                                 {jobModalType === 'APPROVAL_FIRST_STEP' ? (
@@ -633,7 +702,7 @@ export default function JobDetailModal({
                             {isSaving ? <Loader2 className="animate-spin mx-auto" size={18} /> : 'Değişiklikleri Kaydet'}
                         </button>
                         <button 
-                            onClick={() => setIsEditingJobDetail(false)} 
+                            onClick={() => handleSmartClose()} 
                             className="w-full sm:w-1/3 bg-white border-2 border-slate-200 text-slate-700 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95"
                         >
                             Vazgeç
@@ -659,10 +728,10 @@ export default function JobDetailModal({
           >
             <div 
                className="absolute inset-0 bg-slate-900/90 backdrop-blur-md cursor-pointer"
-               onClick={() => setFullScreenImage(null)}
+               onClick={() => handleSmartClose()}
             />
             <button 
-               onClick={() => setFullScreenImage(null)} 
+               onClick={() => handleSmartClose()} 
                className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-rose-500 text-white rounded-full transition-colors backdrop-blur-sm z-20"
             >
                <X size={24} />
