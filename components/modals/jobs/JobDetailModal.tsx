@@ -13,7 +13,7 @@ export default function JobDetailModal({
   jobModalType, setJobModalType, handleAction, isSaving, data,
   isAnyProfileDetailOpen, isMobile, handleCloseDetail, userRole,
   searchCust, setSearchCust, searchAsset, setSearchAsset,
-  setSelectedCustomer, setSelectedAsset // 🚀 YENİ: Yönlendirme için eklendi
+  setSelectedCustomer, setSelectedAsset
 }: any) {
 
   const sendCustomerWhatsApp = (jobData: any) => {
@@ -40,7 +40,6 @@ export default function JobDetailModal({
     'Onay Bekliyor': 'bg-purple-100 text-purple-700 border-purple-200'
   };
 
-  // 🚀 Gecikme kontrolü fonksiyonu
   const getDynamicStatus = (job: any) => {
     if (!job) return { label: '', colorClass: '' };
     let label = job.status;
@@ -86,13 +85,24 @@ export default function JobDetailModal({
     }
   };
 
+  // 🚀 iOS Stacking Kontrolü
+  // Eğer PDF açık veya Fotoğraf büyütülmüşse, ana modal geriye itilecek.
+  const isStacked = Boolean(previewPdfJob || fullScreenImage);
+
   return (
     <>
       {/* 0. PDF ÖNİZLEME MODALI */}
       <AnimatePresence>
         {previewPdfJob && (
-          <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col max-h-[90vh] shadow-2xl relative">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-[200] flex items-center justify-center p-4 pointer-events-auto" onClick={() => setPreviewPdfJob(null)}>
+             <motion.div 
+               initial={{ y: '100%', opacity: 0 }} 
+               animate={{ y: 0, opacity: 1 }} 
+               exit={{ y: '100%', opacity: 0 }} 
+               transition={{ type: "spring", stiffness: 300, damping: 30 }}
+               onClick={(e) => e.stopPropagation()}
+               className="bg-white w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col max-h-[90vh] shadow-2xl relative"
+             >
                 <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 no-print z-10">
                    <h2 className="font-black text-lg text-slate-800">Servis Formu & Fiyat Özeti</h2>
                    <button onClick={() => setPreviewPdfJob(null)} className="p-2 bg-white rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"><X size={18} /></button>
@@ -121,7 +131,12 @@ export default function JobDetailModal({
                        </div>
                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
                           <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Cihaz / Konum</div>
-                          <div className="font-bold text-sm text-slate-800">{(data?.assets || []).find((a:any) => a.id === previewPdfJob.asset_id)?.name || 'Belirtilmedi'}</div>
+                          <div className="font-bold text-sm text-slate-800">
+                              {(() => {
+                                  const asset = (data?.assets || []).find((a:any) => a.id === previewPdfJob.asset_id);
+                                  return asset ? `${asset.name} ${asset.location ? `- ${asset.location}` : ''}` : 'Belirtilmedi';
+                              })()}
+                          </div>
                        </div>
                     </div>
 
@@ -177,17 +192,28 @@ export default function JobDetailModal({
 
       {/* 1. SEÇİLİ İŞ (GÖREV) DETAY MODALI */}
       <AnimatePresence>
-        {selectedJob && !previewPdfJob && jobModalType !== 'APPROVAL' && (
+        {selectedJob && jobModalType !== 'APPROVAL' && (
           <div className={`fixed inset-0 z-[130] flex items-center justify-center p-4 ${isAnyProfileDetailOpen && !isMobile ? 'bg-transparent pointer-events-none' : 'bg-slate-900/60 backdrop-blur-sm'}`}>
+            
+            {/* Arka Plan Tıklama Alanı (Sadece Stacking Yokken Kapatır) */}
             {!(isAnyProfileDetailOpen && !isMobile) && (
-                <div className="absolute inset-0" onClick={() => handleCloseDetail('job')}></div>
+                <div className={`absolute inset-0 ${isStacked ? 'pointer-events-none' : 'pointer-events-auto'}`} onClick={() => { if(!isStacked) handleCloseDetail('job'); }}></div>
             )}
 
             <motion.div 
-                initial={{ opacity: 0, scale: 0.95, x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 }} 
-                animate={{ opacity: 1, scale: 1, x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 }} 
-                exit={{ opacity: 0, scale: 0.95, x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 }} 
-                className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 pointer-events-auto transition-transform duration-300"
+                initial={{ opacity: 0, scale: 0.95, y: 20, x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 }} 
+                animate={{ 
+                    opacity: 1, 
+                    scale: isStacked ? 0.93 : 1, 
+                    y: isStacked ? -15 : 0, 
+                    filter: isStacked ? 'brightness(0.6)' : 'brightness(1)',
+                    x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 
+                }} 
+                exit={{ opacity: 0, scale: 0.95, y: 20, x: isAnyProfileDetailOpen && !isMobile ? 280 : 0 }} 
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                style={{ pointerEvents: isStacked ? 'none' : 'auto' }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200"
             >
               
               <div className="flex justify-between items-start p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50 z-10">
@@ -253,7 +279,6 @@ export default function JobDetailModal({
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                        {/* 🚀 MÜŞTERİ KARTI (Tıklanabilir) */}
                         <div 
                           onClick={() => {
                               const theCustomer = (data?.customers || []).find((c:any) => c.name === selectedJob.customer_name);
@@ -268,27 +293,38 @@ export default function JobDetailModal({
                             </button>
                         </div>
                         
-                        {/* 🚀 VARLIK KARTI (Tıklanabilir) */}
-                        <div 
-                           onClick={() => {
-                              if(selectedJob.asset_id && setSelectedAsset) {
-                                  const theAsset = (data?.assets || []).find((a:any) => String(a.id) === String(selectedJob.asset_id));
-                                  if(theAsset) setSelectedAsset(theAsset);
-                              }
-                           }}
-                           className={`bg-white p-4 border border-slate-200 rounded-xl shadow-sm transition-colors relative ${selectedJob.asset_id ? 'hover:border-blue-300 cursor-pointer group active:scale-95' : 'opacity-70'}`}
-                        >
-                            <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">İlgili Varlık / Cihaz</div>
-                            <div className={`text-sm font-bold flex items-center gap-1.5 pr-5 ${selectedJob.asset_id ? 'text-slate-800' : 'text-slate-400 italic'}`}>
-                                <Box size={16} className={selectedJob.asset_id ? 'text-blue-500' : 'text-slate-300'}/>
-                                {(data?.assets || []).find((a:any) => String(a.id) === String(selectedJob.asset_id))?.name || 'Varlık Seçilmemiş'}
-                            </div>
-                            {selectedJob.asset_id && (
-                                <button className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">
-                                    <ArrowUpRight size={16} />
-                                </button>
-                            )}
-                        </div>
+                        {/* 🚀 VARLIK KARTI & APARTMAN ADI EKLENTİSİ */}
+                        {(() => {
+                            const theAsset = selectedJob.asset_id ? (data?.assets || []).find((a:any) => String(a.id) === String(selectedJob.asset_id)) : null;
+                            return (
+                                <div 
+                                   onClick={() => {
+                                      if(selectedJob.asset_id && setSelectedAsset && theAsset) {
+                                          setSelectedAsset(theAsset);
+                                      }
+                                   }}
+                                   className={`bg-white p-4 border border-slate-200 rounded-xl shadow-sm transition-colors relative ${selectedJob.asset_id ? 'hover:border-blue-300 cursor-pointer group active:scale-95' : 'opacity-70'}`}
+                                >
+                                    <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">İlgili Varlık / Cihaz</div>
+                                    
+                                    {theAsset?.location && (
+                                        <div className="inline-block bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-[11px] font-bold mb-2 border border-blue-100">
+                                            🏢 {theAsset.location}
+                                        </div>
+                                    )}
+
+                                    <div className={`text-sm font-bold flex items-center gap-1.5 pr-5 ${selectedJob.asset_id ? 'text-slate-800' : 'text-slate-400 italic'}`}>
+                                        <Box size={16} className={selectedJob.asset_id ? 'text-blue-500' : 'text-slate-300'}/>
+                                        {theAsset ? theAsset.name : 'Varlık Seçilmemiş'}
+                                    </div>
+                                    {selectedJob.asset_id && (
+                                        <button className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">
+                                            <ArrowUpRight size={16} />
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })()}
                         
                         <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
                              <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Görev Tipi</div>
@@ -303,7 +339,6 @@ export default function JobDetailModal({
                              </div>
                         </div>
 
-                        {/* 🚀 Personel Hiyerarşisi Kartları (Sorumlu & Usta) */}
                         {(() => {
                            const assignedStaff = selectedJob.staff_id ? (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.staff_id)) : null;
                            const workerStaff = selectedJob.details?.worker_id ? (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.details.worker_id)) : null;
@@ -587,18 +622,19 @@ export default function JobDetailModal({
         )}
       </AnimatePresence>
 
+      {/* 2. FULLSCREEN GÖRSEL MODALI (Z-Index En Yüksek) */}
       <AnimatePresence>
         {fullScreenImage && (
           <motion.div 
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }} 
-            className="fixed inset-0 z-[200] bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center p-4"
+            className="fixed inset-0 z-[210] bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-4"
             onClick={() => setFullScreenImage(null)}
           >
             <button 
                onClick={() => setFullScreenImage(null)} 
-               className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-rose-500 text-white rounded-full transition-colors backdrop-blur-sm"
+               className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-rose-500 text-white rounded-full transition-colors backdrop-blur-sm z-10"
             >
                <X size={24} />
             </button>
@@ -606,7 +642,7 @@ export default function JobDetailModal({
                initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
                src={fullScreenImage} 
                alt="Büyütülmüş Fotoğraf" 
-               className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+               className="max-w-full max-h-full object-contain rounded-xl shadow-2xl relative z-0"
                onClick={(e) => e.stopPropagation()} 
             />
           </motion.div>
