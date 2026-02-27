@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MapPin, Box, Briefcase, Calendar, User, AlertCircle, ChevronRight, Edit, Trash2, Save, Loader2, Search, Wrench, Siren, FileText, Building2 } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
@@ -10,22 +10,36 @@ const CITY_DATA: any = trCitiesData;
 export default function AssetDetailModal({
   selectedAsset, setSelectedAsset,
   data, handleCloseDetail,
-  setSelectedJob, setSelectedCustomer,
+  selectedJob, setSelectedJob, // 🚀 İşi takip etmek için eklendi
+  selectedCustomer, setSelectedCustomer, // 🚀 Müşteriyi takip etmek için eklendi
   handleAction, userRole
 }: any) {
 
-  const [activeTab, setActiveTab] = useState('info'); // 'info' | 'history' | 'faults' | 'emergencies'
+  const [activeTab, setActiveTab] = useState('info'); 
   
-  // Düzenleme Modu State'leri
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(selectedAsset || {});
   const [isSaving, setIsSaving] = useState(false);
   
-  // Müşteri Arama ve Konum State'leri
   const [customerSearch, setCustomerSearch] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [buildingNo, setBuildingNo] = useState('');
+
+  // 🚀 Hangi alt modalın BU modal tarafından açıldığını takip ediyoruz (Çakışmayı önler)
+  const [openedChild, setOpenedChild] = useState<'customer' | 'job' | null>(null);
+
+  // Dışarıdan modal kapandığında local state'i temizle
+  useEffect(() => {
+    if (!selectedCustomer && openedChild === 'customer') setOpenedChild(null);
+  }, [selectedCustomer, openedChild]);
+
+  useEffect(() => {
+    if (!selectedJob && openedChild === 'job') setOpenedChild(null);
+  }, [selectedJob, openedChild]);
+
+  // Bu modalın arkaya itilip itilmeyeceğini belirliyoruz
+  const isStacked = openedChild !== null;
 
   useEffect(() => {
     if (selectedAsset) {
@@ -38,7 +52,6 @@ export default function AssetDetailModal({
     }
   }, [selectedAsset]);
 
-  // Düzenleme moduna geçerken veritabanındaki konumu parçalayıp kutulara yerleştirme
   const handleToggleEdit = () => {
       if (!isEditing && editForm?.location) {
           const loc = editForm.location;
@@ -56,7 +69,6 @@ export default function AssetDetailModal({
               
               if (noMatch) {
                   setBuildingNo(noMatch[1].trim());
-                  // prev tipini (prev: any) olarak belirttik
                   setEditForm((prev: any) => ({ ...prev, location: remaining.replace(noMatch[0], '').trim() }));
               } else {
                   setBuildingNo('');
@@ -66,7 +78,6 @@ export default function AssetDetailModal({
               setEditForm((prev: any) => ({ ...prev, location: loc }));
           }
       } else if (isEditing) {
-          // İptal edilirse form state'ini sıfırla
           setEditForm(selectedAsset);
       }
       setIsEditing(!isEditing);
@@ -100,7 +111,6 @@ export default function AssetDetailModal({
 
   const handleSaveEdit = async () => {
       setIsSaving(true);
-      
       const locationToSave = (selectedCity || selectedDistrict || buildingNo) 
           ? getFullAddress(editForm.location, buildingNo, selectedCity, selectedDistrict) 
           : editForm.location;
@@ -121,37 +131,112 @@ export default function AssetDetailModal({
           const success = await handleAction('delete-asset', { id: selectedAsset.id });
           if(success !== false) {
               setSelectedAsset(null);
-              handleCloseDetail('asset');
+              if (handleCloseDetail) handleCloseDetail('asset');
           }
       }
   };
 
-  // Güvenli kapatma
   const handleClose = () => {
       setSelectedAsset(null);
-      handleCloseDetail('asset');
+      if (handleCloseDetail) handleCloseDetail('asset');
   };
+
+  // 🚀 Akıllı Popstate ve ESC Yönetimi
+  const handleSmartClose = useCallback((e?: any) => {
+    // Üstte açılmış bir modal varsa escape/geri tuşu bu modalı etkilemesin!
+    if (isStacked) return true;
+
+    const stopEvent = () => {
+      if (e) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        else if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') {
+            e.nativeEvent.stopImmediatePropagation();
+        }
+      }
+    };
+
+    if (isEditing) {
+        stopEvent();
+        setIsEditing(false);
+        setEditForm(selectedAsset);
+        return true;
+    }
+
+    if (selectedAsset) {
+        stopEvent();
+        handleClose();
+        return true;
+    }
+
+    return false;
+  }, [isEditing, selectedAsset, isStacked]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleSmartClose(e);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [handleSmartClose]);
+
+  useEffect(() => {
+    if (selectedAsset) {
+        window.history.pushState({ assetModal: true }, '');
+    }
+  }, [selectedAsset]);
+
+  useEffect(() => {
+    if (isEditing) {
+        window.history.pushState({ internalAssetLayer: true }, '');
+    }
+  }, [isEditing]);
+
+  useEffect(() => {
+    if (!selectedAsset) return;
+
+    const handlePopState = (e: PopStateEvent) => {
+      handleSmartClose(e);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedAsset, handleSmartClose]);
 
   return (
     <AnimatePresence>
       {selectedAsset && (
         <motion.div 
           key="modal-backdrop-detail"
-          className="fixed inset-0 z-[120] flex items-center justify-center p-4"
-          initial={{ opacity: 0, pointerEvents: "none" }} 
-          animate={{ opacity: 1, pointerEvents: "auto" }} 
-          exit={{ opacity: 0, pointerEvents: "none" }} 
+          // 🚀 Katman arkaya gittiğinde z-index 10'a düşer ki yeni açılan modal sorunsuz üstte kalsın
+          className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[10]' : 'z-[130]'}`}
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }} 
+          exit={{ opacity: 0 }} 
           transition={{ duration: 0.15 }}
         >
-          {/* Çıkışta tıklanma bugunu önleyen ana arkaplan */}
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer" onClick={handleClose}></div>
+          {/* Arkaya itildiğinde transparan olan tıklanabilir arka plan */}
+          <div 
+             className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isStacked ? 'opacity-0' : 'opacity-100'} cursor-pointer`} 
+             onClick={() => !isStacked && handleClose()}
+          ></div>
 
           <motion.div 
             key="modal-content-detail"
-            initial={{ opacity: 0, scale: 0.95 }} 
-            animate={{ opacity: 1, scale: 1 }} 
-            exit={{ opacity: 0, scale: 0.95 }} 
-            transition={{ duration: 0.2 }}
+            // 🚀 Arkaya gitme (scale ve brightness) animasyonu eklendi
+            initial={{ opacity: 0, scale: 0.95, y: 10 }} 
+            animate={{ 
+                opacity: 1, 
+                scale: isStacked ? 0.92 : 1, 
+                y: isStacked ? -20 : 0, 
+                filter: isStacked ? 'brightness(0.5)' : 'brightness(1)' 
+            }} 
+            exit={{ opacity: 0, scale: 0.95, y: 10 }} 
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            style={{ pointerEvents: isStacked ? 'none' : 'auto' }}
             onClick={(e) => e.stopPropagation()}
             className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative z-10 flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 cursor-default"
           >
@@ -180,36 +265,23 @@ export default function AssetDetailModal({
                       </div>
                   </div>
 
-                  {/* SEKMELER - Flex-wrap ile Scroll Engellendi */}
                   {!isEditing && (
                     <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 border-b border-slate-200 w-full">
-                        <button 
-                          onClick={() => setActiveTab('info')}
-                          className={`pb-3 text-sm font-bold transition-all relative ${activeTab === 'info' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
-                        >
+                        <button onClick={() => setActiveTab('info')} className={`pb-3 text-sm font-bold transition-all relative ${activeTab === 'info' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
                             Cihaz Bilgileri
                             {activeTab === 'info' && <motion.div layoutId="assetTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full" />}
                         </button>
-                        <button 
-                          onClick={() => setActiveTab('history')}
-                          className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-1.5 ${activeTab === 'history' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
-                        >
+                        <button onClick={() => setActiveTab('history')} className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-1.5 ${activeTab === 'history' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
                             Servis Geçmişi
                             <span className="bg-slate-200 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-full">{assetJobs.length}</span>
                             {activeTab === 'history' && <motion.div layoutId="assetTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full" />}
                         </button>
-                        <button 
-                          onClick={() => setActiveTab('faults')}
-                          className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-1.5 ${activeTab === 'faults' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
-                        >
+                        <button onClick={() => setActiveTab('faults')} className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-1.5 ${activeTab === 'faults' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
                             Arıza
                             <span className="bg-slate-200 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-full">{assetFaults.length}</span>
                             {activeTab === 'faults' && <motion.div layoutId="assetTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full" />}
                         </button>
-                        <button 
-                          onClick={() => setActiveTab('emergencies')}
-                          className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-1.5 ${activeTab === 'emergencies' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
-                        >
+                        <button onClick={() => setActiveTab('emergencies')} className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-1.5 ${activeTab === 'emergencies' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
                             Acil Durum
                             <span className="bg-slate-200 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-full">{assetEmergencies.length}</span>
                             {activeTab === 'emergencies' && <motion.div layoutId="assetTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full" />}
@@ -232,7 +304,6 @@ export default function AssetDetailModal({
             <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6 bg-white relative">
                 
                 {isEditing ? (
-                   /* DÜZENLEME MODU */
                    <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="space-y-4">
                        <div className="bg-blue-50 text-blue-700 p-3.5 rounded-xl text-xs font-bold flex items-center gap-2 mb-2 border border-blue-100">
                            <Edit size={16} /> Varlık Profilini Düzenliyorsunuz
@@ -270,44 +341,23 @@ export default function AssetDetailModal({
                           </div>
                        </div>
                        
-                       {/* Konum / Şube (Edit Pre-fill Desteği İle) */}
                         <div className="p-4 bg-white border border-slate-200 shadow-sm rounded-xl space-y-3">
                             <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5 mb-1">
                                 <MapPin size={14} /> Konum / Adres Bilgileri
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <select 
-                                    className="px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" 
-                                    value={selectedCity} 
-                                    onChange={(e) => { setSelectedCity(e.target.value); setSelectedDistrict(''); }}
-                                >
+                                <select className="px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={selectedCity} onChange={(e) => { setSelectedCity(e.target.value); setSelectedDistrict(''); }}>
                                     <option value="">İl Seçin</option>
                                     {Object.keys(CITY_DATA).map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
-                                <select 
-                                    className="px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none disabled:opacity-50" 
-                                    value={selectedDistrict} 
-                                    onChange={(e) => setSelectedDistrict(e.target.value)} 
-                                    disabled={!selectedCity}
-                                >
+                                <select className="px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none disabled:opacity-50" value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} disabled={!selectedCity}>
                                     <option value="">İlçe Seçin</option>
                                     {selectedCity && CITY_DATA[selectedCity]?.map((d:string) => <option key={d} value={d}>{d}</option>)}
                                 </select>
                             </div>
                             <div className="flex flex-col sm:flex-row gap-3">
-                                <input 
-                                    className="w-full sm:w-1/3 px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" 
-                                    value={buildingNo} 
-                                    onChange={(e) => setBuildingNo(e.target.value)} 
-                                    placeholder="Bina/Kapı No" 
-                                />
-                                <textarea 
-                                    rows={2} 
-                                    className="w-full sm:w-2/3 px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all resize-none" 
-                                    placeholder="Mahalle, Cadde veya Sokak Bilgisi" 
-                                    value={editForm.location || ''} 
-                                    onChange={e => setEditForm({...editForm, location: e.target.value})} 
-                                />
+                                <input className="w-full sm:w-1/3 px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" value={buildingNo} onChange={(e) => setBuildingNo(e.target.value)} placeholder="Bina/Kapı No" />
+                                <textarea rows={2} className="w-full sm:w-2/3 px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all resize-none" placeholder="Mahalle, Cadde veya Sokak Bilgisi" value={editForm.location || ''} onChange={e => setEditForm({...editForm, location: e.target.value})} />
                             </div>
                         </div>
                        
@@ -323,7 +373,6 @@ export default function AssetDetailModal({
                        </div>
                    </motion.div>
                 ) : (
-                  /* GÖRÜNTÜLEME MODU */
                   <AnimatePresence mode="wait">
                     {activeTab === 'info' && (
                       <motion.div key="info" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-5">
@@ -334,8 +383,14 @@ export default function AssetDetailModal({
                               </div>
                               {assetOwner ? (
                                   <div 
-                                      onClick={() => setSelectedCustomer && setSelectedCustomer(assetOwner)}
-                                      className="flex justify-between items-center cursor-pointer group"
+                                    onClick={() => {
+                                        if (setSelectedCustomer) {
+                                            // 🚀 Müşteriyi açtığımızı state'e kaydedip üst modalı tetikliyoruz
+                                            setOpenedChild('customer');
+                                            setSelectedCustomer(assetOwner);
+                                        }
+                                    }} 
+                                    className="flex justify-between items-center cursor-pointer group"
                                   >
                                       <div>
                                           <div className="text-sm font-black text-slate-800 group-hover:text-blue-700 transition-colors">{assetOwner.name}</div>
@@ -374,8 +429,14 @@ export default function AssetDetailModal({
                               <div className="space-y-3 relative before:absolute before:inset-y-0 before:left-[19px] before:w-0.5 before:bg-slate-100">
                                   {assetJobs.map((job: any) => (
                                       <div 
-                                        key={job.id}
-                                        onClick={() => setSelectedJob && setSelectedJob(job)}
+                                        key={job.id} 
+                                        onClick={() => {
+                                            if (setSelectedJob) {
+                                                // 🚀 İşi açtığımızı state'e kaydedip üst modalı tetikliyoruz
+                                                setOpenedChild('job');
+                                                setSelectedJob(job);
+                                            }
+                                        }} 
                                         className="relative pl-12 cursor-pointer group"
                                       >
                                           <div className={`absolute left-[13px] top-4 w-3.5 h-3.5 rounded-full border-2 border-white z-10 transition-transform group-hover:scale-125 ${job.status === 'Tamamlandı' ? 'bg-emerald-500' : job.status === 'İptal' ? 'bg-rose-500' : 'bg-blue-500'}`}></div>

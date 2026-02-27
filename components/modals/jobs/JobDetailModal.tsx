@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, Search, User, Box, Calendar, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle, Clock, Image as ImageIcon, Download, MessageSquareText, Settings, CheckSquare, Tag, Wrench, ArrowUpRight } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
@@ -17,31 +17,38 @@ export default function JobDetailModal({
   selectedAsset, setSelectedAsset
 }: any) {
 
-  // 🚀 DIŞ KATMAN KONTROLÜ
-  const hasExternalModal = Boolean(isAnyProfileDetailOpen || selectedCustomer || selectedAsset);
+  // 🚀 Hangi alt modalın BU modal tarafından açıldığını takip ediyoruz
+  const [openedChild, setOpenedChild] = useState<'customer' | 'asset' | null>(null);
 
-  // 🚀 AKILLI VE KADEMELİ KAPATMA MANTIĞI (EVENT INTERCEPTION)
-  // TypeScript hatasını önlemek için (e?: any) kullanıyoruz.
-  const handleSmartClose = React.useCallback((e?: any) => {
+  // Dışarıdan modal kapandığında local state'i temizle
+  useEffect(() => {
+    if (!selectedCustomer && openedChild === 'customer') setOpenedChild(null);
+  }, [selectedCustomer, openedChild]);
+
+  useEffect(() => {
+    if (!selectedAsset && openedChild === 'asset') setOpenedChild(null);
+  }, [selectedAsset, openedChild]);
+
+  // 🚀 AKILLI VE KADEMELİ KAPATMA MANTIĞI
+  const handleSmartClose = useCallback((e?: any) => {
     
-    // Olayın diğer bileşenlere (özellikle ana sayfaya) sıçramasını durduran kalkan
+    // 🚀 Alt profil açıksa, esc/geri tuşu alt profili kapatsın, bana dokunmasın
+    if (openedChild !== null) return true;
+
     const stopEvent = () => {
       if (e) {
         if (typeof e.preventDefault === 'function') e.preventDefault();
         if (typeof e.stopPropagation === 'function') e.stopPropagation();
         
-        // Native (Saf) JS olayıysa:
         if (typeof e.stopImmediatePropagation === 'function') {
             e.stopImmediatePropagation();
         } 
-        // React Synthetic (Sanal) olayıysa:
         else if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') {
             e.nativeEvent.stopImmediatePropagation();
         }
       }
     };
 
-    // 1. Kademe: En üst katmanlar (Görsel veya PDF)
     if (fullScreenImage) {
       stopEvent();
       setFullScreenImage(null);
@@ -53,38 +60,22 @@ export default function JobDetailModal({
       return true;
     }
 
-    // 2. Kademe: Aksiyon Onayları
     if (showCancelConfirm) {
       stopEvent();
       setShowCancelConfirm(false);
       return true;
     }
 
-    // 3. Kademe: Dışarıdan açılan profil modalları (Müşteri veya Varlık)
-    if (selectedCustomer) {
-      stopEvent();
-      if (setSelectedCustomer) setSelectedCustomer(null);
-      return true;
-    }
-    if (selectedAsset) {
-      stopEvent();
-      if (setSelectedAsset) setSelectedAsset(null);
-      return true;
-    }
-
-    // 4. Kademe: Düzenleme Modu
     if (isEditingJobDetail) {
       stopEvent();
       setIsEditingJobDetail(false);
       return true;
     }
 
-    // 5. Kademe: En alt katman (Ana Job Modalı)
     if (selectedJob) {
-      // Eğer bizim yönetmediğimiz başka bir dış profil açıksa, olaya dokunmuyoruz.
-      if (isAnyProfileDetailOpen && !selectedCustomer && !selectedAsset) {
-        return false;
-      }
+      // Başka dış modallar varsa dokunmuyoruz.
+      if (isAnyProfileDetailOpen && !openedChild) return false;
+      
       stopEvent();
       setSelectedJob(null);
       if (handleCloseDetail) handleCloseDetail('job');
@@ -93,53 +84,46 @@ export default function JobDetailModal({
 
     return false;
   }, [
-    fullScreenImage, previewPdfJob, showCancelConfirm, selectedCustomer, selectedAsset, 
+    fullScreenImage, previewPdfJob, showCancelConfirm, openedChild, 
     isEditingJobDetail, selectedJob, isAnyProfileDetailOpen, 
     setFullScreenImage, setPreviewPdfJob, setShowCancelConfirm, 
-    setSelectedCustomer, setSelectedAsset, setIsEditingJobDetail, setSelectedJob, handleCloseDetail
+    setIsEditingJobDetail, setSelectedJob, handleCloseDetail
   ]);
 
-  // 🚀 ESC Tuşu Dinleyicisi - "Capture Phase" ile en önce biz yakalarız
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         handleSmartClose(e);
       }
     };
-    // 'true' parametresi olayı en tepeden yakalamamızı sağlar (Böylece arkadaki ana sayfa ESC'yi duyamaz)
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [handleSmartClose]);
 
-  // 🚀 Modal Açıldığında Tarayıcı Geçmişine (History) Başlangıç At
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedJob) {
         window.history.pushState({ jobModal: true }, '');
     }
   }, [selectedJob]);
 
-  // 🚀 İç Katmanlar (PDF/Foto/Profil) Açıldığında History'i Güncelle (Geri tuşu uygulamadan atmasın diye)
-  React.useEffect(() => {
+  useEffect(() => {
     if (fullScreenImage || previewPdfJob || showCancelConfirm || isEditingJobDetail || selectedCustomer || selectedAsset) {
         window.history.pushState({ internalLayer: true }, '');
     }
   }, [fullScreenImage, previewPdfJob, showCancelConfirm, isEditingJobDetail, selectedCustomer, selectedAsset]);
 
-  // 🚀 Mobil Geri Tuşu (Popstate) Dinleyicisi
-  React.useEffect(() => {
+  useEffect(() => {
     if (!selectedJob) return;
 
     const handlePopState = (e: PopStateEvent) => {
-      // Dış modal açıksa biz popstate'e karışmıyoruz, dış modal kapansın.
-      if (isAnyProfileDetailOpen && !selectedCustomer && !selectedAsset) return;
-
-      // İç katmanları sırayla kapat
+      // Dış modal açıksa biz popstate'e karışmıyoruz
+      if (isAnyProfileDetailOpen && openedChild === null) return;
       handleSmartClose(e);
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [selectedJob, isAnyProfileDetailOpen, selectedCustomer, selectedAsset, handleSmartClose]);
+  }, [selectedJob, isAnyProfileDetailOpen, openedChild, handleSmartClose]);
 
   const sendCustomerWhatsApp = (jobData: any) => {
      const custPhone = (data?.customers || []).find((c:any) => c.name === jobData.customer_name)?.contact;
@@ -215,8 +199,8 @@ export default function JobDetailModal({
     }
   };
 
-  // iOS Stacking Kontrolü
-  const isStacked = Boolean(previewPdfJob || fullScreenImage || hasExternalModal);
+  // 🚀 iOS Stacking Kontrolü - SADECE benim açtıklarım veya PDF/Foto iç layerları
+  const isStacked = Boolean(previewPdfJob || fullScreenImage || openedChild !== null);
 
   return (
     <>
@@ -456,7 +440,11 @@ export default function JobDetailModal({
                                     <div 
                                       onClick={() => {
                                           const theCustomer = (data?.customers || []).find((c:any) => c.name === selectedJob.customer_name);
-                                          if(theCustomer && setSelectedCustomer) setSelectedCustomer(theCustomer);
+                                          if(theCustomer && setSelectedCustomer) {
+                                              // 🚀 KİMİ AÇTIĞIMIZI BİLDİRİYORUZ
+                                              setOpenedChild('customer');
+                                              setSelectedCustomer(theCustomer);
+                                          }
                                       }}
                                       className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 transition-colors group cursor-pointer active:scale-95 relative"
                                     >
@@ -473,6 +461,8 @@ export default function JobDetailModal({
                                             <div 
                                                onClick={() => {
                                                   if(selectedJob.asset_id && setSelectedAsset && theAsset) {
+                                                      // 🚀 KİMİ AÇTIĞIMIZI BİLDİRİYORUZ
+                                                      setOpenedChild('asset');
                                                       setSelectedAsset(theAsset);
                                                   }
                                                }}
@@ -559,7 +549,7 @@ export default function JobDetailModal({
 
                     {selectedJob.details?.lastEditedBy && (
                         <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50/50 border border-emerald-100 rounded-xl">
-                            <ShieldCheck size={18} className="text-emerald-600 shrink-0" />
+                            <ShieldCheck size={18} className="textemerald-600 shrink-0" />
                             <div className="flex flex-col">
                                 <span className="text-[10px] text-emerald-600 font-black uppercase tracking-widest mb-0.5">Güvenlik Kaydı</span>
                                 <span className="text-xs font-medium text-slate-600">

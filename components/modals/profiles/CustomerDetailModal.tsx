@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MapPin, Box, Calendar, Clock, ArrowRight, Settings, Trash2, Loader2, Building2 } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
@@ -10,14 +10,14 @@ const CITY_DATA: any = trCitiesData;
 export default function CustomerDetailModal({
   selectedCustomer,
   setSelectedCustomer,
-  setShowAssetDetail,
+  selectedAsset,
+  setSelectedAsset,
   data,
   handleAction,
   isSaving,
   selectedJob,
   setSelectedJob,
-  isMobile,
-  isAssetModalOpen // Varlık modalı açık mı bilgisi (Parent'tan gelir veya null/true olur)
+  isMobile
 }: any) {
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
   const [editCustomerForm, setEditCustomerForm] = useState({ id: '', name: '', contact: '', address: '', tax_info: '' });
@@ -27,6 +27,21 @@ export default function CustomerDetailModal({
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [buildingNo, setBuildingNo] = useState('');
+
+  // 🚀 Hangi alt modalın BU modal tarafından açıldığını takip ediyoruz
+  const [openedChild, setOpenedChild] = useState<'asset' | 'job' | null>(null);
+
+  // Dışarıdan modal kapandığında local state'i temizle
+  useEffect(() => {
+    if (!selectedAsset && openedChild === 'asset') setOpenedChild(null);
+  }, [selectedAsset, openedChild]);
+
+  useEffect(() => {
+    if (!selectedJob && openedChild === 'job') setOpenedChild(null);
+  }, [selectedJob, openedChild]);
+
+  // 🚀 isStacked artık sadece 'biz' bir şey açtıysak veya silme onayı açıksa true olur
+  const isStacked = openedChild !== null || showDeleteConfirm;
 
   const statusColors: any = { 
     'Beklemede': 'bg-amber-100 text-amber-700 border-amber-200', 
@@ -121,9 +136,9 @@ export default function CustomerDetailModal({
     }
   };
 
-  const handleSmartClose = React.useCallback((e?: any) => {
-    
-    if (selectedJob || isAssetModalOpen) return;
+  const handleSmartClose = useCallback((e?: any) => {
+    // 🚀 İçeriden bir modal açtıysak esc/geri tuşuna karışmıyoruz (Kalkan devrede)
+    if (openedChild !== null) return true;
 
     const stopEvent = () => {
       if (e) {
@@ -157,9 +172,9 @@ export default function CustomerDetailModal({
     }
 
     return false;
-  }, [selectedJob, isAssetModalOpen, showDeleteConfirm, isEditingCustomer, selectedCustomer, handleCloseDetail]);
+  }, [openedChild, showDeleteConfirm, isEditingCustomer, selectedCustomer]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         handleSmartClose(e);
@@ -169,32 +184,28 @@ export default function CustomerDetailModal({
     return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [handleSmartClose]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedCustomer) {
         window.history.pushState({ customerModal: true }, '');
     }
   }, [selectedCustomer]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (showDeleteConfirm || isEditingCustomer) {
         window.history.pushState({ internalLayer: true }, '');
     }
   }, [showDeleteConfirm, isEditingCustomer]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!selectedCustomer) return;
 
     const handlePopState = (e: PopStateEvent) => {
-      if (selectedJob || isAssetModalOpen) return; 
       handleSmartClose(e);
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [selectedCustomer, selectedJob, isAssetModalOpen, handleSmartClose]);
-
-  // 🚀 iOS Stacking Kontrolü
-  const isStacked = Boolean(selectedJob || isAssetModalOpen || showDeleteConfirm);
+  }, [selectedCustomer, handleSmartClose]);
 
   return (
     <>
@@ -206,10 +217,8 @@ export default function CustomerDetailModal({
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }} 
             transition={{ duration: 0.15 }}
-            /* TIKLANAMA BUG'I ÇÖZÜMÜ: pointer-events sınıfı buradan tamamen kaldırıldı. Ana div daima etkileşime açık (kapandığında zaten yok olacak) */
             className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[10]' : 'z-[120]'}`}
           >
-            {/* Arka plan tıklaması - Stack durumundaysa saydam olur ve tıklanmaz */}
             <div 
                className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isStacked ? 'opacity-0' : 'opacity-100'} cursor-pointer`} 
                onClick={() => !isStacked && handleCloseDetail()}
@@ -226,7 +235,6 @@ export default function CustomerDetailModal({
               }} 
               exit={{ opacity: 0, scale: 0.95, y: 10 }} 
               transition={{ duration: 0.25, ease: "easeInOut" }}
-              /* 🚀 SADECE bu iç kutu stacked olduğunda tıklanamaz hale gelir */
               style={{ pointerEvents: isStacked ? 'none' : 'auto' }}
               onClick={(e) => e.stopPropagation()}
               className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[85vh] overflow-hidden cursor-default z-10"
@@ -264,8 +272,9 @@ export default function CustomerDetailModal({
                                           <div 
                                               key={a.id} 
                                               onClick={() => { 
-                                                  // 🚀 Varlığa tıklanınca Varlık Detayını Açar (iOS Stacking Devreye Girer)
-                                                  if(setShowAssetDetail) setShowAssetDetail(a); 
+                                                  // 🚀 KİMİ AÇTIĞIMIZI BİLDİRİYORUZ
+                                                  setOpenedChild('asset');
+                                                  if(setSelectedAsset) setSelectedAsset(a); 
                                               }} 
                                               className="p-4 border border-blue-200 rounded-xl bg-blue-50/50 cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all active:scale-95 group flex flex-col justify-center gap-1.5"
                                           >
@@ -293,7 +302,8 @@ export default function CustomerDetailModal({
                                             key={j.id} 
                                             onClick={(e) => { 
                                                 e.stopPropagation(); 
-                                                // 🚀 İşe tıklanınca İş Detayını Açar (iOS Stacking Devreye Girer)
+                                                // 🚀 KİMİ AÇTIĞIMIZI BİLDİRİYORUZ
+                                                setOpenedChild('job');
                                                 if(setSelectedJob) setSelectedJob(j); 
                                             }} 
                                             className={`p-4 border rounded-xl flex items-center justify-between cursor-pointer transition-all active:scale-95 group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-500/20' : 'bg-white border-slate-200 hover:border-blue-200 hover:shadow-sm'}`}
