@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Search, User, Box, Calendar, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle, Clock, Image as ImageIcon, Download, MessageSquareText, Settings, CheckSquare, Tag, Wrench } from 'lucide-react';
+import { X, Loader2, Search, User, Box, Calendar, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle, Clock, Image as ImageIcon, Download, MessageSquareText, Settings, CheckSquare, Tag, Wrench, ArrowUpRight } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 
 export default function JobDetailModal({
@@ -12,7 +12,8 @@ export default function JobDetailModal({
   jobTargetMode, setJobTargetMode, jobPrice, setJobPrice, isApproving, setIsApproving,
   jobModalType, setJobModalType, handleAction, isSaving, data,
   isAnyProfileDetailOpen, isMobile, handleCloseDetail, userRole,
-  searchCust, setSearchCust, searchAsset, setSearchAsset
+  searchCust, setSearchCust, searchAsset, setSearchAsset,
+  setSelectedCustomer, setSelectedAsset // 🚀 YENİ: Yönlendirme için eklendi
 }: any) {
 
   const sendCustomerWhatsApp = (jobData: any) => {
@@ -252,14 +253,40 @@ export default function JobDetailModal({
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                        <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm hover:border-blue-200 transition-colors sm:col-span-2">
-                            <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Müşteri / Lokasyon</div>
-                            <div className="text-sm font-black text-slate-800">{selectedJob.customer_name}</div>
+                        {/* 🚀 MÜŞTERİ KARTI (Tıklanabilir) */}
+                        <div 
+                          onClick={() => {
+                              const theCustomer = (data?.customers || []).find((c:any) => c.name === selectedJob.customer_name);
+                              if(theCustomer && setSelectedCustomer) setSelectedCustomer(theCustomer);
+                          }}
+                          className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 transition-colors group cursor-pointer active:scale-95 relative"
+                        >
+                            <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Müşteri Profili</div>
+                            <div className="text-sm font-black text-slate-800 pr-5">{selectedJob.customer_name}</div>
+                            <button className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">
+                                <ArrowUpRight size={16} />
+                            </button>
+                        </div>
+                        
+                        {/* 🚀 VARLIK KARTI (Tıklanabilir) */}
+                        <div 
+                           onClick={() => {
+                              if(selectedJob.asset_id && setSelectedAsset) {
+                                  const theAsset = (data?.assets || []).find((a:any) => String(a.id) === String(selectedJob.asset_id));
+                                  if(theAsset) setSelectedAsset(theAsset);
+                              }
+                           }}
+                           className={`bg-white p-4 border border-slate-200 rounded-xl shadow-sm transition-colors relative ${selectedJob.asset_id ? 'hover:border-blue-300 cursor-pointer group active:scale-95' : 'opacity-70'}`}
+                        >
+                            <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">İlgili Varlık / Cihaz</div>
+                            <div className={`text-sm font-bold flex items-center gap-1.5 pr-5 ${selectedJob.asset_id ? 'text-slate-800' : 'text-slate-400 italic'}`}>
+                                <Box size={16} className={selectedJob.asset_id ? 'text-blue-500' : 'text-slate-300'}/>
+                                {(data?.assets || []).find((a:any) => String(a.id) === String(selectedJob.asset_id))?.name || 'Varlık Seçilmemiş'}
+                            </div>
                             {selectedJob.asset_id && (
-                                <div className="text-xs font-semibold text-blue-600 mt-1.5 flex items-center gap-1.5">
-                                    <Box size={14} className="opacity-70" />
-                                    {(data?.assets || []).find((a:any) => String(a.id) === String(selectedJob.asset_id))?.name || 'Bilinmeyen Cihaz'}
-                                </div>
+                                <button className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">
+                                    <ArrowUpRight size={16} />
+                                </button>
                             )}
                         </div>
                         
@@ -271,7 +298,6 @@ export default function JobDetailModal({
                         <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
                              <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Planlanan Tarih</div>
                              <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                {/* 🚀 Tarih ikonunun rengi duruma göre değişir */}
                                 <Calendar size={16} className={getDynamicStatus(selectedJob).label === 'Gecikti' ? 'text-rose-500' : 'text-blue-500'}/>
                                 {selectedJob.scheduled_date || 'Anlık / Acil'}
                              </div>
