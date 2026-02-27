@@ -16,12 +16,12 @@ export default function CustomerDetailModal({
   isSaving,
   selectedJob,
   setSelectedJob,
-  isMobile
+  isMobile,
+  isAssetModalOpen // 🚀 YENİ EKLENDİ: Varlık modalı açık mı bilgisi (Parent'tan gelmeli)
 }: any) {
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
   const [editCustomerForm, setEditCustomerForm] = useState({ id: '', name: '', contact: '', address: '', tax_info: '' });
   
-  // 🚀 Özel Silme Onay Modalı State'i
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const [selectedCity, setSelectedCity] = useState('');
@@ -38,24 +38,20 @@ export default function CustomerDetailModal({
     'Usta Bekliyor': 'bg-indigo-100 text-indigo-700 border-indigo-200'
   };
 
-  // 🚀 Dinamik Statü Kontrolü (Mantık Hatalarını ve Gecikmeleri Tespit Eder)
   const getDynamicStatus = (job: any) => {
     if (!job) return { label: '', colorClass: '' };
     let label = job.status || 'Beklemede';
 
-    // İşin usta atanma durumunu kontrol et
     const detailWorker = job.details?.worker_id ? true : false;
     const staffWorker = job.staff_id && data?.staff?.find((s:any) => String(s.id) === String(job.staff_id) && s.role !== 'Yönetici');
     const hasWorker = detailWorker || staffWorker;
 
-    // Mantık Hatası Düzeltmesi
     if (label === 'Usta Bekliyor' || label === 'Devam Ediyor') {
         label = hasWorker ? 'Devam Ediyor' : 'Usta Bekliyor';
     }
 
     let colorClass = statusColors[label] || 'bg-slate-100 text-slate-500 border-slate-200';
 
-    // Gecikme Kontrolü
     if ((label === 'Gelecek' || label === 'Beklemede' || label === 'Usta Bekliyor') && job.scheduled_date) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -125,8 +121,83 @@ export default function CustomerDetailModal({
     }
   };
 
-  // 🚀 iOS Stacking Kontrolü (İş Detayı Modalı açılırsa bu modal geriye gider)
-  const isStacked = Boolean(selectedJob || showDeleteConfirm);
+  // 🚀 AKILLI VE KADEMELİ KAPATMA MANTIĞI (EVENT INTERCEPTION)
+  const handleSmartClose = React.useCallback((e?: any) => {
+    
+    // İş detayı veya Varlık detayı modalı açıksa, ESC'ye karışmıyoruz. Onlar kendi kapanır.
+    if (selectedJob || isAssetModalOpen) return;
+
+    const stopEvent = () => {
+      if (e) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        
+        if (typeof e.stopImmediatePropagation === 'function') {
+            e.stopImmediatePropagation();
+        } else if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') {
+            e.nativeEvent.stopImmediatePropagation();
+        }
+      }
+    };
+
+    if (showDeleteConfirm) {
+        stopEvent();
+        setShowDeleteConfirm(false);
+        return true;
+    }
+
+    if (isEditingCustomer) {
+        stopEvent();
+        setIsEditingCustomer(false);
+        return true;
+    }
+
+    if (selectedCustomer) {
+        stopEvent();
+        handleCloseDetail();
+        return true;
+    }
+
+    return false;
+  }, [selectedJob, isAssetModalOpen, showDeleteConfirm, isEditingCustomer, selectedCustomer, handleCloseDetail]);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleSmartClose(e);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [handleSmartClose]);
+
+  React.useEffect(() => {
+    if (selectedCustomer) {
+        window.history.pushState({ customerModal: true }, '');
+    }
+  }, [selectedCustomer]);
+
+  React.useEffect(() => {
+    if (showDeleteConfirm || isEditingCustomer) {
+        window.history.pushState({ internalLayer: true }, '');
+    }
+  }, [showDeleteConfirm, isEditingCustomer]);
+
+  React.useEffect(() => {
+    if (!selectedCustomer) return;
+
+    const handlePopState = (e: PopStateEvent) => {
+      if (selectedJob || isAssetModalOpen) return; 
+      handleSmartClose(e);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedCustomer, selectedJob, isAssetModalOpen, handleSmartClose]);
+
+  // 🚀 iOS Stacking Kontrolü
+  // İş Modalı AÇIKSA, Varlık Modalı AÇIKSA veya Silme Onayı AÇIKSA bu Müşteri Modalı geriye yaslanır (Stack)
+  const isStacked = Boolean(selectedJob || isAssetModalOpen || showDeleteConfirm);
 
   return (
     <>
@@ -138,7 +209,7 @@ export default function CustomerDetailModal({
             animate={{ opacity: 1, pointerEvents: "auto" }} 
             exit={{ opacity: 0, pointerEvents: "none" }} 
             transition={{ duration: 0.15 }}
-            className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[110]' : 'z-[120]'}`}
+            className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[10]' : 'z-[120]'}`}
           >
             {/* Stacking sırasında arkadaki modalın kapanmasını engellemek için pointer-events kontrolü */}
             <div 
@@ -189,22 +260,24 @@ export default function CustomerDetailModal({
                               <h4 className="text-[11px] font-black text-blue-600 mb-2 uppercase tracking-widest flex items-center gap-1.5"><Box size={14}/> Kayıtlı Cihazları / Varlıkları</h4>
                               <div className="space-y-2">
                                   {(data?.assets || []).filter((a: any) => a.customer_id === selectedCustomer?.id).length > 0 ? (data?.assets || []).filter((a: any) => a.customer_id === selectedCustomer?.id).map((a: any) => {
-                                      // 🚀 Varlık Apartman Adı Eklentisi
                                       const aptName = a.apartmentName || a.apartment_name;
                                       return (
-                                          <div key={a.id} onClick={() => { setSelectedCustomer(null); setShowAssetDetail(a); }} className="p-4 border border-blue-200 rounded-xl bg-blue-50/50 cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all active:scale-95 group flex flex-col justify-center">
-                                              <div className="flex items-center gap-2 mb-1">
-                                                  <div className="font-bold text-sm text-blue-900 group-hover:text-blue-700 transition-colors">{a.name}</div>
-                                                  {aptName && (
-                                                      <>
-                                                          <span className="text-blue-300">•</span>
-                                                          <div className="text-[10px] font-bold bg-blue-100 text-blue-600 px-2 py-0.5 rounded flex items-center gap-1">
-                                                              <Building2 size={10} /> {aptName}
-                                                          </div>
-                                                      </>
-                                                  )}
+                                          <div 
+                                              key={a.id} 
+                                              onClick={() => { 
+                                                  // 🚀 Varlığa tıklanınca Varlık Detayını Açar
+                                                  if(setShowAssetDetail) setShowAssetDetail(a); 
+                                              }} 
+                                              className="p-4 border border-blue-200 rounded-xl bg-blue-50/50 cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all active:scale-95 group flex flex-col justify-center gap-1.5"
+                                          >
+                                              <div className="flex items-center gap-2 text-blue-700 font-black text-sm">
+                                                  <Building2 size={16} className="shrink-0" />
+                                                  <span className="truncate">{aptName || 'Bağımsız Adres'}</span>
                                               </div>
-                                              <div className="text-[11px] font-medium text-blue-600/80 flex items-center gap-1"><MapPin size={10}/> {a.location || 'Konum Yok'}</div>
+                                              <div className="flex items-center gap-1.5 text-slate-500 font-semibold text-xs ml-6">
+                                                  <Box size={14} className="shrink-0" /> 
+                                                  <span>{a.name}</span>
+                                              </div>
                                           </div>
                                       );
                                   }) : <div className="text-center p-5 text-slate-400 text-sm font-medium border-2 border-dashed border-slate-200 rounded-xl">Müşteriye ait cihaz bulunmuyor.</div>}
@@ -215,10 +288,17 @@ export default function CustomerDetailModal({
                               <h4 className="text-[11px] font-black text-slate-500 mb-2 uppercase tracking-widest flex items-center gap-1.5"><Calendar size={14}/> Geçmiş İş Kayıtları</h4>
                               <div className="space-y-2">
                                   {(data?.jobs || []).filter((j: any) => j.customer_name === selectedCustomer?.name).length > 0 ? (data?.jobs || []).filter((j: any) => j.customer_name === selectedCustomer?.name).map((j: any) => {
-                                      // 🚀 Dinamik Rozet Hesaplaması
                                       const dynamicStatus = getDynamicStatus(j);
                                       return (
-                                          <div key={j.id} onClick={(e) => { e.stopPropagation(); setSelectedJob(j); }} className={`p-4 border rounded-xl flex items-center justify-between cursor-pointer transition-all active:scale-95 group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-500/20' : 'bg-white border-slate-200 hover:border-blue-200 hover:shadow-sm'}`}>
+                                          <div 
+                                            key={j.id} 
+                                            onClick={(e) => { 
+                                                e.stopPropagation(); 
+                                                // 🚀 İşe tıklanınca İş Detayını Açar
+                                                if(setSelectedJob) setSelectedJob(j); 
+                                            }} 
+                                            className={`p-4 border rounded-xl flex items-center justify-between cursor-pointer transition-all active:scale-95 group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-500/20' : 'bg-white border-slate-200 hover:border-blue-200 hover:shadow-sm'}`}
+                                          >
                                               <div className="min-w-0 pr-2">
                                                   <div className="font-bold text-sm text-slate-800 group-hover:text-blue-700 transition-colors truncate">{j.work_type || 'Görev'}</div>
                                                   <div className="text-[10px] font-medium text-slate-500 mt-1 flex items-center gap-1">
@@ -301,7 +381,6 @@ export default function CustomerDetailModal({
         )}
       </AnimatePresence>
 
-      {/* 🚀 ŞIK SİLME ONAY MODALI (Z-Index Yükseltildi) */}
       <AnimatePresence>
         {showDeleteConfirm && (
           <motion.div 
