@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Phone, Mail, Briefcase, Calendar, User, ShieldCheck, CheckCircle, Clock, Settings, Trash2, Loader2, Filter } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
@@ -17,6 +17,17 @@ export default function StaffDetailModal({
 
   const [activeTab, setActiveTab] = useState('info'); // 'info' | 'jobs'
   const [jobFilter, setJobFilter] = useState('Tümü'); // 'Tümü' | 'Tamamlandı' | 'Aktif' 
+  
+  // 🚀 Tıklanamama bug'ını çözen kritik state: Hangi alt modal açıldıysa takip eder
+  const [openedChild, setOpenedChild] = useState<'job' | null>(null);
+
+  // Eğer dışarıdan iş kapatılırsa, kendi state'imizi de temizliyoruz
+  useEffect(() => {
+    if (!selectedJob && openedChild === 'job') setOpenedChild(null);
+  }, [selectedJob, openedChild]);
+
+  // isStacked artık bu alt state'e bakarak karar verir (Böylece çakışma olmaz)
+  const isStacked = openedChild !== null;
 
   // Personele atanmış tüm işleri buluyoruz
   const staffJobs = (data?.jobs || []).filter((j:any) => String(j.staff_id) === String(selectedStaff?.id));
@@ -49,7 +60,6 @@ export default function StaffDetailModal({
     'Usta Bekliyor': 'bg-indigo-100 text-indigo-700 border-indigo-200'
   };
 
-  // 🚀 DİNAMİK STATÜ KONTROLÜ (Gecikme ve Usta Atama Mantığı)
   const getDynamicStatus = (job: any, hasWorker: boolean) => {
     if (!job) return { label: '', colorClass: '' };
     let label = job.status || 'Beklemede';
@@ -82,30 +92,91 @@ export default function StaffDetailModal({
     setJobFilter('Tümü');
   };
 
-  // 🚀 iOS Stacking Kontrolü
-  const isStacked = Boolean(selectedJob);
+  // 🚀 AKILLI POPSTATE VE ESC YÖNETİMİ (Geri tuşu ve ESC ile kapatmak için)
+  const handleSmartClose = useCallback((e?: any) => {
+    // Üstte bir modal varsa (isStacked true) esc/geri burayı etkilemesin
+    if (isStacked) return true;
+
+    const stopEvent = () => {
+      if (e) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') {
+            e.stopImmediatePropagation();
+        } else if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') {
+            e.nativeEvent.stopImmediatePropagation();
+        }
+      }
+    };
+
+    if (isEditingStaff) {
+        stopEvent();
+        setIsEditingStaff(false);
+        return true;
+    }
+
+    if (selectedStaff) {
+        stopEvent();
+        closeThisModal();
+        return true;
+    }
+
+    return false;
+  }, [isEditingStaff, selectedStaff, isStacked]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleSmartClose(e);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [handleSmartClose]);
+
+  useEffect(() => {
+    if (selectedStaff) {
+        window.history.pushState({ staffModal: true }, '');
+    }
+  }, [selectedStaff]);
+
+  useEffect(() => {
+    if (isEditingStaff) {
+        window.history.pushState({ internalLayer: true }, '');
+    }
+  }, [isEditingStaff]);
+
+  useEffect(() => {
+    if (!selectedStaff) return;
+
+    const handlePopState = (e: PopStateEvent) => {
+      handleSmartClose(e);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedStaff, handleSmartClose]);
+
 
   return (
     <AnimatePresence>
       {selectedStaff && (
         <motion.div 
-          key="staff-modal-backdrop"
+          key="modal-backdrop-staff-detail"
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
           exit={{ opacity: 0 }} 
           transition={{ duration: 0.15 }}
-          /* 🚀 TIKLANAMA BUG'I ÇÖZÜMÜ: pointer-events sınıfı buradan tamamen kaldırıldı. Ana div daima etkileşime açık (kapandığında zaten yok olacak) */
           className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[10]' : 'z-[120]'}`}
         >
-          {/* Arka plan tıklaması ile kapatma - Stack varken tıklamaları yok sayar */}
+          {/* Arka plan tıklaması ile kapatma */}
           <div 
              className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isStacked ? 'opacity-0' : 'opacity-100'} cursor-pointer`} 
              onClick={() => !isStacked && closeThisModal()}
           ></div>
 
           <motion.div 
-            key="staff-modal-content"
-            /* 🚀 iOS Geriye Yaslanma (Stacking) Animasyonu */
+            key="modal-content-staff-detail"
             initial={{ opacity: 0, scale: 0.95, y: 10 }} 
             animate={{ 
                 opacity: 1, 
@@ -115,10 +186,9 @@ export default function StaffDetailModal({
             }} 
             exit={{ opacity: 0, scale: 0.95, y: 10 }} 
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            /* 🚀 SADECE bu iç kutu stacked olduğunda tıklanamaz hale gelir */
             style={{ pointerEvents: isStacked ? 'none' : 'auto' }}
-            className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 z-10"
             onClick={(e) => e.stopPropagation()}
+            className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 z-10"
           >
             {/* HEADER (Üst Başlık Alanı) */}
             <div className="flex justify-between items-start p-5 sm:p-6 pb-0 border-b border-slate-100 bg-slate-50/50 z-10 flex-col sm:flex-row sm:items-center gap-4 shrink-0">
@@ -282,7 +352,13 @@ export default function StaffDetailModal({
                                     return (
                                         <div 
                                           key={job.id}
-                                          onClick={() => setSelectedJob && setSelectedJob(job)}
+                                          onClick={() => {
+                                              if(setSelectedJob) {
+                                                  // 🚀 KİMİ AÇTIĞIMIZI BİLDİRİYORUZ
+                                                  setOpenedChild('job');
+                                                  setSelectedJob(job);
+                                              }
+                                          }}
                                           className="relative pl-12 cursor-pointer group"
                                         >
                                             <div className={`absolute left-[13px] top-4 w-3.5 h-3.5 rounded-full border-2 border-white z-10 transition-transform group-hover:scale-125 ${job.status === 'Tamamlandı' ? 'bg-emerald-500' : job.status === 'İptal' ? 'bg-rose-500' : 'bg-blue-500'}`}></div>
@@ -340,7 +416,7 @@ export default function StaffDetailModal({
             </div>
 
             {/* FOOTER (Alt Aksiyon Alanı) */}
-            <div className="pt-4 sm:pt-5 border-t border-slate-100 p-5 sm:p-6 bg-slate-50 shrink-0">
+            <div className="pt-4 sm:pt-5 border-t border-slate-100 p-5 sm:p-6 bg-slate-50 shrink-0 z-10">
                 {!isEditingStaff ? (
                     <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
                         <button onClick={() => setIsEditingStaff(true)} className="flex-[2] bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"><Settings size={16} /> Profili Düzenle</button>
