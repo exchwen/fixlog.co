@@ -62,14 +62,15 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
     }
 
     if (savedName) {
-        setCurrentUserName(savedName); // 🚀 DÜZELTİLDİ: İsim artık bölünmeyecek, tam eşleşme sağlanacak.
+        setCurrentUserName(savedName); 
       }
     }, []);
 
-  const jobs = data?.jobs || [];
-  const staff = data?.staff || [];
-
-  // 1. ADIM: İZOLASYON (Sadece bana ait veya benim sorumlu olduğum işler)
+    const jobs = data?.jobs || [];
+    const staff = data?.staff || [];
+    const assets = data?.assets || []; 
+  
+    // 1. ADIM: İZOLASYON (Sadece bana ait veya benim sorumlu olduğum işler)
   const myAllJobs = useMemo(() => {
     if (!currentUserId || !currentUserName) return [];
     
@@ -143,9 +144,8 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
   };
 
   const handleOpenModal = (job: Job) => {
-      setSelectedJob(job);
-      setShowJobModal(true);
-  };
+    setSelectedJob(job);
+};
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 relative pb-20">
@@ -194,8 +194,23 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                             <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-white/20 text-white">{job.work_type}</span>
                             <span className="text-[10px] font-bold opacity-70">{job.created_at?.split('T')[0]}</span>
                         </div>
-                        <h4 className="font-black text-white leading-tight mb-1 truncate">{job.customer_name}</h4>
-                        <p className="text-amber-100/80 text-xs line-clamp-1 mb-3">{job.details?.note || 'Not girilmemiş.'}</p>
+                        
+                        {/* 🚀 EKLENDİ: Müşteri, Apartman ve Cihaz Türü Birlikte */}
+                        <div className="mb-3">
+                            <h4 className="font-black text-white leading-tight mb-0.5 line-clamp-2">
+                                {(() => {
+                                    const asset = assets.find((a: any) => String(a.id) === String(job.asset_id));
+                                    const aptName = asset?.apartmentName || asset?.apartment_name;
+                                    return aptName ? <><span className="text-amber-200">{aptName}</span> - {job.customer_name}</> : job.customer_name;
+                                })()}
+                            </h4>
+                            <div className="text-[10px] font-bold text-amber-200 truncate">
+                                {(() => {
+                                    const asset = assets.find((a: any) => String(a.id) === String(job.asset_id));
+                                    return asset ? asset.name : 'Genel Görev / Varlık Yok';
+                                })()}
+                            </div>
+                        </div>
                         <button 
                             onClick={(e) => { e.stopPropagation(); handleAcceptJob(job); }}
                             disabled={processingId === job.id}
@@ -317,11 +332,24 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                               }
 
                               return (
-                                  <tr key={job.id} onClick={() => handleOpenModal(job)} className="hover:bg-blue-50/50 transition-colors cursor-pointer group">
-                                      <td className="px-6 py-4">
-                                          <div className="font-bold text-slate-800 text-sm">{job.customer_name}</div>
-                                          <div className="text-[10px] text-slate-500 font-medium mt-0.5 uppercase tracking-wide bg-slate-100 px-2 py-0.5 rounded w-fit">{job.work_type}</div>
-                                      </td>
+                                <tr key={job.id} onClick={() => handleOpenModal(job)} className="hover:bg-blue-50/50 transition-colors cursor-pointer group">
+                                    <td className="px-6 py-4">
+                                        {/* 🚀 EKLENDİ: Müşteri, Apartman ve Cihaz Türü */}
+                                        <div className="font-bold text-slate-800 text-sm leading-tight max-w-[250px] truncate">
+                                          {(() => {
+                                              const asset = assets.find((a: any) => String(a.id) === String(job.asset_id));
+                                              const aptName = asset?.apartmentName || asset?.apartment_name;
+                                              return aptName ? <><span className="text-blue-600">{aptName}</span> - {job.customer_name}</> : job.customer_name;
+                                          })()}
+                                        </div>
+                                        <div className="text-[10px] text-slate-500 font-bold mt-0.5 mb-1.5 truncate max-w-[250px]">
+                                          {(() => {
+                                              const asset = assets.find((a: any) => String(a.id) === String(job.asset_id));
+                                              return asset ? asset.name : 'Genel Görev';
+                                          })()}
+                                        </div>
+                                        <div className="text-[9px] text-slate-400 font-medium uppercase tracking-wide bg-slate-100 px-2 py-0.5 rounded w-fit">{job.work_type}</div>
+                                    </td>
                                       <td className="px-6 py-4">
                                           {worker ? (
                                               <div className="flex items-center gap-2">
@@ -386,13 +414,26 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                       }
 
                       return (
-                        <div key={job.id} onClick={() => handleOpenModal(job)} className="bg-white rounded-xl border border-blue-100 p-4 shadow-sm flex flex-col gap-3 active:scale-95 transition-all">
+                        <div key={job.id} onClick={() => handleOpenModal(job)} className="bg-white rounded-xl border border-blue-100 p-4 shadow-sm flex flex-col gap-3 active:scale-95 transition-all cursor-pointer">
                            <div className="flex justify-between items-start gap-2">
-                              <div className="min-w-0">
-                                <div className="font-bold text-slate-800 text-sm truncate">{job.customer_name}</div>
-                                <div className="text-[10px] text-slate-500 font-medium mt-0.5">{job.work_type}</div>
+                              <div className="min-w-0 pr-2">
+                                {/* 🚀 EKLENDİ: Müşteri, Apartman ve Cihaz Türü */}
+                                <div className="font-bold text-slate-800 text-sm line-clamp-2">
+                                  {(() => {
+                                      const asset = assets.find((a: any) => String(a.id) === String(job.asset_id));
+                                      const aptName = asset?.apartmentName || asset?.apartment_name;
+                                      return aptName ? <><span className="text-blue-600">{aptName}</span> - {job.customer_name}</> : job.customer_name;
+                                  })()}
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-bold mt-1 mb-1 truncate">
+                                  {(() => {
+                                      const asset = assets.find((a: any) => String(a.id) === String(job.asset_id));
+                                      return asset ? asset.name : 'Genel Görev';
+                                  })()}
+                                </div>
+                                <div className="text-[9px] text-slate-400 font-medium uppercase tracking-wide bg-slate-100 px-2 py-0.5 rounded w-fit">{job.work_type}</div>
                               </div>
-                              <span className={`px-2 py-1 rounded text-[9px] font-black uppercase border ${statusClass}`}>
+                              <span className={`px-2 py-1.5 rounded text-[9px] font-black uppercase tracking-wider border shrink-0 ${statusClass}`}>
                                 {displayStatus}
                               </span>
                            </div>
