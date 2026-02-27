@@ -7,7 +7,7 @@ import {
   ClipboardList, Users, Box, Wallet, Plus, ArrowUpRight, 
   CheckCircle, Clock, Calendar, TrendingUp, TrendingDown, 
   Package, AlertTriangle, ShieldCheck, Activity, User, Lock, 
-  Settings, X, Wrench, Link as LinkIcon, Check, Database, Image as ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2, Bell, CheckSquare, UserPlus, UserCheck
+  Settings, X, Wrench, Link as LinkIcon, Check, Database, Image as ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2, Bell, CheckSquare, UserPlus, UserCheck, MapPin
 } from 'lucide-react';
 
 export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob, setActiveTab, userRole: propRole, handleAction, isMyJobsTab, setJobModalType }: any) {
@@ -81,7 +81,8 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
     if (!currentUserId || userRole === 'Patron') return [];
     return jobs.filter((j: any) => 
        (String(j.staff_id) === String(currentUserId) || String(j.details?.managerId) === String(currentUserId)) && 
-       (j.status === 'Usta Bekliyor')
+       (j.status === 'Usta Bekliyor') &&
+       (!j.details?.worker_id) // 🚀 EKLENDİ: Sadece ustası OLMAYANLARI kutuda tut. Usta atandığı an kutudan çıkar!
     );
  }, [jobs, currentUserId, userRole]);
 
@@ -807,7 +808,11 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                         )}
                       </div>
                       <div className="text-[11px] font-black text-slate-600 mb-1.5 truncate max-w-[220px]">
-                        {currentAsset?.name || 'Bağımsız İş'}
+                        {currentAsset ? currentAsset.name : 'Genel Görev / Varlık Yok'}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 mb-1.5 truncate max-w-[220px]">
+                        <MapPin size={12} className="shrink-0" />
+                        <span className="truncate">{currentAsset ? currentAsset.location : 'Lokasyon Yok'}</span>
                       </div>
                       <div className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1 bg-slate-50 w-max px-2 py-0.5 rounded border border-slate-100">
                         {j.work_type}
@@ -945,8 +950,8 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                 className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col gap-4 active:scale-95 transition-all cursor-pointer"
               >
                  <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
-                    <div className="min-w-0 flex flex-col gap-1">
-                      <div className="font-black text-slate-800 text-sm truncate">
+                    <div className="min-w-0 flex flex-col gap-1 w-full pr-2">
+                      <div className="font-black text-slate-800 text-sm line-clamp-2">
                         {aptName ? (
                           <><span className="text-blue-600">{aptName}</span> - {j.customer_name}</>
                         ) : (
@@ -954,7 +959,11 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                         )}
                       </div>
                       <div className="text-[11px] font-bold text-slate-600 truncate">
-                        {currentAsset?.name || 'Bağımsız İş'}
+                        {currentAsset ? currentAsset.name : 'Genel Görev / Varlık Yok'}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-medium flex items-start gap-1.5 line-clamp-2 mb-1">
+                        <MapPin size={12} className="shrink-0 mt-0.5 text-slate-400" />
+                        <span>{currentAsset ? currentAsset.location : 'Lokasyon Yok'}</span>
                       </div>
                       <div className="text-[10px] font-bold text-slate-500 mt-0.5 uppercase tracking-wider truncate bg-slate-50 w-fit px-2 py-0.5 rounded border border-slate-100">
                         {j.work_type}

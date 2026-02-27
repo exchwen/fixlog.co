@@ -409,8 +409,20 @@ export default function AssetDetailModal({
 
                           <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
                               <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg w-fit mb-3"><MapPin size={16} /></div>
-                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Konum / Adres</div>
-                              <div className="text-sm font-bold text-slate-800">{selectedAsset.location || 'Belirtilmedi'}</div>
+                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Konum / Adres</div>
+                              <div className="text-sm font-bold text-slate-800 mb-3">{selectedAsset.location || 'Belirtilmedi'}</div>
+                              
+                              {/* 🚀 EKLENDİ: Haritada Göster Butonu */}
+                              {selectedAsset.location && (
+                                  <button 
+                                      onClick={() => {
+                                          window.open(`https://maps.google.com/?q=${encodeURIComponent(selectedAsset.location)}`, '_blank');
+                                      }}
+                                      className="w-full sm:w-auto bg-slate-50 hover:bg-slate-100 text-blue-600 border border-slate-200 hover:border-blue-200 py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95"
+                                  >
+                                      <MapPin size={14} /> Google Haritalar'da Aç
+                                  </button>
+                              )}
                           </div>
 
                           {selectedAsset.asset_details && (

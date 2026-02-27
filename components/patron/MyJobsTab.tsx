@@ -237,7 +237,10 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {waitingForAssignment.map((job: any) => (
+                {waitingForAssignment.map((job: any) => {
+                    const currentAsset = assets.find((a: any) => String(a.id) === String(job.asset_id));
+                    const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
+                    return (
                     <div 
                         key={job.id} 
                         onClick={() => handleOpenModal(job)} 
@@ -252,12 +255,29 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                                     {job.details?.scheduledDate ? new Date(job.details.scheduledDate).toLocaleDateString('tr-TR') : 'Tarih Yok'}
                                 </span>
                             </div>
-                            <h4 className="text-lg font-black text-slate-800 leading-tight mb-2 line-clamp-2">{job.customer_name}</h4>
-                            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-4">
-                                <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
-                                    <MapPin size={14} className="text-indigo-400 shrink-0"/> 
-                                    <span className="truncate">{job.asset_name || 'Lokasyon/Cihaz Belirtilmemiş'}</span>
+                            <h4 className="text-lg font-black text-slate-800 leading-tight mb-2 line-clamp-2">
+                                {aptName ? <><span className="text-indigo-600">{aptName}</span> - {job.customer_name}</> : job.customer_name}
+                            </h4>
+                            <div className="text-xs font-bold text-slate-500 mb-3 truncate">
+                                {currentAsset ? currentAsset.name : 'Genel Görev / Cihaz Yok'}
+                            </div>
+                            
+                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 mb-4 flex flex-col gap-2">
+                                <p className="text-[11px] text-slate-600 font-medium flex items-start gap-1.5 line-clamp-2">
+                                    <MapPin size={14} className="text-indigo-400 shrink-0 mt-0.5"/> 
+                                    <span>{currentAsset ? currentAsset.location : 'Lokasyon bilgisi bulunmuyor'}</span>
                                 </p>
+                                {currentAsset?.location && (
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            window.open(`https://maps.google.com/?q=${encodeURIComponent(currentAsset.location)}`, '_blank');
+                                        }}
+                                        className="text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50/50 hover:bg-blue-100 border border-blue-100 px-2 py-1.5 rounded-lg w-fit transition-colors flex items-center gap-1 mt-1"
+                                    >
+                                        <MapPin size={12} /> Haritada Göster
+                                    </button>
+                                )}
                             </div>
                         </div>
                         
@@ -269,7 +289,7 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                             USTA SEÇ VE ATA
                         </button>
                     </div>
-                ))}
+                )})}
             </div>
         </div>
       )}
