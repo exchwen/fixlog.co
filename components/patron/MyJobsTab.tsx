@@ -102,16 +102,21 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
 
   // 3. Devam Edenler & Takiptekiler (Ustaya atananlar ve Onay Bekleyenler DAHİL)
   const ongoingJobs = myAllJobs.filter((j: any) => {
-    // Tamamlananlar ve İptal edilenler hariç
     if (j.status === 'Tamamlandı' || j.status === 'İptal') return false;
     
-    // Zaten yukarıdaki kategorilere (Onay Bekleyen veya Atama Bekleyen) GİRENLERİ ÇIKAR
+    // 🚀 DÜZELTİLDİ: Eğer işi BİZZAT BEN (Şu anki Yönetici) oluşturduysam,
+    // ve henüz tamamlanmadıysa, ŞARTSIZ ŞARTSIZ "Takip Edilenler" tablomda kalmalıdır!
+    const isCreatedByMe = j.details?.createdBy === currentUserName;
+    if (isCreatedByMe) return true;
+
+    // Eğer ben oluşturmadıysam (Patrondan geldiyse), o zaman üstteki kutularda (Sarı veya Mor)
+    // olup olmadığına bakarız. Eğer o kutulardaysa, alttaki tablodan (Takipte) çıkarırız.
     const isIncoming = (j.status === 'Beklemede' || j.status === 'Gelecek') && String(j.staff_id) === String(currentUserId) && !j.details?.worker_id;
     const isWaitingAssign = (j.status === 'Usta Bekliyor' && !j.details?.worker_id && String(j.staff_id) === String(currentUserId));
     
     if (isIncoming || isWaitingAssign) return false;
 
-    // İşin ustası atanmışsa VEYA onay bekliyorsa VEYA bizzat yönetici üstündeyse buraya düşer.
+    // İşin ustası atanmışsa, sahada devam ediyorsa veya ustanın onayı bekleniyorsa buraya düşer.
     return true; 
   });
 

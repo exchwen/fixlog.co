@@ -759,23 +759,22 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {jobs.slice(0, 10).map((j: any) => {
+            {jobs.slice(0, 10).map((j: any) => {
                 
-                // --- 🚀 MASAÜSTÜ İÇİN DÜZELTİLMİŞ HİYERARŞİ ---
-                const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
-                const createdBy = j.details?.createdBy || ownerName; // İşi oluşturan kişi (Örn: Sezer KAYA veya Doğukan KAYA)
-                
-                let managerName = j.details?.managerName || null; // Sistemin mühürlediği sorumlu yönetici
-                let workerName = null; // Sahaya gidecek usta
+                // --- 🚀 MASAÜSTÜ İÇİN TAM ÇÖZÜM HİYERARŞİSİ ---
+                const rawCreatedBy = j.details?.createdBy;
+                const rawCreatorRole = j.details?.creatorRole;
+                const ownerFallback = data?.ownerName || 'Patron';
 
-                // Eğer işi oluşturan kişi sistemdeki bir Yöneticiyse (Yani Patron değilse), 
-                // o kişi otomatik olarak "Atayan & Sorumlu"dur.
-                const creatorStaffProfile = staff.find((s:any) => s.name === createdBy && s.role === 'Yönetici');
-                if (creatorStaffProfile && !managerName) {
-                    managerName = creatorStaffProfile.name;
+                let managerName = j.details?.managerName || null;
+                let workerName = null;
+
+                // 1. Yönetici kendi oluşturduysa ve henüz managerName atanmadıysa o kendini sorumlu yapar
+                if (!managerName && rawCreatorRole === 'Yönetici' && rawCreatedBy) {
+                    managerName = rawCreatedBy;
                 }
 
-                // Eski tip staff_id kontrolü (Usta mı, Yönetici mi?)
+                // 2. Staff ID kontrolleri (Usta mı, Yönetici mi atandı?)
                 const assignedPerson = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
                 if (assignedPerson) {
                     if (assignedPerson.role === 'Yönetici') {
@@ -785,21 +784,18 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                     }
                 }
 
-                // Modern worker_id (Usta mühürü) kontrolü
+                // 3. Worker ID mühürü varsa kesin ustadır
                 const detailWorker = data?.staff?.find((s: any) => String(s.id) === String(j.details?.worker_id));
                 if (detailWorker) {
                     workerName = detailWorker.name;
                 }
 
-                // 🚀 KİLİT NOKTA: İşi oluşturan (createdBy) ile Sorumlu (managerName) aynı kişi mi?
-                // Yada işi oluşturan bizzat bir yönetici mi (Patron harici)? 
-                // Eğer öyleyse ikisini tek satırda "Atayan & Sorumlu" olarak birleştir.
-                const isCreatorSameAsManager = (managerName && createdBy === managerName) || (creatorStaffProfile !== undefined);
-                
-                // Eğer isCreatorSameAsManager tetiklendiyse, ekrandaki isme createdBy'ı bas ki "Doğukan" yazmasın.
-                const displayManagerName = isCreatorSameAsManager ? createdBy : managerName;
+                // 4. Ekranda görünecek Atayan ismi (Boşsa Sistem / Patron yazar)
+                const displayCreator = rawCreatedBy || ownerFallback;
 
-                // 🚀 ÇİFT TANIMLAMA (DUPLICATE) HATASI GİDERİLDİ
+                // 5. Atayan ve Sorumlu aynı kişi mi?
+                const isCreatorSameAsManager = managerName && displayCreator === managerName;
+
                 const isApproved = j.status === 'Tamamlandı';
                 const staffColor = isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200';
                 
@@ -835,7 +831,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                       </div>
                     </td>
                     
-                    {/* 🚀 DÜZELTİLMİŞ: Masaüstü Personel Hiyerarşisi UI (Sabit Genişlikli Izgara) */}
                     <td className="px-5 py-4 align-middle">
                       <div className="flex flex-col gap-2 w-fit">
                         
@@ -846,7 +841,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ATAYAN & SORUMLU:</span>
                                 </div>
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
-                                    {displayManagerName}
+                                    {managerName}
                                 </span>
                             </div>
                         ) : (
@@ -857,7 +852,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ATAYAN:</span>
                                     </div>
                                     <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-600 whitespace-nowrap shadow-sm">
-                                        {createdBy}
+                                        {displayCreator}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -927,16 +922,16 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
 
         <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50/50 max-h-[500px] overflow-y-auto custom-scrollbar">
           {jobs.slice(0, 10).map((j: any) => {
-             // --- 🚀 MOBİL İÇİN DÜZELTİLMİŞ HİYERARŞİ ---
-             const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
-             const createdBy = j.details?.createdBy || ownerName;
+             // --- 🚀 MOBİL İÇİN TAM ÇÖZÜM HİYERARŞİSİ ---
+             const rawCreatedBy = j.details?.createdBy;
+             const rawCreatorRole = j.details?.creatorRole;
+             const ownerFallback = data?.ownerName || 'Patron';
              
              let managerName = j.details?.managerName || null;
              let workerName = null;
 
-             const creatorStaffProfile = staff.find((s:any) => s.name === createdBy && s.role === 'Yönetici');
-             if (creatorStaffProfile && !managerName) {
-                 managerName = creatorStaffProfile.name;
+             if (!managerName && rawCreatorRole === 'Yönetici' && rawCreatedBy) {
+                 managerName = rawCreatedBy;
              }
 
              const assignedPerson = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
@@ -953,10 +948,9 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                  workerName = detailWorker.name;
              }
 
-             const isCreatorSameAsManager = (managerName && createdBy === managerName) || (creatorStaffProfile !== undefined);
-             const displayManagerName = isCreatorSameAsManager ? createdBy : managerName;
+             const displayCreator = rawCreatedBy || ownerFallback;
+             const isCreatorSameAsManager = managerName && displayCreator === managerName;
 
-             // 🚀 ÇİFT TANIMLAMA (DUPLICATE) HATASI GİDERİLDİ
              const isApproved = j.status === 'Tamamlandı';
              const staffColor = isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200';
 
@@ -1006,7 +1000,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                                <ShieldCheck size={10} /> ATAYAN & SORUMLU
                             </span>
                             <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${staffColor}`}>
-                                {displayManagerName}
+                                {managerName}
                             </div>
                         </div>
                     ) : (
@@ -1016,7 +1010,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                                  <UserPlus size={10} /> ATAYAN
                               </span>
                               <div className="text-[11px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
-                                  {createdBy}
+                                  {displayCreator}
                               </div>
                           </div>
                           <div className="flex items-center gap-2">
