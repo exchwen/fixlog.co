@@ -73,27 +73,27 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
     
     const endpoint = financeModal.type === 'Gelir' ? 'add-income' : 'add-expense';
     
-    // 🚀 Ekleyen kişinin adını tespit ediyoruz
     let currentUserName = data?.ownerName || 'Patron';
     if (!isPatronPath) {
        currentUserName = data?.staffName || 'Yönetici / Usta';
     }
 
-    // 🚀 BACKEND'İ YORMADAN VERİYİ GİZLİCE AÇIKLAMAYA GÖMÜYORUZ (Sihirli Kısım)
-    const finalDescription = `[Ekleyen:${currentUserName}]\n${description}`;
-
+    // 🚀 D1 Veritabanı ve Worker kodlarımız güncellendiği için 
+    // gizli tag'e gerek kalmadı, addedBy olarak yolluyoruz.
     const bodyData = { 
         slug: activeSlug, 
-        description: finalDescription, // Gönderirken gömülü halini atıyoruz
-        amount: parseFloat(financeAmount)
+        description: description, 
+        amount: parseFloat(financeAmount),
+        addedBy: currentUserName
     };
     
     const newRecord = {
         id: Date.now().toString(),
-        description: finalDescription,
+        description: description,
         amount: parseFloat(financeAmount),
         type: financeModal.type,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        added_by: currentUserName // 🚀 Arayüzde anında gösterebilmek için D1 isimlendirmesi ile eşleşti
     };
 
     const token = localStorage.getItem(isPatronPath ? 'patron_authToken' : 'staff_authToken');
@@ -146,18 +146,13 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
       const dateStr = dateObj.toLocaleDateString('tr-TR');
       const timeStr = dateObj.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
       
-      // 🚀 Excel'e aktarırken de gizli veriyi çözümlüyoruz
-      const addedByMatch = f.description?.match(/\[Ekleyen:(.*?)\]/);
-      const actualAddedBy = f.addedBy || (addedByMatch ? addedByMatch[1].trim() : 'Sistem / Patron');
-      const cleanDescription = f.description?.replace(/\[Ekleyen:.*?\]\n?/g, '').replace(/\n|,/g, ' - ') || '';
-
       return {
         'İşlem Tarihi': dateStr,
         'İşlem Saati': timeStr,
-        'Açıklama / Kalemler': cleanDescription, 
+        'Açıklama / Kalemler': f.description?.replace(/\n|,/g, ' - ') || '', 
         'Miktar (TL)': f.amount,
         'İşlem Tipi': f.type,
-        'Ekleyen Kişi': actualAddedBy
+        'Ekleyen Kişi': f.added_by || 'Sistem / Patron' // 🚀 added_by db sütunundan okuyor
       };
     });
 
@@ -269,13 +264,8 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
               <tbody className="divide-y divide-slate-100">
                 {filteredData.length > 0 ? filteredData.map((f: any, index: number) => {
                   
-                  // 🚀 GİZLİ VERİYİ ÇÖZÜMLEME
-                  const addedByMatch = f.description?.match(/\[Ekleyen:(.*?)\]/);
-                  const actualAddedBy = f.addedBy || (addedByMatch ? addedByMatch[1].trim() : 'Sistem / Patron');
-                  const cleanDescriptionStr = f.description?.replace(/\[Ekleyen:.*?\]\n?/g, '') || '';
-
-                  const relatedJob = localJobs.find((j: any) => f.type === 'Gelir' && j.status === 'Tamamlandı' && cleanDescriptionStr.includes(j.customer_name));
-                  const descriptionItems = cleanDescriptionStr.split(/,|\n/).map((item: string) => item.trim()).filter((item: string) => item.length > 0);
+                  const relatedJob = localJobs.find((j: any) => f.type === 'Gelir' && j.status === 'Tamamlandı' && f.description.includes(j.customer_name));
+                  const descriptionItems = (f.description || '').split(/,|\n/).map((item: string) => item.trim()).filter((item: string) => item.length > 0);
                   const dateObj = new Date(f.created_at);
 
                   return (
@@ -302,7 +292,7 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
                     <td className="px-5 py-4 align-top border-r border-slate-100 last:border-r-0">
                       <div className="flex items-center gap-1.5 text-slate-600 font-medium bg-slate-50 border border-slate-200 px-2 py-1 rounded-md w-max">
                         <User size={12} className="text-slate-400" />
-                        {actualAddedBy}
+                        {f.added_by || 'Patron / Sistem'}
                       </div>
                     </td>
                     <td className="px-5 py-4 align-top border-r border-slate-100 last:border-r-0">
@@ -330,20 +320,15 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
         <div className="md:hidden flex flex-col gap-3">
           {filteredData.length > 0 ? filteredData.map((f: any) => {
 
-            // 🚀 GİZLİ VERİYİ ÇÖZÜMLEME (Mobil)
-            const addedByMatch = f.description?.match(/\[Ekleyen:(.*?)\]/);
-            const actualAddedBy = f.addedBy || (addedByMatch ? addedByMatch[1].trim() : 'Sistem');
-            const cleanDescriptionStr = f.description?.replace(/\[Ekleyen:.*?\]\n?/g, '') || '';
-
-            const relatedJob = localJobs.find((j: any) => f.type === 'Gelir' && j.status === 'Tamamlandı' && cleanDescriptionStr.includes(j.customer_name));
-            const descriptionItems = cleanDescriptionStr.split(/,|\n/).map((item: string) => item.trim()).filter((item: string) => item.length > 0);
+            const relatedJob = localJobs.find((j: any) => f.type === 'Gelir' && j.status === 'Tamamlandı' && (f.description || '').includes(j.customer_name));
+            const descriptionItems = (f.description || '').split(/,|\n/).map((item: string) => item.trim()).filter((item: string) => item.length > 0);
             const dateObj = new Date(f.created_at);
 
             return (
               <div key={f.id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col gap-3 relative">
                 
                 <div className="absolute top-4 right-4 flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
-                    <User size={10} /> {actualAddedBy}
+                    <User size={10} /> {f.added_by || 'Sistem / Patron'}
                 </div>
 
                 <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3 pr-24">
