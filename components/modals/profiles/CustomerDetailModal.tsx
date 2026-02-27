@@ -17,7 +17,7 @@ export default function CustomerDetailModal({
   selectedJob,
   setSelectedJob,
   isMobile,
-  isAssetModalOpen // 🚀 YENİ EKLENDİ: Varlık modalı açık mı bilgisi (Parent'tan gelmeli)
+  isAssetModalOpen // Varlık modalı açık mı bilgisi (Parent'tan gelir veya null/true olur)
 }: any) {
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
   const [editCustomerForm, setEditCustomerForm] = useState({ id: '', name: '', contact: '', address: '', tax_info: '' });
@@ -121,10 +121,8 @@ export default function CustomerDetailModal({
     }
   };
 
-  // 🚀 AKILLI VE KADEMELİ KAPATMA MANTIĞI (EVENT INTERCEPTION)
   const handleSmartClose = React.useCallback((e?: any) => {
     
-    // İş detayı veya Varlık detayı modalı açıksa, ESC'ye karışmıyoruz. Onlar kendi kapanır.
     if (selectedJob || isAssetModalOpen) return;
 
     const stopEvent = () => {
@@ -196,7 +194,6 @@ export default function CustomerDetailModal({
   }, [selectedCustomer, selectedJob, isAssetModalOpen, handleSmartClose]);
 
   // 🚀 iOS Stacking Kontrolü
-  // İş Modalı AÇIKSA, Varlık Modalı AÇIKSA veya Silme Onayı AÇIKSA bu Müşteri Modalı geriye yaslanır (Stack)
   const isStacked = Boolean(selectedJob || isAssetModalOpen || showDeleteConfirm);
 
   return (
@@ -205,15 +202,16 @@ export default function CustomerDetailModal({
         {selectedCustomer && (
           <motion.div 
             key="modal-backdrop-customer-detail"
-            initial={{ opacity: 0, pointerEvents: "none" }} 
-            animate={{ opacity: 1, pointerEvents: "auto" }} 
-            exit={{ opacity: 0, pointerEvents: "none" }} 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
             transition={{ duration: 0.15 }}
+            /* TIKLANAMA BUG'I ÇÖZÜMÜ: pointer-events sınıfı buradan tamamen kaldırıldı. Ana div daima etkileşime açık (kapandığında zaten yok olacak) */
             className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[10]' : 'z-[120]'}`}
           >
-            {/* Stacking sırasında arkadaki modalın kapanmasını engellemek için pointer-events kontrolü */}
+            {/* Arka plan tıklaması - Stack durumundaysa saydam olur ve tıklanmaz */}
             <div 
-               className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isStacked ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'} cursor-pointer`} 
+               className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isStacked ? 'opacity-0' : 'opacity-100'} cursor-pointer`} 
                onClick={() => !isStacked && handleCloseDetail()}
             ></div>
             
@@ -228,9 +226,10 @@ export default function CustomerDetailModal({
               }} 
               exit={{ opacity: 0, scale: 0.95, y: 10 }} 
               transition={{ duration: 0.25, ease: "easeInOut" }}
+              /* 🚀 SADECE bu iç kutu stacked olduğunda tıklanamaz hale gelir */
               style={{ pointerEvents: isStacked ? 'none' : 'auto' }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[85vh] overflow-hidden cursor-default pointer-events-auto z-10"
+              className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[85vh] overflow-hidden cursor-default z-10"
             >
               
               <div className="flex justify-between items-start p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50">
@@ -265,7 +264,7 @@ export default function CustomerDetailModal({
                                           <div 
                                               key={a.id} 
                                               onClick={() => { 
-                                                  // 🚀 Varlığa tıklanınca Varlık Detayını Açar
+                                                  // 🚀 Varlığa tıklanınca Varlık Detayını Açar (iOS Stacking Devreye Girer)
                                                   if(setShowAssetDetail) setShowAssetDetail(a); 
                                               }} 
                                               className="p-4 border border-blue-200 rounded-xl bg-blue-50/50 cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all active:scale-95 group flex flex-col justify-center gap-1.5"
@@ -294,7 +293,7 @@ export default function CustomerDetailModal({
                                             key={j.id} 
                                             onClick={(e) => { 
                                                 e.stopPropagation(); 
-                                                // 🚀 İşe tıklanınca İş Detayını Açar
+                                                // 🚀 İşe tıklanınca İş Detayını Açar (iOS Stacking Devreye Girer)
                                                 if(setSelectedJob) setSelectedJob(j); 
                                             }} 
                                             className={`p-4 border rounded-xl flex items-center justify-between cursor-pointer transition-all active:scale-95 group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-500/20' : 'bg-white border-slate-200 hover:border-blue-200 hover:shadow-sm'}`}

@@ -61,7 +61,7 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
              <tr>
                <th className="px-5 py-3.5 whitespace-nowrap uppercase tracking-wider text-[10px]">İsim / Kurum</th>
                <th className="px-5 py-3.5 whitespace-nowrap uppercase tracking-wider text-[10px]">İletişim</th>
-               <th className="px-5 py-3.5 whitespace-nowrap uppercase tracking-wider text-[10px]">Kayıtlı Varlıklar (Konum / Cihaz)</th>
+               <th className="px-5 py-3.5 uppercase tracking-wider text-[10px]">Kayıtlı Varlıklar (Konum / Cihaz)</th>
                <th className="px-5 py-3.5 text-right whitespace-nowrap uppercase tracking-wider text-[10px]">Adres & Vergi</th>
              </tr>
            </thead>
@@ -94,20 +94,22 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
                    </td>
                    <td className="px-5 py-4">
                      {customerAssets.length > 0 ? (
-                       <div className="flex flex-col gap-2">
+                       // 🚀 Grid kullanarak tüm kutuların aynı boyda olmasını sağlıyoruz
+                       <div className="flex flex-wrap gap-2">
                          {customerAssets.map((a: any) => {
                            const aptName = a.apartmentName || a.apartment_name;
                            return (
-                             <div key={a.id} className="flex flex-col bg-slate-50 border border-slate-200 rounded-lg p-2 w-fit shadow-sm">
-                                {/* 🚀 Vurgulu Alan: Apartman Adı (Yoksa Bağımsız Müşteri yazsın) */}
-                                <div className="flex items-center gap-1.5 text-blue-700 font-black text-[11px]">
+                             // 🚀 h-full ve min-h kuralları ile jilet gibi kutular
+                             <div key={a.id} className="flex flex-col bg-slate-50 border border-slate-200 rounded-lg p-2.5 min-w-[160px] min-h-[56px] justify-center shadow-sm">
+                                {/* Vurgulu Alan: Apartman Adı */}
+                                <div className="flex items-center gap-1.5 text-blue-700 font-black text-[11px] mb-1">
                                     <Building2 size={12} className="shrink-0" />
-                                    <span className="truncate max-w-[180px]">{aptName || 'Bağımsız Adres'}</span>
+                                    <span className="truncate max-w-[160px]">{aptName || 'Bağımsız Adres'}</span>
                                 </div>
-                                {/* 🚀 İkincil Alan: Cihaz / Varlık Türü */}
-                                <div className="flex items-center gap-1.5 mt-1 text-slate-500 font-semibold text-[10px]">
+                                {/* İkincil Alan: Cihaz / Varlık Türü */}
+                                <div className="flex items-center gap-1.5 text-slate-500 font-semibold text-[10px]">
                                     <Box size={10} className="shrink-0" />
-                                    <span>{a.name}</span>
+                                    <span className="truncate max-w-[160px]">{a.name}</span>
                                 </div>
                              </div>
                            );
@@ -117,7 +119,7 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
                        <span className="text-[10px] text-slate-400 italic font-medium px-2 py-1 bg-slate-50 rounded-md border border-slate-100">Cihaz atanmamış</span>
                      )}
                    </td>
-                   <td className="px-5 py-4 text-right">
+                   <td className="px-5 py-4 text-right align-top">
                      <div className="text-slate-600 font-medium truncate max-w-[180px] ml-auto" title={c.address}>{c.address || '-'}</div>
                      <div className="text-[10px] text-slate-400 mt-1 font-semibold tracking-wide">{c.tax_info || 'Vergi No Yok'}</div>
                    </td>
@@ -189,23 +191,24 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
                 <span className="text-[11px] font-medium text-slate-500 line-clamp-2">{c.address || 'Adres bilgisi eklenmemiş.'}</span>
               </div>
 
-              {/* Cihazlar (Mobil Vurgulu Görünüm) */}
+              {/* Cihazlar (Mobil Vurgulu Görünüm - Sabit Yükseklikli Izgara) */}
               {customerAssets.length > 0 && (
                 <div className="pt-3 mt-1 border-t border-slate-100">
-                  <div className="flex flex-col gap-2">
+                  {/* 🚀 Mobilde de flex-wrap veya grid ile aynı boyda kutular */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {customerAssets.map((a: any) => {
                        const aptName = a.apartmentName || a.apartment_name;
                        return (
-                         <div key={a.id} className="bg-blue-50/50 border border-blue-100 rounded-lg p-3 flex flex-col gap-1.5 shadow-sm">
-                            {/* 🚀 Vurgulu Alan: Apartman Adı */}
-                            <div className="flex items-center gap-2 text-blue-700 font-black text-xs">
+                         <div key={a.id} className="bg-blue-50/50 border border-blue-100 rounded-lg p-3 flex flex-col justify-center min-h-[64px] shadow-sm">
+                            {/* Vurgulu Alan: Apartman Adı */}
+                            <div className="flex items-center gap-2 text-blue-700 font-black text-xs mb-1">
                                <Building2 size={14} className="shrink-0" />
                                <span className="truncate">{aptName || 'Bağımsız Adres'}</span>
                             </div>
-                            {/* 🚀 İkincil Alan: Cihaz / Varlık Türü */}
-                            <div className="flex items-center gap-1.5 text-slate-500 font-semibold text-[11px] ml-5">
+                            {/* İkincil Alan: Cihaz Türü */}
+                            <div className="flex items-center gap-1.5 text-slate-500 font-semibold text-[11px] ml-[22px]">
                                <Box size={12} className="shrink-0" /> 
-                               <span>{a.name}</span>
+                               <span className="truncate">{a.name}</span>
                             </div>
                          </div>
                        );
