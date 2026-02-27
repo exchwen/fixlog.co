@@ -17,78 +17,93 @@ export default function JobDetailModal({
   selectedAsset, setSelectedAsset
 }: any) {
 
-  // 🚀 AKILLI KAPATMA (SMART CLOSE) MANTIĞI - Katmanlı Hiyerarşi
-  const handleSmartClose = React.useCallback(() => {
+  // 🚀 DIŞ KATMAN KONTROLÜ
+  // Eğer Müşteri veya Varlık profili açıksa, bu modal tamamen sağır kalacak.
+  const hasExternalModal = Boolean(isAnyProfileDetailOpen || selectedCustomer || selectedAsset);
+
+  // 🚀 AKILLI KAPATMA (SMART CLOSE) MANTIĞI
+  const handleSmartClose = React.useCallback((e?: Event) => {
+    
+    // Eğer önümüzde Müşteri veya Varlık modalı varsa, biz KARIŞMIYORUZ. O modal kendi ESC'sini yönetecek.
+    if (hasExternalModal) {
+        return;
+    }
+
     // 1. En üst katmanlar (Görsel veya PDF)
     if (fullScreenImage) {
+      if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
       setFullScreenImage(null);
-      return true;
+      return;
     }
     if (previewPdfJob) {
+      if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
       setPreviewPdfJob(null);
-      return true;
+      return;
     }
+    
     // 2. Aksiyon Onayları
     if (showCancelConfirm) {
+      if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
       setShowCancelConfirm(false);
-      return true;
+      return;
     }
-    // 3. 🚀 YENİ: Dışarıdan açılan profil modalları (Müşteri veya Varlık)
-    if (selectedCustomer) {
-      if (setSelectedCustomer) setSelectedCustomer(null);
-      return true;
-    }
-    if (selectedAsset) {
-      if (setSelectedAsset) setSelectedAsset(null);
-      return true;
-    }
-    // 4. Düzenleme Modu
+    
+    // 3. Düzenleme Modu
     if (isEditingJobDetail) {
+      if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
       setIsEditingJobDetail(false);
-      return true;
+      return;
     }
-    // 5. En alt katman (Ana Job Modalı)
+    
+    // 4. En alt katman (Ana Job Modalı)
     if (selectedJob) {
+      if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
       setSelectedJob(null);
       if (handleCloseDetail) handleCloseDetail('job');
-      return true;
+      return;
     }
-    return false;
-  }, [
-    fullScreenImage, previewPdfJob, showCancelConfirm, selectedCustomer, selectedAsset, isEditingJobDetail, selectedJob, 
-    setFullScreenImage, setPreviewPdfJob, setShowCancelConfirm, setSelectedCustomer, setSelectedAsset, setIsEditingJobDetail, setSelectedJob, handleCloseDetail
-  ]);
+  }, [hasExternalModal, fullScreenImage, previewPdfJob, showCancelConfirm, isEditingJobDetail, selectedJob, setFullScreenImage, setPreviewPdfJob, setShowCancelConfirm, setIsEditingJobDetail, setSelectedJob, handleCloseDetail]);
 
-  // 🚀 ESC Tuşu Dinleyicisi
+  // 🚀 ESC Tuşu Dinleyicisi - "Capture" fazında çalışır, olayı en önce biz yakalarız
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        handleSmartClose();
+        handleSmartClose(e);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [handleSmartClose]);
+
+  // 🚀 Modal Açıldığında Tarayıcı Geçmişine (History) Başlangıç At
+  React.useEffect(() => {
+    if (selectedJob) {
+        window.history.pushState({ jobModal: true }, '');
+    }
+  }, [selectedJob]);
+
+  // 🚀 İç Katmanlar (PDF/Foto) Açıldığında History'i Güncelle (Geri tuşu uygulamadan atmasın diye)
+  React.useEffect(() => {
+    if (fullScreenImage || previewPdfJob || showCancelConfirm || isEditingJobDetail) {
+        window.history.pushState({ internalLayer: true }, '');
+    }
+  }, [fullScreenImage, previewPdfJob, showCancelConfirm, isEditingJobDetail]);
 
   // 🚀 Mobil Geri Tuşu (Popstate) Dinleyicisi
   React.useEffect(() => {
     if (!selectedJob) return;
 
-    window.history.pushState({ jobModal: true }, '');
-
     const handlePopState = (e: PopStateEvent) => {
-      handleSmartClose();
-      
-      // Eğer kapanan katmandan sonra HÂLÂ açık olan bir alt katman varsa 
-      // kullanıcının bir sonraki "geri" basışını yakalamak için history'e tekrar state ekliyoruz.
-      if (fullScreenImage || previewPdfJob || showCancelConfirm || isEditingJobDetail || selectedCustomer || selectedAsset) {
-        window.history.pushState({ jobModal: true }, '');
-      }
+      // Dış modal açıksa biz popstate'e karışmıyoruz, dış modal kapansın.
+      if (hasExternalModal) return;
+
+      // İç katmanları sırayla kapat
+      handleSmartClose(e);
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [selectedJob, fullScreenImage, previewPdfJob, showCancelConfirm, isEditingJobDetail, selectedCustomer, selectedAsset, handleSmartClose]);
+  }, [selectedJob, hasExternalModal, handleSmartClose]);
 
   const sendCustomerWhatsApp = (jobData: any) => {
      const custPhone = (data?.customers || []).find((c:any) => c.name === jobData.customer_name)?.contact;
@@ -160,7 +175,7 @@ export default function JobDetailModal({
   };
 
   // iOS Stacking Kontrolü
-  const isStacked = Boolean(previewPdfJob || fullScreenImage || isAnyProfileDetailOpen || selectedCustomer || selectedAsset);
+  const isStacked = Boolean(previewPdfJob || fullScreenImage || hasExternalModal);
 
   return (
     <>
