@@ -402,6 +402,9 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                  {incomingJobs.map((job: any) => {
                     const isGeneral = job.work_type === 'Genel Görev';
+                    const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(job.asset_id));
+                    const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
+
                     return (
                         <div key={job.id} className="bg-amber-950/40 border border-amber-300/30 rounded-2xl p-4 flex flex-col justify-between hover:bg-amber-950/60 transition-colors">
                             <div 
@@ -420,13 +423,21 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                                         <ArrowUpRight size={14} className="text-amber-200"/> Detay
                                     </span>
                                 </div>
-                                <h3 className="text-sm font-black leading-tight mb-1 truncate">{job.customer_name}</h3>
+                                
+                                {/* 🚀 EKLENDİ: Müşteri, Apartman ve Cihaz Türü Birlikte */}
+                                <h3 className="text-sm font-black leading-tight mb-0.5 line-clamp-2">
+                                    {aptName ? <><span className="text-amber-300">{aptName}</span> - {job.customer_name}</> : job.customer_name}
+                                </h3>
+                                <div className="text-[10px] font-bold text-amber-200/80 mb-2 truncate">
+                                    {currentAsset ? currentAsset.name : 'Genel Görev / Varlık Yok'}
+                                </div>
+
                                 <p className="text-amber-100 text-[11px] font-medium flex items-center gap-1.5 truncate">
                                     <Briefcase size={12} className="shrink-0 opacity-70"/> {job.work_type}
                                 </p>
                             </div>
                             
-                            <button 
+                            <button
                                 onClick={(e) => { 
                                     e.stopPropagation(); 
                                     if (setJobModalType) setJobModalType('APPROVAL_FIRST_STEP');
@@ -453,6 +464,9 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                  {waitingForAssignmentJobs.map((job: any) => {
+                    const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(job.asset_id));
+                    const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
+
                     return (
                         <div key={job.id} className="bg-indigo-950/40 border border-indigo-500/30 rounded-2xl p-4 flex flex-col justify-between hover:bg-indigo-950/60 transition-colors">
                             <div 
@@ -471,13 +485,21 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                                         <ArrowUpRight size={14} className="text-indigo-300"/> Detay
                                     </span>
                                 </div>
-                                <h3 className="text-sm font-black leading-tight mb-1 truncate">{job.customer_name}</h3>
+                                
+                                {/* 🚀 EKLENDİ: Müşteri, Apartman ve Cihaz Türü Birlikte */}
+                                <h3 className="text-sm font-black leading-tight mb-0.5 line-clamp-2">
+                                    {aptName ? <><span className="text-indigo-300">{aptName}</span> - {job.customer_name}</> : job.customer_name}
+                                </h3>
+                                <div className="text-[10px] font-bold text-indigo-300/80 mb-2 truncate">
+                                    {currentAsset ? currentAsset.name : 'Genel Görev / Varlık Yok'}
+                                </div>
+
                                 <p className="text-indigo-200 text-[11px] font-medium flex items-center gap-1.5 truncate">
                                     <Briefcase size={12} className="shrink-0 opacity-70"/> {job.work_type}
                                 </p>
                             </div>
                             
-                            <button 
+                            <button
                                 onClick={(e) => { e.stopPropagation(); handleAssignWorker(job); }}
                                 className="mt-2 w-full bg-indigo-500 hover:bg-indigo-400 text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
                             >

@@ -582,9 +582,10 @@ export default function JobDetailModal({
                             </button>
                         )}
 
-                        {selectedJob.status !== 'Tamamlandı' && selectedJob.status !== 'İptal' && (
+{selectedJob.status !== 'Tamamlandı' && selectedJob.status !== 'İptal' && (
                             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full pt-2">
-                                {jobModalType === 'APPROVAL_FIRST_STEP' ? (
+                                {/* 🚀 DÜZELTİLDİ: İş Beklemede/Gelecek ise YALNIZCA Kabul Et butonu çıkar. Düzenleme yapılamaz. */}
+                                {(selectedJob.status === 'Beklemede' || selectedJob.status === 'Gelecek') ? (
                                     <button 
                                         onClick={async () => {
                                             setIsApproving(true);
@@ -604,15 +605,41 @@ export default function JobDetailModal({
                                         className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-black transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
                                     >
                                         {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckSquare size={16} />}
-                                        İŞİ ONAYLIYORUM
+                                        GÖREVİ KABUL ET
                                     </button>
                                 ) : (
-                                    <button 
-                                        onClick={handleEditClick}
-                                        className="flex-1 bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"
-                                    >
-                                        <Settings size={16} /> Düzenle / Ata
-                                    </button>
+                                    <>
+                                        {jobModalType === 'APPROVAL_FIRST_STEP' ? (
+                                            <button 
+                                                onClick={async () => {
+                                                    setIsApproving(true);
+                                                    const isGeneralJob = selectedJob.work_type === 'Genel Görev';
+                                                    const newStatus = isGeneralJob ? 'Devam Ediyor' : 'Usta Bekliyor';
+                                                    await handleAction('update-job', {
+                                                        id: selectedJob.id,
+                                                        status: newStatus,
+                                                        lastEditedBy: data?.ownerName || 'Yönetici',
+                                                    }, () => {
+                                                        setSelectedJob(null);
+                                                        if (setJobModalType) setJobModalType('');
+                                                    }, null);
+                                                    setIsApproving(false);
+                                                }}
+                                                disabled={isApproving}
+                                                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-black transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+                                            >
+                                                {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckSquare size={16} />}
+                                                İŞİ ONAYLIYORUM
+                                            </button>
+                                        ) : (
+                                            <button 
+                                                onClick={handleEditClick}
+                                                className="flex-1 bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"
+                                            >
+                                                <Settings size={16} /> Düzenle / Ata
+                                            </button>
+                                        )}
+                                    </>
                                 )}
                                 
                                 <button 

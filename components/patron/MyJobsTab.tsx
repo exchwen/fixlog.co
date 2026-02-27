@@ -478,11 +478,21 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                               } else if (job.details?.worker_id) {
                                   worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
                               }
+
+                              // 🚀 Varlık ve Apartman adını çekiyoruz
+                              const currentAsset = assets.find((a: any) => String(a.id) === String(job.asset_id));
+                              const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
+
                               return (
                                   <tr key={job.id} onClick={() => handleOpenModal(job)} className="hover:bg-emerald-50/50 transition-colors cursor-pointer group">
                                       <td className="px-6 py-4">
-                                          <div className="font-bold text-slate-800 text-sm">{job.customer_name}</div>
-                                          <div className="text-[10px] text-slate-500 font-medium mt-0.5">{job.work_type}</div>
+                                          <div className="font-bold text-slate-800 text-sm leading-tight max-w-[250px] truncate">
+                                            {aptName ? <><span className="text-emerald-600">{aptName}</span> - {job.customer_name}</> : job.customer_name}
+                                          </div>
+                                          <div className="text-[10px] text-slate-500 font-bold mt-1 mb-1 truncate max-w-[250px]">
+                                            {currentAsset ? currentAsset.name : 'Genel Görev'}
+                                          </div>
+                                          <div className="text-[9px] text-slate-400 font-medium mt-1 uppercase tracking-wide bg-slate-100 px-2 py-0.5 rounded w-fit">{job.work_type}</div>
                                       </td>
                                       <td className="px-6 py-4">
                                           {worker ? (
@@ -515,14 +525,24 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                       } else if (job.details?.worker_id) {
                           worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
                       }
+
+                      // 🚀 Varlık ve Apartman adını çekiyoruz
+                      const currentAsset = assets.find((a: any) => String(a.id) === String(job.asset_id));
+                      const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
+
                       return (
-                        <div key={job.id} onClick={() => handleOpenModal(job)} className="bg-white rounded-xl border border-emerald-100 p-4 shadow-sm flex flex-col gap-3 active:scale-95 transition-all">
+                        <div key={job.id} onClick={() => handleOpenModal(job)} className="bg-white rounded-xl border border-emerald-100 p-4 shadow-sm flex flex-col gap-3 active:scale-95 transition-all cursor-pointer">
                            <div className="flex justify-between items-start gap-2">
-                              <div className="min-w-0">
-                                <div className="font-bold text-slate-800 text-sm truncate">{job.customer_name}</div>
-                                <div className="text-[10px] text-slate-500 font-medium mt-0.5">{job.work_type}</div>
+                              <div className="min-w-0 pr-2">
+                                <div className="font-bold text-slate-800 text-sm line-clamp-2">
+                                  {aptName ? <><span className="text-emerald-600">{aptName}</span> - {job.customer_name}</> : job.customer_name}
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-bold mt-1 mb-1 truncate">
+                                  {currentAsset ? currentAsset.name : 'Genel Görev'}
+                                </div>
+                                <div className="text-[9px] text-slate-400 font-medium uppercase tracking-wide bg-slate-100 px-2 py-0.5 rounded w-fit">{job.work_type}</div>
                               </div>
-                              <span className="px-2 py-1 rounded text-[9px] font-black uppercase border bg-emerald-50 text-emerald-600 border-emerald-100">
+                              <span className="px-2 py-1.5 rounded text-[9px] font-black uppercase tracking-wider border bg-emerald-50 text-emerald-600 border-emerald-100 shrink-0">
                                 {job.details?.price || 'Ücretsiz'}
                               </span>
                            </div>
