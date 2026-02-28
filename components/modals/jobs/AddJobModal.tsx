@@ -275,7 +275,11 @@ export default function AddJobModal({
 
             {jobModalStep === 2 && (
                 <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50">
-                    <button disabled={isSaving || !isJobValid} onClick={() => handleAction('add-job', { ...jobForm, workCategory: jobForm.workCategory || 'Normal İş Atama', details: { note: jobForm.taskNote } }, setShowJobModal, () => setJobForm({ customerName: '', assetId: '', staffId: '', workType: 'Görev', workCategory: 'Normal İş Atama', jobType: 'Anlık', scheduledDate: '', taskNote: '' }))} className="w-full bg-blue-600 text-white py-3.5 sm:py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex justify-center items-center disabled:opacity-50">
+                    <button disabled={isSaving || !isJobValid} onClick={() => {
+                        // 🚀 DÜZELTİLDİ: Genel İş Atama ise workType zorla "Genel Görev" yapılır.
+                        const finalWorkType = jobForm.workCategory === 'Genel İş Atama' ? 'Genel Görev' : (jobForm.workType || 'Görev');
+                        handleAction('add-job', { ...jobForm, workType: finalWorkType, workCategory: jobForm.workCategory || 'Normal İş Atama', details: { note: jobForm.taskNote } }, setShowJobModal, () => setJobForm({ customerName: '', assetId: '', staffId: '', workType: 'Görev', workCategory: 'Normal İş Atama', jobType: 'Anlık', scheduledDate: '', taskNote: '' }));
+                    }} className="w-full bg-blue-600 text-white py-3.5 sm:py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex justify-center items-center disabled:opacity-50">
                       {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'İş Emrini Gönder'}
                     </button>
                 </div>

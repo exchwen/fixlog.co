@@ -155,7 +155,7 @@ export default function JobDetailModal({
 
     // 🚀 DÜZELTİLDİ: İş bir "Genel Görev" ise, usta atanmasına gerek yoktur!
     // Kabul edildiği an "Devam Ediyor" kalır, "Usta Bekliyor"a düşmez.
-    const isGeneral = job.work_type === 'Genel Görev' || job.customer_name === 'Genel Görev';
+    const isGeneral = job.work_type === 'Genel Görev' || job.work_type === 'Görev' || !job.customer_name || job.customer_name === 'Genel Görev';
 
     if (!isGeneral && (label === 'Usta Bekliyor' || label === 'Devam Ediyor')) {
         label = hasWorker ? 'Devam Ediyor' : 'Usta Bekliyor';
@@ -209,7 +209,8 @@ export default function JobDetailModal({
   const isStacked = Boolean(previewPdfJob || fullScreenImage || openedChild !== null);
 
   // 🚀 TÜM EKRANIN ULAŞABİLECEĞİ ORTAK DEĞİŞKENLER (Scope Hatasını Çözer)
-  const isGeneralTask = selectedJob?.work_type === 'Genel Görev' || !selectedJob?.customer_name || selectedJob?.customer_name === 'Genel Görev';
+  // 🚀 DÜZELTİLDİ: work_type'ı 'Görev' kalmış eski kayıtlar için veya müşteri adı boş olanları da Genel Görev say!
+  const isGeneralTask = selectedJob?.work_type === 'Genel Görev' || selectedJob?.work_type === 'Görev' || !selectedJob?.customer_name || selectedJob?.customer_name === 'Genel Görev';
   const hasWorker = !!selectedJob?.worker_name || !!selectedJob?.details?.worker_id || !!(selectedJob?.staff_id && (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.staff_id) && s.role === 'Usta'));
 
   return (
