@@ -92,24 +92,40 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
 
   // 1. Onay Bekleyenler (Sarı Kutu): İş bana yeni atandı (Patron tarafından), henüz kabul etmedim.
   const incomingJobs = myAllJobs.filter((j: any) => {
-    const isMyJob = String(j.staff_id) === String(currentUserId) || String(j.manager_id) === String(currentUserId);
-    return (j.status === 'Beklemede' || j.status === 'Gelecek') && isMyJob && !j.worker_id;
+    // Hem yeni manager_id hem de eski details.managerId kontrol ediliyor.
+    const isMyJob = String(j.staff_id) === String(currentUserId) || 
+                    String(j.manager_id) === String(currentUserId) || 
+                    String(j.details?.managerId) === String(currentUserId);
+    
+    const hasWorker = !!j.worker_id || !!j.details?.worker_id;
+    
+    return (j.status === 'Beklemede' || j.status === 'Gelecek') && isMyJob && !hasWorker;
   });
 
   // 2. Atama Bekleyenler (Mor Kutu): İşi kabul ettim (Usta Bekliyor durumunda) ama USTA SEÇMEDİM.
   const waitingForAssignment = myAllJobs.filter((j: any) => {
-    const isMyJob = String(j.staff_id) === String(currentUserId) || String(j.manager_id) === String(currentUserId);
-    return j.status === 'Usta Bekliyor' && !j.worker_id && !j.details?.worker_id && isMyJob;
+    const isMyJob = String(j.staff_id) === String(currentUserId) || 
+                    String(j.manager_id) === String(currentUserId) || 
+                    String(j.details?.managerId) === String(currentUserId);
+                    
+    const hasWorker = !!j.worker_id || !!j.details?.worker_id;
+    
+    return j.status === 'Usta Bekliyor' && !hasWorker && isMyJob;
   });
 
   // 3. Devam Edenler & Takiptekiler (Mavi Tablo): Benim oluşturduğum veya Ustaya atadığım aktif işler.
   const ongoingJobs = myAllJobs.filter((j: any) => {
     if (j.status === 'Tamamlandı' || j.status === 'İptal') return false;
     
+    const isMyJob = String(j.staff_id) === String(currentUserId) || 
+                    String(j.manager_id) === String(currentUserId) || 
+                    String(j.details?.managerId) === String(currentUserId);
+                    
+    const hasWorker = !!j.worker_id || !!j.details?.worker_id;
+
     // İş üstteki Sarı (Onay Bekleyen) veya Mor (Atama Bekleyen) kutuya aitse, Mavi tabloda GİZLE!
-    const isMyJob = String(j.staff_id) === String(currentUserId) || String(j.manager_id) === String(currentUserId);
-    const isIncoming = (j.status === 'Beklemede' || j.status === 'Gelecek') && isMyJob && !j.worker_id;
-    const isWaitingAssign = j.status === 'Usta Bekliyor' && !j.worker_id && !j.details?.worker_id && isMyJob;
+    const isIncoming = (j.status === 'Beklemede' || j.status === 'Gelecek') && isMyJob && !hasWorker;
+    const isWaitingAssign = j.status === 'Usta Bekliyor' && !hasWorker && isMyJob;
     if (isIncoming || isWaitingAssign) return false;
 
     // Eğer işi BİZZAT BEN oluşturduysam (ve yukarıdaki Sarı/Mor engeline takılmadıysa) mutlaka listele.
