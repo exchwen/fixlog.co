@@ -3,10 +3,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Briefcase, MapPin, CheckCircle, PlayCircle, 
-  ArrowUpRight, User, Wrench, Loader2, 
-  UserPlus, Check, Calendar, Activity, AlertTriangle, CheckSquare, Clock, Eye
-} from 'lucide-react';
+    Briefcase, MapPin, CheckCircle, PlayCircle, 
+    ArrowUpRight, User, Wrench, Loader2, 
+    UserPlus, Check, Calendar, Activity, AlertTriangle, CheckSquare, Clock, Eye, ShieldCheck, UserCheck // 🚀 ShieldCheck ve UserCheck eklendi
+  } from 'lucide-react';
 
 interface Job {
   id: string | number;
