@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Search, User, Box, Calendar, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle, Clock, Image as ImageIcon, Download, MessageSquareText, Settings, CheckSquare, Tag, Wrench, ArrowUpRight } from 'lucide-react';
+import { X, Loader2, Search, User, Box, Calendar, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle, Clock, Image as ImageIcon, Download, MessageSquareText, Settings, CheckSquare, Tag, Wrench, ArrowUpRight, UserPlus, UserCheck } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 
 export default function JobDetailModal({
@@ -371,22 +371,20 @@ export default function JobDetailModal({
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6 space-y-4 sm:space-y-5 relative">
                     
                     {(() => {
-                        const assignedStaff = selectedJob.staff_id ? (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.staff_id)) : null;
-                        const workerStaff = selectedJob.details?.worker_id ? (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.details.worker_id)) : null;
-                        
-                        let managerName = selectedJob.details?.managerName || null;
-                        let finalWorkerName = null;
+                        // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA (Tertemiz)
+                        const creator = selectedJob.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
+                        let managerName = selectedJob.manager_name || null;
+                        let finalWorkerName = selectedJob.worker_name || null;
 
-                        if (assignedStaff) {
-                            if (assignedStaff.role === 'Yönetici') {
-                                if (!managerName) managerName = assignedStaff.name; 
-                            } else {
-                                finalWorkerName = assignedStaff.name; 
+                        // Eski veriler (json içi) için fallback (geri dönük uyumluluk)
+                        if (!finalWorkerName) {
+                            if (selectedJob.details?.worker_id) {
+                                const w = (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.details?.worker_id));
+                                if (w) finalWorkerName = w.name;
+                            } else if (selectedJob.staff_id) {
+                                const w = (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.staff_id));
+                                if (w && w.role === 'Usta') finalWorkerName = w.name;
                             }
-                        }
-
-                        if (workerStaff) {
-                            finalWorkerName = workerStaff.name;
                         }
 
                         const hasWorker = !!finalWorkerName;
@@ -502,11 +500,25 @@ export default function JobDetailModal({
                                          </div>
                                     </div>
 
-                                    <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
+                                    <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm flex flex-col justify-center">
                                          <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Sorumlu Yönetici</div>
-                                         <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                            <User size={16} className={managerName ? 'text-blue-500' : 'text-slate-300'}/>
-                                            {managerName ? managerName : <span className="text-slate-400 italic">Yönetici Yok</span>}
+                                         <div className="text-sm font-bold text-slate-800 flex flex-col gap-1">
+                                            {managerName === creator ? (
+                                                <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 w-fit px-2 py-0.5 rounded border border-blue-100">
+                                                    <ShieldCheck size={14} /> {managerName} <span className="text-[9px] opacity-70 ml-1">(Oluşturan)</span>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="flex items-center gap-1.5 text-slate-500 text-xs">
+                                                        <UserPlus size={12} /> {creator} <span className="text-[9px] opacity-70">(Oluşturan)</span>
+                                                    </div>
+                                                    {managerName && (
+                                                        <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 w-fit px-2 py-0.5 rounded border border-blue-100 mt-1">
+                                                            <UserCheck size={14} /> {managerName}
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
                                          </div>
                                     </div>
                                     <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">

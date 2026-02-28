@@ -761,40 +761,13 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
             <tbody className="divide-y divide-slate-50">
             {jobs.slice(0, 10).map((j: any) => {
                 
-                // --- 🚀 MASAÜSTÜ İÇİN TAM ÇÖZÜM HİYERARŞİSİ ---
-                const rawCreatedBy = j.details?.createdBy;
-                const rawCreatorRole = j.details?.creatorRole;
-                const ownerFallback = data?.ownerName || 'Patron';
+                // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA (Tertemiz)
+                const creator = j.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
+                const manager = j.manager_name || null;
+                const worker = j.worker_name || null;
 
-                let managerName = j.details?.managerName || null;
-                let workerName = null;
-
-                // 1. Yönetici kendi oluşturduysa ve henüz managerName atanmadıysa o kendini sorumlu yapar
-                if (!managerName && rawCreatorRole === 'Yönetici' && rawCreatedBy) {
-                    managerName = rawCreatedBy;
-                }
-
-                // 2. Staff ID kontrolleri (Usta mı, Yönetici mi atandı?)
-                const assignedPerson = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
-                if (assignedPerson) {
-                    if (assignedPerson.role === 'Yönetici') {
-                        if (!managerName) managerName = assignedPerson.name; 
-                    } else if (assignedPerson.role === 'Usta') {
-                        workerName = assignedPerson.name; 
-                    }
-                }
-
-                // 3. Worker ID mühürü varsa kesin ustadır
-                const detailWorker = data?.staff?.find((s: any) => String(s.id) === String(j.details?.worker_id));
-                if (detailWorker) {
-                    workerName = detailWorker.name;
-                }
-
-                // 4. Ekranda görünecek Atayan ismi (Boşsa Sistem / Patron yazar)
-                const displayCreator = rawCreatedBy || ownerFallback;
-
-                // 5. Atayan ve Sorumlu aynı kişi mi?
-                const isCreatorSameAsManager = managerName && displayCreator === managerName;
+                // 🚀 Atayan ve Sorumlu aynı kişi mi?
+                const isCreatorSameAsManager = manager && creator === manager;
 
                 const isApproved = j.status === 'Tamamlandı';
                 const staffColor = isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200';
@@ -841,7 +814,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ATAYAN & SORUMLU:</span>
                                 </div>
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
-                                    {managerName}
+                                    {manager}
                                 </span>
                             </div>
                         ) : (
@@ -852,17 +825,17 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ATAYAN:</span>
                                     </div>
                                     <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-600 whitespace-nowrap shadow-sm">
-                                        {displayCreator}
+                                        {creator}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <div className="flex items-center gap-1.5 w-[130px] shrink-0">
-                                      <UserCheck size={14} className={managerName ? 'text-blue-500' : 'text-slate-300'} />
+                                      <UserCheck size={14} className={manager ? 'text-blue-500' : 'text-slate-300'} />
                                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">SORUMLU:</span>
                                     </div>
-                                    {managerName ? (
+                                    {manager ? (
                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
-                                            {managerName}
+                                            {manager}
                                         </span>
                                     ) : (
                                         <span className="text-[10px] font-medium text-slate-400 italic px-2 py-0.5">-</span>
@@ -872,12 +845,12 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                         )}
                         <div className="flex items-center gap-2">
                             <div className="flex items-center gap-1.5 w-[130px] shrink-0">
-                              <Wrench size={14} className={workerName ? 'text-indigo-500' : 'text-slate-400'} />
+                              <Wrench size={14} className={worker ? 'text-indigo-500' : 'text-slate-400'} />
                               <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">SAHA USTASI:</span>
                             </div>
-                            {workerName ? (
+                            {worker ? (
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
-                                    {workerName}
+                                    {worker}
                                 </span>
                             ) : (
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-600 whitespace-nowrap shadow-sm">
@@ -891,15 +864,14 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
 
                     <td className="px-5 py-4 align-middle whitespace-nowrap">
                       <div className="flex items-center gap-1.5 font-semibold text-slate-600">
-                         <Calendar size={14} className={getDynamicStatus(j, !!workerName).label === 'Gecikti' ? 'text-rose-500' : 'text-blue-500'} />
+                         <Calendar size={14} className={getDynamicStatus(j, !!worker).label === 'Gecikti' ? 'text-rose-500' : 'text-blue-500'} />
                          {j.scheduled_date || 'Anlık Kayıt'}
                       </div>
                     </td>
                     <td className="px-5 py-4 align-middle text-right">
                       <div className="flex items-center justify-end gap-3">
-                         {/* 🚀 Dinamik Rozet Kullanımı */}
-                         <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black tracking-wide border shadow-sm ${getDynamicStatus(j, !!workerName).colorClass} whitespace-nowrap uppercase`}>
-                           {getDynamicStatus(j, !!workerName).label}
+                         <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black tracking-wide border shadow-sm ${getDynamicStatus(j, !!worker).colorClass} whitespace-nowrap uppercase`}>
+                           {getDynamicStatus(j, !!worker).label}
                          </span>
                          <div className="w-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <ArrowUpRight size={16} className="text-blue-500" />
@@ -921,35 +893,13 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         </div>
 
         <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50/50 max-h-[500px] overflow-y-auto custom-scrollbar">
-          {jobs.slice(0, 10).map((j: any) => {
-             // --- 🚀 MOBİL İÇİN TAM ÇÖZÜM HİYERARŞİSİ ---
-             const rawCreatedBy = j.details?.createdBy;
-             const rawCreatorRole = j.details?.creatorRole;
-             const ownerFallback = data?.ownerName || 'Patron';
-             
-             let managerName = j.details?.managerName || null;
-             let workerName = null;
+        {jobs.slice(0, 10).map((j: any) => {
+             // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA (Tertemiz)
+             const creator = j.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
+             const manager = j.manager_name || null;
+             const worker = j.worker_name || null;
 
-             if (!managerName && rawCreatorRole === 'Yönetici' && rawCreatedBy) {
-                 managerName = rawCreatedBy;
-             }
-
-             const assignedPerson = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
-             if (assignedPerson) {
-                 if (assignedPerson.role === 'Yönetici') {
-                     if (!managerName) managerName = assignedPerson.name; 
-                 } else if (assignedPerson.role === 'Usta') {
-                     workerName = assignedPerson.name; 
-                 }
-             }
-
-             const detailWorker = data?.staff?.find((s: any) => String(s.id) === String(j.details?.worker_id));
-             if (detailWorker) {
-                 workerName = detailWorker.name;
-             }
-
-             const displayCreator = rawCreatedBy || ownerFallback;
-             const isCreatorSameAsManager = managerName && displayCreator === managerName;
+             const isCreatorSameAsManager = manager && creator === manager;
 
              const isApproved = j.status === 'Tamamlandı';
              const staffColor = isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200';
@@ -987,12 +937,12 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                       </div>
                     </div>
                     {/* 🚀 Dinamik Rozet (Mobil) */}
-                    <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border shrink-0 shadow-sm ${getDynamicStatus(j, !!workerName).colorClass}`}>
-                      {getDynamicStatus(j, !!workerName).label}
+                    <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border shrink-0 shadow-sm ${getDynamicStatus(j, !!worker).colorClass}`}>
+                      {getDynamicStatus(j, !!worker).label}
                     </span>
                  </div>
 
-                 {/* 🚀 DÜZELTİLMİŞ: Mobil Personel Hiyerarşisi UI (Sabit Genişlikli Izgara) */}
+                 {/* 🚀 DÜZELTİLMİŞ: Mobil Personel Hiyerarşisi UI */}
                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-2.5">
                     {isCreatorSameAsManager ? (
                         <div className="flex items-center gap-2">
@@ -1000,7 +950,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                                <ShieldCheck size={10} /> ATAYAN & SORUMLU
                             </span>
                             <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${staffColor}`}>
-                                {managerName}
+                                {manager}
                             </div>
                         </div>
                     ) : (
@@ -1010,15 +960,15 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                                  <UserPlus size={10} /> ATAYAN
                               </span>
                               <div className="text-[11px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
-                                  {displayCreator}
+                                  {creator}
                               </div>
                           </div>
                           <div className="flex items-center gap-2">
                               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
                                  <UserCheck size={10} /> SORUMLU
                               </span>
-                              <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${managerName ? staffColor : 'text-slate-400 bg-slate-100 border-slate-200'}`}>
-                                  {managerName || '-'}
+                              <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${manager ? staffColor : 'text-slate-400 bg-slate-100 border-slate-200'}`}>
+                                  {manager || '-'}
                               </div>
                           </div>
                         </>
@@ -1028,15 +978,15 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
                            <Wrench size={10} /> SAHA USTASI
                         </span>
-                        <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${workerName ? staffColor : 'text-rose-600 bg-rose-50 border-rose-200'}`}>
-                            {workerName || 'Atanmadı'}
+                        <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${worker ? staffColor : 'text-rose-600 bg-rose-50 border-rose-200'}`}>
+                            {worker || 'Atanmadı'}
                         </div>
                     </div>
                  </div>
 
                  <div className="flex justify-between items-center pt-2 border-t border-slate-50">
                    <div className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-md border border-slate-100 flex items-center gap-1.5 w-fit">
-                      <Calendar size={12} className={getDynamicStatus(j, !!workerName).label === 'Gecikti' ? 'text-rose-500' : 'text-slate-400'} /> 
+                      <Calendar size={12} className={getDynamicStatus(j, !!worker).label === 'Gecikti' ? 'text-rose-500' : 'text-slate-400'} /> 
                       {j.scheduled_date || 'Tarih Planlanmadı'}
                    </div>
                    <ArrowUpRight size={16} className="text-blue-500" />

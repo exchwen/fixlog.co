@@ -231,6 +231,17 @@ export default function AddJobModal({
                                 </div>
                               )}
 
+                              {/* 🚀 EKLENDİ: Görev Tipi / Branş Seçimi */}
+                              <div>
+                                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Görev Tipi / Branş</label>
+                                <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={jobForm?.workType || 'Genel Görev'} onChange={e => setJobForm({...jobForm, workType: e.target.value})}>
+                                  <option value="Genel Görev">Genel Görev</option>
+                                  {branchList.map((subType: any) => (
+                                    <option key={subType} value={subType}>{subType}</option>
+                                  ))}
+                                </select>
+                              </div>
+
                               <div>
                                 <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Sorumlu Personel</label>
                                 <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={jobForm?.staffId || ''} onChange={e => setJobForm({...jobForm, staffId: e.target.value})}>

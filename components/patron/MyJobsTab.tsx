@@ -325,13 +325,25 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                       </thead>
                       <tbody className="divide-y divide-slate-50">
                           {ongoingJobs.length > 0 ? ongoingJobs.map((job: any) => {
-                              // USTA BİLGİSİ: İş bende değilse başkasına (ustaya) atanmıştır
-                              let worker = null;
-                              if (job.details?.worker_id) {
-                                  worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
-                              } else if (String(job.staff_id) !== String(currentUserId)) {
-                                  worker = staff.find((s:any) => String(s.id) === String(job.staff_id));
+                              
+                              // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA (Tertemiz)
+                              const creator = job.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
+                              const manager = job.manager_name || null;
+                              let worker = job.worker_name || null;
+
+                              // Eğer D1'de worker_name yoksa (eski veri ihtimali)
+                              if (!worker) {
+                                  if (job.details?.worker_id) {
+                                      const w = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                                      if (w) worker = w.name;
+                                  } else if (String(job.staff_id) !== String(currentUserId)) {
+                                      const w = staff.find((s:any) => String(s.id) === String(job.staff_id));
+                                      if (w && w.role === 'Usta') worker = w.name;
+                                  }
                               }
+
+                              const isCreatorSameAsManager = manager && creator === manager;
+                              const staffColor = 'text-amber-600 bg-amber-50 border-amber-200';
                               
                               // AKILLI DURUM METNİ (Yönetici Gözüyle)
                               let displayStatus = job.status;
@@ -356,40 +368,80 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                                   StatusIcon = CheckCircle;
                               }
 
+                              const currentAsset = assets.find((a: any) => String(a.id) === String(job.asset_id));
+                              const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
+
                               return (
                                 <tr key={job.id} onClick={() => handleOpenModal(job)} className="hover:bg-blue-50/50 transition-colors cursor-pointer group">
                                     <td className="px-6 py-4">
-                                        {/* 🚀 EKLENDİ: Müşteri, Apartman ve Cihaz Türü */}
                                         <div className="font-bold text-slate-800 text-sm leading-tight max-w-[250px] truncate">
-                                          {(() => {
-                                              const asset = assets.find((a: any) => String(a.id) === String(job.asset_id));
-                                              const aptName = asset?.apartmentName || asset?.apartment_name;
-                                              return aptName ? <><span className="text-blue-600">{aptName}</span> - {job.customer_name}</> : job.customer_name;
-                                          })()}
+                                          {aptName ? <><span className="text-blue-600">{aptName}</span> - {job.customer_name}</> : job.customer_name}
                                         </div>
-                                        <div className="text-[10px] text-slate-500 font-bold mt-0.5 mb-1.5 truncate max-w-[250px]">
-                                          {(() => {
-                                              const asset = assets.find((a: any) => String(a.id) === String(job.asset_id));
-                                              return asset ? asset.name : 'Genel Görev';
-                                          })()}
+                                        <div className="text-[11px] font-black text-slate-600 mt-1 mb-1.5 truncate max-w-[250px]">
+                                          {currentAsset ? currentAsset.name : 'Genel Görev / Varlık Yok'}
+                                        </div>
+                                        <div className="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 mb-1.5 truncate max-w-[250px]">
+                                          <MapPin size={12} className="shrink-0" />
+                                          <span className="truncate">{currentAsset ? currentAsset.location : 'Lokasyon Yok'}</span>
                                         </div>
                                         <div className="text-[9px] text-slate-400 font-medium uppercase tracking-wide bg-slate-100 px-2 py-0.5 rounded w-fit">{job.work_type}</div>
                                     </td>
-                                      <td className="px-6 py-4">
-                                          {worker ? (
+                                    
+                                    <td className="px-6 py-4">
+                                      <div className="flex flex-col gap-2 w-fit">
+                                          {manager === creator ? (
                                               <div className="flex items-center gap-2">
-                                                  <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-black border border-indigo-200">
-                                                      {worker.name.charAt(0)}
+                                                  <div className="flex items-center gap-1.5 w-[130px] shrink-0">
+                                                    <ShieldCheck size={14} className="text-blue-600" />
+                                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ATAYAN & SORUMLU:</span>
                                                   </div>
-                                                  <span className="font-bold text-slate-700">{worker.name}</span>
+                                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
+                                                      {manager}
+                                                  </span>
                                               </div>
                                           ) : (
-                                              <div className="flex items-center gap-2 opacity-60">
-                                                  <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center"><User size={12} /></div>
-                                                  <span className="text-slate-500 italic text-[11px]">Kendim</span>
-                                              </div>
+                                              <>
+                                                  <div className="flex items-center gap-2">
+                                                      <div className="flex items-center gap-1.5 w-[130px] shrink-0">
+                                                        <UserPlus size={14} className="text-slate-400" />
+                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ATAYAN:</span>
+                                                      </div>
+                                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-600 whitespace-nowrap shadow-sm">
+                                                          {creator}
+                                                      </span>
+                                                  </div>
+                                                  <div className="flex items-center gap-2">
+                                                      <div className="flex items-center gap-1.5 w-[130px] shrink-0">
+                                                        <UserCheck size={14} className={manager ? 'text-blue-500' : 'text-slate-300'} />
+                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">SORUMLU:</span>
+                                                      </div>
+                                                      {manager ? (
+                                                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
+                                                              {manager}
+                                                          </span>
+                                                      ) : (
+                                                          <span className="text-[10px] font-medium text-slate-400 italic px-2 py-0.5">-</span>
+                                                      )}
+                                                  </div>
+                                              </>
                                           )}
-                                      </td>
+                                          <div className="flex items-center gap-2">
+                                              <div className="flex items-center gap-1.5 w-[130px] shrink-0">
+                                                <Wrench size={14} className={worker ? 'text-indigo-500' : 'text-slate-400'} />
+                                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">SAHA USTASI:</span>
+                                              </div>
+                                              {worker ? (
+                                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
+                                                      {worker}
+                                                  </span>
+                                              ) : (
+                                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-600 whitespace-nowrap shadow-sm">
+                                                      Atanmadı
+                                                  </span>
+                                              )}
+                                          </div>
+                                      </div>
+                                    </td>
                                       <td className="px-6 py-4 font-medium text-slate-600">
                                           <div className="flex items-center gap-1.5">
                                               <Calendar size={14} className="text-slate-400"/>
@@ -417,12 +469,24 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
               {/* Mobil Görünüm (Cards) */}
               <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50">
                   {ongoingJobs.length > 0 ? ongoingJobs.map((job: any) => {
-                      let worker = null;
-                      if (job.details?.worker_id) {
-                          worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
-                      } else if (String(job.staff_id) !== String(currentUserId)) {
-                          worker = staff.find((s:any) => String(s.id) === String(job.staff_id));
+                      
+                      // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA (Tertemiz)
+                      const creator = job.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
+                      const manager = job.manager_name || null;
+                      let worker = job.worker_name || null;
+
+                      if (!worker) {
+                          if (job.details?.worker_id) {
+                              const w = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                              if (w) worker = w.name;
+                          } else if (String(job.staff_id) !== String(currentUserId)) {
+                              const w = staff.find((s:any) => String(s.id) === String(job.staff_id));
+                              if (w && w.role === 'Usta') worker = w.name;
+                          }
                       }
+
+                      const isCreatorSameAsManager = manager && creator === manager;
+                      const staffColor = 'text-amber-600 bg-amber-50 border-amber-200';
                       
                       let displayStatus = job.status;
                       let statusClass = 'bg-blue-50 text-blue-600 border-blue-100';
@@ -438,38 +502,78 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                           statusClass = 'bg-purple-50 text-purple-600 border-purple-200';
                       }
 
+                      const currentAsset = assets.find((a: any) => String(a.id) === String(job.asset_id));
+                      const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
+
                       return (
-                        <div key={job.id} onClick={() => handleOpenModal(job)} className="bg-white rounded-xl border border-blue-100 p-4 shadow-sm flex flex-col gap-3 active:scale-95 transition-all cursor-pointer">
-                           <div className="flex justify-between items-start gap-2">
-                              <div className="min-w-0 pr-2">
-                                {/* 🚀 EKLENDİ: Müşteri, Apartman ve Cihaz Türü */}
-                                <div className="font-bold text-slate-800 text-sm line-clamp-2">
-                                  {(() => {
-                                      const asset = assets.find((a: any) => String(a.id) === String(job.asset_id));
-                                      const aptName = asset?.apartmentName || asset?.apartment_name;
-                                      return aptName ? <><span className="text-blue-600">{aptName}</span> - {job.customer_name}</> : job.customer_name;
-                                  })()}
+                        <div key={job.id} onClick={() => handleOpenModal(job)} className="bg-white rounded-xl border border-blue-100 p-4 shadow-sm flex flex-col gap-4 active:scale-95 transition-all cursor-pointer">
+                           <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
+                              <div className="min-w-0 pr-2 flex flex-col gap-1 w-full">
+                                <div className="font-black text-slate-800 text-sm line-clamp-2">
+                                  {aptName ? <><span className="text-blue-600">{aptName}</span> - {job.customer_name}</> : job.customer_name}
                                 </div>
-                                <div className="text-[10px] text-slate-500 font-bold mt-1 mb-1 truncate">
-                                  {(() => {
-                                      const asset = assets.find((a: any) => String(a.id) === String(job.asset_id));
-                                      return asset ? asset.name : 'Genel Görev';
-                                  })()}
+                                <div className="text-[11px] font-bold text-slate-600 truncate">
+                                  {currentAsset ? currentAsset.name : 'Genel Görev / Varlık Yok'}
                                 </div>
-                                <div className="text-[9px] text-slate-400 font-medium uppercase tracking-wide bg-slate-100 px-2 py-0.5 rounded w-fit">{job.work_type}</div>
+                                <div className="text-[10px] text-slate-500 font-medium flex items-start gap-1.5 line-clamp-2 mb-1">
+                                  <MapPin size={12} className="shrink-0 mt-0.5 text-slate-400" />
+                                  <span>{currentAsset ? currentAsset.location : 'Lokasyon Yok'}</span>
+                                </div>
+                                <div className="text-[10px] font-bold text-slate-500 mt-0.5 uppercase tracking-wider truncate bg-slate-50 w-fit px-2 py-0.5 rounded border border-slate-100">
+                                  {job.work_type}
+                                </div>
                               </div>
-                              <span className={`px-2 py-1.5 rounded text-[9px] font-black uppercase tracking-wider border shrink-0 ${statusClass}`}>
+                              <span className={`px-2 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider border shrink-0 shadow-sm ${statusClass}`}>
                                 {displayStatus}
                               </span>
                            </div>
-                           <div className="flex items-center justify-between border-t border-slate-50 pt-2">
-                              <div className="flex items-center gap-1.5">
-                                 <Wrench size={12} className="text-slate-400"/>
-                                 <span className="text-xs font-bold text-slate-700">{worker ? worker.name : 'Sorumlu: Siz'}</span>
+
+                           <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-2.5">
+                                {manager === creator ? (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
+                                           <ShieldCheck size={10} /> ATAYAN & SORUMLU
+                                        </span>
+                                        <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${staffColor}`}>
+                                            {manager}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                      <div className="flex items-center gap-2">
+                                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
+                                             <UserPlus size={10} /> ATAYAN
+                                          </span>
+                                          <div className="text-[11px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
+                                              {creator}
+                                          </div>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
+                                             <UserCheck size={10} /> SORUMLU
+                                          </span>
+                                          <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${manager ? staffColor : 'text-slate-400 bg-slate-100 border-slate-200'}`}>
+                                              {manager || '-'}
+                                          </div>
+                                      </div>
+                                    </>
+                                )}
+                                
+                                <div className="flex items-center gap-2 border-t border-slate-200 pt-2 border-dashed">
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
+                                       <Wrench size={10} /> SAHA USTASI
+                                    </span>
+                                    <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${worker ? staffColor : 'text-rose-600 bg-rose-50 border-rose-200'}`}>
+                                        {worker || 'Atanmadı'}
+                                    </div>
+                                </div>
+                             </div>
+
+                           <div className="flex items-center justify-between border-t border-slate-50 pt-2 mt-1">
+                              <div className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-md border border-slate-100 flex items-center gap-1.5 w-fit">
+                                 <Calendar size={12} className={displayStatus === 'Gecikti' ? 'text-rose-500' : 'text-slate-400'}/> {job.scheduled_date || 'Tarih Yok'}
                               </div>
-                              <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                                 <Calendar size={12}/> {job.scheduled_date || 'Tarih Yok'}
-                              </div>
+                              <ArrowUpRight size={16} className="text-blue-500" />
                            </div>
                         </div>
                       );

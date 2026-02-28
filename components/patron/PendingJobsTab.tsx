@@ -163,34 +163,28 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
               <tbody className="divide-y divide-slate-100">
                 {pendingJobs.length > 0 ? pendingJobs.map((j: any) => {
                   
-                  // --- 🚀 MASAÜSTÜ İÇİN DÜZELTİLMİŞ HİYERARŞİ ---
-                  const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
-                  const creatorName = j.details?.createdBy || ownerName;
-                  const assignedPerson = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
-                  const detailWorker = j.details?.worker_id ? staff.find((s:any) => String(s.id) === String(j.details.worker_id)) : null;
-                  
-                  let managerName = j.details?.managerName || null;
-                  let workerName = null;
+                  // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA
+                  const creator = j.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
+                  const manager = j.manager_name || null;
+                  let worker = j.worker_name || null;
 
-                  if (assignedPerson) {
-                      if (assignedPerson.role === 'Yönetici') {
-                          if (!managerName) managerName = assignedPerson.name;
-                      } else {
-                          workerName = assignedPerson.name;
+                  if (!worker) {
+                      if (j.details?.worker_id) {
+                          const w = staff.find((s:any) => String(s.id) === String(j.details?.worker_id));
+                          if (w) worker = w.name;
+                      } else if (j.staff_id) {
+                          const w = staff.find((s:any) => String(s.id) === String(j.staff_id));
+                          if (w && w.role === 'Usta') worker = w.name;
                       }
                   }
 
-                  if (detailWorker) {
-                      workerName = detailWorker.name;
-                  }
-
-                  const isCreatorSameAsManager = managerName && (creatorName === managerName);
+                  const isCreatorSameAsManager = manager && creator === manager;
 
                   // 🚀 İlgili varlığı ve apartman adını bul
                   const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
                   const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
                   
-                  const dynamicStatus = getDynamicStatus(j, !!workerName);
+                  const dynamicStatus = getDynamicStatus(j, !!worker);
 
                   return (
                     <tr key={j.id} className="hover:bg-amber-50/50 transition-colors group">
@@ -230,8 +224,8 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                                     <ShieldCheck size={14} className="text-blue-600" />
                                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ATAYAN & SORUMLU:</span>
                                   </div>
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200 bg-blue-50 text-blue-700 whitespace-nowrap">
-                                      {managerName}
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200 bg-blue-50 text-blue-700 whitespace-nowrap shadow-sm">
+                                      {manager}
                                   </span>
                               </div>
                           ) : (
@@ -241,18 +235,18 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                                         <UserPlus size={14} className="text-slate-400" />
                                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ATAYAN:</span>
                                       </div>
-                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-600 whitespace-nowrap">
-                                          {creatorName}
+                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-600 whitespace-nowrap shadow-sm">
+                                          {creator}
                                       </span>
                                   </div>
                                   <div className="flex items-center gap-2">
                                       <div className="flex items-center gap-1.5 w-[130px] shrink-0">
-                                        <UserCheck size={14} className={managerName ? 'text-blue-500' : 'text-slate-300'} />
+                                        <UserCheck size={14} className={manager ? 'text-blue-500' : 'text-slate-300'} />
                                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">SORUMLU:</span>
                                       </div>
-                                      {managerName ? (
-                                          <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200 bg-blue-50 text-blue-700 whitespace-nowrap">
-                                              {managerName}
+                                      {manager ? (
+                                          <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200 bg-blue-50 text-blue-700 whitespace-nowrap shadow-sm">
+                                              {manager}
                                           </span>
                                       ) : (
                                           <span className="text-[10px] font-medium text-slate-400 italic px-2 py-0.5">-</span>
@@ -262,15 +256,15 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                           )}
                           <div className="flex items-center gap-2">
                               <div className="flex items-center gap-1.5 w-[130px] shrink-0">
-                                <Wrench size={14} className={workerName ? 'text-indigo-500' : 'text-slate-400'} />
+                                <Wrench size={14} className={worker ? 'text-indigo-500' : 'text-slate-400'} />
                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">SAHA USTASI:</span>
                               </div>
-                              {workerName ? (
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-indigo-700 whitespace-nowrap">
-                                      {workerName}
+                              {worker ? (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-indigo-700 whitespace-nowrap shadow-sm">
+                                      {worker}
                                   </span>
                               ) : (
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-600 whitespace-nowrap">
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-600 whitespace-nowrap shadow-sm">
                                       Atanmadı
                                   </span>
                               )}
@@ -319,31 +313,26 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
          {/* MOBİL GÖRÜNÜM (ONAY BEKLEYENLER) */}
          <div className="md:hidden flex flex-col gap-3">
            {pendingJobs.length > 0 ? pendingJobs.map((j: any) => {
-              // --- 🚀 MOBİL İÇİN DÜZELTİLMİŞ HİYERARŞİ ---
-              const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
-              const creatorName = j.details?.createdBy || ownerName;
-              const assignedPerson = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
-              const detailWorker = j.details?.worker_id ? staff.find((s:any) => String(s.id) === String(j.details.worker_id)) : null;
               
-              let managerName = j.details?.managerName || null;
-              let workerName = null;
+              // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA
+              const creator = j.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
+              const manager = j.manager_name || null;
+              let worker = j.worker_name || null;
 
-              if (assignedPerson) {
-                  if (assignedPerson.role === 'Yönetici') {
-                      if (!managerName) managerName = assignedPerson.name;
-                  } else {
-                      workerName = assignedPerson.name;
+              if (!worker) {
+                  if (j.details?.worker_id) {
+                      const w = staff.find((s:any) => String(s.id) === String(j.details?.worker_id));
+                      if (w) worker = w.name;
+                  } else if (j.staff_id) {
+                      const w = staff.find((s:any) => String(s.id) === String(j.staff_id));
+                      if (w && w.role === 'Usta') worker = w.name;
                   }
               }
 
-              if (detailWorker) {
-                  workerName = detailWorker.name;
-              }
-
-              const isCreatorSameAsManager = managerName && (creatorName === managerName);
+              const isCreatorSameAsManager = manager && creator === manager;
               const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
               const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
-              const dynamicStatus = getDynamicStatus(j, !!workerName);
+              const dynamicStatus = getDynamicStatus(j, !!worker);
 
               return (
                 <div key={j.id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col gap-4">
@@ -375,15 +364,15 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                     )}
                   </div>
 
-                  {/* 🚀 DÜZELTİLMİŞ: Mobil Personel Hiyerarşisi UI (Sabit Genişlikli Izgara) */}
+                  {/* 🚀 DÜZELTİLMİŞ: Mobil Personel Hiyerarşisi UI */}
                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-2.5">
                       {isCreatorSameAsManager ? (
                           <div className="flex items-center gap-2">
                               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
                                  <ShieldCheck size={10} /> ATAYAN & SORUMLU
                               </span>
-                              <div className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
-                                  {managerName}
+                              <div className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 shadow-sm">
+                                  {manager}
                               </div>
                           </div>
                       ) : (
@@ -392,16 +381,16 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
                                    <UserPlus size={10} /> ATAYAN
                                 </span>
-                                <div className="text-[11px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
-                                    {creatorName}
+                                <div className="text-[11px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-sm">
+                                    {creator}
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
                                    <UserCheck size={10} /> SORUMLU
                                 </span>
-                                <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${managerName ? 'text-blue-700 bg-blue-50 border-blue-100' : 'text-slate-400 bg-slate-100 border-slate-200'}`}>
-                                    {managerName || '-'}
+                                <div className={`text-[11px] font-bold px-2 py-0.5 rounded border shadow-sm ${manager ? 'text-blue-700 bg-blue-50 border-blue-100' : 'text-slate-400 bg-slate-100 border-slate-200'}`}>
+                                    {manager || '-'}
                                 </div>
                             </div>
                           </>
@@ -411,8 +400,8 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
                              <Wrench size={10} /> SAHA USTASI
                           </span>
-                          <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${workerName ? 'text-indigo-700 bg-indigo-50 border-indigo-100' : 'text-rose-600 bg-rose-50 border-rose-200'}`}>
-                              {workerName || 'Atanmadı'}
+                          <div className={`text-[11px] font-bold px-2 py-0.5 rounded border shadow-sm ${worker ? 'text-indigo-700 bg-indigo-50 border-indigo-100' : 'text-rose-600 bg-rose-50 border-rose-200'}`}>
+                              {worker || 'Atanmadı'}
                           </div>
                       </div>
                   </div>
