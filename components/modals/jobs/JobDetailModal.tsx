@@ -222,19 +222,19 @@ export default function JobDetailModal({
 
   return (
     <>
-      {/* 0. PDF ÖNİZLEME MODALI */}
+      {/* 0. PDF ÖNİZLEME MODALI (KESİN YAZDIRMA ÇÖZÜMÜ) */}
       <AnimatePresence>
         {previewPdfJob && (
           <motion.div 
              key="pdf-modal-backdrop"
-             className="fixed inset-0 flex items-center justify-center p-4 z-[200] print:p-0 print:absolute print:top-0 print:left-0 print:w-full print:h-auto print:bg-white print:z-[9999]"
+             className="fixed inset-0 flex items-center justify-center p-4 z-[200] print-wrapper"
              initial={{ opacity: 0 }} 
              animate={{ opacity: 1 }} 
              exit={{ opacity: 0, pointerEvents: "none" }} 
              transition={{ duration: 0.15 }}
           >
              <div 
-               className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer print:hidden"
+               className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer no-print"
                onClick={() => handleSmartClose()}
              />
              <motion.div 
@@ -244,37 +244,35 @@ export default function JobDetailModal({
                exit={{ opacity: 0, scale: 0.95, y: 10 }} 
                transition={{ duration: 0.25, ease: "easeInOut" }}
                onClick={(e) => e.stopPropagation()}
-               className="bg-white w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col max-h-[90vh] shadow-2xl relative z-10 print:shadow-none print:max-w-none print:w-full print:h-auto print:max-h-none print:rounded-none print:block"
+               className="bg-white w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col max-h-[90vh] shadow-2xl relative z-10 print-modal-content"
              >
-                <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 print:hidden z-10">
+                <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 no-print z-10">
                    <h2 className="font-black text-lg text-slate-800">Servis Formu & Fiyat Özeti</h2>
                    <button onClick={() => handleSmartClose()} className="p-2 bg-white rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"><X size={18} /></button>
                 </div>
                 
-                <div id="pdf-printable-area" className="p-8 overflow-y-auto custom-scrollbar bg-white text-black flex-1 relative print:overflow-visible print:block print:p-10">
-                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] pointer-events-none print:hidden"></div>
-                    
-                    <div className="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-start relative z-10 print:mb-8">
+                <div id="pdf-printable-area" className="p-8 overflow-y-auto custom-scrollbar bg-white text-black flex-1 relative print-area">
+                    <div className="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-start">
                        <div>
                           <h1 className="text-2xl font-black">{data?.name || 'Firma Adı'}</h1>
-                          <p className="text-sm text-slate-500 mt-1 print:text-black">{data?.address}</p>
-                          <p className="text-xs font-bold text-slate-400 mt-1 print:text-black">{data?.phone}</p>
+                          <p className="text-sm text-slate-500 mt-1 print-text-black">{data?.address}</p>
+                          <p className="text-xs font-bold text-slate-400 mt-1 print-text-black">{data?.phone}</p>
                        </div>
                        <div className="text-right">
-                          <div className="text-xl font-black text-slate-300 tracking-widest print:text-slate-400">SERVİS FORMU</div>
+                          <div className="text-xl font-black text-slate-300 tracking-widest print-text-gray">SERVİS FORMU</div>
                           <div className="text-sm font-bold mt-1">Kayıt No: #{previewPdfJob.id}</div>
-                          <div className="text-xs text-slate-500 mt-0.5 print:text-black">{new Date().toLocaleDateString('tr-TR')}</div>
+                          <div className="text-xs text-slate-500 mt-0.5 print-text-black">{new Date().toLocaleDateString('tr-TR')}</div>
                        </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4 mb-8 relative z-10 print:flex print:gap-10">
-                       <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print:flex-1 print:border-slate-300 print:bg-white print:p-0 print:border-none">
-                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print:text-slate-500">Müşteri Bilgisi</div>
-                          <div className="font-bold text-sm text-slate-800 print:text-base">{previewPdfJob.customer_name}</div>
+                    <div className="grid grid-cols-2 gap-4 mb-8 print-grid-layout">
+                       <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print-no-bg">
+                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">Müşteri Bilgisi</div>
+                          <div className="font-bold text-sm text-slate-800">{previewPdfJob.customer_name}</div>
                        </div>
-                       <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print:flex-1 print:border-slate-300 print:bg-white print:p-0 print:border-none">
-                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print:text-slate-500">Cihaz / Apartman</div>
-                          <div className="font-bold text-sm text-slate-800 print:text-base">
+                       <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print-no-bg">
+                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">Cihaz / Apartman</div>
+                          <div className="font-bold text-sm text-slate-800">
                               {(() => {
                                   const asset = (data?.assets || []).find((a:any) => a.id === previewPdfJob.asset_id);
                                   return asset ? `${asset.name} ${asset.apartmentName ? `- ${asset.apartmentName}` : ''}` : 'Belirtilmedi';
@@ -283,36 +281,38 @@ export default function JobDetailModal({
                        </div>
                     </div>
 
-                    <div className="mb-8 relative z-10 print:break-inside-avoid print:mt-10">
+                    <div className="mb-8 page-break-avoid">
                        <div className="text-xs font-black text-slate-800 uppercase border-b border-slate-200 pb-2 mb-3">Yapılan İşlem / Rapor Detayı</div>
-                       <div className="text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed print:text-base print:text-black">
+                       <div className="text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed print-text-black">
                            {previewPdfJob.details?.note?.replace(/\[📍 Konum Kaydı\].*/g, '') || 'Rapor girilmemiş.'}
                        </div>
                     </div>
 
                     {previewPdfJob.details?.price && (
-                      <div className="flex justify-end border-t-2 border-slate-800 pt-4 mb-8 relative z-10 print:break-inside-avoid print:mt-10">
+                      <div className="flex justify-end border-t-2 border-slate-800 pt-4 mb-8 page-break-avoid">
                          <div className="text-right">
-                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print:text-slate-500">Toplam İşlem Tutarı</div>
+                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">Toplam İşlem Tutarı</div>
                             <div className="text-3xl font-black text-slate-900">{previewPdfJob.details.price}</div>
                          </div>
                       </div>
                     )}
 
-                    {/* 🚀 DÜZELTİLDİ: PDF Yazdırılırken Fotoğrafların net çıkması için div blokları ayarlandı */}
+                    {/* FOTOĞRAFLARIN PDF'E EKLENMESİ */}
                     {previewPdfJob.photos && previewPdfJob.photos.length > 0 && (
-                       <div className="relative z-10 print:break-before-page">
-                          <div className="text-xs font-black text-slate-800 uppercase border-b border-slate-200 pb-2 mb-3 mt-4 print:mt-10">Saha Kayıt Fotoğrafları</div>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 print:flex print:flex-wrap print:gap-4">
+                       <div className="mt-8 pt-6 border-t-2 border-slate-200 print-always-break">
+                          <div className="text-xs font-black text-slate-800 uppercase pb-4">Saha Kayıt Fotoğrafları</div>
+                          <div className="grid grid-cols-2 gap-4">
                              {previewPdfJob.photos.map((p: string, i: number) => (
-                               <img key={i} src={p} alt="Saha" className="w-full h-40 object-cover rounded-xl border border-slate-200 shadow-sm print:w-[45%] print:h-auto print:max-h-80 print:object-contain print:rounded-none print:border-none print:shadow-none print:mb-4" />
+                               <div key={i} className="page-break-avoid w-full">
+                                  <img src={p} alt="Saha" className="w-full h-auto max-h-64 object-contain rounded-lg border border-slate-300" />
+                               </div>
                              ))}
                           </div>
                        </div>
                     )}
                 </div>
 
-                <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row gap-3 print:hidden z-10">
+                <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row gap-3 no-print z-10">
                    <button onClick={() => window.print()} className="flex-[2] bg-slate-900 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-md active:scale-95">
                       <Download size={18} /> PDF Olarak Cihaza Kaydet
                    </button>
@@ -322,29 +322,63 @@ export default function JobDetailModal({
                 </div>
              </motion.div>
              
-             {/* 🚀 KUSURSUZ PDF BASKISI İÇİN STİL - ARKA PLANI GİZLEME VE SAYFAYI DOLDURMA */}
+             {/* 🚀 KUSURSUZ YAZDIRMA CSS'İ */}
              <style dangerouslySetInnerHTML={{__html:`
                @media print {
-                 @page {
-                    margin: 0.5cm;
-                 }
-                 body {
-                    -webkit-print-color-adjust: exact !important;
-                    print-color-adjust: exact !important;
+                 @page { margin: 1cm; size: A4 portrait; }
+                 
+                 /* Next.js root elementlerini zorla görünür yap */
+                 html, body, #__next { 
+                    height: 100% !important; 
+                    width: 100% !important; 
+                    overflow: visible !important;
                     background: white !important;
+                    color: black !important;
                  }
-                 body * {
-                    visibility: hidden;
+
+                 /* İhtiyacımız olmayan her şeyi gizle */
+                 body > *:not(#__next) { display: none !important; }
+                 nav, aside, header, footer, .no-print { display: none !important; }
+                 
+                 /* SADECE BU MODAL EKRANDA KALSIN VE SAYFAYI KAPLASIN */
+                 .print-wrapper {
+                    position: absolute !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    width: 100% !important;
+                    height: auto !important;
+                    background: white !important;
+                    display: block !important;
+                    z-index: 999999 !important;
                  }
-                 #pdf-printable-area, #pdf-printable-area * {
-                    visibility: visible;
+
+                 .print-modal-content {
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    box-shadow: none !important;
+                    border: none !important;
+                    border-radius: 0 !important;
                  }
-                 #pdf-printable-area {
-                    position: absolute;
-                    left: 0;
-                    top: 0;
-                    width: 100%;
+
+                 .print-area {
+                    padding: 0 !important;
+                    overflow: visible !important;
                  }
+
+                 /* Renklerin ve arka planların korunması */
+                 * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+                 .print-text-black { color: #000 !important; }
+                 .print-text-gray { color: #555 !important; }
+                 
+                 .print-grid-layout { display: flex !important; gap: 20px !important; margin-bottom: 20px !important; }
+                 .print-grid-layout > div { flex: 1 !important; }
+                 .print-no-bg { background: transparent !important; border: 1px solid #ccc !important; }
+
+                 /* Fotoğrafların sayfa kırmaması ve net çıkması için ayarlar */
+                 .page-break-avoid { break-inside: avoid !important; page-break-inside: avoid; }
+                 .print-always-break { break-before: auto !important; page-break-before: auto; }
+                 img { max-width: 100% !important; object-fit: contain !important; }
                }
              `}} />
           </motion.div>
