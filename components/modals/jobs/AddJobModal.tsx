@@ -247,7 +247,14 @@ export default function AddJobModal({
                                 <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={jobForm?.staffId || ''} onChange={e => setJobForm({...jobForm, staffId: e.target.value})}>
                                   <option value="">Seçiniz...</option>
                                   {(data?.staff || [])
-                                    .filter((s:any) => userRole === 'Patron' ? s.role === 'Yönetici' : s.role === 'Usta') 
+                                    .filter((s:any) => {
+                                        // 🚀 HİYERARŞİYE GÖRE LİSTELEME
+                                        if (userRole === 'Patron') {
+                                            return s.role === 'Yönetici'; // Patron sadece Yöneticileri görür
+                                        } else {
+                                            return s.role === 'Usta'; // Yönetici sadece Ustaları görür
+                                        }
+                                    }) 
                                     .map((s:any) => (
                                       <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
                                   ))}

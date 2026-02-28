@@ -671,8 +671,8 @@ export default function JobDetailModal({
               ) : (
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6 space-y-5">
                     
-                    {/* 🚀 EĞER MOD "ASSIGN" (USTA ATAMA) İSE SADECE PERSONEL SEÇİMİ VE NOT GÖRÜNÜR */}
-                    {jobModalType !== 'ASSIGN' && (
+                    {/* 🚀 DÜZELTİLDİ: Usta Bekliyor durumunda VEYA ASSIGN modunda, sadece branş, personel ve not görünür. */}
+                    {jobModalType !== 'ASSIGN' && selectedJob?.status !== 'Usta Bekliyor' && (
                         <>
                             <div>
                             <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">İş Türü</label>
@@ -759,7 +759,6 @@ export default function JobDetailModal({
                         </>
                     )}
 
-                    {/* 🚀 DÜZELTİLDİ: Görev Tipi / Branş artık Usta Atama modunda da GÖRÜNÜR! */}
                     <div>
                       <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Görev Tipi / Branş</label>
                       <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={editJobDetailForm.workType} onChange={e => setEditJobDetailForm({...editJobDetailForm, workType: e.target.value})}>
@@ -772,12 +771,12 @@ export default function JobDetailModal({
 
                     <div>
                       <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">
-                        {jobModalType === 'ASSIGN' ? 'Atanacak Usta / Personel Seçimi' : 'Sorumlu Personel'}
+                        {jobModalType === 'ASSIGN' || selectedJob?.status === 'Usta Bekliyor' ? 'Atanacak Usta Seçimi' : 'Sorumlu Personel'}
                       </label>
                       <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={editJobDetailForm.staffId} onChange={e => setEditJobDetailForm({...editJobDetailForm, staffId: e.target.value})}>
                         <option value="">Seçiniz...</option>
                         {(data?.staff || [])
-                          .filter((s:any) => userRole === 'Patron' ? s.role === 'Yönetici' : s.role === 'Usta')
+                          .filter((s:any) => userRole === 'Patron' && selectedJob?.status !== 'Usta Bekliyor' && jobModalType !== 'ASSIGN' ? s.role === 'Yönetici' : s.role === 'Usta')
                           .map((s:any) => (
                             <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
                         ))}
@@ -799,7 +798,7 @@ export default function JobDetailModal({
                             }, () => setSelectedJob(null), () => setIsEditingJobDetail(false))} 
                             className="flex-1 bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 shadow-md"
                         >
-                            {isSaving ? <Loader2 className="animate-spin mx-auto" size={18} /> : (jobModalType === 'ASSIGN' ? 'Ustayı Ata' : 'Değişiklikleri Kaydet')}
+                            {isSaving ? <Loader2 className="animate-spin mx-auto" size={18} /> : (jobModalType === 'ASSIGN' || selectedJob?.status === 'Usta Bekliyor' ? 'Ustayı Ata' : 'Değişiklikleri Kaydet')}
                         </button>
                         <button 
                             onClick={() => handleSmartClose()} 
