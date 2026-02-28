@@ -19,6 +19,9 @@ export default function JobDetailModal({
 
   // 🚀 Hangi alt modalın BU modal tarafından açıldığını takip ediyoruz
   const [openedChild, setOpenedChild] = useState<'customer' | 'asset' | null>(null);
+  
+  // 🚀 Şık Hata/Bilgi Modalı
+  const [notification, setNotification] = useState<{show: boolean, msg: string, type: 'error' | 'success'}>({show: false, msg: '', type: 'success'});
 
   // Dışarıdan modal kapandığında local state'i temizle
   useEffect(() => {
@@ -126,11 +129,15 @@ export default function JobDetailModal({
   }, [selectedJob, isAnyProfileDetailOpen, openedChild, handleSmartClose]);
 
   const sendCustomerWhatsApp = (jobData: any) => {
-     const custPhone = (data?.customers || []).find((c:any) => c.name === jobData.customer_name)?.contact;
-     if(!custPhone) { alert("Müşterinin kayıtlı telefonu bulunamadı."); return; }
-     
-     let formattedPhone = custPhone.replace(/\s+/g, '');
-     if (formattedPhone.startsWith('0')) formattedPhone = '90' + formattedPhone.substring(1);
+    const custPhone = (data?.customers || []).find((c:any) => c.name === jobData.customer_name)?.contact;
+    if(!custPhone) { 
+        setNotification({show: true, msg: "Bu müşterinin sistemde kayıtlı bir telefon numarası bulunamadı!", type: 'error'});
+        setTimeout(() => setNotification({show: false, msg: '', type: 'success'}), 3000);
+        return; 
+    }
+    
+    let formattedPhone = custPhone.replace(/\s+/g, '');
+    if (formattedPhone.startsWith('0')) formattedPhone = '90' + formattedPhone.substring(1);
      
      const assetName = (data?.assets || []).find((a:any) => a.id === jobData.asset_id)?.name || 'Cihazınızda';
      const price = jobData.details?.price || 'Ücretsiz';
@@ -316,10 +323,23 @@ export default function JobDetailModal({
              
              <style dangerouslySetInnerHTML={{__html:`
                @media print {
-                 body * { visibility: hidden; }
-                 .print-area, .print-area * { visibility: visible; }
-                 .print-area { position: absolute; left: 0; top: 0; width: 100%; height: 100%; padding: 20mm; background: white; z-index: 999999; }
+                 body * { visibility: hidden !important; }
+                 #pdf-printable-area, #pdf-printable-area * { visibility: visible !important; }
+                 #pdf-printable-area { 
+                    position: absolute !important; 
+                    left: 0 !important; 
+                    top: 0 !important; 
+                    width: 100% !important; 
+                    height: auto !important; 
+                    padding: 10mm !important; 
+                    margin: 0 !important;
+                    background: white !important; 
+                    z-index: 999999 !important; 
+                    display: block !important;
+                 }
                  .no-print { display: none !important; }
+                 /* Fotoğrafların PDF'te kırpılmaması için */
+                 img { max-width: 100% !important; height: auto !important; break-inside: avoid !important; }
                }
              `}} />
           </motion.div>
@@ -887,6 +907,27 @@ export default function JobDetailModal({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 3. ŞIK BİLDİRİM / HATA MODALI */}
+      <AnimatePresence>
+        {notification.show && (
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.8 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="fixed inset-0 z-[400] flex items-center justify-center p-4 pointer-events-none"
+            >
+                <div className="bg-white/95 backdrop-blur-md border-2 border-slate-100 shadow-2xl rounded-3xl p-8 flex flex-col items-center text-center max-w-sm w-full pointer-events-auto">
+                    <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 shadow-inner animate-pulse ${notification.type === 'error' ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                        {notification.type === 'error' ? <AlertTriangle size={40} strokeWidth={3} /> : <CheckCircle size={40} strokeWidth={3} />}
+                    </div>
+                    <h3 className="text-xl font-black text-slate-900 mb-1">{notification.type === 'error' ? 'Hata!' : 'Başarılı!'}</h3>
+                    <p className="text-sm text-slate-500 font-medium leading-relaxed">{notification.msg}</p>
+                </div>
+            </motion.div>
+        )}
+      </AnimatePresence>
+
     </>
   );
 }
