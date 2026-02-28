@@ -122,7 +122,7 @@ export default function AddJobModal({
 
                               <button 
                                   onClick={() => {
-                                      setJobForm({...jobForm, workCategory: 'Genel İş Atama', customerName: '', assetId: ''});
+                                      setJobForm({...jobForm, workCategory: 'Genel İş Atama', customerName: 'Genel Görev', assetId: '', workType: 'Genel Görev'});
                                       setJobModalStep(2);
                                   }}
                                   className="w-full bg-slate-50 border-2 border-slate-200 hover:border-slate-800 hover:bg-slate-900 group p-5 rounded-2xl flex items-center gap-4 transition-all text-left active:scale-95"
@@ -232,15 +232,17 @@ export default function AddJobModal({
                               )}
 
                               {/* 🚀 EKLENDİ: Görev Tipi / Branş Seçimi */}
-                              <div>
-                                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Görev Tipi / Branş</label>
-                                <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={jobForm?.workType || 'Genel Görev'} onChange={e => setJobForm({...jobForm, workType: e.target.value})}>
-                                  <option value="Genel Görev">Genel Görev</option>
-                                  {branchList.map((subType: any) => (
-                                    <option key={subType} value={subType}>{subType}</option>
-                                  ))}
-                                </select>
-                              </div>
+                              {jobForm?.workCategory !== 'Genel İş Atama' && (
+                                  <div>
+                                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Görev Tipi / Branş</label>
+                                    <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={jobForm?.workType || 'Genel Görev'} onChange={e => setJobForm({...jobForm, workType: e.target.value})}>
+                                      <option value="Genel Görev">Genel Görev</option>
+                                      {branchList.map((subType: any) => (
+                                        <option key={subType} value={subType}>{subType}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                              )}
 
                               <div>
                                 <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Sorumlu Personel</label>

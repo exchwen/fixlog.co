@@ -202,6 +202,10 @@ export default function JobDetailModal({
   // 🚀 iOS Stacking Kontrolü - SADECE benim açtıklarım veya PDF/Foto iç layerları
   const isStacked = Boolean(previewPdfJob || fullScreenImage || openedChild !== null);
 
+  // 🚀 TÜM EKRANIN ULAŞABİLECEĞİ ORTAK DEĞİŞKENLER (Scope Hatasını Çözer)
+  const isGeneralTask = selectedJob?.work_type === 'Genel Görev' || !selectedJob?.customer_name || selectedJob?.customer_name === 'Genel Görev';
+  const hasWorker = !!selectedJob?.worker_name || !!selectedJob?.details?.worker_id || !!(selectedJob?.staff_id && (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.staff_id) && s.role === 'Usta'));
+
   return (
     <>
       {/* 0. PDF ÖNİZLEME MODALI */}
@@ -387,7 +391,6 @@ export default function JobDetailModal({
                             }
                         }
 
-                        const hasWorker = !!finalWorkerName;
                         const dynamicStatus = getDynamicStatus(selectedJob, hasWorker);
 
                         return (
@@ -436,7 +439,7 @@ export default function JobDetailModal({
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                     {/* 🚀 DÜZELTİLDİ: Genel Görev ise Müşteri ve Varlık Kutuları GİZLENİR */}
-                                    {selectedJob.work_type !== 'Genel Görev' && (
+                                    {!isGeneralTask && (
                                         <>
                                             <div 
                                               onClick={() => {
@@ -602,15 +605,13 @@ export default function JobDetailModal({
                             {/* 🚀 DÜZELTİLDİ: Patron değilse, usta yoksa ve işi Patron açtıysa Kabul Et çıkar. */}
                             {(userRole !== 'Patron' && 
                               (selectedJob.status === 'Beklemede' || selectedJob.status === 'Gelecek') && 
-                              !selectedJob.worker_name && 
-                              !selectedJob.details?.worker_id && 
+                              !hasWorker && 
                               (selectedJob.creator_role === 'Patron' || selectedJob.details?.creatorRole === 'Patron' || (selectedJob.creator_name || selectedJob.details?.createdBy || data?.ownerName?.split(' ')[0]) === data?.ownerName?.split(' ')[0])) ? (
                                 <button 
                                     onClick={async () => {
                                         setIsApproving(true);
-                                        const isGeneralJob = selectedJob.work_type === 'Genel Görev';
                                         // Genel görev ise Kabul edince doğrudan "Devam Ediyor" (üstlenmiş) olur.
-                                        const newStatus = isGeneralJob ? 'Devam Ediyor' : 'Usta Bekliyor';
+                                        const newStatus = isGeneralTask ? 'Devam Ediyor' : 'Usta Bekliyor';
                                         await handleAction('update-job', {
                                             id: selectedJob.id,
                                             status: newStatus,
@@ -633,8 +634,7 @@ export default function JobDetailModal({
                                         <button 
                                             onClick={async () => {
                                                 setIsApproving(true);
-                                                const isGeneralJob = selectedJob.work_type === 'Genel Görev';
-                                                const newStatus = isGeneralJob ? 'Devam Ediyor' : 'Usta Bekliyor';
+                                                const newStatus = isGeneralTask ? 'Devam Ediyor' : 'Usta Bekliyor';
                                                 await handleAction('update-job', {
                                                     id: selectedJob.id,
                                                     status: newStatus,
@@ -661,7 +661,7 @@ export default function JobDetailModal({
                                             </button>
                                             
                                             {/* 🚀 EKLENDİ: Genel Görev ise Yöneticinin İşi Direkt Bitirmesini Sağlayan Buton */}
-                                            {(selectedJob.work_type === 'Genel Görev' && selectedJob.status === 'Devam Ediyor') && (
+                                            {(isGeneralTask && selectedJob.status === 'Devam Ediyor') && (
                                                 <button 
                                                     onClick={async () => {
                                                         setIsApproving(true);
@@ -701,7 +701,7 @@ export default function JobDetailModal({
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6 space-y-5">
                     
                     {/* 🚀 DÜZELTİLDİ: Usta Bekliyor durumunda VEYA ASSIGN modunda, sadece branş, personel ve not görünür. */}
-                    {jobModalType !== 'ASSIGN' && selectedJob?.status !== 'Usta Bekliyor' && selectedJob?.work_type !== 'Genel Görev' && (
+                    {jobModalType !== 'ASSIGN' && selectedJob?.status !== 'Usta Bekliyor' && !isGeneralTask && (
                         <>
                             <div>
                             <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">İş Türü</label>
@@ -788,15 +788,18 @@ export default function JobDetailModal({
                         </>
                     )}
 
-                    <div>
-                      <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Görev Tipi / Branş</label>
-                      <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={editJobDetailForm.workType} onChange={e => setEditJobDetailForm({...editJobDetailForm, workType: e.target.value})}>
-                        <option value="Genel Görev">Genel Görev</option>
-                        {branchList.map((subType: any) => (
-                          <option key={subType} value={subType}>{subType}</option>
-                        ))}
-                      </select>
-                    </div>
+                    {/* 🚀 EKLENDİ: Görev Tipi / Branş Seçimi */}
+                    {editJobDetailForm.workCategory !== 'Genel İş Atama' && (
+                                  <div>
+                                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Görev Tipi / Branş</label>
+                                    <select className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={editJobDetailForm.workType} onChange={e => setEditJobDetailForm({...editJobDetailForm, workType: e.target.value})}>
+                                      <option value="Genel Görev">Genel Görev</option>
+                                      {branchList.map((subType: any) => (
+                                        <option key={subType} value={subType}>{subType}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                              )}
 
                     <div>
                       <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">
