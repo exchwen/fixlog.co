@@ -227,7 +227,7 @@ export default function JobDetailModal({
         {previewPdfJob && (
           <motion.div 
              key="pdf-modal-backdrop"
-             className="fixed inset-0 flex items-center justify-center p-4 z-[200] print-wrapper"
+             className="fixed inset-0 flex items-center justify-center p-4 z-[200]"
              initial={{ opacity: 0 }} 
              animate={{ opacity: 1 }} 
              exit={{ opacity: 0, pointerEvents: "none" }} 
@@ -244,14 +244,14 @@ export default function JobDetailModal({
                exit={{ opacity: 0, scale: 0.95, y: 10 }} 
                transition={{ duration: 0.25, ease: "easeInOut" }}
                onClick={(e) => e.stopPropagation()}
-               className="bg-white w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col max-h-[90vh] shadow-2xl relative z-10 print-modal-content"
+               className="bg-white w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col max-h-[90vh] shadow-2xl relative z-10"
              >
                 <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 no-print z-10">
                    <h2 className="font-black text-lg text-slate-800">Servis Formu & Fiyat Özeti</h2>
                    <button onClick={() => handleSmartClose()} className="p-2 bg-white rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"><X size={18} /></button>
                 </div>
                 
-                <div id="pdf-printable-area" className="p-8 overflow-y-auto custom-scrollbar bg-white text-black flex-1 relative print-area">
+                <div id="pdf-printable-area" className="p-8 overflow-y-auto custom-scrollbar bg-white text-black flex-1 relative">
                     <div className="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-start">
                        <div>
                           <h1 className="text-2xl font-black">{data?.name || 'Firma Adı'}</h1>
@@ -265,7 +265,7 @@ export default function JobDetailModal({
                        </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4 mb-8 print-grid-layout">
+                    <div className="grid grid-cols-2 gap-4 mb-8 print-grid">
                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print-no-bg">
                           <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">Müşteri Bilgisi</div>
                           <div className="font-bold text-sm text-slate-800">{previewPdfJob.customer_name}</div>
@@ -281,7 +281,7 @@ export default function JobDetailModal({
                        </div>
                     </div>
 
-                    <div className="mb-8 page-break-avoid">
+                    <div className="mb-8">
                        <div className="text-xs font-black text-slate-800 uppercase border-b border-slate-200 pb-2 mb-3">Yapılan İşlem / Rapor Detayı</div>
                        <div className="text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed print-text-black">
                            {previewPdfJob.details?.note?.replace(/\[📍 Konum Kaydı\].*/g, '') || 'Rapor girilmemiş.'}
@@ -289,7 +289,7 @@ export default function JobDetailModal({
                     </div>
 
                     {previewPdfJob.details?.price && (
-                      <div className="flex justify-end border-t-2 border-slate-800 pt-4 mb-8 page-break-avoid">
+                      <div className="flex justify-end border-t-2 border-slate-800 pt-4 mb-8">
                          <div className="text-right">
                             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">Toplam İşlem Tutarı</div>
                             <div className="text-3xl font-black text-slate-900">{previewPdfJob.details.price}</div>
@@ -301,7 +301,7 @@ export default function JobDetailModal({
                     {previewPdfJob.photos && previewPdfJob.photos.length > 0 && (
                        <div className="mt-8 pt-6 border-t-2 border-slate-200 print-always-break">
                           <div className="text-xs font-black text-slate-800 uppercase pb-4">Saha Kayıt Fotoğrafları</div>
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-2 gap-4 print-grid">
                              {previewPdfJob.photos.map((p: string, i: number) => (
                                <div key={i} className="page-break-avoid w-full">
                                   <img src={p} alt="Saha" className="w-full h-auto max-h-64 object-contain rounded-lg border border-slate-300" />
@@ -322,63 +322,72 @@ export default function JobDetailModal({
                 </div>
              </motion.div>
              
-             {/* 🚀 KUSURSUZ YAZDIRMA CSS'İ */}
+             {/* 🚀 KUSURSUZ YAZDIRMA CSS'İ - "NUKE" METODU (Framer Motion'u Ezer) */}
              <style dangerouslySetInnerHTML={{__html:`
                @media print {
-                 @page { margin: 1cm; size: A4 portrait; }
+                 @page { margin: 10mm; size: A4 portrait; }
                  
-                 /* Next.js root elementlerini zorla görünür yap */
-                 html, body, #__next { 
-                    height: 100% !important; 
-                    width: 100% !important; 
-                    overflow: visible !important;
-                    background: white !important;
+                 /* 1. BÜTÜN SAYFAYI GİZLE VE RESETLE */
+                 body * { visibility: hidden !important; }
+                 
+                 /* 2. FRAMER MOTION VE TAILWIND ENGELİNİ KALDIR (ÇOK ÖNEMLİ) */
+                 * { 
+                    position: static !important; 
+                    transform: none !important; 
+                    overflow: visible !important; 
+                    max-height: none !important; 
+                    box-shadow: none !important; 
+                 }
+
+                 /* 3. SADECE YAZDIRILACAK ALANI GÖSTER */
+                 #pdf-printable-area, #pdf-printable-area * {
+                    visibility: visible !important;
                     color: black !important;
                  }
-
-                 /* İhtiyacımız olmayan her şeyi gizle */
-                 body > *:not(#__next) { display: none !important; }
-                 nav, aside, header, footer, .no-print { display: none !important; }
                  
-                 /* SADECE BU MODAL EKRANDA KALSIN VE SAYFAYI KAPLASIN */
-                 .print-wrapper {
+                 /* 4. YAZDIRILACAK ALANI KAĞIDIN EN TEPESİNE YAPIŞTIR */
+                 #pdf-printable-area {
                     position: absolute !important;
-                    top: 0 !important;
                     left: 0 !important;
+                    top: 0 !important;
                     width: 100% !important;
-                    height: auto !important;
-                    background: white !important;
-                    display: block !important;
-                    z-index: 999999 !important;
-                 }
-
-                 .print-modal-content {
-                    width: 100% !important;
-                    max-width: 100% !important;
-                    box-shadow: none !important;
-                    border: none !important;
-                    border-radius: 0 !important;
-                 }
-
-                 .print-area {
                     padding: 0 !important;
-                    overflow: visible !important;
+                    margin: 0 !important;
+                    background-color: white !important;
                  }
 
-                 /* Renklerin ve arka planların korunması */
-                 * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                 /* 5. MÜŞTERİ VE CİHAZ KUTULARINI YAN YANA GETİR */
+                 .print-grid {
+                    display: flex !important;
+                    flex-wrap: wrap !important;
+                    gap: 20px !important;
+                 }
+                 .print-grid > div {
+                    flex: 1 1 45% !important;
+                    border: 1px solid #e2e8f0 !important;
+                    background: transparent !important;
+                 }
 
-                 .print-text-black { color: #000 !important; }
-                 .print-text-gray { color: #555 !important; }
+                 /* 6. GEREKSİZLERİ YOK ET */
+                 .no-print, .no-print * { 
+                    display: none !important; 
+                 }
                  
-                 .print-grid-layout { display: flex !important; gap: 20px !important; margin-bottom: 20px !important; }
-                 .print-grid-layout > div { flex: 1 !important; }
-                 .print-no-bg { background: transparent !important; border: 1px solid #ccc !important; }
-
-                 /* Fotoğrafların sayfa kırmaması ve net çıkması için ayarlar */
-                 .page-break-avoid { break-inside: avoid !important; page-break-inside: avoid; }
-                 .print-always-break { break-before: auto !important; page-break-before: auto; }
-                 img { max-width: 100% !important; object-fit: contain !important; }
+                 /* 7. FOTOĞRAFLARI KESİLMEDEN YAZDIR */
+                 img { 
+                    max-width: 100% !important; 
+                    height: auto !important; 
+                    page-break-inside: avoid !important; 
+                    break-inside: avoid !important; 
+                 }
+                 .print-always-break {
+                    break-before: page !important;
+                    page-break-before: always !important;
+                 }
+                 .page-break-avoid {
+                    break-inside: avoid !important;
+                    page-break-inside: avoid !important;
+                 }
                }
              `}} />
           </motion.div>
