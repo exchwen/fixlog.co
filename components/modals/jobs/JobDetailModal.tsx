@@ -444,62 +444,62 @@ export default function JobDetailModal({
                                     </span>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                                    {/* 🚀 DÜZELTİLDİ: Genel Görev ise Müşteri ve Varlık Kutuları GİZLENİR */}
-                                    {!isGeneralTask && (
-                                        <>
-                                            <div 
-                                              onClick={() => {
-                                                  const theCustomer = (data?.customers || []).find((c:any) => c.name === selectedJob.customer_name);
-                                                  if(theCustomer && setSelectedCustomer) {
-                                                      setOpenedChild('customer');
-                                                      setSelectedCustomer(theCustomer);
-                                                  }
-                                              }}
-                                              className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 transition-colors group cursor-pointer active:scale-95 relative"
-                                            >
-                                                <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Müşteri Profili</div>
-                                                <div className="text-sm font-black text-slate-800 pr-5">{selectedJob.customer_name}</div>
-                                                <button className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">
-                                                    <ArrowUpRight size={16} />
-                                                </button>
-                                            </div>
-                                            
-                                            {(() => {
-                                                const theAsset = selectedJob.asset_id ? (data?.assets || []).find((a:any) => String(a.id) === String(selectedJob.asset_id)) : null;
-                                                return (
-                                                    <div 
-                                                       onClick={() => {
-                                                          if(selectedJob.asset_id && setSelectedAsset && theAsset) {
-                                                              setOpenedChild('asset');
-                                                              setSelectedAsset(theAsset);
-                                                          }
-                                                       }}
-                                                       className={`bg-white p-4 border border-slate-200 rounded-xl shadow-sm transition-colors relative ${selectedJob.asset_id ? 'hover:border-blue-300 cursor-pointer group active:scale-95' : 'opacity-70'}`}
-                                                    >
-                                                        <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">İlgili Varlık / Cihaz</div>
-                                                        
-                                                        {theAsset?.apartmentName && (
-                                                            <div className="inline-block bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-[11px] font-bold mb-2 border border-blue-100">
-                                                                🏢 {theAsset.apartmentName}
-                                                            </div>
-                                                        )}
-
-                                                        <div className={`text-sm font-bold flex items-center gap-1.5 pr-5 ${selectedJob.asset_id ? 'text-slate-800' : 'text-slate-400 italic'}`}>
-                                                            <Box size={16} className={selectedJob.asset_id ? 'text-blue-500' : 'text-slate-300'}/>
-                                                            {theAsset ? theAsset.name : 'Varlık Seçilmemiş'}
+                                {/* 🚀 DÜZELTİLDİ: GRID YAPSISI KUSURSUZLAŞTIRILDI */}
+                                {!isGeneralTask && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
+                                        <div 
+                                          onClick={() => {
+                                              const theCustomer = (data?.customers || []).find((c:any) => c.name === selectedJob.customer_name);
+                                              if(theCustomer && setSelectedCustomer) {
+                                                  setOpenedChild('customer');
+                                                  setSelectedCustomer(theCustomer);
+                                              }
+                                          }}
+                                          className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 transition-colors group cursor-pointer active:scale-95 relative"
+                                        >
+                                            <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Müşteri Profili</div>
+                                            <div className="text-sm font-black text-slate-800 pr-5">{selectedJob.customer_name}</div>
+                                            <button className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">
+                                                <ArrowUpRight size={16} />
+                                            </button>
+                                        </div>
+                                        
+                                        {(() => {
+                                            const theAsset = selectedJob.asset_id ? (data?.assets || []).find((a:any) => String(a.id) === String(selectedJob.asset_id)) : null;
+                                            return (
+                                                <div 
+                                                   onClick={() => {
+                                                      if(selectedJob.asset_id && setSelectedAsset && theAsset) {
+                                                          setOpenedChild('asset');
+                                                          setSelectedAsset(theAsset);
+                                                      }
+                                                   }}
+                                                   className={`bg-white p-4 border border-slate-200 rounded-xl shadow-sm transition-colors relative ${selectedJob.asset_id ? 'hover:border-blue-300 cursor-pointer group active:scale-95' : 'opacity-70'}`}
+                                                >
+                                                    <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">İlgili Varlık / Cihaz</div>
+                                                    
+                                                    {theAsset?.apartmentName && (
+                                                        <div className="inline-block bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-[11px] font-bold mb-2 border border-blue-100">
+                                                            🏢 {theAsset.apartmentName}
                                                         </div>
-                                                        {selectedJob.asset_id && (
-                                                            <button className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">
-                                                                <ArrowUpRight size={16} />
-                                                            </button>
-                                                        )}
+                                                    )}
+
+                                                    <div className={`text-sm font-bold flex items-center gap-1.5 pr-5 ${selectedJob.asset_id ? 'text-slate-800' : 'text-slate-400 italic'}`}>
+                                                        <Box size={16} className={selectedJob.asset_id ? 'text-blue-500' : 'text-slate-300'}/>
+                                                        {theAsset ? theAsset.name : 'Varlık Seçilmemiş'}
                                                     </div>
-                                                );
-                                            })()}
-                                        </>
-                                    )}
-                                    
+                                                    {selectedJob.asset_id && (
+                                                        <button className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">
+                                                            <ArrowUpRight size={16} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                     <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
                                          <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Görev Tipi</div>
                                          <div className="text-sm font-bold text-slate-800">{selectedJob.work_type}</div>
@@ -534,7 +534,8 @@ export default function JobDetailModal({
                                             )}
                                          </div>
                                     </div>
-                                    <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
+
+                                    <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm flex flex-col justify-center">
                                          <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Atanan Usta</div>
                                          <div className={`text-sm font-bold flex items-center gap-2 ${finalWorkerName ? 'text-emerald-700' : (isGeneralTask ? 'text-slate-500' : 'text-rose-600')}`}>
                                             <Wrench size={16} className={finalWorkerName ? 'text-emerald-500' : (isGeneralTask ? 'text-slate-400' : 'text-rose-400')}/>
@@ -608,8 +609,8 @@ export default function JobDetailModal({
                         )}
 
 {selectedJob.status !== 'Tamamlandı' && selectedJob.status !== 'İptal' && (
-                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full pt-2">
-                            {/* 🚀 DÜZELTİLDİ: Patron değilse, usta yoksa ve işi Patron açtıysa Kabul Et çıkar. */}
+                        <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3 w-full pt-4 mt-2 border-t border-slate-100">
+                            {/* 🚀 KABUL ET BUTONU */}
                             {(userRole !== 'Patron' && 
                               (selectedJob.status === 'Beklemede' || selectedJob.status === 'Gelecek') && 
                               !hasWorker && 
@@ -617,7 +618,6 @@ export default function JobDetailModal({
                                 <button 
                                     onClick={async () => {
                                         setIsApproving(true);
-                                        // Genel görev ise Kabul edince doğrudan "Devam Ediyor" (üstlenmiş) olur.
                                         const newStatus = isGeneralTask ? 'Devam Ediyor' : 'Usta Bekliyor';
                                         await handleAction('update-job', {
                                             id: selectedJob.id,
@@ -630,7 +630,7 @@ export default function JobDetailModal({
                                         setIsApproving(false);
                                     }}
                                     disabled={isApproving}
-                                    className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-black transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+                                    className="flex-1 w-full bg-amber-500 hover:bg-amber-600 text-white py-3.5 rounded-xl text-sm font-black transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
                                 >
                                     {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckSquare size={16} />}
                                     GÖREVİ KABUL ET
@@ -653,7 +653,7 @@ export default function JobDetailModal({
                                                 setIsApproving(false);
                                             }}
                                             disabled={isApproving}
-                                            className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-black transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+                                            className="flex-1 w-full bg-amber-500 hover:bg-amber-600 text-white py-3.5 rounded-xl text-sm font-black transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
                                         >
                                             {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckSquare size={16} />}
                                             İŞİ ONAYLIYORUM
@@ -662,17 +662,16 @@ export default function JobDetailModal({
                                         <>
                                             <button 
                                                 onClick={handleEditClick}
-                                                className="flex-1 bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"
+                                                className="flex-1 w-full bg-slate-900 text-white py-3.5 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"
                                             >
                                                 <Settings size={16} /> {isGeneralTask ? 'Detayları Düzenle' : 'Düzenle / Ata'}
                                             </button>
                                             
-                                            {/* 🚀 EKLENDİ: Genel Görev ise Yöneticinin İşi Direkt Bitirmesini Sağlayan Buton (Artık statüye takılmaz) */}
+                                            {/* 🚀 EKLENDİ: Genel Görev ise Yöneticinin İşi Direkt Bitirmesini Sağlayan Buton */}
                                             {(isGeneralTask && getDynamicStatus(selectedJob, hasWorker).label === 'Devam Ediyor') && (
                                                 <button 
                                                     onClick={async () => {
                                                         setIsApproving(true);
-                                                        // Genel görev olduğu için fiyat falan beklemeden direkt bitirir.
                                                         await handleAction('update-job', {
                                                             id: selectedJob.id,
                                                             status: 'Tamamlandı',
@@ -683,7 +682,7 @@ export default function JobDetailModal({
                                                         setIsApproving(false);
                                                     }}
                                                     disabled={isApproving}
-                                                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+                                                    className="flex-1 w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
                                                 >
                                                     {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
                                                     İşi Tamamla
@@ -696,7 +695,7 @@ export default function JobDetailModal({
                             
                             <button 
                                 onClick={() => setShowCancelConfirm(true)}
-                                className="sm:w-1/3 bg-rose-50 text-rose-600 border border-rose-200 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                className="flex-1 w-full bg-rose-50 text-rose-600 border border-rose-200 py-3.5 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"
                             >
                                 <X size={16} strokeWidth={3} /> İptal Et
                             </button>
@@ -827,7 +826,7 @@ export default function JobDetailModal({
                       <textarea rows={3} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none resize-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="İşin detayı nedir?..." value={editJobDetailForm.taskNote} onChange={e => setEditJobDetailForm({...editJobDetailForm, taskNote: e.target.value})} />
                     </div>
 
-                    <div className="pt-4 flex flex-col sm:flex-row gap-2 sm:gap-3">
+                    <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3 w-full pt-4 mt-2 border-t border-slate-100">
                         <button 
                             disabled={!isEditJobValid || isSaving}
                             onClick={() => handleAction('update-job', { 
@@ -835,13 +834,13 @@ export default function JobDetailModal({
                                 id: selectedJob.id,
                                 lastEditedBy: data?.ownerName || 'Yönetici' 
                             }, () => setSelectedJob(null), () => setIsEditingJobDetail(false))} 
-                            className="flex-1 bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 shadow-md"
+                            className="flex-1 w-full bg-slate-900 text-white py-3.5 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 shadow-md flex justify-center items-center gap-2"
                         >
-                            {isSaving ? <Loader2 className="animate-spin mx-auto" size={18} /> : (jobModalType === 'ASSIGN' || selectedJob?.status === 'Usta Bekliyor' ? 'Ustayı Ata' : 'Değişiklikleri Kaydet')}
+                            {isSaving ? <Loader2 className="animate-spin" size={18} /> : (jobModalType === 'ASSIGN' || selectedJob?.status === 'Usta Bekliyor' ? 'Ustayı Ata' : 'Değişiklikleri Kaydet')}
                         </button>
                         <button 
                             onClick={() => handleSmartClose()} 
-                            className="w-full sm:w-1/3 bg-white border-2 border-slate-200 text-slate-700 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95"
+                            className="flex-1 w-full bg-white border-2 border-slate-200 text-slate-700 py-3.5 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95 flex justify-center items-center"
                         >
                             Vazgeç
                         </button>
