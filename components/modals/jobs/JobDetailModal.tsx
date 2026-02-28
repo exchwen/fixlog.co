@@ -435,57 +435,60 @@ export default function JobDetailModal({
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                                    <div 
-                                      onClick={() => {
-                                          const theCustomer = (data?.customers || []).find((c:any) => c.name === selectedJob.customer_name);
-                                          if(theCustomer && setSelectedCustomer) {
-                                              // 🚀 KİMİ AÇTIĞIMIZI BİLDİRİYORUZ
-                                              setOpenedChild('customer');
-                                              setSelectedCustomer(theCustomer);
-                                          }
-                                      }}
-                                      className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 transition-colors group cursor-pointer active:scale-95 relative"
-                                    >
-                                        <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Müşteri Profili</div>
-                                        <div className="text-sm font-black text-slate-800 pr-5">{selectedJob.customer_name}</div>
-                                        <button className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">
-                                            <ArrowUpRight size={16} />
-                                        </button>
-                                    </div>
-                                    
-                                    {(() => {
-                                        const theAsset = selectedJob.asset_id ? (data?.assets || []).find((a:any) => String(a.id) === String(selectedJob.asset_id)) : null;
-                                        return (
+                                    {/* 🚀 DÜZELTİLDİ: Genel Görev ise Müşteri ve Varlık Kutuları GİZLENİR */}
+                                    {selectedJob.work_type !== 'Genel Görev' && (
+                                        <>
                                             <div 
-                                               onClick={() => {
-                                                  if(selectedJob.asset_id && setSelectedAsset && theAsset) {
-                                                      // 🚀 KİMİ AÇTIĞIMIZI BİLDİRİYORUZ
-                                                      setOpenedChild('asset');
-                                                      setSelectedAsset(theAsset);
+                                              onClick={() => {
+                                                  const theCustomer = (data?.customers || []).find((c:any) => c.name === selectedJob.customer_name);
+                                                  if(theCustomer && setSelectedCustomer) {
+                                                      setOpenedChild('customer');
+                                                      setSelectedCustomer(theCustomer);
                                                   }
-                                               }}
-                                               className={`bg-white p-4 border border-slate-200 rounded-xl shadow-sm transition-colors relative ${selectedJob.asset_id ? 'hover:border-blue-300 cursor-pointer group active:scale-95' : 'opacity-70'}`}
+                                              }}
+                                              className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 transition-colors group cursor-pointer active:scale-95 relative"
                                             >
-                                                <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">İlgili Varlık / Cihaz</div>
-                                                
-                                                {theAsset?.apartmentName && (
-                                                    <div className="inline-block bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-[11px] font-bold mb-2 border border-blue-100">
-                                                        🏢 {theAsset.apartmentName}
-                                                    </div>
-                                                )}
-
-                                                <div className={`text-sm font-bold flex items-center gap-1.5 pr-5 ${selectedJob.asset_id ? 'text-slate-800' : 'text-slate-400 italic'}`}>
-                                                    <Box size={16} className={selectedJob.asset_id ? 'text-blue-500' : 'text-slate-300'}/>
-                                                    {theAsset ? theAsset.name : 'Varlık Seçilmemiş'}
-                                                </div>
-                                                {selectedJob.asset_id && (
-                                                    <button className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">
-                                                        <ArrowUpRight size={16} />
-                                                    </button>
-                                                )}
+                                                <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Müşteri Profili</div>
+                                                <div className="text-sm font-black text-slate-800 pr-5">{selectedJob.customer_name}</div>
+                                                <button className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">
+                                                    <ArrowUpRight size={16} />
+                                                </button>
                                             </div>
-                                        );
-                                    })()}
+                                            
+                                            {(() => {
+                                                const theAsset = selectedJob.asset_id ? (data?.assets || []).find((a:any) => String(a.id) === String(selectedJob.asset_id)) : null;
+                                                return (
+                                                    <div 
+                                                       onClick={() => {
+                                                          if(selectedJob.asset_id && setSelectedAsset && theAsset) {
+                                                              setOpenedChild('asset');
+                                                              setSelectedAsset(theAsset);
+                                                          }
+                                                       }}
+                                                       className={`bg-white p-4 border border-slate-200 rounded-xl shadow-sm transition-colors relative ${selectedJob.asset_id ? 'hover:border-blue-300 cursor-pointer group active:scale-95' : 'opacity-70'}`}
+                                                    >
+                                                        <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">İlgili Varlık / Cihaz</div>
+                                                        
+                                                        {theAsset?.apartmentName && (
+                                                            <div className="inline-block bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-[11px] font-bold mb-2 border border-blue-100">
+                                                                🏢 {theAsset.apartmentName}
+                                                            </div>
+                                                        )}
+
+                                                        <div className={`text-sm font-bold flex items-center gap-1.5 pr-5 ${selectedJob.asset_id ? 'text-slate-800' : 'text-slate-400 italic'}`}>
+                                                            <Box size={16} className={selectedJob.asset_id ? 'text-blue-500' : 'text-slate-300'}/>
+                                                            {theAsset ? theAsset.name : 'Varlık Seçilmemiş'}
+                                                        </div>
+                                                        {selectedJob.asset_id && (
+                                                            <button className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">
+                                                                <ArrowUpRight size={16} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
+                                        </>
+                                    )}
                                     
                                     <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
                                          <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Görev Tipi</div>
@@ -594,78 +597,104 @@ export default function JobDetailModal({
                             </button>
                         )}
 
-                    {selectedJob.status !== 'Tamamlandı' && selectedJob.status !== 'İptal' && (
-                                                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full pt-2">
-                                                    {/* 🚀 DÜZELTİLDİ: Scope (Kapsam) hatası giderildi! Patron değilse, usta yoksa ve işi Patron açtıysa Kabul Et çıkar. */}
-                                                    {(userRole !== 'Patron' && 
-                                                    (selectedJob.status === 'Beklemede' || selectedJob.status === 'Gelecek') && 
-                                                    !selectedJob.worker_name && 
-                                                    !selectedJob.details?.worker_id && 
-                                                    (selectedJob.creator_role === 'Patron' || selectedJob.details?.creatorRole === 'Patron' || (selectedJob.creator_name || selectedJob.details?.createdBy || data?.ownerName?.split(' ')[0]) === data?.ownerName?.split(' ')[0])) ? (
-                                                        <button 
-                                                            onClick={async () => {
-                                                            setIsApproving(true);
-                                                            const isGeneralJob = selectedJob.work_type === 'Genel Görev';
-                                                            const newStatus = isGeneralJob ? 'Devam Ediyor' : 'Usta Bekliyor';
-                                                            await handleAction('update-job', {
-                                                                id: selectedJob.id,
-                                                                status: newStatus,
-                                                                lastEditedBy: data?.ownerName || 'Yönetici',
-                                                            }, () => {
-                                                                setSelectedJob(null);
-                                                                if (setJobModalType) setJobModalType('');
-                                                            }, null);
-                                                            setIsApproving(false);
-                                                        }}
-                                                        disabled={isApproving}
-                                                        className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-black transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
-                                                    >
-                                                        {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckSquare size={16} />}
-                                                        GÖREVİ KABUL ET
-                                                    </button>
-                                                ) : (
-                                                    <>
-                                        {jobModalType === 'APPROVAL_FIRST_STEP' ? (
-                                            <button 
-                                                onClick={async () => {
-                                                    setIsApproving(true);
-                                                    const isGeneralJob = selectedJob.work_type === 'Genel Görev';
-                                                    const newStatus = isGeneralJob ? 'Devam Ediyor' : 'Usta Bekliyor';
-                                                    await handleAction('update-job', {
-                                                        id: selectedJob.id,
-                                                        status: newStatus,
-                                                        lastEditedBy: data?.ownerName || 'Yönetici',
-                                                    }, () => {
-                                                        setSelectedJob(null);
-                                                        if (setJobModalType) setJobModalType('');
-                                                    }, null);
-                                                    setIsApproving(false);
-                                                }}
-                                                disabled={isApproving}
-                                                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-black transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
-                                            >
-                                                {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckSquare size={16} />}
-                                                İŞİ ONAYLIYORUM
-                                            </button>
-                                        ) : (
+{selectedJob.status !== 'Tamamlandı' && selectedJob.status !== 'İptal' && (
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full pt-2">
+                            {/* 🚀 DÜZELTİLDİ: Patron değilse, usta yoksa ve işi Patron açtıysa Kabul Et çıkar. */}
+                            {(userRole !== 'Patron' && 
+                              (selectedJob.status === 'Beklemede' || selectedJob.status === 'Gelecek') && 
+                              !selectedJob.worker_name && 
+                              !selectedJob.details?.worker_id && 
+                              (selectedJob.creator_role === 'Patron' || selectedJob.details?.creatorRole === 'Patron' || (selectedJob.creator_name || selectedJob.details?.createdBy || data?.ownerName?.split(' ')[0]) === data?.ownerName?.split(' ')[0])) ? (
+                                <button 
+                                    onClick={async () => {
+                                        setIsApproving(true);
+                                        const isGeneralJob = selectedJob.work_type === 'Genel Görev';
+                                        // Genel görev ise Kabul edince doğrudan "Devam Ediyor" (üstlenmiş) olur.
+                                        const newStatus = isGeneralJob ? 'Devam Ediyor' : 'Usta Bekliyor';
+                                        await handleAction('update-job', {
+                                            id: selectedJob.id,
+                                            status: newStatus,
+                                            lastEditedBy: data?.ownerName || 'Yönetici',
+                                        }, () => {
+                                            setSelectedJob(null);
+                                            if (setJobModalType) setJobModalType('');
+                                        }, null);
+                                        setIsApproving(false);
+                                    }}
+                                    disabled={isApproving}
+                                    className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-black transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+                                >
+                                    {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckSquare size={16} />}
+                                    GÖREVİ KABUL ET
+                                </button>
+                            ) : (
+                                <>
+                                    {jobModalType === 'APPROVAL_FIRST_STEP' ? (
+                                        <button 
+                                            onClick={async () => {
+                                                setIsApproving(true);
+                                                const isGeneralJob = selectedJob.work_type === 'Genel Görev';
+                                                const newStatus = isGeneralJob ? 'Devam Ediyor' : 'Usta Bekliyor';
+                                                await handleAction('update-job', {
+                                                    id: selectedJob.id,
+                                                    status: newStatus,
+                                                    lastEditedBy: data?.ownerName || 'Yönetici',
+                                                }, () => {
+                                                    setSelectedJob(null);
+                                                    if (setJobModalType) setJobModalType('');
+                                                }, null);
+                                                setIsApproving(false);
+                                            }}
+                                            disabled={isApproving}
+                                            className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-black transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+                                        >
+                                            {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckSquare size={16} />}
+                                            İŞİ ONAYLIYORUM
+                                        </button>
+                                    ) : (
+                                        <>
                                             <button 
                                                 onClick={handleEditClick}
                                                 className="flex-1 bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"
                                             >
                                                 <Settings size={16} /> Düzenle / Ata
                                             </button>
-                                        )}
-                                    </>
-                                )}
-                                
-                                <button 
-                                    onClick={() => setShowCancelConfirm(true)}
-                                    className="sm:w-1/3 bg-rose-50 text-rose-600 border border-rose-200 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"
-                                >
-                                    <X size={16} strokeWidth={3} /> İptal Et
-                                </button>
-                            </div>
-                        )}
+                                            
+                                            {/* 🚀 EKLENDİ: Genel Görev ise Yöneticinin İşi Direkt Bitirmesini Sağlayan Buton */}
+                                            {(selectedJob.work_type === 'Genel Görev' && selectedJob.status === 'Devam Ediyor') && (
+                                                <button 
+                                                    onClick={async () => {
+                                                        setIsApproving(true);
+                                                        // Genel görev olduğu için fiyat falan beklemeden direkt bitirir.
+                                                        await handleAction('update-job', {
+                                                            id: selectedJob.id,
+                                                            status: 'Tamamlandı',
+                                                            lastEditedBy: data?.ownerName || 'Yönetici',
+                                                        }, () => {
+                                                            setSelectedJob(null);
+                                                        }, null);
+                                                        setIsApproving(false);
+                                                    }}
+                                                    disabled={isApproving}
+                                                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+                                                >
+                                                    {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
+                                                    İşi Tamamla
+                                                </button>
+                                            )}
+                                        </>
+                                    )}
+                                </>
+                            )}
+                            
+                            <button 
+                                onClick={() => setShowCancelConfirm(true)}
+                                className="sm:w-1/3 bg-rose-50 text-rose-600 border border-rose-200 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"
+                            >
+                                <X size={16} strokeWidth={3} /> İptal Et
+                            </button>
+                        </div>
+                    )}
                     </div>
                 </div>
               ) : (
