@@ -701,7 +701,7 @@ export default function JobDetailModal({
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6 space-y-5">
                     
                     {/* 🚀 DÜZELTİLDİ: Usta Bekliyor durumunda VEYA ASSIGN modunda, sadece branş, personel ve not görünür. */}
-                    {jobModalType !== 'ASSIGN' && selectedJob?.status !== 'Usta Bekliyor' && (
+                    {jobModalType !== 'ASSIGN' && selectedJob?.status !== 'Usta Bekliyor' && selectedJob?.work_type !== 'Genel Görev' && (
                         <>
                             <div>
                             <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">İş Türü</label>

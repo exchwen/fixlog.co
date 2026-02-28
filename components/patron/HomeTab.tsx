@@ -69,25 +69,48 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const pendingJobs = jobs.filter((j: any) => j.status === 'Beklemede' || j.status === 'Devam Ediyor').length;
   const plannedJobs = jobs.filter((j: any) => j.status === 'Gelecek').length;
 
-  const incomingJobs = useMemo(() => {
-    if (!currentUserId || userRole === 'Patron') return [];
-    return jobs.filter((j: any) => 
-       // 🚀 D1 Sütunu (manager_id) VE Eski JSON (details.managerId) birlikte kontrol ediliyor
-       (String(j.staff_id) === String(currentUserId) || String(j.manager_id) === String(currentUserId) || String(j.details?.managerId) === String(currentUserId)) && 
-       (j.status === 'Beklemede' || j.status === 'Gelecek')
-    );
- }, [jobs, currentUserId, userRole]);
+  // 🚀 TÜM İŞLERİ KİMLİĞE VE DURUMA GÖRE FİLTRELEME (TEK DÖNGÜ, YÜKSEK PERFORMANS)
+  const { incomingJobs, waitingForAssignmentJobs } = useMemo(() => {
+    if (!currentUserId || userRole === 'Patron') {
+        return { incomingJobs: [], waitingForAssignmentJobs: [] };
+    }
 
- const waitingForAssignmentJobs = useMemo(() => {
-   if (!currentUserId || userRole === 'Patron') return [];
-   return jobs.filter((j: any) => 
-      // 🚀 D1 Sütunu (manager_id) VE Eski JSON (details.managerId) birlikte kontrol ediliyor
-      (String(j.staff_id) === String(currentUserId) || String(j.manager_id) === String(currentUserId) || String(j.details?.managerId) === String(currentUserId)) && 
-      (j.status === 'Usta Bekliyor') &&
-      // 🚀 Hem yeni worker_id hem eski details.worker_id yoksa atama bekliyordur
-      (!j.worker_id && !j.details?.worker_id)
-   );
-}, [jobs, currentUserId, userRole]);
+    const incoming: any[] = [];
+    const waiting: any[] = [];
+
+    jobs.forEach((j: any) => {
+        // Bu işi bizzat ben (şu anki kullanıcı) mi oluşturdum?
+        const isCreatedByMe = (j.creator_name === currentUserName) || (j.details?.createdBy === currentUserName);
+        
+        // Bu iş bana mı atandı? (Patron bana atamış olabilir, ben kendimi sorumlu yapmış olabilirim)
+        const isAssignedToMe = String(j.manager_id) === String(currentUserId) || 
+                               String(j.details?.managerId) === String(currentUserId) || 
+                               String(j.staff_id) === String(currentUserId);
+                               
+        // İşin bir saha ustası (sahadaki eleman) var mı?
+        const hasWorker = !!j.worker_id || !!j.details?.worker_id;
+
+        // EĞER İŞ BANA AİT DEĞİLSE PAS GEÇ!
+        if (!isCreatedByMe && !isAssignedToMe) return;
+        if (j.status === 'İptal' || j.status === 'Tamamlandı') return;
+
+        // 1. ONAY BEKLEYENLER (Sarı Kutu)
+        // Patron atadı, durum Beklemede, ustası yok ve BEN OLUŞTURMADIM.
+        if ((j.status === 'Beklemede' || j.status === 'Gelecek') && isAssignedToMe && !hasWorker && !isCreatedByMe) {
+            incoming.push(j);
+            return;
+        }
+
+        // 2. ATAMA BEKLEYENLER (Mor Kutu)
+        // Yönetici kabul etti ("Usta Bekliyor" statüsüne geçti) ama henüz usta atamadı.
+        if (j.status === 'Usta Bekliyor' && isAssignedToMe && !hasWorker) {
+            waiting.push(j);
+            return;
+        }
+    });
+
+    return { incomingJobs: incoming, waitingForAssignmentJobs: waiting };
+  }, [jobs, currentUserId, currentUserName, userRole]);
 
   useEffect(() => {
     if (incomingJobs.length > 0) {
