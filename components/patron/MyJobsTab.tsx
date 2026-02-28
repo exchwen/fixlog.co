@@ -88,39 +88,39 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
     });
  }, [jobs, currentUserId, currentUserName]);
 
-  // --- GRUPLANDIRMA MANTIĞI (SADELEŞTİRİLDİ VE GÜNCELLENDİ) ---
+  // --- 🚀 KUSURSUZ GRUPLANDIRMA MANTIĞI (YENİ D1 SÜTUNLARIYLA) ---
 
-  // 1. Onay Bekleyenler (Patrondan Yeni Gelmiş, Sadece benim üzerimde olanlar)
-  const incomingJobs = myAllJobs.filter((j: any) => 
-    (j.status === 'Beklemede' || j.status === 'Gelecek') && String(j.staff_id) === String(currentUserId)
-  );
+  // 1. Onay Bekleyenler (Sarı Kutu): İş bana yeni atandı (Patron tarafından), henüz kabul etmedim.
+  const incomingJobs = myAllJobs.filter((j: any) => {
+    const isMyJob = String(j.staff_id) === String(currentUserId) || String(j.manager_id) === String(currentUserId);
+    return (j.status === 'Beklemede' || j.status === 'Gelecek') && isMyJob && !j.worker_id;
+  });
 
-  // 2. Atama Bekleyenler (Kabul Ettim ama Henüz Usta Seçmedim, Sadece benim üzerimde olanlar)
-  const waitingForAssignment = myAllJobs.filter((j: any) => 
-    j.status === 'Usta Bekliyor' && !j.details?.worker_id && String(j.staff_id) === String(currentUserId)
-  );
+  // 2. Atama Bekleyenler (Mor Kutu): İşi kabul ettim (Usta Bekliyor durumunda) ama USTA SEÇMEDİM.
+  const waitingForAssignment = myAllJobs.filter((j: any) => {
+    const isMyJob = String(j.staff_id) === String(currentUserId) || String(j.manager_id) === String(currentUserId);
+    return j.status === 'Usta Bekliyor' && !j.worker_id && !j.details?.worker_id && isMyJob;
+  });
 
-  // 3. Devam Edenler & Takiptekiler (Ustaya atananlar ve Onay Bekleyenler DAHİL)
+  // 3. Devam Edenler & Takiptekiler (Mavi Tablo): Benim oluşturduğum veya Ustaya atadığım aktif işler.
   const ongoingJobs = myAllJobs.filter((j: any) => {
     if (j.status === 'Tamamlandı' || j.status === 'İptal') return false;
     
-    // 🚀 DÜZELTİLDİ: Eğer işi BİZZAT BEN (Şu anki Yönetici) oluşturduysam,
-    // ve henüz tamamlanmadıysa, ŞARTSIZ ŞARTSIZ "Takip Edilenler" tablomda kalmalıdır!
-    const isCreatedByMe = j.details?.createdBy === currentUserName;
-    if (isCreatedByMe) return true;
-
-    // Eğer ben oluşturmadıysam (Patrondan geldiyse), o zaman üstteki kutularda (Sarı veya Mor)
-    // olup olmadığına bakarız. Eğer o kutulardaysa, alttaki tablodan (Takipte) çıkarırız.
-    const isIncoming = (j.status === 'Beklemede' || j.status === 'Gelecek') && String(j.staff_id) === String(currentUserId) && !j.details?.worker_id;
-    const isWaitingAssign = (j.status === 'Usta Bekliyor' && !j.details?.worker_id && String(j.staff_id) === String(currentUserId));
-    
+    // İş üstteki Sarı (Onay Bekleyen) veya Mor (Atama Bekleyen) kutuya aitse, Mavi tabloda GİZLE!
+    const isMyJob = String(j.staff_id) === String(currentUserId) || String(j.manager_id) === String(currentUserId);
+    const isIncoming = (j.status === 'Beklemede' || j.status === 'Gelecek') && isMyJob && !j.worker_id;
+    const isWaitingAssign = j.status === 'Usta Bekliyor' && !j.worker_id && !j.details?.worker_id && isMyJob;
     if (isIncoming || isWaitingAssign) return false;
 
-    // İşin ustası atanmışsa, sahada devam ediyorsa veya ustanın onayı bekleniyorsa buraya düşer.
+    // Eğer işi BİZZAT BEN oluşturduysam (ve yukarıdaki Sarı/Mor engeline takılmadıysa) mutlaka listele.
+    const isCreatedByMe = j.creator_name === currentUserName || j.details?.createdBy === currentUserName;
+    if (isCreatedByMe) return true;
+
+    // Eğer bana aitse ve ustası varsa (veya iş Onay Bekliyorsa) listele.
     return true; 
   });
 
-  // 4. Tamamlananlar
+  // 4. Tamamlananlar (Yeşil Tablo)
   const completedJobs = myAllJobs.filter((j: any) => j.status === 'Tamamlandı');
 
   // İŞLEM FONKSİYONLARI

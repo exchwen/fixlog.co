@@ -70,21 +70,24 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const plannedJobs = jobs.filter((j: any) => j.status === 'Gelecek').length;
 
   const incomingJobs = useMemo(() => {
-     if (!currentUserId || userRole === 'Patron') return [];
-     return jobs.filter((j: any) => 
-        (String(j.staff_id) === String(currentUserId) || String(j.details?.managerId) === String(currentUserId)) && 
-        (j.status === 'Beklemede' || j.status === 'Gelecek')
-     );
-  }, [jobs, currentUserId, userRole]);
-
-  const waitingForAssignmentJobs = useMemo(() => {
     if (!currentUserId || userRole === 'Patron') return [];
     return jobs.filter((j: any) => 
-       (String(j.staff_id) === String(currentUserId) || String(j.details?.managerId) === String(currentUserId)) && 
-       (j.status === 'Usta Bekliyor') &&
-       (!j.details?.worker_id) // 🚀 EKLENDİ: Sadece ustası OLMAYANLARI kutuda tut. Usta atandığı an kutudan çıkar!
+       // 🚀 D1 Sütunu (manager_id) VE Eski JSON (details.managerId) birlikte kontrol ediliyor
+       (String(j.staff_id) === String(currentUserId) || String(j.manager_id) === String(currentUserId) || String(j.details?.managerId) === String(currentUserId)) && 
+       (j.status === 'Beklemede' || j.status === 'Gelecek')
     );
  }, [jobs, currentUserId, userRole]);
+
+ const waitingForAssignmentJobs = useMemo(() => {
+   if (!currentUserId || userRole === 'Patron') return [];
+   return jobs.filter((j: any) => 
+      // 🚀 D1 Sütunu (manager_id) VE Eski JSON (details.managerId) birlikte kontrol ediliyor
+      (String(j.staff_id) === String(currentUserId) || String(j.manager_id) === String(currentUserId) || String(j.details?.managerId) === String(currentUserId)) && 
+      (j.status === 'Usta Bekliyor') &&
+      // 🚀 Hem yeni worker_id hem eski details.worker_id yoksa atama bekliyordur
+      (!j.worker_id && !j.details?.worker_id)
+   );
+}, [jobs, currentUserId, userRole]);
 
   useEffect(() => {
     if (incomingJobs.length > 0) {
