@@ -153,8 +153,14 @@ export default function JobDetailModal({
     if (!job) return { label: '', colorClass: '' };
     let label = job.status || 'Beklemede';
 
-    if (label === 'Usta Bekliyor' || label === 'Devam Ediyor') {
+    // 🚀 DÜZELTİLDİ: İş bir "Genel Görev" ise, usta atanmasına gerek yoktur!
+    // Kabul edildiği an "Devam Ediyor" kalır, "Usta Bekliyor"a düşmez.
+    const isGeneral = job.work_type === 'Genel Görev' || job.customer_name === 'Genel Görev';
+
+    if (!isGeneral && (label === 'Usta Bekliyor' || label === 'Devam Ediyor')) {
         label = hasWorker ? 'Devam Ediyor' : 'Usta Bekliyor';
+    } else if (isGeneral && label === 'Usta Bekliyor') {
+        label = 'Devam Ediyor'; // Genel görev kabul edildiyse direkt devam ediyordur
     }
 
     let colorClass = statusColors[label] || 'bg-slate-100 text-slate-500 border-slate-200';
@@ -529,9 +535,9 @@ export default function JobDetailModal({
                                     </div>
                                     <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
                                          <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Atanan Usta</div>
-                                         <div className={`text-sm font-bold flex items-center gap-2 ${finalWorkerName ? 'text-emerald-700' : 'text-rose-600'}`}>
-                                            <Wrench size={16} className={finalWorkerName ? 'text-emerald-500' : 'text-rose-400'}/>
-                                            {finalWorkerName ? finalWorkerName : 'Henüz Atanmadı'}
+                                         <div className={`text-sm font-bold flex items-center gap-2 ${finalWorkerName ? 'text-emerald-700' : (isGeneralTask ? 'text-slate-500' : 'text-rose-600')}`}>
+                                            <Wrench size={16} className={finalWorkerName ? 'text-emerald-500' : (isGeneralTask ? 'text-slate-400' : 'text-rose-400')}/>
+                                            {finalWorkerName ? finalWorkerName : (isGeneralTask ? 'Gerek Yok (Genel Görev)' : 'Henüz Atanmadı')}
                                          </div>
                                     </div>
                                 </div>
@@ -657,11 +663,11 @@ export default function JobDetailModal({
                                                 onClick={handleEditClick}
                                                 className="flex-1 bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"
                                             >
-                                                <Settings size={16} /> Düzenle / Ata
+                                                <Settings size={16} /> {isGeneralTask ? 'Detayları Düzenle' : 'Düzenle / Ata'}
                                             </button>
                                             
-                                            {/* 🚀 EKLENDİ: Genel Görev ise Yöneticinin İşi Direkt Bitirmesini Sağlayan Buton */}
-                                            {(isGeneralTask && selectedJob.status === 'Devam Ediyor') && (
+                                            {/* 🚀 EKLENDİ: Genel Görev ise Yöneticinin İşi Direkt Bitirmesini Sağlayan Buton (Artık statüye takılmaz) */}
+                                            {(isGeneralTask && getDynamicStatus(selectedJob, hasWorker).label === 'Devam Ediyor') && (
                                                 <button 
                                                     onClick={async () => {
                                                         setIsApproving(true);
