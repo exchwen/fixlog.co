@@ -594,33 +594,37 @@ export default function JobDetailModal({
                             </button>
                         )}
 
-{selectedJob.status !== 'Tamamlandı' && selectedJob.status !== 'İptal' && (
-                            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full pt-2">
-                                {/* 🚀 DÜZELTİLDİ: İş Beklemede/Gelecek ise YALNIZCA Kabul Et butonu çıkar. Düzenleme yapılamaz. */}
-                                {(selectedJob.status === 'Beklemede' || selectedJob.status === 'Gelecek') ? (
-                                    <button 
-                                        onClick={async () => {
-                                            setIsApproving(true);
-                                            const isGeneralJob = selectedJob.work_type === 'Genel Görev';
-                                            const newStatus = isGeneralJob ? 'Devam Ediyor' : 'Usta Bekliyor';
-                                            await handleAction('update-job', {
-                                                id: selectedJob.id,
-                                                status: newStatus,
-                                                lastEditedBy: data?.ownerName || 'Yönetici',
-                                            }, () => {
-                                                setSelectedJob(null);
-                                                if (setJobModalType) setJobModalType('');
-                                            }, null);
-                                            setIsApproving(false);
-                                        }}
-                                        disabled={isApproving}
-                                        className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-black transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
-                                    >
-                                        {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckSquare size={16} />}
-                                        GÖREVİ KABUL ET
-                                    </button>
-                                ) : (
-                                    <>
+                    {selectedJob.status !== 'Tamamlandı' && selectedJob.status !== 'İptal' && (
+                                                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full pt-2">
+                                                    {/* 🚀 DÜZELTİLDİ: Scope (Kapsam) hatası giderildi! Patron değilse, usta yoksa ve işi Patron açtıysa Kabul Et çıkar. */}
+                                                    {(userRole !== 'Patron' && 
+                                                    (selectedJob.status === 'Beklemede' || selectedJob.status === 'Gelecek') && 
+                                                    !selectedJob.worker_name && 
+                                                    !selectedJob.details?.worker_id && 
+                                                    (selectedJob.creator_role === 'Patron' || selectedJob.details?.creatorRole === 'Patron' || (selectedJob.creator_name || selectedJob.details?.createdBy || data?.ownerName?.split(' ')[0]) === data?.ownerName?.split(' ')[0])) ? (
+                                                        <button 
+                                                            onClick={async () => {
+                                                            setIsApproving(true);
+                                                            const isGeneralJob = selectedJob.work_type === 'Genel Görev';
+                                                            const newStatus = isGeneralJob ? 'Devam Ediyor' : 'Usta Bekliyor';
+                                                            await handleAction('update-job', {
+                                                                id: selectedJob.id,
+                                                                status: newStatus,
+                                                                lastEditedBy: data?.ownerName || 'Yönetici',
+                                                            }, () => {
+                                                                setSelectedJob(null);
+                                                                if (setJobModalType) setJobModalType('');
+                                                            }, null);
+                                                            setIsApproving(false);
+                                                        }}
+                                                        disabled={isApproving}
+                                                        className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-black transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+                                                    >
+                                                        {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckSquare size={16} />}
+                                                        GÖREVİ KABUL ET
+                                                    </button>
+                                                ) : (
+                                                    <>
                                         {jobModalType === 'APPROVAL_FIRST_STEP' ? (
                                             <button 
                                                 onClick={async () => {
