@@ -251,7 +251,7 @@ export default function JobDetailModal({
                    <button onClick={() => handleSmartClose()} className="p-2 bg-white rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"><X size={18} /></button>
                 </div>
                 
-                <div id="pdf-printable-area" className="p-8 overflow-y-auto custom-scrollbar bg-white text-black print-area flex-1 relative">
+                <div id="pdf-printable-area" className="p-8 overflow-y-auto custom-scrollbar bg-white text-black flex-1 relative print:overflow-visible print:h-auto print:absolute print:left-0 print:top-0 print:w-full print:m-0 print:p-8">
                     <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] pointer-events-none no-print"></div>
                     
                     <div className="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-start relative z-10">
@@ -268,12 +268,12 @@ export default function JobDetailModal({
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4 mb-8 relative z-10">
-                       <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
-                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Müşteri Bilgisi</div>
+                       <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print:border-slate-300">
+                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print:text-slate-500">Müşteri Bilgisi</div>
                           <div className="font-bold text-sm text-slate-800">{previewPdfJob.customer_name}</div>
                        </div>
-                       <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
-                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Cihaz / Apartman</div>
+                       <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print:border-slate-300">
+                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print:text-slate-500">Cihaz / Apartman</div>
                           <div className="font-bold text-sm text-slate-800">
                               {(() => {
                                   const asset = (data?.assets || []).find((a:any) => a.id === previewPdfJob.asset_id);
@@ -283,7 +283,7 @@ export default function JobDetailModal({
                        </div>
                     </div>
 
-                    <div className="mb-8 relative z-10">
+                    <div className="mb-8 relative z-10 print:break-inside-avoid">
                        <div className="text-xs font-black text-slate-800 uppercase border-b border-slate-200 pb-2 mb-3">Yapılan İşlem / Rapor Detayı</div>
                        <div className="text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed">
                            {previewPdfJob.details?.note?.replace(/\[📍 Konum Kaydı\].*/g, '') || 'Rapor girilmemiş.'}
@@ -291,7 +291,7 @@ export default function JobDetailModal({
                     </div>
 
                     {previewPdfJob.details?.price && (
-                      <div className="flex justify-end border-t-2 border-slate-800 pt-4 mb-8 relative z-10">
+                      <div className="flex justify-end border-t-2 border-slate-800 pt-4 mb-8 relative z-10 print:break-inside-avoid">
                          <div className="text-right">
                             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Toplam İşlem Tutarı</div>
                             <div className="text-3xl font-black text-slate-900">{previewPdfJob.details.price}</div>
@@ -299,12 +299,13 @@ export default function JobDetailModal({
                       </div>
                     )}
 
+                    {/* 🚀 DÜZELTİLDİ: PDF Yazdırılırken Fotoğraflar Daha Net ve Kesilmeden Çıksın Diye print: classları Eklendi */}
                     {previewPdfJob.photos && previewPdfJob.photos.length > 0 && (
-                       <div className="relative z-10">
-                          <div className="text-xs font-black text-slate-800 uppercase border-b border-slate-200 pb-2 mb-3">Saha Kayıt Fotoğrafları</div>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                       <div className="relative z-10 print:break-before-auto">
+                          <div className="text-xs font-black text-slate-800 uppercase border-b border-slate-200 pb-2 mb-3 mt-4">Saha Kayıt Fotoğrafları</div>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 print:grid-cols-2 print:gap-4">
                              {previewPdfJob.photos.map((p: string, i: number) => (
-                               <img key={i} src={p} alt="Saha" className="w-full h-32 object-cover rounded-xl border border-slate-200 shadow-sm" />
+                               <img key={i} src={p} alt="Saha" className="w-full h-40 object-cover rounded-xl border border-slate-200 shadow-sm print:h-auto print:max-h-64 print:break-inside-avoid print:shadow-none" />
                              ))}
                           </div>
                        </div>
@@ -321,25 +322,42 @@ export default function JobDetailModal({
                 </div>
              </motion.div>
              
+             {/* 🚀 KUSURSUZ PDF BASKISI İÇİN STİL */}
              <style dangerouslySetInnerHTML={{__html:`
                @media print {
-                 body * { visibility: hidden !important; }
-                 #pdf-printable-area, #pdf-printable-area * { visibility: visible !important; }
-                 #pdf-printable-area { 
-                    position: absolute !important; 
-                    left: 0 !important; 
-                    top: 0 !important; 
-                    width: 100% !important; 
-                    height: auto !important; 
-                    padding: 10mm !important; 
-                    margin: 0 !important;
-                    background: white !important; 
-                    z-index: 999999 !important; 
-                    display: block !important;
+                 @page {
+                    margin: 0;
+                    size: auto;
                  }
+                 body {
+                    margin: 0;
+                    padding: 0;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                    background-color: white !important;
+                 }
+                 /* Arka plandaki karartmayı ve diğer her şeyi gizle */
+                 body > *:not(#__next) { display: none !important; }
+                 
+                 /* SADECE YAZDIRILACAK ALANI GÖSTER */
+                 body * { visibility: hidden; }
+                 #pdf-printable-area, #pdf-printable-area * { visibility: visible; }
+                 
+                 #pdf-printable-area { 
+                    position: absolute; 
+                    left: 0; 
+                    top: 0; 
+                    width: 100vw; 
+                    height: auto;
+                    min-height: 100vh;
+                    padding: 40px !important;
+                    margin: 0;
+                    background: white !important; 
+                    z-index: 999999 !important;
+                    overflow: visible !important;
+                 }
+                 
                  .no-print { display: none !important; }
-                 /* Fotoğrafların PDF'te kırpılmaması için */
-                 img { max-width: 100% !important; height: auto !important; break-inside: avoid !important; }
                }
              `}} />
           </motion.div>
