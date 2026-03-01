@@ -17,12 +17,11 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
     });
   };
 
-  // 🚀 DÜZELTİLMİŞ: Dinamik Statü Kontrolü (Mantık Hatalarını ve Gecikmeleri Tespit Eder)
+  // 🚀 Dinamik Statü Kontrolü (Mantık Hatalarını ve Gecikmeleri Tespit Eder)
   const getDynamicStatus = (job: any, hasWorker: boolean) => {
     let label = job.status;
 
-    // 🛠️ MANTIK HATASI DÜZELTMESİ: 
-    // İş tamamlanmadıysa, iptal edilmediyse ve onay beklemiyorsa ustanın varlığına göre durumu otomatik düzelt.
+    // MANTIK HATASI DÜZELTMESİ: 
     if (label === 'Usta Bekliyor' || label === 'Devam Ediyor') {
         label = hasWorker ? 'Devam Ediyor' : 'Usta Bekliyor';
     }
@@ -34,12 +33,12 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const sDate = new Date(job.scheduled_date.split(' ')[0]); // Saati yoksay, sadece tarihi al
+        const sDate = new Date(job.scheduled_date.split(' ')[0]);
         sDate.setHours(0, 0, 0, 0);
 
         if (sDate < today) {
             label = 'Gecikti';
-            colorClass = 'bg-rose-100 text-rose-700 border-rose-200'; // Gecikme için uyarıcı kırmızı renk
+            colorClass = 'bg-rose-100 text-rose-700 border-rose-200';
         }
     }
     return { label, colorClass };
@@ -79,29 +78,35 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
            <tbody className="divide-y divide-slate-100">
              {data?.jobs?.length > 0 ? data.jobs.map((j: any) => {
                
-               // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA
-               const creator = j.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
-               const manager = j.manager_name || null;
+               // 🚀 HİYERARŞİ HESAPLAMASI (GÜVENLİ & GERİYE DÖNÜK UYUMLU)
+               const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
+               
+               // 1. Atayan (Creator)
+               const creator = j.creator_name || j.details?.createdBy || ownerName;
+               
+               // 2. Yönetici & Usta Atamaları (Hem D1 Sütunu Hem Details/Staff Taraması)
+               let manager = j.manager_name || j.details?.managerName || null;
                let worker = j.worker_name || null;
 
-               // Eğer D1'de worker_name yoksa (eski veriler için fallback)
-               if (!worker) {
-                   if (j.details?.worker_id) {
-                       const w = data?.staff?.find((s:any) => String(s.id) === String(j.details?.worker_id));
-                       if (w) worker = w.name;
-                   } else if (j.staff_id) {
-                       const w = data?.staff?.find((s:any) => String(s.id) === String(j.staff_id));
-                       if (w && w.role === 'Usta') worker = w.name;
+               const assignedPerson = data?.staff?.find((s: any) => String(s.id) === String(j.staff_id));
+               const detailWorker = data?.staff?.find((s: any) => String(s.id) === String(j.details?.worker_id));
+
+               if (assignedPerson) {
+                   if (assignedPerson.role === 'Yönetici') {
+                       if (!manager) manager = assignedPerson.name;
+                   } else {
+                       if (!worker) worker = assignedPerson.name;
                    }
                }
+               if (detailWorker && !worker) {
+                   worker = detailWorker.name;
+               }
 
-               const isCreatorSameAsManager = manager && creator === manager;
+               const isCreatorSameAsManager = manager && (creator === manager);
                
-               // İlgili varlığı ve apartman adını buluyoruz
                const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
                const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
 
-               // 🚀 MANTIK HATASI DÜZELTMESİ: İşin durumunu ustanın varlığına göre hesapla
                const dynamicStatus = getDynamicStatus(j, !!worker);
 
                return (
@@ -147,7 +152,7 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                       </div>
                    </td>
                    
-                  {/* 🚀 DÜZELTİLMİŞ: Personel Hiyerarşisi (Sıkı ve Düzenli Izgara Görünümü) */}
+                  {/* 🚀 MASAÜSTÜ PERSONEL HİYERARŞİSİ (SABİT GENİŞLİK) */}
                   <td className="px-5 py-4 align-top">
                       <div className="flex flex-col gap-2 w-fit">
                         {isCreatorSameAsManager ? (
@@ -234,27 +239,32 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
       <div className="md:hidden flex flex-col gap-3">
         {data?.jobs?.length > 0 ? data.jobs.map((j: any) => {
           
-          // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA
-          const creator = j.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
-          const manager = j.manager_name || null;
+          // 🚀 HİYERARŞİ HESAPLAMASI (MOBİL İÇİN AYNI GÜVENLİ MANTIK)
+          const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
+          const creator = j.creator_name || j.details?.createdBy || ownerName;
+          
+          let manager = j.manager_name || j.details?.managerName || null;
           let worker = j.worker_name || null;
 
-          if (!worker) {
-              if (j.details?.worker_id) {
-                  const w = data?.staff?.find((s:any) => String(s.id) === String(j.details?.worker_id));
-                  if (w) worker = w.name;
-              } else if (j.staff_id) {
-                  const w = data?.staff?.find((s:any) => String(s.id) === String(j.staff_id));
-                  if (w && w.role === 'Usta') worker = w.name;
+          const assignedPerson = data?.staff?.find((s: any) => String(s.id) === String(j.staff_id));
+          const detailWorker = data?.staff?.find((s: any) => String(s.id) === String(j.details?.worker_id));
+
+          if (assignedPerson) {
+              if (assignedPerson.role === 'Yönetici') {
+                  if (!manager) manager = assignedPerson.name;
+              } else {
+                  if (!worker) worker = assignedPerson.name;
               }
           }
+          if (detailWorker && !worker) {
+              worker = detailWorker.name;
+          }
 
-          const isCreatorSameAsManager = manager && creator === manager;
+          const isCreatorSameAsManager = manager && (creator === manager);
           
           const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
           const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
 
-          // 🚀 MANTIK HATASI DÜZELTMESİ (MOBİL)
           const dynamicStatus = getDynamicStatus(j, !!worker);
 
           return (
@@ -280,13 +290,12 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                      <span>{currentAsset?.location || 'Konum Belirtilmedi'}</span>
                    </div>
                  </div>
-                 {/* DİNAMİK DURUM ROZETİ (MOBİL) */}
                  <span className={`px-2 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider border shrink-0 shadow-sm ${dynamicStatus.colorClass}`}>
                    {dynamicStatus.label}
                  </span>
               </div>
 
-              {/* 🚀 DÜZELTİLMİŞ: Mobil Personel Hiyerarşisi (Düzenli Izgara) */}
+              {/* 🚀 MOBİL PERSONEL HİYERARŞİSİ (SABİT GENİŞLİK) */}
               <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-2.5">
                   {isCreatorSameAsManager ? (
                       <div className="flex items-center gap-2">
