@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Search, User, Box, Calendar, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle, Clock, Image as ImageIcon, Download, MessageSquareText, Settings, CheckSquare, Tag, Wrench, ArrowUpRight, UserPlus, UserCheck } from 'lucide-react';
+import { X, Loader2, Search, User, Box, Calendar, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle, Clock, Image as ImageIcon, Download, MessageSquareText, Settings, CheckSquare, Tag, Wrench, ArrowUpRight, UserPlus, UserCheck, Printer, Palette } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 
 export default function JobDetailModal({
@@ -25,6 +25,19 @@ export default function JobDetailModal({
 
   // 🚀 Firma Logosu ve Arka Plan Rengi Sistemi
   const [logoBgColor, setLogoBgColor] = useState<string>('#ffffff');
+
+  // 🚀 Yazdırma Modu Seçimi
+  const [showPrintModeSelection, setShowPrintModeSelection] = useState(false);
+  const [printMode, setPrintMode] = useState<'color' | 'bw'>('color');
+
+  const executePrint = (mode: 'color' | 'bw') => {
+    setPrintMode(mode);
+    setShowPrintModeSelection(false);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setPrintMode('color'), 1000); // Yazdırdıktan sonra normale dön
+    }, 150);
+  };
 
   const getSafeImageUrl = (url: string | undefined) => {
     if (!url) return '';
@@ -129,16 +142,22 @@ export default function JobDetailModal({
       }
     };
 
-    if (fullScreenImage) {
-      stopEvent();
-      setFullScreenImage(null);
-      return true;
-    }
-    if (previewPdfJob) {
-      stopEvent();
-      setPreviewPdfJob(null);
-      return true;
-    }
+    if (showPrintModeSelection) {
+        stopEvent();
+        setShowPrintModeSelection(false);
+        return true;
+      }
+  
+      if (fullScreenImage) {
+        stopEvent();
+        setFullScreenImage(null);
+        return true;
+      }
+      if (previewPdfJob) {
+        stopEvent();
+        setPreviewPdfJob(null);
+        return true;
+      }
 
     if (showCancelConfirm) {
       stopEvent();
@@ -163,9 +182,9 @@ export default function JobDetailModal({
     }
 
     return false;
-  }, [
-    fullScreenImage, previewPdfJob, showCancelConfirm, openedChild, 
-    isEditingJobDetail, selectedJob, isAnyProfileDetailOpen, 
+}, [
+    fullScreenImage, previewPdfJob, showCancelConfirm, openedChild, showPrintModeSelection,
+    isEditingJobDetail, selectedJob, isAnyProfileDetailOpen,
     setFullScreenImage, setPreviewPdfJob, setShowCancelConfirm, 
     setIsEditingJobDetail, setSelectedJob, handleCloseDetail
   ]);
@@ -323,18 +342,56 @@ export default function JobDetailModal({
                onClick={(e) => e.stopPropagation()}
                className="bg-white w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col max-h-[90vh] shadow-2xl relative z-10"
              >
+                {/* BASKI TÜRÜ SEÇİM EKRANI */}
+                <AnimatePresence>
+                  {showPrintModeSelection && (
+                    <motion.div 
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      className="absolute inset-0 z-50 bg-white/95 backdrop-blur-md flex flex-col items-center justify-center p-6 sm:p-8 no-print"
+                    >
+                      <h3 className="text-2xl font-black text-slate-800 mb-2">Baskı Türü</h3>
+                      <p className="text-[13px] font-medium text-slate-500 mb-8 text-center px-2">
+                        Servis formunu yazıcınıza uygun olan formatta yazdırın.
+                      </p>
+                      
+                      <div className="w-full max-w-xs space-y-3">
+                          <button 
+                            onClick={() => executePrint('color')} 
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-3 py-4 rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+                          >
+                            <Palette size={20} /> Renkli Baskı
+                          </button>
+                          
+                          <button 
+                            onClick={() => executePrint('bw')} 
+                            className="w-full bg-slate-900 hover:bg-slate-800 text-white flex items-center justify-center gap-3 py-4 rounded-xl font-bold transition-all shadow-lg shadow-slate-900/20 active:scale-95"
+                          >
+                            <Printer size={20} /> Siyah Beyaz Baskı
+                          </button>
+                      </div>
+
+                      <button 
+                        onClick={() => setShowPrintModeSelection(false)} 
+                        className="mt-6 px-6 py-2 text-slate-400 font-bold text-sm hover:text-slate-800 transition-colors active:scale-95"
+                      >
+                        İptal Et
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 no-print z-10">
                    <h2 className="font-black text-lg text-slate-800">Servis Formu & Fiyat Özeti</h2>
                    <button onClick={() => handleSmartClose()} className="p-2 bg-white rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"><X size={18} /></button>
                 </div>
                 
-                <div id="pdf-printable-area" className="p-8 overflow-y-auto custom-scrollbar bg-white text-black flex-1 relative">
+                <div id="pdf-printable-area" className={`p-8 overflow-y-auto custom-scrollbar bg-white text-black flex-1 relative ${printMode === 'bw' ? 'bw-mode' : ''}`}>
                 <div className="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-start">
                        <div className="flex items-center gap-4">
                           {data?.logo && (
                              <div 
                                 className="w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden border border-slate-200 shadow-sm"
-                                style={{ backgroundColor: logoBgColor }}
+                                style={{ backgroundColor: printMode === 'bw' ? '#ffffff' : logoBgColor }}
                              >
                                 <img 
                                    src={getSafeImageUrl(data.logo)} 
@@ -405,8 +462,8 @@ export default function JobDetailModal({
                 </div>
 
                 <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row gap-3 no-print z-10">
-                   <button onClick={() => window.print()} className="flex-[2] bg-slate-900 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-md active:scale-95">
-                      <Download size={18} /> PDF Olarak Cihaza Kaydet
+                   <button onClick={() => setShowPrintModeSelection(true)} className="flex-[2] bg-slate-900 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-md active:scale-95">
+                      <Printer size={18} /> PDF Olarak Cihaza Kaydet
                    </button>
                    <button onClick={() => sendCustomerWhatsApp(previewPdfJob)} className="flex-1 bg-emerald-500 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all shadow-md active:scale-95">
                       <MessageSquareText size={18} /> Müşteriye Gönder
@@ -440,9 +497,20 @@ export default function JobDetailModal({
                  /* 3. SADECE YAZDIRILACAK ALANI GÖSTER */
                  #pdf-printable-area, #pdf-printable-area * {
                     visibility: visible !important;
-                    color: black !important;
                  }
                  
+                 /* RENKSİZ (SİYAH BEYAZ) BASKI MODU */
+                 .bw-mode, .bw-mode * {
+                    color: black !important;
+                    border-color: black !important;
+                 }
+                 .bw-mode .print-no-bg, .bw-mode .bg-slate-50, .bw-mode .bg-blue-50 {
+                    background-color: transparent !important;
+                 }
+                 .bw-mode img {
+                    filter: grayscale(100%) brightness(0) !important;
+                 }
+
                  /* 4. YAZDIRILACAK ALANI KAĞIDIN EN TEPESİNE YAPIŞTIR */
                  #pdf-printable-area {
                     position: absolute !important;
