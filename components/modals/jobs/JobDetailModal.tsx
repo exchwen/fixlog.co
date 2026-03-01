@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Search, User, Box, Calendar, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle, Clock, Image as ImageIcon, Download, MessageSquareText, Settings, CheckSquare, Tag, Wrench, ArrowUpRight, UserPlus, UserCheck } from 'lucide-react';
+import { X, Loader2, Search, User, Box, Calendar, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle, Clock, Image as ImageIcon, Download, MessageSquareText, Settings, CheckSquare, Tag, Wrench, ArrowUpRight, UserPlus, UserCheck, Building2 } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 
 export default function JobDetailModal({
@@ -22,6 +22,15 @@ export default function JobDetailModal({
   
   // 🚀 Şık Hata/Bilgi Modalı
   const [notification, setNotification] = useState<{show: boolean, msg: string, type: 'error' | 'success'}>({show: false, msg: '', type: 'success'});
+
+  // 🚀 GÜVENLİ LİNK DÖNÜŞÜTÜRÜCÜ (PROXY) - Logo CORS sorununu çözer
+  const getSafeImageUrl = (url: string | undefined) => {
+    if (!url) return '';
+    if (url.includes('pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev')) {
+       return url.replace('https://pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev', '/dosya-deposu');
+    }
+    return url;
+  };
 
   // Dışarıdan modal kapandığında local state'i temizle
   useEffect(() => {
@@ -215,8 +224,7 @@ export default function JobDetailModal({
   // 🚀 iOS Stacking Kontrolü - SADECE benim açtıklarım veya PDF/Foto iç layerları
   const isStacked = Boolean(previewPdfJob || fullScreenImage || openedChild !== null);
 
-  // 🚀 TÜM EKRANIN ULAŞABİLECEĞİ ORTAK DEĞİŞKENLER (Scope Hatasını Çözer)
-  // 🚀 DÜZELTİLDİ: work_type'ı 'Görev' kalmış eski kayıtlar için veya müşteri adı boş olanları da Genel Görev say!
+  // 🚀 TÜM EKRANIN ULAŞABİLECEĞİ ORTAK DEĞİŞKENLER
   const isGeneralTask = selectedJob?.work_type === 'Genel Görev' || selectedJob?.work_type === 'Görev' || !selectedJob?.customer_name || selectedJob?.customer_name === 'Genel Görev';
   const hasWorker = !!selectedJob?.worker_name || !!selectedJob?.details?.worker_id || !!(selectedJob?.staff_id && (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.staff_id) && s.role === 'Usta'));
 
@@ -252,16 +260,32 @@ export default function JobDetailModal({
                 </div>
                 
                 <div id="pdf-printable-area" className="p-8 overflow-y-auto custom-scrollbar bg-white text-black flex-1 relative">
-                    <div className="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-start">
-                       <div>
-                          <h1 className="text-2xl font-black">{data?.name || 'Firma Adı'}</h1>
-                          <p className="text-sm text-slate-500 mt-1 print-text-black">{data?.address}</p>
-                          <p className="text-xs font-bold text-slate-400 mt-1 print-text-black">{data?.phone}</p>
+                    
+                    {/* 🚀 PDF HEADER ALANI (LOGO + FİRMA ADI + ARKA PLAN) */}
+                    <div className="flex justify-between items-center bg-slate-50 rounded-2xl p-6 mb-8 border border-slate-100 print:bg-slate-50 print:border-slate-200 print-bg-gray">
+                       <div className="flex items-center gap-4">
+                          {data?.logo ? (
+                              <img src={getSafeImageUrl(data.logo)} alt="Firma Logo" crossOrigin="anonymous" className="w-16 h-16 object-contain drop-shadow-sm rounded-lg bg-white p-1" />
+                          ) : (
+                              <div className="w-14 h-14 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-slate-300">
+                                  <Building2 size={24} />
+                              </div>
+                          )}
+                          <div>
+                             <h1 className="text-2xl font-black text-slate-900 leading-tight">{data?.name || 'Firma Adı'}</h1>
+                             <div className="flex items-center gap-3 mt-1.5">
+                                 <p className="text-[11px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-100 print-text-black">{data?.phone}</p>
+                                 {data?.tax_info && <p className="text-[10px] font-medium text-slate-400 print-text-gray">{data.tax_info}</p>}
+                             </div>
+                          </div>
                        </div>
-                       <div className="text-right">
-                          <div className="text-xl font-black text-slate-300 tracking-widest print-text-gray">SERVİS FORMU</div>
-                          <div className="text-sm font-bold mt-1">Kayıt No: #{previewPdfJob.id}</div>
-                          <div className="text-xs text-slate-500 mt-0.5 print-text-black">{new Date().toLocaleDateString('tr-TR')}</div>
+                       
+                       <div className="text-right flex flex-col items-end justify-center">
+                          <div className="bg-slate-800 text-white px-3 py-1 rounded-md text-sm font-black tracking-widest mb-2 print-text-black print:bg-transparent print:border print:border-black">
+                              SERVİS FORMU
+                          </div>
+                          <div className="text-xs font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-100">Kayıt No: #{previewPdfJob.id}</div>
+                          <div className="text-[10px] font-medium text-slate-400 mt-1">{new Date().toLocaleDateString('tr-TR')}</div>
                        </div>
                     </div>
                     
@@ -322,15 +346,13 @@ export default function JobDetailModal({
                 </div>
              </motion.div>
              
-             {/* 🚀 KUSURSUZ YAZDIRMA CSS'İ - "NUKE" METODU (Framer Motion'u Ezer) */}
+             {/* 🚀 KUSURSUZ YAZDIRMA CSS'İ */}
              <style dangerouslySetInnerHTML={{__html:`
                @media print {
                  @page { margin: 10mm; size: A4 portrait; }
                  
-                 /* 1. BÜTÜN SAYFAYI GİZLE VE RESETLE */
                  body * { visibility: hidden !important; }
                  
-                 /* 2. FRAMER MOTION VE TAILWIND ENGELİNİ KALDIR (ÇOK ÖNEMLİ) */
                  * { 
                     position: static !important; 
                     transform: none !important; 
@@ -339,13 +361,17 @@ export default function JobDetailModal({
                     box-shadow: none !important; 
                  }
 
-                 /* 3. SADECE YAZDIRILACAK ALANI GÖSTER */
                  #pdf-printable-area, #pdf-printable-area * {
                     visibility: visible !important;
-                    color: black !important;
+                 }
+
+                 /* 🚀 Header'ın gri arka planını zorla yazdır */
+                 .print-bg-gray {
+                    background-color: #f8fafc !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
                  }
                  
-                 /* 4. YAZDIRILACAK ALANI KAĞIDIN EN TEPESİNE YAPIŞTIR */
                  #pdf-printable-area {
                     position: absolute !important;
                     left: 0 !important;
@@ -356,7 +382,6 @@ export default function JobDetailModal({
                     background-color: white !important;
                  }
 
-                 /* 5. MÜŞTERİ VE CİHAZ KUTULARINI YAN YANA GETİR */
                  .print-grid {
                     display: flex !important;
                     flex-wrap: wrap !important;
@@ -368,12 +393,10 @@ export default function JobDetailModal({
                     background: transparent !important;
                  }
 
-                 /* 6. GEREKSİZLERİ YOK ET */
                  .no-print, .no-print * { 
                     display: none !important; 
                  }
                  
-                 /* 7. FOTOĞRAFLARI KESİLMEDEN YAZDIR */
                  img { 
                     max-width: 100% !important; 
                     height: auto !important; 
@@ -450,12 +473,10 @@ export default function JobDetailModal({
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6 space-y-4 sm:space-y-5 relative">
                     
                     {(() => {
-                        // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA (Tertemiz)
                         const creator = selectedJob.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
                         let managerName = selectedJob.manager_name || null;
                         let finalWorkerName = selectedJob.worker_name || null;
 
-                        // Eski veriler (json içi) için fallback (geri dönük uyumluluk)
                         if (!finalWorkerName) {
                             if (selectedJob.details?.worker_id) {
                                 const w = (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.details?.worker_id));
@@ -512,7 +533,6 @@ export default function JobDetailModal({
                                     </span>
                                 </div>
 
-                                {/* 🚀 DÜZELTİLDİ: GRID YAPSISI KUSURSUZLAŞTIRILDI */}
                                 {!isGeneralTask && (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
                                         <div 
@@ -643,7 +663,7 @@ export default function JobDetailModal({
 
                     {selectedJob.details?.lastEditedBy && (
                         <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50/50 border border-emerald-100 rounded-xl">
-                            <ShieldCheck size={18} className="textemerald-600 shrink-0" />
+                            <ShieldCheck size={18} className="text-emerald-600 shrink-0" />
                             <div className="flex flex-col">
                                 <span className="text-[10px] text-emerald-600 font-black uppercase tracking-widest mb-0.5">Güvenlik Kaydı</span>
                                 <span className="text-xs font-medium text-slate-600">
@@ -676,9 +696,8 @@ export default function JobDetailModal({
                             </button>
                         )}
 
-{selectedJob.status !== 'Tamamlandı' && selectedJob.status !== 'İptal' && (
+                        {selectedJob.status !== 'Tamamlandı' && selectedJob.status !== 'İptal' && (
                         <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3 w-full pt-4 mt-2 border-t border-slate-100">
-                            {/* 🚀 KABUL ET BUTONU */}
                             {(userRole !== 'Patron' && 
                               (selectedJob.status === 'Beklemede' || selectedJob.status === 'Gelecek') && 
                               !hasWorker && 
@@ -735,7 +754,6 @@ export default function JobDetailModal({
                                                 <Settings size={16} /> {isGeneralTask ? 'Detayları Düzenle' : 'Düzenle / Ata'}
                                             </button>
                                             
-                                            {/* 🚀 EKLENDİ: Genel Görev ise Yöneticinin İşi Direkt Bitirmesini Sağlayan Buton */}
                                             {(isGeneralTask && getDynamicStatus(selectedJob, hasWorker).label === 'Devam Ediyor') && (
                                                 <button 
                                                     onClick={async () => {
@@ -774,7 +792,6 @@ export default function JobDetailModal({
               ) : (
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6 space-y-5">
                     
-                    {/* 🚀 DÜZELTİLDİ: Usta Bekliyor durumunda VEYA ASSIGN modunda, sadece branş, personel ve not görünür. */}
                     {jobModalType !== 'ASSIGN' && selectedJob?.status !== 'Usta Bekliyor' && !isGeneralTask && (
                         <>
                             <div>
@@ -862,7 +879,6 @@ export default function JobDetailModal({
                         </>
                     )}
 
-                    {/* 🚀 EKLENDİ: Görev Tipi / Branş Seçimi */}
                     {editJobDetailForm.workCategory !== 'Genel İş Atama' && (
                                   <div>
                                     <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Görev Tipi / Branş</label>
@@ -920,7 +936,7 @@ export default function JobDetailModal({
         )}
       </AnimatePresence>
 
-      {/* 2. FULLSCREEN GÖRSEL MODALI (Z-Index En Yüksek) */}
+      {/* 2. FULLSCREEN GÖRSEL MODALI */}
       <AnimatePresence>
         {fullScreenImage && (
           <motion.div 
