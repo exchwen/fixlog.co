@@ -271,6 +271,23 @@ export default function WorkerDashboard() {
 
   const currentFields = (companySector && staffBranch && sectorsData.sectors?.[companySector]?.subTypes?.[staffBranch]?.fields) || [];
 
+  // 🚀 İşi Atayan veya Sorumlu Yöneticiyi Hesaplayan Yardımcı Fonksiyon
+  const getAssignerInfo = (job) => {
+    const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
+    const creator = job.creator_name || job.details?.createdBy || ownerName;
+    let manager = job.manager_name || job.details?.managerName || null;
+    
+    const assignedPerson = data?.staff?.find(s => String(s.id) === String(job.staff_id));
+    if (assignedPerson && assignedPerson.role === 'Yönetici' && !manager) {
+        manager = assignedPerson.name;
+    }
+    
+    if (manager) {
+        return { name: manager, role: 'Sorumlu Yönetici', icon: 'ShieldCheck' };
+    }
+    return { name: creator, role: 'Görevlendiren', icon: 'UserPlus' };
+  };
+
   const handleStatusUpdate = async (newStatus) => {
     setIsSaving(true);
     const token = localStorage.getItem('staff_authToken'); 
@@ -479,7 +496,9 @@ export default function WorkerDashboard() {
                     <PlayCircle size={14} /> ŞU AN ÜZERİNDE ÇALIŞTIĞINIZ
                  </h2>
                  <div className="space-y-3">
-                    {activeJobs.map(job => (
+                    {activeJobs.map(job => {
+                      const assigner = getAssignerInfo(job);
+                      return (
                       <div key={job.id} onClick={() => setSelectedJob(job)} className="bg-blue-600 rounded-2xl p-4 shadow-lg shadow-blue-600/20 text-white active:scale-95 transition-transform cursor-pointer border border-blue-500 relative overflow-hidden">
                           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
                           <div className="relative z-10">
@@ -489,9 +508,14 @@ export default function WorkerDashboard() {
                               </div>
                               <h3 className="text-lg font-black leading-tight mb-1">{job.customer_name}</h3>
                               <p className="text-blue-100 text-sm font-medium flex items-center gap-1.5"><MapPin size={14} className="shrink-0"/> {job.work_type}</p>
+                              
+                              <div className="mt-3 pt-3 border-t border-blue-500/50 flex items-center gap-1.5 text-[11px] text-blue-100">
+                                 {assigner.icon === 'ShieldCheck' ? <ShieldCheck size={14} /> : <UserPlus size={14} />}
+                                 <span className="opacity-80">{assigner.role}:</span> <span className="font-bold text-white">{assigner.name}</span>
+                              </div>
                           </div>
                       </div>
-                    ))}
+                    )})}
                  </div>
               </div>
             )}
@@ -502,7 +526,9 @@ export default function WorkerDashboard() {
                   <AlertCircle size={14} /> SIRADAKİ GÖREVLER
                </h2>
                <div className="space-y-3">
-                  {pendingJobs.length > 0 ? pendingJobs.map(job => (
+                  {pendingJobs.length > 0 ? pendingJobs.map(job => {
+                    const assigner = getAssignerInfo(job);
+                    return (
                     <div key={job.id} onClick={() => setSelectedJob(job)} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 active:scale-95 transition-transform cursor-pointer hover:border-blue-200">
                         <div className="flex justify-between items-start mb-2">
                            <span className="bg-amber-100 text-amber-800 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">{job.status}</span>
@@ -510,8 +536,13 @@ export default function WorkerDashboard() {
                         </div>
                         <h3 className="text-base font-black text-slate-800 leading-tight mb-1">{job.customer_name}</h3>
                         <p className="text-slate-500 text-xs font-medium flex items-center gap-1.5"><PenTool size={12} className="shrink-0 text-blue-500"/> {job.work_type}</p>
+                        
+                        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-500">
+                           {assigner.icon === 'ShieldCheck' ? <ShieldCheck size={14} className="text-blue-500" /> : <UserPlus size={14} className="text-slate-400" />}
+                           <span>{assigner.role}:</span> <span className="font-bold text-slate-700">{assigner.name}</span>
+                        </div>
                     </div>
-                  )) : (
+                  )}) : (
                     <div className="text-center p-8 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 font-medium text-sm">
                        Bekleyen yeni bir göreviniz yok.
                     </div>
@@ -546,6 +577,15 @@ export default function WorkerDashboard() {
                    <div>
                        <div className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1 flex items-center gap-1.5"><MapPin size={12}/> Müşteri / Konum</div>
                        <h2 className="text-2xl font-black text-slate-900 leading-tight">{selectedJob.customer_name}</h2>
+                       {(() => {
+                           const assigner = getAssignerInfo(selectedJob);
+                           return (
+                               <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 mt-3 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100 w-fit shadow-sm">
+                                  {assigner.icon === 'ShieldCheck' ? <ShieldCheck size={14} className="text-blue-500"/> : <UserPlus size={14} className="text-slate-400"/>} 
+                                  {assigner.role}: <span className="font-bold text-slate-700">{assigner.name}</span>
+                               </div>
+                           );
+                       })()}
                    </div>
                    
                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">

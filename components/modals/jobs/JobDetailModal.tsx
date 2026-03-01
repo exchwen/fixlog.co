@@ -385,36 +385,36 @@ export default function JobDetailModal({
                    <button onClick={() => handleSmartClose()} className="p-2 bg-white rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"><X size={18} /></button>
                 </div>
                 
-                <div id="pdf-printable-area" className={`p-8 overflow-y-auto custom-scrollbar bg-white text-black flex-1 relative ${printMode === 'bw' ? 'bw-mode' : ''}`}>
-                <div className="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-start">
-                       <div className="flex items-center gap-4">
+                <div id="pdf-printable-area" className={`p-4 sm:p-8 overflow-y-auto custom-scrollbar bg-white text-black flex-1 relative ${printMode === 'bw' ? 'bw-mode' : ''}`}>
+                <div className="border-b-2 border-slate-800 pb-4 mb-6 flex flex-col sm:flex-row justify-between items-start gap-4 sm:gap-0 print-header">
+                       <div className="flex items-center gap-3 sm:gap-4">
                           {data?.logo && (
                              <div 
-                                className="w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden border border-slate-200 shadow-sm"
+                                className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center overflow-hidden border border-slate-200 shadow-sm shrink-0"
                                 style={{ backgroundColor: printMode === 'bw' ? '#ffffff' : logoBgColor }}
                              >
                                 <img 
                                    src={getSafeImageUrl(data.logo)} 
                                    alt="Firma Logosu" 
                                    crossOrigin="anonymous"
-                                   className="w-12 h-12 object-contain" 
+                                   className="w-10 h-10 sm:w-12 sm:h-12 object-contain" 
                                 />
                              </div>
                           )}
                           <div>
-                             <h1 className="text-2xl font-black">{data?.name || 'Firma Adı'}</h1>
-                             <p className="text-sm text-slate-500 mt-1 print-text-black">{data?.address}</p>
-                             <p className="text-xs font-bold text-slate-400 mt-1 print-text-black">{data?.phone}</p>
+                             <h1 className="text-xl sm:text-2xl font-black leading-tight">{data?.name || 'Firma Adı'}</h1>
+                             <p className="text-xs sm:text-sm text-slate-500 mt-1 print-text-black">{data?.address}</p>
+                             <p className="text-[10px] sm:text-xs font-bold text-slate-400 mt-0.5 print-text-black">{data?.phone}</p>
                           </div>
                        </div>
-                       <div className="text-right">
-                          <div className="text-xl font-black text-slate-300 tracking-widest print-text-gray">SERVİS FORMU</div>
-                          <div className="text-sm font-bold mt-1">Kayıt No: #{previewPdfJob.id}</div>
-                          <div className="text-xs text-slate-500 mt-0.5 print-text-black">{new Date().toLocaleDateString('tr-TR')}</div>
+                       <div className="text-left sm:text-right print-header-right">
+                          <div className="text-lg sm:text-xl font-black text-slate-900 tracking-widest">SERVİS FORMU</div>
+                          <div className="text-xs sm:text-sm font-bold mt-1">Kayıt No: #{previewPdfJob.id}</div>
+                          <div className="text-[10px] sm:text-xs text-slate-500 mt-0.5 print-text-black">{new Date().toLocaleDateString('tr-TR')}</div>
                        </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4 mb-8 print-grid">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-8 print-grid">
                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print-no-bg">
                           <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">Müşteri Bilgisi</div>
                           <div className="font-bold text-sm text-slate-800">{previewPdfJob.customer_name}</div>
@@ -522,10 +522,19 @@ export default function JobDetailModal({
                     background-color: white !important;
                  }
 
-                 /* 5. MÜŞTERİ VE CİHAZ KUTULARINI YAN YANA GETİR */
+                 /* 5. MÜŞTERİ VE CİHAZ KUTULARINI YAN YANA GETİR VE MOBİL KISITLAMALARINI YAZICIDA EZ */
+                 .print-header { 
+                    flex-direction: row !important; 
+                    justify-content: space-between !important; 
+                    align-items: flex-start !important;
+                 }
+                 .print-header-right { 
+                    text-align: right !important; 
+                 }
                  .print-grid {
                     display: flex !important;
-                    flex-wrap: wrap !important;
+                    flex-direction: row !important;
+                    flex-wrap: nowrap !important;
                     gap: 20px !important;
                  }
                  .print-grid > div {
