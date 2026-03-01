@@ -7,7 +7,7 @@ import { MapPin, Clock, CheckCircle2, MessageSquareText, LogOut, ChevronRight, P
 import sectorsData from '@/lib/data/sectors.json';
 import Header from '@/components/layout/Header';
 
-// 🚀 ÇÖZÜM: DynamicPWA bileşeni import edildi
+import ChatPanel from '@/components/chat/ChatPanel'; // 🚀 CHAT PANEL EKLENDİ
 import DynamicPWA from '@/components/DynamicPWA'; 
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
@@ -45,6 +45,12 @@ export default function WorkerDashboard() {
   const [jobNote, setJobNote] = useState('');
   const [dynamicForm, setDynamicForm] = useState({}); 
   const [isSaving, setIsSaving] = useState(false);
+
+  // 🚀 CHAT (MESAJLAŞMA) STATE'LERİ
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [activeChatId, setActiveChatId] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [messageInput, setMessageInput] = useState('');
 
   const [photos, setPhotos] = useState([]);
   const fileInputRef = useRef(null);
@@ -206,11 +212,44 @@ export default function WorkerDashboard() {
     }
   };
 
+  const fetchMessages = async () => {
+    if (!activeChatId) return;
+    const token = localStorage.getItem('staff_authToken');
+    try {
+      const res = await fetch(`${API_URL}/get-messages?slug=${slug}&staffId=${activeChatId}`, { 
+        headers: { 'Authorization': `Bearer ${token}` } 
+      });
+      setMessages(await res.json() || []);
+    } catch (err) {}
+  };
+
+  const sendMessage = async () => {
+    if (!messageInput.trim() || !activeChatId) return;
+    const token = localStorage.getItem('staff_authToken');
+    await fetch(`${API_URL}/send-message`, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ 
+          slug, 
+          senderId: userData?.id, 
+          receiverId: activeChatId, 
+          message: messageInput 
+        }) 
+    });
+    setMessageInput(''); 
+    fetchMessages();
+  };
+
   useEffect(() => {
     fetchData(true);
     const int = setInterval(() => fetchData(false), 15000); 
     return () => clearInterval(int);
   }, [slug, router]);
+
+  // Sohbet açıldığında mesajları çek
+  useEffect(() => { 
+    if (isChatOpen && activeChatId) fetchMessages(); 
+  }, [isChatOpen, activeChatId]);
 
   useEffect(() => {
     setDynamicForm({});
@@ -552,14 +591,6 @@ export default function WorkerDashboard() {
 
           </div>
         )}
-
-        {/* Mesajlar Sekmesi */}
-        {activeTab === 'messages' && (
-           <div className="h-full flex flex-col items-center justify-center text-center opacity-50 pt-20">
-               <MessageSquareText size={48} className="text-slate-400 mb-4" />
-               <p className="font-bold text-slate-600">Mesajlar alanı yakında aktif olacak.</p>
-           </div>
-        )}
       </main>
 
       {/* İŞ DETAY VE AKSİYON MODALI */}
@@ -726,19 +757,30 @@ export default function WorkerDashboard() {
         />
       )}
 
-      {/* MOBİL ALT MENÜ (BOTTOM NAVIGATION) */}
-      <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 pb-safe pt-2 px-6 flex justify-between items-center z-30 h-20 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-          <button onClick={() => setActiveTab('jobs')} className={`flex flex-col items-center gap-1.5 transition-colors ${activeTab === 'jobs' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
-              <div className={`p-1.5 rounded-xl ${activeTab === 'jobs' ? 'bg-blue-50' : ''}`}><PenTool size={22} strokeWidth={activeTab === 'jobs' ? 3 : 2} /></div>
-              <span className="text-[10px] font-black uppercase tracking-widest">Görevler</span>
+      {/* 🚀 CHAT BİLEŞENİ EKLENDİ */}
+      <ChatPanel 
+        isChatOpen={isChatOpen} 
+        setIsChatOpen={setIsChatOpen} 
+        activeChatId={activeChatId} 
+        setActiveChatId={setActiveChatId} 
+        data={data} 
+        messages={messages} 
+        setMessages={setMessages} 
+        messageInput={messageInput} 
+        setMessageInput={setMessageInput} 
+        sendMessage={sendMessage} 
+      />
+
+      {/* MOBİL ALT MENÜ (SADECE GÖREVLER VE ÇIKIŞ) */}
+      <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 pb-safe pt-2 px-8 flex justify-between items-center z-30 h-20 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+          <button onClick={() => setActiveTab('jobs')} className="flex flex-col items-center gap-1.5 text-blue-600">
+              <div className="p-1.5 rounded-xl bg-blue-50"><PenTool size={22} strokeWidth={3} /></div>
+              <span className="text-[10px] font-black uppercase tracking-widest">Saha Görevleri</span>
           </button>
-          <button onClick={() => setActiveTab('messages')} className={`flex flex-col items-center gap-1.5 transition-colors ${activeTab === 'messages' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
-              <div className={`p-1.5 rounded-xl ${activeTab === 'messages' ? 'bg-blue-50' : ''}`}><MessageSquareText size={22} strokeWidth={activeTab === 'messages' ? 3 : 2} /></div>
-              <span className="text-[10px] font-black uppercase tracking-widest">Mesajlar</span>
-          </button>
-          <button onClick={handleLogout} className="flex flex-col items-center gap-1.5 text-rose-400 hover:text-rose-600 transition-colors">
+          
+          <button onClick={handleLogout} className="flex flex-col items-center gap-1.5 text-rose-400 hover:text-rose-600 transition-colors mr-2">
               <div className="p-1.5"><LogOut size={22} strokeWidth={2} /></div>
-              <span className="text-[10px] font-black uppercase tracking-widest">Çıkış</span>
+              <span className="text-[10px] font-black uppercase tracking-widest">Oturumu Kapat</span>
           </button>
       </nav>
 
