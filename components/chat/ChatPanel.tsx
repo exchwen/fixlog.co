@@ -50,13 +50,16 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   useEffect(() => { dataRef.current = data; }, [data]);
 
   useEffect(() => {
-    const isPatronPath = window.location.pathname.includes('/dashboard');
-    const prefix = isPatronPath ? 'patron_' : 'staff_';
+    let token = localStorage.getItem('patron_authToken');
+    let storedRole = localStorage.getItem('patron_userRole');
+
+    if (!token) {
+        token = localStorage.getItem('staff_authToken');
+        storedRole = localStorage.getItem('staff_userRole');
+    }
     
-    const storedRole = localStorage.getItem(`${prefix}userRole`);
     setCurrentUserRole(storedRole);
     
-    const token = localStorage.getItem(`${prefix}authToken`);
     if (token) {
         try {
             const base64Url = token.split('.')[1];
@@ -180,13 +183,11 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     img.src = safeLogoUrl + (safeLogoUrl.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
     }, [data?.logo]);
 
-  useEffect(() => {
-    const fetchAllMessages = async () => {
-        if (!actualSlug || !currentUserId) return;
-        const isPatronPath = window.location.pathname.includes('/dashboard');
-        const prefix = isPatronPath ? 'patron_' : 'staff_';
-        const token = localStorage.getItem(`${prefix}authToken`);
-        const API_URL = 'https://backend.isdokumu.workers.dev';
+    useEffect(() => {
+      const fetchAllMessages = async () => {
+          if (!actualSlug || !currentUserId) return;
+          const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
+          const API_URL = 'https://backend.isdokumu.workers.dev';
         
         try {
             const safeRole = currentUserRole ? currentUserRole.trim().toLocaleUpperCase('tr-TR') : '';
@@ -247,9 +248,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   useEffect(() => {
     if (!actualSlug || !currentUserId) return;
 
-    const isPatronPath = window.location.pathname.includes('/dashboard');
-    const prefix = isPatronPath ? 'patron_' : 'staff_';
-    const token = localStorage.getItem(`${prefix}authToken`);
+    const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
     const API_URL = 'https://backend.isdokumu.workers.dev';
 
     Pusher.logToConsole = false;
@@ -380,9 +379,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   const markMessagesAsReadInternal = async (targetSenderId: string | null, currentActiveId: string | null) => {
     if (!targetSenderId || !currentUserId || !document.hasFocus()) return;
     
-    const isPatronPath = window.location.pathname.includes('/dashboard');
-    const prefix = isPatronPath ? 'patron_' : 'staff_';
-    const token = localStorage.getItem(`${prefix}authToken`);
+    const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
     const API_URL = 'https://backend.isdokumu.workers.dev';
     
     try {
@@ -476,17 +473,15 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
     setAllMessages(prev => [...prev, newMessage]);
     
     if (setMessages) {
-        setMessages((prev: any) => [...(prev || []), newMessage]);
-    }
-    
-    setMessageInput(''); 
+      setMessages((prev: any) => [...(prev || []), newMessage]);
+  }
+  
+  setMessageInput(''); 
 
-    const isPatronPath = window.location.pathname.includes('/dashboard');
-    const prefix = isPatronPath ? 'patron_' : 'staff_';
-    const token = localStorage.getItem(`${prefix}authToken`);
-    const API_URL = 'https://backend.isdokumu.workers.dev';
-    
-    fetch(`${API_URL}/send-message`, { 
+  const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
+  const API_URL = 'https://backend.isdokumu.workers.dev';
+  
+  fetch(`${API_URL}/send-message`, {
         method: 'POST', 
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ 
