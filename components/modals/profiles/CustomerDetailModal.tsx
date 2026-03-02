@@ -40,7 +40,7 @@ export default function CustomerDetailModal({
     if (!selectedJob && openedChild === 'job') setOpenedChild(null);
   }, [selectedJob, openedChild]);
 
-  // 🚀 isStacked artık sadece 'biz' bir şey açtıysak veya silme onayı açıksa true olur
+  // 🚀 isStacked sadece 'biz' bir şey açtıysak veya silme onayı açıksa true olur (iOS Stacking için)
   const isStacked = openedChild !== null || showDeleteConfirm;
 
   const statusColors: any = { 
@@ -294,37 +294,56 @@ export default function CustomerDetailModal({
                           
                           <div>
                               <h4 className="text-[11px] font-black text-slate-500 mb-2 uppercase tracking-widest flex items-center gap-1.5"><Calendar size={14}/> Geçmiş İş Kayıtları</h4>
-                              <div className="space-y-2">
-                                  {(data?.jobs || []).filter((j: any) => j.customer_name === selectedCustomer?.name).length > 0 ? (data?.jobs || []).filter((j: any) => j.customer_name === selectedCustomer?.name).map((j: any) => {
-                                      const dynamicStatus = getDynamicStatus(j);
-                                      return (
-                                          <div 
-                                            key={j.id} 
-                                            onClick={(e) => { 
-                                                e.stopPropagation(); 
-                                                // 🚀 KİMİ AÇTIĞIMIZI BİLDİRİYORUZ
-                                                setOpenedChild('job');
-                                                if(setSelectedJob) setSelectedJob(j); 
-                                            }} 
-                                            className={`p-4 border rounded-xl flex items-center justify-between cursor-pointer transition-all active:scale-95 group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-500/20' : 'bg-white border-slate-200 hover:border-blue-200 hover:shadow-sm'}`}
-                                          >
-                                              <div className="min-w-0 pr-2">
-                                                  <div className="font-bold text-sm text-slate-800 group-hover:text-blue-700 transition-colors truncate">{j.work_type || 'Görev'}</div>
-                                                  <div className="text-[10px] font-medium text-slate-500 mt-1 flex items-center gap-1">
-                                                      <Clock size={10} className={dynamicStatus.label === 'Gecikti' ? 'text-rose-500' : 'text-slate-400'}/> 
-                                                      {j.scheduled_date || 'Anlık Kayıt'}
+                              
+                              {/* 🚀 KUTU İÇİ SCROLL VE SABİT BOY EKLENDİ */}
+                              {(data?.jobs || []).filter((j: any) => j.customer_name === selectedCustomer?.name).length > 0 ? (
+                                  <div className="space-y-2 max-h-[320px] overflow-y-auto custom-scrollbar pr-1">
+                                      {(data?.jobs || []).filter((j: any) => j.customer_name === selectedCustomer?.name).map((j: any) => {
+                                          const dynamicStatus = getDynamicStatus(j);
+                                          const asset = (data?.assets || []).find((a: any) => String(a.id) === String(j.asset_id));
+                                          const aptName = asset?.apartmentName || asset?.apartment_name || '';
+                                          const displayAsset = aptName ? `${aptName} - ${asset?.name || 'Varlık'}` : (asset?.name || 'Bağımsız Müşteri İşlemi');
+                                          const jobDate = j.created_at?.split('T')[0] || j.scheduled_date?.split(' ')[0] || 'Tarih Yok';
+
+                                          return (
+                                              <div 
+                                                key={j.id} 
+                                                onClick={(e) => { 
+                                                    e.stopPropagation(); 
+                                                    // 🚀 iOS STACKING İÇİN AÇILAN MODALI BİLDİRİYORUZ
+                                                    setOpenedChild('job');
+                                                    if(setSelectedJob) setSelectedJob(j); 
+                                                }} 
+                                                className={`p-4 border rounded-xl flex items-center justify-between cursor-pointer transition-all active:scale-95 group ${selectedJob?.id === j.id ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-500/20' : 'bg-white border-slate-200 hover:border-blue-200 hover:shadow-sm'}`}
+                                              >
+                                                  <div className="min-w-0 pr-2 flex-1">
+                                                      <div className="font-bold text-sm text-slate-800 group-hover:text-blue-700 transition-colors truncate">{j.work_type || 'Görev'}</div>
+                                                      
+                                                      {/* 🚀 APARTMAN ADI VE VARLIK TÜRÜ */}
+                                                      <div className="text-[11px] font-semibold text-slate-600 mt-1.5 flex items-center gap-1.5 truncate">
+                                                          <Box size={12} className="shrink-0 text-blue-500" />
+                                                          <span className="truncate">{displayAsset}</span>
+                                                      </div>
+                                                      
+                                                      {/* 🚀 TARİH */}
+                                                      <div className="text-[10px] font-medium text-slate-500 mt-1 flex items-center gap-1">
+                                                          <Calendar size={10} className={dynamicStatus.label === 'Gecikti' ? 'text-rose-500' : 'text-slate-400'}/> 
+                                                          {jobDate}
+                                                      </div>
+                                                  </div>
+                                                  <div className="flex flex-col items-end justify-center gap-2 shrink-0">
+                                                      <span className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider border shadow-sm ${dynamicStatus.colorClass}`}>
+                                                          {dynamicStatus.label}
+                                                      </span>
+                                                      <ArrowRight size={16} className={`transition-all ${selectedJob?.id === j.id ? 'text-blue-600 opacity-100' : 'text-slate-300 opacity-0 group-hover:opacity-100'}`} />
                                                   </div>
                                               </div>
-                                              <div className="flex items-center gap-3 shrink-0">
-                                                  <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border shadow-sm ${dynamicStatus.colorClass}`}>
-                                                      {dynamicStatus.label}
-                                                  </span>
-                                                  <ArrowRight size={16} className={`transition-all ${selectedJob?.id === j.id ? 'text-blue-600 opacity-100' : 'text-slate-300 opacity-0 group-hover:opacity-100'}`} />
-                                              </div>
-                                          </div>
-                                      );
-                                  }) : <div className="text-center p-5 text-slate-400 text-sm font-medium border-2 border-dashed border-slate-200 rounded-xl">Müşteriye ait iş kaydı bulunmuyor.</div>}
-                              </div>
+                                          );
+                                      })}
+                                  </div>
+                              ) : (
+                                  <div className="text-center p-5 text-slate-400 text-sm font-medium border-2 border-dashed border-slate-200 rounded-xl">Müşteriye ait iş kaydı bulunmuyor.</div>
+                              )}
                           </div>
                       </div>
 
@@ -369,18 +388,37 @@ export default function CustomerDetailModal({
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Vergi Bilgileri</label>
                                 <input className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 focus:bg-white transition-all" value={editCustomerForm.tax_info} onChange={(e) => setEditCustomerForm({...editCustomerForm, tax_info: e.target.value})} placeholder="Vergi Dairesi ve No / T.C." />
                             </div>
+
+                            {/* 🚀 MÜŞTERİ DÜZENLERKEN VARLIKLARIN GÖRÜNMESİ İÇİN YENİ BÖLÜM */}
+                            <div className="sm:col-span-2 pt-4 mt-2 border-t border-slate-200">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Müşteriye Kayıtlı Varlıklar (Görüntüleme)</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {(data?.assets || []).filter((a: any) => a.customer_id === selectedCustomer?.id).map((a: any) => (
+                                        <div key={a.id} className="p-3 bg-white border border-slate-200 rounded-xl shadow-sm text-xs flex flex-col gap-1">
+                                            <span className="font-bold text-slate-800">{a.apartmentName || a.apartment_name || 'Bağımsız Adres'}</span>
+                                            <span className="font-medium text-slate-500 flex items-center gap-1.5"><Box size={12} /> {a.name}</span>
+                                        </div>
+                                    ))}
+                                    {(data?.assets || []).filter((a: any) => a.customer_id === selectedCustomer?.id).length === 0 && (
+                                        <div className="text-xs font-medium text-slate-400 col-span-2 p-3 border-2 border-dashed border-slate-200 rounded-xl text-center">
+                                            Müşteriye kayıtlı varlık bulunmamaktadır.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                           </div>
-                          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 mt-2 border-t border-slate-200">
+                          
+                          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 mt-2 border-t border-slate-200">
                             <button 
                                 onClick={() => {
                                     const combined = getFullAddress(editCustomerForm.address, buildingNo, selectedCity, selectedDistrict);
                                     handleAction('update-customer', { ...editCustomerForm, address: combined }, handleCloseDetail, () => setIsEditingCustomer(false))
                                 }} 
-                                className="flex-[2] bg-blue-600 text-white py-3.5 sm:py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-md shadow-blue-200 flex justify-center items-center"
+                                className="flex-[2] bg-blue-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-md shadow-blue-200 flex justify-center items-center"
                             >
                                 {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Değişiklikleri Kaydet'}
                             </button>
-                            <button onClick={() => setIsEditingCustomer(false)} className="flex-1 bg-white border-2 border-slate-200 text-slate-700 py-3.5 sm:py-2.5 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95">İptal</button>
+                            <button onClick={() => setIsEditingCustomer(false)} className="flex-1 bg-white border-2 border-slate-200 text-slate-700 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95">İptal</button>
                           </div>
                         </div>
                   )}
