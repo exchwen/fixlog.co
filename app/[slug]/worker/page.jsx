@@ -430,9 +430,7 @@ export default function WorkerDashboard() {
   return (
     <div className="min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 bg-[#F8FAFC] text-slate-900">
       
-      <div className="flex z-[300]">
-        <WorkerSidebar activeTab={activeTab} setActiveTab={setActiveTab} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
-      </div>
+      <WorkerSidebar activeTab={activeTab} setActiveTab={setActiveTab} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
 
       <main className="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-y-auto relative z-10">
         <Header data={data} setIsMobileMenuOpen={setIsMobileMenuOpen} setSelectedJob={setSelectedJob} />
@@ -444,7 +442,7 @@ export default function WorkerDashboard() {
               initial={{ y: 100, opacity: 0 }} 
               animate={{ y: 0, opacity: 1 }} 
               exit={{ y: 100, opacity: 0 }} 
-              className="fixed bottom-24 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[420px] bg-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-2xl z-[9999] flex flex-row items-center justify-between border border-slate-700"
+              className="fixed bottom-6 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[420px] bg-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-2xl z-[9999] flex flex-row items-center justify-between border border-slate-700"
             >
               {installState === 'success' ? (
                 <div className="flex items-center gap-3 w-full justify-center py-1">
@@ -631,15 +629,18 @@ export default function WorkerDashboard() {
         </div>
 
         {/* İŞ DETAY VE AKSİYON MODALI */}
-        <AnimatePresence>
-          {selectedJob && (
-            <>
-              <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[400]" onClick={() => setSelectedJob(null)}></div>
-              <motion.div 
-                initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-                className="fixed bottom-0 left-0 w-full bg-white rounded-t-3xl z-[410] p-6 pb-8 shadow-2xl border-t border-slate-200 flex flex-col max-h-[90vh]"
-              >
-                <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6 shrink-0"></div>
+      <AnimatePresence>
+        {selectedJob && (
+          <div className="fixed inset-0 z-[400] flex items-end md:items-center justify-center p-0 md:p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedJob(null)}
+            ></motion.div>
+            <motion.div 
+              initial={{ y: "100%", opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+              className="relative z-10 w-full md:max-w-lg bg-white rounded-t-3xl md:rounded-3xl p-6 pb-8 shadow-2xl flex flex-col max-h-[90vh] md:max-h-[85vh]"
+            >
+              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6 shrink-0 md:hidden"></div>
                 
                 <div className="overflow-y-auto custom-scrollbar flex-1 pr-1 space-y-5">
                     <div>
@@ -746,16 +747,18 @@ export default function WorkerDashboard() {
                     )}
 
                     {/* Ustadan Serbest Not Alma Alanı */}
-                    <div>
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Saha Notu (Opsiyonel)</label>
-                        <textarea 
-                            rows={2} 
-                            value={jobNote}
-                            onChange={(e) => setJobNote(e.target.value)}
-                            placeholder="Kullanılan ekstra malzeme, karşılaşılan durum vb." 
-                            className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-none" 
-                        />
-                    </div>
+                    {(selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') && (
+                        <div>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Saha Notu (Opsiyonel)</label>
+                            <textarea 
+                                rows={2} 
+                                value={jobNote}
+                                onChange={(e) => setJobNote(e.target.value)}
+                                placeholder="Kullanılan ekstra malzeme, karşılaşılan durum vb." 
+                                className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-none" 
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* AKSİYON BUTONLARI */}
@@ -782,7 +785,7 @@ export default function WorkerDashboard() {
                     </button>
                 </div>
               </motion.div>
-            </>
+            </div>
           )}
         </AnimatePresence>
 
