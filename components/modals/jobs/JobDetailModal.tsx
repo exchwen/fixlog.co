@@ -422,7 +422,7 @@ export default function JobDetailModal({
                         if (!showCust && !showAsset) return null;
                         
                         return (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-8 print-grid">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 print-grid">
                                {showCust && (
                                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print-no-bg">
                                       <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">Müşteri Bilgisi</div>
@@ -440,6 +440,40 @@ export default function JobDetailModal({
                                       </div>
                                    </div>
                                )}
+                            </div>
+                        );
+                    })()}
+
+                    {/* 🚀 EKLENDİ: Atayan, Sorumlu ve Usta Bilgileri PDF'te Görüntülenecek */}
+                    {(() => {
+                        const creator = previewPdfJob.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
+                        let managerName = previewPdfJob.manager_name || null;
+                        let finalWorkerName = previewPdfJob.worker_name || null;
+
+                        if (!finalWorkerName) {
+                            if (previewPdfJob.details?.worker_id) {
+                                const w = (data?.staff || []).find((s:any) => String(s.id) === String(previewPdfJob.details?.worker_id));
+                                if (w) finalWorkerName = w.name;
+                            } else if (previewPdfJob.staff_id) {
+                                const w = (data?.staff || []).find((s:any) => String(s.id) === String(previewPdfJob.staff_id));
+                                if (w && w.role === 'Usta') finalWorkerName = w.name;
+                            }
+                        }
+
+                        return (
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8 print-grid">
+                               <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print-no-bg">
+                                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">İşi Atayan</div>
+                                  <div className="font-bold text-sm text-slate-800">{creator}</div>
+                               </div>
+                               <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print-no-bg">
+                                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">Sorumlu Yönetici</div>
+                                  <div className="font-bold text-sm text-slate-800">{managerName || '-'}</div>
+                               </div>
+                               <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print-no-bg">
+                                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">Saha Ustası</div>
+                                  <div className="font-bold text-sm text-slate-800">{finalWorkerName || '-'}</div>
+                               </div>
                             </div>
                         );
                     })()}
@@ -561,7 +595,7 @@ export default function JobDetailModal({
                     gap: 20px !important;
                  }
                  .print-grid > div {
-                    flex: 1 1 45% !important;
+                    flex: 1 !important;
                     border: 1px solid #e2e8f0 !important;
                     background: transparent !important;
                  }
