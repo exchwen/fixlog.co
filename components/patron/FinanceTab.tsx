@@ -262,9 +262,13 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredData.length > 0 ? filteredData.map((f: any, index: number) => {
+              {filteredData.length > 0 ? filteredData.map((f: any, index: number) => {
                   
-                  const relatedJob = localJobs.find((j: any) => f.type === 'Gelir' && j.status === 'Tamamlandı' && f.description.includes(j.customer_name));
+                  // 🚀 BUG FIX: Sadece açıklama "İş Geliri: " ile başlıyorsa ve müşteri ismi eşleşiyorsa işi bul!
+                  const relatedJob = f.description?.startsWith('İş Geliri:') 
+                    ? localJobs.find((j: any) => f.type === 'Gelir' && j.status === 'Tamamlandı' && f.description.includes(j.customer_name))
+                    : null;
+                    
                   const descriptionItems = (f.description || '').split(/,|\n/).map((item: string) => item.trim()).filter((item: string) => item.length > 0);
                   const dateObj = new Date(f.created_at);
 
@@ -280,6 +284,7 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
                         ))}
                       </div>
                       
+                      {/* Sadece gerçek bir İş'ten geliyorsa butonu göster */}
                       {relatedJob && (
                         <button 
                           onClick={() => setSelectedJobDetail(relatedJob)} 
@@ -320,7 +325,11 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
         <div className="md:hidden flex flex-col gap-3">
           {filteredData.length > 0 ? filteredData.map((f: any) => {
 
-            const relatedJob = localJobs.find((j: any) => f.type === 'Gelir' && j.status === 'Tamamlandı' && (f.description || '').includes(j.customer_name));
+            // 🚀 BUG FIX: Aynı mantığı mobilde de uyguluyoruz. Açıklaması 'İş Geliri:' olmayanlara buton göstermiyoruz.
+            const relatedJob = f.description?.startsWith('İş Geliri:') 
+                ? localJobs.find((j: any) => f.type === 'Gelir' && j.status === 'Tamamlandı' && (f.description || '').includes(j.customer_name))
+                : null;
+                
             const descriptionItems = (f.description || '').split(/,|\n/).map((item: string) => item.trim()).filter((item: string) => item.length > 0);
             const dateObj = new Date(f.created_at);
 
