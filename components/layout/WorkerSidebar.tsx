@@ -1,0 +1,93 @@
+'use client';
+
+import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LogOut, LayoutDashboard, CheckCircle2, ChevronRight, Menu, X, ListTodo, Wrench } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+
+export default function WorkerSidebar({ activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen }: any) {
+  const { slug } = useParams();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    localStorage.removeItem('staff_authToken');
+    localStorage.removeItem('staff_userRole');
+    localStorage.removeItem('staff_userName');
+    localStorage.removeItem('staff_userSlug');
+    router.push(`/${slug}/login`);
+  };
+
+  const navItems = [
+    { id: 'jobs', icon: <ListTodo size={20} />, label: 'Bekleyen Görevler' },
+    { id: 'completed', icon: <CheckCircle2 size={20} />, label: 'Tamamlanan İşler' }
+  ];
+
+  return (
+    <>
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      <motion.aside
+        initial={false}
+        animate={{ x: isMobileMenuOpen ? 0 : '-100%' }}
+        className={`fixed lg:sticky top-0 left-0 h-[100dvh] bg-white border-r border-slate-200 z-[210] lg:z-40 w-72 lg:w-20 lg:hover:w-64 hover:shadow-2xl transition-all duration-300 ease-in-out group flex flex-col transform lg:translate-x-0 overflow-hidden shadow-2xl lg:shadow-none`}
+      >
+        <div className="p-6 flex items-center justify-between border-b border-slate-100 shrink-0">
+          <div className="flex items-center gap-3 w-full">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shrink-0 shadow-inner">
+               <Wrench className="text-white" size={20} />
+            </div>
+            <div className="flex-col opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex">
+               <span className="font-black text-slate-800 text-lg leading-tight tracking-tight whitespace-nowrap">SAHA PANELİ</span>
+               <span className="text-[10px] text-blue-600 font-bold uppercase tracking-widest whitespace-nowrap">Personel Modu</span>
+            </div>
+          </div>
+          <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden p-2 text-slate-400 hover:text-slate-700 bg-slate-50 rounded-xl">
+            <X size={20} />
+          </button>
+        </div>
+
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}
+              className={`w-full flex items-center gap-3 p-3.5 rounded-xl transition-all duration-200 group/btn relative overflow-hidden ${
+                activeTab === item.id 
+                  ? 'bg-blue-50 text-blue-700 font-bold shadow-sm border border-blue-100' 
+                  : 'text-slate-500 font-medium hover:bg-slate-50 hover:text-slate-800 border border-transparent'
+              }`}
+            >
+              <div className="relative z-10 shrink-0">
+                {item.icon}
+              </div>
+              <span className="whitespace-nowrap z-10 lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[13px]">{item.label}</span>
+              {activeTab === item.id && (
+                <ChevronRight size={16} className="absolute right-4 text-blue-500 z-10 lg:opacity-0 group-hover:opacity-100 transition-opacity" />
+              )}
+            </button>
+          ))}
+        </nav>
+
+        <div className="p-4 border-t border-slate-100 bg-slate-50 shrink-0">
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 p-3.5 rounded-xl text-rose-500 font-bold hover:bg-rose-100 hover:text-rose-700 transition-colors border border-transparent hover:border-rose-200 group/btn"
+          >
+            <div className="shrink-0"><LogOut size={20} /></div>
+            <span className="whitespace-nowrap lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm">Oturumu Kapat</span>
+          </button>
+        </div>
+      </motion.aside>
+    </>
+  );
+}

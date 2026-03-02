@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Clock, CheckCircle2, MessageSquareText, LogOut, ChevronRight, PenTool, Loader2, AlertCircle, PlayCircle, ClipboardList, WifiOff, Download, Share, Check, Camera, X, ShieldCheck, UserPlus } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 import Header from '@/components/layout/Header';
-import Sidebar from '@/components/layout/Sidebar'; // 🚀 SIDEBAR EKLENDİ
+import WorkerSidebar from '@/components/layout/WorkerSidebar'; // 🚀 USTA SİDEBAR EKLENDİ
 
 import ChatPanel from '@/components/chat/ChatPanel';
 import DynamicPWA from '@/components/DynamicPWA'; 
@@ -430,356 +430,386 @@ export default function WorkerDashboard() {
   return (
     <div className="min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 bg-[#F8FAFC] text-slate-900">
       
-      <div className="flex z-50">
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
+      <div className="flex z-[300]">
+        <WorkerSidebar activeTab={activeTab} setActiveTab={setActiveTab} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
       </div>
 
       <main className="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-y-auto relative z-10">
         <Header data={data} setIsMobileMenuOpen={setIsMobileMenuOpen} setSelectedJob={setSelectedJob} />
 
-      {/* PWA YÜKLEME MODALI */}
-      <AnimatePresence>
-        {showPwaPrompt && (
-          <motion.div 
-            initial={{ y: 100, opacity: 0 }} 
-            animate={{ y: 0, opacity: 1 }} 
-            exit={{ y: 100, opacity: 0 }} 
-            className="fixed bottom-24 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[420px] bg-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-2xl z-[9999] flex flex-row items-center justify-between border border-slate-700"
-          >
-            {installState === 'success' ? (
-              <div className="flex items-center gap-3 w-full justify-center py-1">
-                <div className="bg-emerald-500 p-2 rounded-full shrink-0">
-                  <Check size={20} className="text-white" />
-                </div>
-                <div className="flex flex-col flex-1 min-w-0 pr-2">
-                  <span className="font-bold text-sm text-emerald-400">Kurulum Başarılı!</span>
-                  <span className="text-xs text-slate-400 mt-0.5">Saha uygulamasını ana ekrandan açabilirsiniz.</span>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-3 w-full">
-                  <div className="bg-blue-500 p-2.5 rounded-xl shrink-0">
-                    <Download size={20} className="text-white" />
+        {/* PWA YÜKLEME MODALI */}
+        <AnimatePresence>
+          {showPwaPrompt && (
+            <motion.div 
+              initial={{ y: 100, opacity: 0 }} 
+              animate={{ y: 0, opacity: 1 }} 
+              exit={{ y: 100, opacity: 0 }} 
+              className="fixed bottom-24 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[420px] bg-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-2xl z-[9999] flex flex-row items-center justify-between border border-slate-700"
+            >
+              {installState === 'success' ? (
+                <div className="flex items-center gap-3 w-full justify-center py-1">
+                  <div className="bg-emerald-500 p-2 rounded-full shrink-0">
+                    <Check size={20} className="text-white" />
                   </div>
                   <div className="flex flex-col flex-1 min-w-0 pr-2">
-                    <span className="font-bold text-sm">Uygulamayı Yükle</span>
-                    {isIos ? (
-                       <span className="text-[11px] text-slate-400 mt-0.5 leading-tight">
-                         Yüklemek için <Share size={12} className="inline-block mx-0.5 mb-0.5" /> <b>Paylaş</b> ikonuna basıp <br/> <b>Ana Ekrana Ekle</b>'yi seçin.
-                       </span>
-                    ) : (
-                       <span className="text-xs text-slate-400 mt-0.5">Saha işlemlerini hızlıca yönetin.</span>
-                    )}
+                    <span className="font-bold text-sm text-emerald-400">Kurulum Başarılı!</span>
+                    <span className="text-xs text-slate-400 mt-0.5">Saha uygulamasını ana ekrandan açabilirsiniz.</span>
                   </div>
                 </div>
-                <div className="flex gap-2 shrink-0 items-center">
-                  {!isIos && (
-                     <button onClick={handleInstallPwa} className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95">
-                       Yükle
-                     </button>
-                  )}
-                </div>
-              </>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* İNTERNET YOK / KUYRUK UYARI BARI */}
-      <AnimatePresence>
-        {(isOffline || pendingSyncCount > 0) && (
-            <motion.div 
-            initial={{ height: 0, opacity: 0 }} 
-            animate={{ height: 'auto', opacity: 1 }} 
-            exit={{ height: 0, opacity: 0 }} 
-            className="bg-amber-500 text-amber-950 px-4 py-2.5 text-xs font-bold flex flex-wrap items-center justify-center gap-2 z-50 shadow-md sticky top-0"
-            >
-            <WifiOff size={16} />
-            <span className="text-center">{isOffline ? 'İnternet Yok. İşlemleriniz kaydediliyor.' : 'Bağlantı sağlandı. Veriler gönderiliyor...'}</span>
-            {pendingSyncCount > 0 && (
-                <span className="bg-amber-950 text-amber-400 px-2.5 py-1 rounded-full ml-0 sm:ml-2 animate-pulse flex items-center gap-1 w-full sm:w-auto justify-center mt-1 sm:mt-0">
-                    Kuyrukta {pendingSyncCount} işlem var
-                </span>
-            )}
+              ) : (
+                <>
+                  <div className="flex items-center gap-3 w-full">
+                    <div className="bg-blue-500 p-2.5 rounded-xl shrink-0">
+                      <Download size={20} className="text-white" />
+                    </div>
+                    <div className="flex flex-col flex-1 min-w-0 pr-2">
+                      <span className="font-bold text-sm">Uygulamayı Yükle</span>
+                      {isIos ? (
+                        <span className="text-[11px] text-slate-400 mt-0.5 leading-tight">
+                          Yüklemek için <Share size={12} className="inline-block mx-0.5 mb-0.5" /> <b>Paylaş</b> ikonuna basıp <br/> <b>Ana Ekrana Ekle</b>'yi seçin.
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-400 mt-0.5">Saha işlemlerini hızlıca yönetin.</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 shrink-0 items-center">
+                    {!isIos && (
+                      <button onClick={handleInstallPwa} className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95">
+                        Yükle
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
             </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
 
-      {/* ÜST BİLGİ ALANI (HEADER) */}
-      <div className="bg-slate-900 text-white p-5 rounded-b-3xl shadow-xl z-40 relative md:mx-6 md:mt-6 md:rounded-3xl">
-         <div className="flex justify-between items-start mb-4">
-             <div>
-                <div className="text-[10px] text-emerald-400 font-black uppercase tracking-widest mb-1">{companyName}</div>
-                <h1 className="text-2xl font-black tracking-tight">Merhaba, {userData?.name?.split(' ')[0]}</h1>
-             </div>
-             <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-xl font-black border border-white/20">
-                 {userData?.name?.charAt(0)}
-             </div>
-         </div>
-         <div className="flex gap-2">
-             <div className="flex-1 bg-white/10 rounded-xl p-3 border border-white/5">
-                 <div className="text-2xl font-black text-emerald-400">{activeJobs.length + pendingJobs.length}</div>
-                 <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mt-0.5">Bekleyen İş</div>
-             </div>
-             <div className="flex-1 bg-white/10 rounded-xl p-3 border border-white/5">
-                 <div className="text-2xl font-black text-blue-400">{completedJobs.length}</div>
-                 <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mt-0.5">Bitirilen</div>
-             </div>
-             </div>
-      </div>
+        {/* İNTERNET YOK / KUYRUK UYARI BARI */}
+        <AnimatePresence>
+          {(isOffline || pendingSyncCount > 0) && (
+              <motion.div 
+              initial={{ height: 0, opacity: 0 }} 
+              animate={{ height: 'auto', opacity: 1 }} 
+              exit={{ height: 0, opacity: 0 }} 
+              className="bg-amber-500 text-amber-950 px-4 py-2.5 text-xs font-bold flex flex-wrap items-center justify-center gap-2 z-50 shadow-md sticky top-0"
+              >
+              <WifiOff size={16} />
+              <span className="text-center">{isOffline ? 'İnternet Yok. İşlemleriniz kaydediliyor.' : 'Bağlantı sağlandı. Veriler gönderiliyor...'}</span>
+              {pendingSyncCount > 0 && (
+                  <span className="bg-amber-950 text-amber-400 px-2.5 py-1 rounded-full ml-0 sm:ml-2 animate-pulse flex items-center gap-1 w-full sm:w-auto justify-center mt-1 sm:mt-0">
+                      Kuyrukta {pendingSyncCount} işlem var
+                  </span>
+              )}
+              </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* ANA İÇERİK ALANI */}
-      <div className="flex-1 p-4 md:p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">
-        
-        {(activeTab === 'jobs' || activeTab === 'home' || activeTab === 'my-jobs') && (
-          <div className="space-y-6">
-            
-            {/* Devam Eden İşler (Öncelikli) */}
-            {activeJobs.length > 0 && (
+        {/* ÜST BİLGİ ALANI (HEADER) */}
+        <div className="bg-slate-900 text-white p-5 rounded-b-3xl shadow-xl z-40 relative md:mx-6 md:mt-6 md:rounded-3xl">
+          <div className="flex justify-between items-start mb-4">
               <div>
-                 <h2 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <PlayCircle size={14} /> ŞU AN ÜZERİNDE ÇALIŞTIĞINIZ
-                 </h2>
-                 <div className="space-y-3">
-                    {activeJobs.map(job => {
+                  <div className="text-[10px] text-emerald-400 font-black uppercase tracking-widest mb-1">{companyName}</div>
+                  <h1 className="text-2xl font-black tracking-tight">Merhaba, {userData?.name?.split(' ')[0]}</h1>
+              </div>
+              <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-xl font-black border border-white/20">
+                  {userData?.name?.charAt(0)}
+              </div>
+          </div>
+          <div className="flex gap-2">
+              <div className="flex-1 bg-white/10 rounded-xl p-3 border border-white/5">
+                  <div className="text-2xl font-black text-emerald-400">{activeJobs.length + pendingJobs.length}</div>
+                  <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mt-0.5">Bekleyen İş</div>
+              </div>
+              <div className="flex-1 bg-white/10 rounded-xl p-3 border border-white/5">
+                  <div className="text-2xl font-black text-blue-400">{completedJobs.length}</div>
+                  <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mt-0.5">Bitirilen</div>
+              </div>
+          </div>
+        </div>
+
+        {/* ANA İÇERİK ALANI */}
+        <div className="flex-1 p-4 md:p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">
+          
+          {activeTab === 'jobs' && (
+            <div className="space-y-6">
+              
+              {/* Devam Eden İşler (Öncelikli) */}
+              {activeJobs.length > 0 && (
+                <div>
+                  <h2 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+                      <PlayCircle size={14} /> ŞU AN ÜZERİNDE ÇALIŞTIĞINIZ
+                  </h2>
+                  <div className="space-y-3">
+                      {activeJobs.map(job => {
+                        const assigner = getAssignerInfo(job);
+                        return (
+                        <div key={job.id} onClick={() => setSelectedJob(job)} className="bg-blue-600 rounded-2xl p-4 shadow-lg shadow-blue-600/20 text-white active:scale-95 transition-transform cursor-pointer border border-blue-500 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                            <div className="relative z-10">
+                                <div className="flex justify-between items-start mb-2">
+                                  <span className="bg-white/20 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider backdrop-blur-md">Devam Ediyor</span>
+                                  <span className="text-[10px] font-bold opacity-80 flex items-center gap-1"><Clock size={10}/> {job.scheduled_date || 'Anlık'}</span>
+                                </div>
+                                <h3 className="text-lg font-black leading-tight mb-1">{job.customer_name}</h3>
+                                <p className="text-blue-100 text-sm font-medium flex items-center gap-1.5"><MapPin size={14} className="shrink-0"/> {job.work_type}</p>
+                                
+                                <div className="mt-3 pt-3 border-t border-blue-500/50 flex items-center gap-1.5 text-[11px] text-blue-100">
+                                  {assigner.icon === 'ShieldCheck' ? <ShieldCheck size={14} /> : <UserPlus size={14} />}
+                                  <span className="opacity-80">{assigner.role}:</span> <span className="font-bold text-white">{assigner.name}</span>
+                                </div>
+                            </div>
+                        </div>
+                      )})}
+                  </div>
+                </div>
+              )}
+
+              {/* Bekleyen İşler */}
+              <div>
+                <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <AlertCircle size={14} /> SIRADAKİ GÖREVLER
+                </h2>
+                <div className="space-y-3">
+                    {pendingJobs.length > 0 ? pendingJobs.map(job => {
                       const assigner = getAssignerInfo(job);
                       return (
-                      <div key={job.id} onClick={() => setSelectedJob(job)} className="bg-blue-600 rounded-2xl p-4 shadow-lg shadow-blue-600/20 text-white active:scale-95 transition-transform cursor-pointer border border-blue-500 relative overflow-hidden">
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-                          <div className="relative z-10">
-                              <div className="flex justify-between items-start mb-2">
-                                 <span className="bg-white/20 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider backdrop-blur-md">Devam Ediyor</span>
-                                 <span className="text-[10px] font-bold opacity-80 flex items-center gap-1"><Clock size={10}/> {job.scheduled_date || 'Anlık'}</span>
-                              </div>
-                              <h3 className="text-lg font-black leading-tight mb-1">{job.customer_name}</h3>
-                              <p className="text-blue-100 text-sm font-medium flex items-center gap-1.5"><MapPin size={14} className="shrink-0"/> {job.work_type}</p>
-                              
-                              <div className="mt-3 pt-3 border-t border-blue-500/50 flex items-center gap-1.5 text-[11px] text-blue-100">
-                                 {assigner.icon === 'ShieldCheck' ? <ShieldCheck size={14} /> : <UserPlus size={14} />}
-                                 <span className="opacity-80">{assigner.role}:</span> <span className="font-bold text-white">{assigner.name}</span>
-                              </div>
+                      <div key={job.id} onClick={() => setSelectedJob(job)} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 active:scale-95 transition-transform cursor-pointer hover:border-blue-200">
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="bg-amber-100 text-amber-800 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">{job.status}</span>
+                            <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Clock size={10}/> {job.scheduled_date || 'Anlık'}</span>
+                          </div>
+                          <h3 className="text-base font-black text-slate-800 leading-tight mb-1">{job.customer_name}</h3>
+                          <p className="text-slate-500 text-xs font-medium flex items-center gap-1.5"><PenTool size={12} className="shrink-0 text-blue-500"/> {job.work_type}</p>
+                          
+                          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-500">
+                            {assigner.icon === 'ShieldCheck' ? <ShieldCheck size={14} className="text-blue-500" /> : <UserPlus size={14} className="text-slate-400" />}
+                            <span>{assigner.role}:</span> <span className="font-bold text-slate-700">{assigner.name}</span>
                           </div>
                       </div>
-                    )})}
-                 </div>
+                    )}) : (
+                      <div className="text-center p-8 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 font-medium text-sm">
+                        Bekleyen yeni bir göreviniz yok.
+                      </div>
+                    )}
+                </div>
               </div>
-            )}
-
-            {/* Bekleyen İşler */}
-            <div>
-               <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                  <AlertCircle size={14} /> SIRADAKİ GÖREVLER
-               </h2>
-               <div className="space-y-3">
-                  {pendingJobs.length > 0 ? pendingJobs.map(job => {
-                    const assigner = getAssignerInfo(job);
-                    return (
-                    <div key={job.id} onClick={() => setSelectedJob(job)} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 active:scale-95 transition-transform cursor-pointer hover:border-blue-200">
-                        <div className="flex justify-between items-start mb-2">
-                           <span className="bg-amber-100 text-amber-800 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">{job.status}</span>
-                           <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Clock size={10}/> {job.scheduled_date || 'Anlık'}</span>
-                        </div>
-                        <h3 className="text-base font-black text-slate-800 leading-tight mb-1">{job.customer_name}</h3>
-                        <p className="text-slate-500 text-xs font-medium flex items-center gap-1.5"><PenTool size={12} className="shrink-0 text-blue-500"/> {job.work_type}</p>
-                        
-                        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-500">
-                           {assigner.icon === 'ShieldCheck' ? <ShieldCheck size={14} className="text-blue-500" /> : <UserPlus size={14} className="text-slate-400" />}
-                           <span>{assigner.role}:</span> <span className="font-bold text-slate-700">{assigner.name}</span>
-                        </div>
-                    </div>
-                  )}) : (
-                    <div className="text-center p-8 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 font-medium text-sm">
-                       Bekleyen yeni bir göreviniz yok.
-                    </div>
-                  )}
-               </div>
-            </div>
 
             </div>
-        )}
-      </div>
+          )}
 
-      {/* İŞ DETAY VE AKSİYON MODALI */}
-      <AnimatePresence>
-        {selectedJob && (
-          <>
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100]" onClick={() => setSelectedJob(null)}></div>
-            <motion.div 
-               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-               className="fixed bottom-0 left-0 w-full bg-white rounded-t-3xl z-[110] p-6 pb-8 shadow-2xl border-t border-slate-200 flex flex-col max-h-[90vh]"
-            >
-               <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6 shrink-0"></div>
-               
-               <div className="overflow-y-auto custom-scrollbar flex-1 pr-1 space-y-5">
-                   <div>
-                       <div className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1 flex items-center gap-1.5"><MapPin size={12}/> Müşteri / Konum</div>
-                       <h2 className="text-2xl font-black text-slate-900 leading-tight">{selectedJob.customer_name}</h2>
-                       {(() => {
-                           const assigner = getAssignerInfo(selectedJob);
-                           return (
-                               <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 mt-3 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100 w-fit shadow-sm">
-                                  {assigner.icon === 'ShieldCheck' ? <ShieldCheck size={14} className="text-blue-500"/> : <UserPlus size={14} className="text-slate-400"/>} 
-                                  {assigner.role}: <span className="font-bold text-slate-700">{assigner.name}</span>
-                               </div>
-                           );
-                       })()}
-                   </div>
-                   
-                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                       <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">GÖREV DETAYI</div>
-                       <div className="text-sm font-bold text-slate-800 mb-2">{selectedJob.work_type}</div>
-                       {selectedJob.details?.note && (
-                           <div className="text-xs text-slate-600 italic border-l-2 border-slate-300 pl-2 whitespace-pre-wrap">
-                               "{selectedJob.details.note}"
-                           </div>
-                       )}
-                   </div>
-
-                   {/* DİNAMİK BRANŞ FORMU */}
-                   {currentFields.length > 0 && (selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') && (
-                       <div className="bg-blue-50/50 p-4 sm:p-5 rounded-xl border border-blue-100 space-y-4">
-                          <div className="text-[10px] font-black text-blue-700 uppercase tracking-widest flex items-center gap-1.5 border-b border-blue-200/50 pb-2 mb-3">
-                             <ClipboardList size={14} /> {staffBranch} KONTROL FORMU
+          {/* TAMAMLANAN İŞLER SEKMESİ */}
+          {activeTab === 'completed' && (
+             <div className="space-y-4">
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
+                   <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                      <CheckCircle2 className="text-emerald-500" /> Tamamladığınız İşler
+                   </h2>
+                   <p className="text-sm text-slate-500 mt-1 font-medium">Bugüne kadar bitirdiğiniz tüm görevlerin listesi.</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                   {completedJobs.length > 0 ? completedJobs.map(job => (
+                      <div key={job.id} onClick={() => setSelectedJob(job)} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 cursor-pointer hover:border-emerald-300 transition-colors group">
+                          <div className="flex justify-between items-start mb-3">
+                             <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border border-emerald-100">{job.status}</span>
+                             <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Clock size={10}/> {new Date(job.created_at).toLocaleDateString('tr-TR')}</span>
                           </div>
-                          
-                          {currentFields.map(field => (
-                             <div key={field.name}>
-                                <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest block mb-1.5">{field.label}</label>
-                                {field.type === 'select' ? (
-                                   <select 
-                                      className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all appearance-none"
-                                      value={dynamicForm[field.name] || ''}
-                                      onChange={(e) => handleDynamicFormChange(field.name, e.target.value)}
-                                   >
-                                      <option value="">Seçiniz...</option>
-                                      {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                   </select>
-                                ) : field.type === 'textarea' ? (
-                                   <textarea 
-                                      rows={2}
-                                      className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-none"
-                                      placeholder="Lütfen belirtin..."
-                                      value={dynamicForm[field.name] || ''}
-                                      onChange={(e) => handleDynamicFormChange(field.name, e.target.value)}
-                                   />
-                                ) : (
-                                   <input 
-                                      type={field.type}
-                                      className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
-                                      placeholder="Değer girin"
-                                      value={dynamicForm[field.name] || ''}
-                                      onChange={(e) => handleDynamicFormChange(field.name, e.target.value)}
-                                   />
-                                )}
-                             </div>
-                          ))}
-                       </div>
+                          <h3 className="text-base font-black text-slate-800 leading-tight mb-2 group-hover:text-emerald-700 transition-colors">{job.customer_name}</h3>
+                          <p className="text-slate-500 text-xs font-medium flex items-center gap-1.5"><ClipboardList size={14} className="shrink-0 text-slate-400"/> {job.work_type}</p>
+                      </div>
+                   )) : (
+                      <div className="col-span-full text-center p-12 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 font-medium">
+                         Henüz tamamlanmış bir işiniz bulunmuyor.
+                      </div>
                    )}
+                </div>
+             </div>
+          )}
 
-                   {/* GALERİ SEÇİMİ SERBEST BIRAKILAN FOTOĞRAF YÜKLEME ALANI */}
-                   {(selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') && (
-                       <div>
-                           <div className="flex items-center justify-between mb-2">
-                               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Saha Fotoğrafları (Opsiyonel)</label>
-                               <span className="text-[10px] font-bold text-slate-400">{photos.length} Seçildi</span>
-                           </div>
-                           
-                           <input 
-                              type="file" 
-                              accept="image/*" 
-                              multiple 
-                              ref={fileInputRef}
-                              onChange={handlePhotoSelect} 
-                              className="hidden" 
-                           />
+        </div>
 
-                           <div className="flex flex-wrap gap-2">
-                               <button 
-                                  onClick={() => fileInputRef.current?.click()}
-                                  className="w-20 h-20 bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center text-slate-400 hover:bg-slate-100 hover:border-blue-400 hover:text-blue-500 transition-all active:scale-95"
-                               >
-                                  <Camera size={24} className="mb-1" />
-                                  <span className="text-[10px] font-bold">Ekle</span>
-                               </button>
+        {/* İŞ DETAY VE AKSİYON MODALI */}
+        <AnimatePresence>
+          {selectedJob && (
+            <>
+              <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[400]" onClick={() => setSelectedJob(null)}></div>
+              <motion.div 
+                initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                className="fixed bottom-0 left-0 w-full bg-white rounded-t-3xl z-[410] p-6 pb-8 shadow-2xl border-t border-slate-200 flex flex-col max-h-[90vh]"
+              >
+                <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6 shrink-0"></div>
+                
+                <div className="overflow-y-auto custom-scrollbar flex-1 pr-1 space-y-5">
+                    <div>
+                        <div className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1 flex items-center gap-1.5"><MapPin size={12}/> Müşteri / Konum</div>
+                        <h2 className="text-2xl font-black text-slate-900 leading-tight">{selectedJob.customer_name}</h2>
+                        {(() => {
+                            const assigner = getAssignerInfo(selectedJob);
+                            return (
+                                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 mt-3 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100 w-fit shadow-sm">
+                                    {assigner.icon === 'ShieldCheck' ? <ShieldCheck size={14} className="text-blue-500"/> : <UserPlus size={14} className="text-slate-400"/>} 
+                                    {assigner.role}: <span className="font-bold text-slate-700">{assigner.name}</span>
+                                </div>
+                            );
+                        })()}
+                    </div>
+                    
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">GÖREV DETAYI</div>
+                        <div className="text-sm font-bold text-slate-800 mb-2">{selectedJob.work_type}</div>
+                        {selectedJob.details?.note && (
+                            <div className="text-xs text-slate-600 italic border-l-2 border-slate-300 pl-2 whitespace-pre-wrap">
+                                "{selectedJob.details.note}"
+                            </div>
+                        )}
+                    </div>
 
-                               {photos.map((photoStr, idx) => (
-                                   <div key={idx} className="w-20 h-20 relative rounded-2xl overflow-hidden border border-slate-200 shadow-sm group">
-                                       <img src={photoStr} alt="Önizleme" className="w-full h-full object-cover" />
-                                       <button onClick={() => removePhoto(idx)} className="absolute top-1 right-1 bg-white/90 p-1 rounded-full text-rose-500 shadow-sm active:scale-95">
-                                           <X size={12} strokeWidth={3} />
-                                       </button>
-                                   </div>
-                               ))}
-                           </div>
-                       </div>
-                   )}
+                    {/* DİNAMİK BRANŞ FORMU */}
+                    {currentFields.length > 0 && (selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') && (
+                        <div className="bg-blue-50/50 p-4 sm:p-5 rounded-xl border border-blue-100 space-y-4">
+                            <div className="text-[10px] font-black text-blue-700 uppercase tracking-widest flex items-center gap-1.5 border-b border-blue-200/50 pb-2 mb-3">
+                              <ClipboardList size={14} /> {staffBranch} KONTROL FORMU
+                            </div>
+                            
+                            {currentFields.map(field => (
+                              <div key={field.name}>
+                                  <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest block mb-1.5">{field.label}</label>
+                                  {field.type === 'select' ? (
+                                    <select 
+                                        className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all appearance-none"
+                                        value={dynamicForm[field.name] || ''}
+                                        onChange={(e) => handleDynamicFormChange(field.name, e.target.value)}
+                                    >
+                                        <option value="">Seçiniz...</option>
+                                        {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                    </select>
+                                  ) : field.type === 'textarea' ? (
+                                    <textarea 
+                                        rows={2}
+                                        className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-none"
+                                        placeholder="Lütfen belirtin..."
+                                        value={dynamicForm[field.name] || ''}
+                                        onChange={(e) => handleDynamicFormChange(field.name, e.target.value)}
+                                    />
+                                  ) : (
+                                    <input 
+                                        type={field.type}
+                                        className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                                        placeholder="Değer girin"
+                                        value={dynamicForm[field.name] || ''}
+                                        onChange={(e) => handleDynamicFormChange(field.name, e.target.value)}
+                                    />
+                                  )}
+                              </div>
+                            ))}
+                        </div>
+                    )}
 
-                   {/* Ustadan Serbest Not Alma Alanı */}
-                   <div>
-                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Saha Notu (Opsiyonel)</label>
-                       <textarea 
-                          rows={2} 
-                          value={jobNote}
-                          onChange={(e) => setJobNote(e.target.value)}
-                          placeholder="Kullanılan ekstra malzeme, karşılaşılan durum vb." 
-                          className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-none" 
-                       />
-                   </div>
-               </div>
+                    {/* GALERİ SEÇİMİ SERBEST BIRAKILAN FOTOĞRAF YÜKLEME ALANI */}
+                    {(selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') && (
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Saha Fotoğrafları (Opsiyonel)</label>
+                                <span className="text-[10px] font-bold text-slate-400">{photos.length} Seçildi</span>
+                            </div>
+                            
+                            <input 
+                                type="file" 
+                                accept="image/*" 
+                                multiple 
+                                ref={fileInputRef}
+                                onChange={handlePhotoSelect} 
+                                className="hidden" 
+                            />
 
-               {/* AKSİYON BUTONLARI */}
-               <div className="pt-6 shrink-0 space-y-3">
-                   {selectedJob.status === 'Beklemede' || selectedJob.status === 'Gelecek' ? (
-                       <button 
-                          disabled={isSaving}
-                          onClick={() => handleStatusUpdate('Devam Ediyor')}
-                          className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-base shadow-lg shadow-blue-200 active:scale-95 transition-all flex items-center justify-center gap-2"
-                       >
-                          {isSaving ? <Loader2 className="animate-spin" /> : <><PlayCircle size={20} /> İşe Başla (Sahadayım)</>}
-                       </button>
-                   ) : (
-                       <button 
-                          disabled={isSaving}
-                          onClick={() => handleStatusUpdate('Tamamlandı')}
-                          className="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black text-base shadow-lg shadow-emerald-200 active:scale-95 transition-all flex items-center justify-center gap-2"
-                       >
-                          {isSaving ? <Loader2 className="animate-spin" /> : <><CheckCircle2 size={20} /> Formu Kaydet & İşi Tamamla</>}
-                       </button>
-                   )}
-                   <button onClick={() => setSelectedJob(null)} className="w-full bg-white text-slate-600 py-3 rounded-2xl font-bold text-sm border-2 border-slate-200 active:scale-95 transition-all">
-                       Vazgeç / Kapat
-                   </button>
-               </div>
-            </motion.div>
-          </>
+                            <div className="flex flex-wrap gap-2">
+                                <button 
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="w-20 h-20 bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center text-slate-400 hover:bg-slate-100 hover:border-blue-400 hover:text-blue-500 transition-all active:scale-95"
+                                >
+                                    <Camera size={24} className="mb-1" />
+                                    <span className="text-[10px] font-bold">Ekle</span>
+                                </button>
+
+                                {photos.map((photoStr, idx) => (
+                                    <div key={idx} className="w-20 h-20 relative rounded-2xl overflow-hidden border border-slate-200 shadow-sm group">
+                                        <img src={photoStr} alt="Önizleme" className="w-full h-full object-cover" />
+                                        <button onClick={() => removePhoto(idx)} className="absolute top-1 right-1 bg-white/90 p-1 rounded-full text-rose-500 shadow-sm active:scale-95">
+                                            <X size={12} strokeWidth={3} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Ustadan Serbest Not Alma Alanı */}
+                    <div>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Saha Notu (Opsiyonel)</label>
+                        <textarea 
+                            rows={2} 
+                            value={jobNote}
+                            onChange={(e) => setJobNote(e.target.value)}
+                            placeholder="Kullanılan ekstra malzeme, karşılaşılan durum vb." 
+                            className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-none" 
+                        />
+                    </div>
+                </div>
+
+                {/* AKSİYON BUTONLARI */}
+                <div className="pt-6 shrink-0 space-y-3">
+                    {selectedJob.status === 'Beklemede' || selectedJob.status === 'Gelecek' || selectedJob.status === 'Usta Bekliyor' ? (
+                        <button 
+                            disabled={isSaving}
+                            onClick={() => handleStatusUpdate('Devam Ediyor')}
+                            className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-base shadow-lg shadow-blue-200 active:scale-95 transition-all flex items-center justify-center gap-2"
+                        >
+                            {isSaving ? <Loader2 className="animate-spin" /> : <><PlayCircle size={20} /> İşe Başla (Sahadayım)</>}
+                        </button>
+                    ) : (
+                        <button 
+                            disabled={isSaving}
+                            onClick={() => handleStatusUpdate('Tamamlandı')}
+                            className="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black text-base shadow-lg shadow-emerald-200 active:scale-95 transition-all flex items-center justify-center gap-2"
+                        >
+                            {isSaving ? <Loader2 className="animate-spin" /> : <><CheckCircle2 size={20} /> Formu Kaydet & İşi Tamamla</>}
+                        </button>
+                    )}
+                    <button onClick={() => setSelectedJob(null)} className="w-full bg-white text-slate-600 py-3 rounded-2xl font-bold text-sm border-2 border-slate-200 active:scale-95 transition-all">
+                        Vazgeç / Kapat
+                    </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* 🚀 EKSİK OLAN PWA KİMLİĞİ BURAYA EKLENDİ */}
+        {data && (
+          <DynamicPWA 
+            companyName={data?.name} 
+            companyLogo={data?.logo} 
+          />
         )}
-      </AnimatePresence>
 
-      {/* 🚀 EKSİK OLAN PWA KİMLİĞİ BURAYA EKLENDİ */}
-      {data && (
-        <DynamicPWA 
-          companyName={data?.name} 
-          companyLogo={data?.logo} 
+        {/* 🚀 CHAT BİLEŞENİ EKLENDİ */}
+        <ChatPanel 
+          isChatOpen={isChatOpen} 
+          setIsChatOpen={setIsChatOpen} 
+          activeChatId={activeChatId} 
+          setActiveChatId={setActiveChatId} 
+          data={data} 
+          messages={messages} 
+          setMessages={setMessages} 
+          messageInput={messageInput} 
+          setMessageInput={setMessageInput} 
+          sendMessage={sendMessage} 
         />
-      )}
 
-      {/* 🚀 CHAT BİLEŞENİ EKLENDİ */}
-      <ChatPanel 
-        isChatOpen={isChatOpen} 
-        setIsChatOpen={setIsChatOpen} 
-        activeChatId={activeChatId} 
-        setActiveChatId={setActiveChatId} 
-        data={data} 
-        messages={messages} 
-        setMessages={setMessages} 
-        messageInput={messageInput} 
-        setMessageInput={setMessageInput} 
-        sendMessage={sendMessage} 
-      />
+</main>
 
-      </main>
-
-    </div>
-  );
+</div>
+);
 }
