@@ -30,6 +30,9 @@ export default function JobDetailModal({
   const [showPrintModeSelection, setShowPrintModeSelection] = useState(false);
   const [printMode, setPrintMode] = useState<'color' | 'bw'>('color');
 
+  // 🚀 Fotoğraf Yükleme Durumu
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
   const executePrint = (mode: 'color' | 'bw') => {
     setPrintMode(mode);
     setShowPrintModeSelection(false);
@@ -886,19 +889,33 @@ export default function JobDetailModal({
                     )}
 
                     <div className="pt-4 border-t border-slate-100 space-y-3">
+                        {/* 🚀 ONAY BEKLİYOR DÜZELTMESİ: 2 Faktörlü Sistem ve Genel Görev Fiyat Ayrımı */}
                         {selectedJob.status === 'Onay Bekliyor' && (
                             <div className="bg-amber-50 border border-amber-200 p-4 sm:p-5 rounded-2xl flex flex-col gap-3 shadow-inner">
                                <div className="text-amber-800 font-black text-sm flex items-center gap-2"><AlertTriangle size={18}/> Personel İşi Tamamladı. Onayınız Bekleniyor.</div>
-                               <input type="number" placeholder="Müşteriye yansıtılacak işlem ücreti (₺)" value={jobPrice} onChange={e => setJobPrice(e.target.value)} className="px-4 py-3 sm:py-3.5 rounded-xl border border-amber-300 font-bold outline-none focus:border-amber-500 w-full text-sm bg-white" />
-                               <button disabled={isApproving || !jobPrice} onClick={async () => {
-                                   setIsApproving(true);
-                                   const newDetails = { ...selectedJob.details, price: jobPrice + ' TL' };
-                                   await handleAction('update-job', { id: selectedJob.id, status: 'Tamamlandı', taskNote: selectedJob.details?.note, lastEditedBy: data?.ownerName, workType: selectedJob.work_type, details: newDetails }, null, null);
-                                   await handleAction('approve-job', { jobId: selectedJob.id, amount: jobPrice, customerName: selectedJob.customer_name }, () => setSelectedJob(null), () => setJobPrice(''));
-                                   setIsApproving(false);
-                               }} className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black py-3 sm:py-3.5 rounded-xl transition-all shadow-md flex justify-center items-center active:scale-95 text-sm">
-                                   {isApproving ? <Loader2 className="animate-spin" size={18}/> : 'Fiyatı Onayla ve Kasa\'ya İşle'}
-                               </button>
+                               
+                               {isGeneralTask ? (
+                                   <button disabled={isApproving} onClick={async () => {
+                                       setIsApproving(true);
+                                       await handleAction('update-job', { id: selectedJob.id, status: 'Tamamlandı', lastEditedBy: data?.ownerName, workType: selectedJob.work_type, details: selectedJob.details }, () => setSelectedJob(null), null);
+                                       setIsApproving(false);
+                                   }} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 sm:py-3.5 rounded-xl transition-all shadow-md flex justify-center items-center active:scale-95 text-sm">
+                                       {isApproving ? <Loader2 className="animate-spin" size={18}/> : 'Görevi Onayla ve Tamamla'}
+                                   </button>
+                               ) : (
+                                   <>
+                                       <input type="number" placeholder="Müşteriye yansıtılacak işlem ücreti (₺)" value={jobPrice} onChange={e => setJobPrice(e.target.value)} className="px-4 py-3 sm:py-3.5 rounded-xl border border-amber-300 font-bold outline-none focus:border-amber-500 w-full text-sm bg-white" />
+                                       <button disabled={isApproving || !jobPrice} onClick={async () => {
+                                           setIsApproving(true);
+                                           const newDetails = { ...selectedJob.details, price: jobPrice + ' TL' };
+                                           await handleAction('update-job', { id: selectedJob.id, status: 'Tamamlandı', taskNote: selectedJob.details?.note, lastEditedBy: data?.ownerName, workType: selectedJob.work_type, details: newDetails }, null, null);
+                                           await handleAction('approve-job', { jobId: selectedJob.id, amount: jobPrice, customerName: selectedJob.customer_name }, () => setSelectedJob(null), () => setJobPrice(''));
+                                           setIsApproving(false);
+                                       }} className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black py-3 sm:py-3.5 rounded-xl transition-all shadow-md flex justify-center items-center active:scale-95 text-sm">
+                                           {isApproving ? <Loader2 className="animate-spin" size={18}/> : 'Fiyatı Onayla ve Kasa\'ya İşle'}
+                                       </button>
+                                   </>
+                               )}
                             </div>
                         )}
 
@@ -908,8 +925,8 @@ export default function JobDetailModal({
                             </button>
                         )}
 
-{selectedJob.status !== 'Tamamlandı' && selectedJob.status !== 'İptal' && (
-                        <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3 w-full pt-4 mt-2 border-t border-slate-100">
+                        {selectedJob.status !== 'Tamamlandı' && selectedJob.status !== 'İptal' && (
+                        <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3 w-full pt-4 mt-2 border-t border-slate-100 flex-wrap">
                             {/* 🚀 KABUL ET BUTONU */}
                             {(userRole !== 'Patron' && 
                               (selectedJob.status === 'Beklemede' || selectedJob.status === 'Gelecek') && 
@@ -960,6 +977,7 @@ export default function JobDetailModal({
                                         </button>
                                     ) : (
                                         <>
+                                            {/* DÜZENLE BUTONU */}
                                             <button 
                                                 onClick={handleEditClick}
                                                 className="flex-1 w-full bg-slate-900 text-white py-3.5 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"
@@ -967,26 +985,87 @@ export default function JobDetailModal({
                                                 <Settings size={16} /> {isGeneralTask ? 'Detayları Düzenle' : 'Düzenle / Ata'}
                                             </button>
                                             
-                                            {/* 🚀 EKLENDİ: Genel Görev ise Yöneticinin İşi Direkt Bitirmesini Sağlayan Buton */}
-                                            {(isGeneralTask && getDynamicStatus(selectedJob, hasWorker).label === 'Devam Ediyor') && (
-                                                <button 
-                                                    onClick={async () => {
-                                                        setIsApproving(true);
-                                                        await handleAction('update-job', {
-                                                            id: selectedJob.id,
-                                                            status: 'Tamamlandı',
-                                                            lastEditedBy: data?.ownerName || 'Yönetici',
-                                                        }, () => {
-                                                            setSelectedJob(null);
-                                                        }, null);
-                                                        setIsApproving(false);
-                                                    }}
-                                                    disabled={isApproving}
-                                                    className="flex-1 w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
-                                                >
-                                                    {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
-                                                    İşi Tamamla
-                                                </button>
+                                            {/* 🚀 EKLENDİ: DEVAM EDİYOR DURUMUNDAKİ AKSİYONLAR (Fotoğraf + Tamamlama/Onaya Gönderme) */}
+                                            {selectedJob.status === 'Devam Ediyor' && (
+                                                <div className="flex flex-col sm:flex-row w-full gap-2 w-full order-last sm:order-none mt-2 sm:mt-0">
+                                                    
+                                                    {/* 🚀 FOTOĞRAF YÜKLEME BUTONU VE BASE64 SIKIŞTIRMA SİSTEMİ */}
+                                                    <label className="flex-1 w-full bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+                                                        {isUploadingPhoto ? <Loader2 size={16} className="animate-spin" /> : <ImageIcon size={16} />}
+                                                        {isUploadingPhoto ? 'Yükleniyor...' : 'Fotoğraf Ekle'}
+                                                        <input 
+                                                            type="file" 
+                                                            accept="image/*" 
+                                                            capture="environment"
+                                                            className="hidden" 
+                                                            disabled={isUploadingPhoto}
+                                                            onChange={async (e) => {
+                                                                const file = e.target.files?.[0];
+                                                                if(!file) return;
+                                                                setIsUploadingPhoto(true);
+
+                                                                // 🚀 Usta Tarafındaki Base64 Sıkıştırma Algoritması
+                                                                const compressed = await new Promise((resolve) => {
+                                                                    const reader = new FileReader();
+                                                                    reader.onload = (event) => {
+                                                                        const img = new Image();
+                                                                        img.onload = () => {
+                                                                            const canvas = document.createElement('canvas');
+                                                                            const MAX_WIDTH = 1920; 
+                                                                            let scale = 1;
+                                                                            if (img.width > MAX_WIDTH) scale = MAX_WIDTH / img.width; 
+                                                                            canvas.width = img.width * scale;
+                                                                            canvas.height = img.height * scale;
+                                                                            const ctx = canvas.getContext('2d');
+                                                                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                                                            resolve(canvas.toDataURL('image/jpeg', 0.90)); 
+                                                                        };
+                                                                        img.src = event.target.result as string;
+                                                                    };
+                                                                    reader.readAsDataURL(file);
+                                                                });
+
+                                                                // Sıkıştırılmış veriyi direkt JSON ile endpoint'e gönderiyoruz
+                                                                await handleAction('update-job', { 
+                                                                    id: selectedJob.id, 
+                                                                    status: selectedJob.status, // Statü sabit kalıyor
+                                                                    lastEditedBy: data?.ownerName || 'Yönetici',
+                                                                    photos: [compressed], // Yalnızca yeni eklenen fotoğraf
+                                                                    taskNote: selectedJob.details?.note // Not silinmesin diye koruyoruz
+                                                                }, null, null);
+
+                                                                // Modalı kapatmadan UI'ı güncelle
+                                                                const updatedPhotos = [...(selectedJob.photos || []), compressed];
+                                                                setSelectedJob({ ...selectedJob, photos: updatedPhotos });
+
+                                                                setIsUploadingPhoto(false);
+                                                                e.target.value = ''; // Inputu sıfırla
+                                                            }} 
+                                                        />
+                                                    </label>
+
+                                                    {/* Sadece iş ustaya atandıysa o usta görebilir, ya da yönetici kendine iş açtıysa kendi görebilir. Çakışma Düzeltildi. */}
+                                                    {(userRole === 'Usta' || !hasWorker) && (
+                                                        <button 
+                                                            onClick={async () => {
+                                                                setIsApproving(true);
+                                                                // Yönetici kimsiz işi bitiriyorsa direkt Tamamlandı, Usta bitiriyorsa 2. Faktör (Onay Bekliyor)
+                                                                const nextStatus = userRole === 'Usta' ? 'Onay Bekliyor' : 'Tamamlandı';
+                                                                await handleAction('update-job', {
+                                                                    id: selectedJob.id,
+                                                                    status: nextStatus,
+                                                                    lastEditedBy: data?.ownerName || 'Yönetici',
+                                                                }, () => setSelectedJob(null), null);
+                                                                setIsApproving(false);
+                                                            }}
+                                                            disabled={isApproving}
+                                                            className={`flex-1 w-full text-white py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50 ${userRole === 'Usta' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-500 hover:bg-emerald-600'}`}
+                                                        >
+                                                            {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
+                                                            {userRole === 'Usta' ? 'İşi Bitir & Onaya Gönder' : 'İşi Tamamla'}
+                                                        </button>
+                                                    )}
+                                                </div>
                                             )}
                                         </>
                                     )}

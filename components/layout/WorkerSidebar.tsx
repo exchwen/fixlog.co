@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, CheckCircle2, ChevronRight, X, ListTodo, Wrench } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 
@@ -18,6 +17,47 @@ export default function WorkerSidebar({ activeTab, setActiveTab, isMobileMenuOpe
     return () => window.removeEventListener('resize', checkDesktop);
   }, []);
 
+  // 🚀 Swipe (Kaydırma) Algılama Mantığı
+  useEffect(() => {
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX = e.changedTouches[0].screenX;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    };
+
+    const handleSwipe = () => {
+      const swipeDistance = touchEndX - touchStartX;
+      const minSwipeDistance = 50; // Kaydırmanın algılanması için gereken minimum piksel
+
+      if (swipeDistance > minSwipeDistance) {
+        // Soldan Sağa Kaydırma -> Aç
+        // Sadece ekranın en solundan (ilk 50px) kaydırmaya başlandıysa aç ki sayfada gezinirken yanlışlıkla menü açılmasın
+        if (touchStartX < 50 && !isDesktop) {
+          setIsMobileMenuOpen(true);
+        }
+      } else if (swipeDistance < -minSwipeDistance) {
+        // Sağdan Sola Kaydırma -> Kapat
+        if (isMobileMenuOpen && !isDesktop) {
+          setIsMobileMenuOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('touchstart', handleTouchStart);
+    document.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isMobileMenuOpen, setIsMobileMenuOpen, isDesktop]);
+
   const handleLogout = () => {
     localStorage.removeItem('staff_authToken');
     localStorage.removeItem('staff_userRole');
@@ -33,23 +73,18 @@ export default function WorkerSidebar({ activeTab, setActiveTab, isMobileMenuOpe
 
   return (
     <>
-      <AnimatePresence>
-        {isMobileMenuOpen && !isDesktop && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] lg:hidden"
-          />
-        )}
-      </AnimatePresence>
+      {/* Mobildeki Arka Plan Karartması (Animasyonsuz, Performanslı) */}
+      {isMobileMenuOpen && !isDesktop && (
+        <div
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] lg:hidden"
+        />
+      )}
 
-      <motion.aside
-        initial={false}
-        animate={isDesktop ? { x: 0 } : { x: isMobileMenuOpen ? 0 : '-100%' }}
-        transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-        className={`fixed lg:sticky top-0 left-0 h-[100dvh] bg-white border-r border-slate-200 z-[210] lg:z-40 w-72 lg:w-20 lg:hover:w-64 hover:shadow-2xl transition-all duration-300 ease-in-out group flex flex-col overflow-hidden shadow-2xl lg:shadow-none shrink-0`}
+      <aside
+        className={`fixed lg:sticky top-0 left-0 h-[100dvh] bg-white border-r border-slate-200 z-[210] lg:z-40 w-72 lg:w-20 lg:hover:w-64 group flex flex-col overflow-hidden shrink-0 
+        ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0 lg:shadow-none'} 
+        max-lg:transition-transform max-lg:duration-300 max-lg:ease-out lg:transition-all lg:duration-300 lg:ease-in-out`}
       >
         <div className="p-6 flex items-center justify-between border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3 w-full">
@@ -97,7 +132,7 @@ export default function WorkerSidebar({ activeTab, setActiveTab, isMobileMenuOpe
             <span className="whitespace-nowrap lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm">Oturumu Kapat</span>
           </button>
         </div>
-      </motion.aside>
+      </aside>
     </>
   );
 }
