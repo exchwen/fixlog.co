@@ -231,7 +231,6 @@ export default function AddJobModal({
                                 </div>
                               )}
 
-                              {/* 🚀 EKLENDİ: Görev Tipi / Branş Seçimi */}
                               {jobForm?.workCategory !== 'Genel İş Atama' && (
                                   <div>
                                     <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Görev Tipi / Branş</label>
@@ -252,9 +251,9 @@ export default function AddJobModal({
                                     .filter((s:any) => {
                                         // 🚀 HİYERARŞİYE GÖRE LİSTELEME
                                         if (userRole === 'Patron') {
-                                            return s.role === 'Yönetici'; // Patron sadece Yöneticileri görür
+                                            return s.role === 'Yönetici'; 
                                         } else {
-                                            return s.role === 'Usta'; // Yönetici sadece Ustaları görür
+                                            return s.role === 'Usta'; 
                                         }
                                     }) 
                                     .map((s:any) => (
@@ -276,9 +275,21 @@ export default function AddJobModal({
             {jobModalStep === 2 && (
                 <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50">
                     <button disabled={isSaving || !isJobValid} onClick={() => {
-                        // 🚀 DÜZELTİLDİ: Genel İş Atama ise workType zorla "Genel Görev" yapılır.
                         const finalWorkType = jobForm.workCategory === 'Genel İş Atama' ? 'Genel Görev' : (jobForm.workType || 'Görev');
-                        handleAction('add-job', { ...jobForm, workType: finalWorkType, workCategory: jobForm.workCategory || 'Normal İş Atama', details: { note: jobForm.taskNote } }, setShowJobModal, () => setJobForm({ customerName: '', assetId: '', staffId: '', workType: 'Görev', workCategory: 'Normal İş Atama', jobType: 'Anlık', scheduledDate: '', taskNote: '' }));
+                        
+                        // 🚀 DÜZELTME: Yeni iş oluşturulurken usta atandıysa, durum direkt "Usta Bekliyor" olur.
+                        let initialStatus = jobForm.jobType === 'Planlı' ? 'Gelecek' : 'Beklemede';
+                        if (jobForm.staffId && userRole === 'Yönetici') {
+                             initialStatus = 'Usta Bekliyor';
+                        }
+
+                        handleAction('add-job', { 
+                            ...jobForm, 
+                            workType: finalWorkType, 
+                            workCategory: jobForm.workCategory || 'Normal İş Atama', 
+                            status: initialStatus, // YENİ DURUMU EKLİYORUZ
+                            details: { note: jobForm.taskNote } 
+                        }, setShowJobModal, () => setJobForm({ customerName: '', assetId: '', staffId: '', workType: 'Görev', workCategory: 'Normal İş Atama', jobType: 'Anlık', scheduledDate: '', taskNote: '' }));
                     }} className="w-full bg-blue-600 text-white py-3.5 sm:py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex justify-center items-center disabled:opacity-50">
                       {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'İş Emrini Gönder'}
                     </button>

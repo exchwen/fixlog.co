@@ -54,14 +54,31 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
     'Usta Bekliyor': 'bg-indigo-100 text-indigo-700 border-indigo-200'
   };
 
-  // 🚀 DÜZELTİLMİŞ: Dinamik Statü Kontrolü (Mantık Hatalarını ve Gecikmeleri Tespit Eder)
+  // 🚀 FİNAL DÜZELTME: Dinamik Statü Kontrolü (Mantık Hatalarını ve Gecikmeleri Tespit Eder)
   const getDynamicStatus = (job: any, hasWorker: boolean) => {
     let label = job.status || 'Beklemede';
 
-    // 🛠️ MANTIK HATASI DÜZELTMESİ: 
-    // İş tamamlanmadıysa, iptal edilmediyse ve onay beklemiyorsa ustanın varlığına göre durumu otomatik düzelt.
-    if (label === 'Usta Bekliyor' || label === 'Devam Ediyor') {
-        label = hasWorker ? 'Devam Ediyor' : 'Usta Bekliyor';
+    const isGeneralTask = job.work_type === 'Genel Görev' || job.work_type === 'Görev' || !job.customer_name || job.customer_name === 'Genel Görev';
+
+    // 1. İş Onay Bekliyorsa, Tamamlandıysa veya İptal edildiyse statüye MÜDAHALE ETME.
+    if (label === 'Onay Bekliyor' || label === 'Tamamlandı' || label === 'İptal') {
+        let colorClass = statusColors[label] || 'bg-slate-100 text-slate-500 border-slate-200';
+        return { label, colorClass };
+    }
+
+    // 2. İş AKTİF bir görevse ve henüz bitmediyse:
+    if (isGeneralTask) {
+        // Genel Görevlere usta atanmaz. Beklemede veya Devam Ediyor olur.
+        label = (label === 'Devam Ediyor' || label === 'Usta Bekliyor') ? 'Devam Ediyor' : 'Beklemede';
+    } else {
+        // Normal İş Ataması
+        if (hasWorker) {
+            // Eğer bir USTA atanmışsa, Usta "Devam Ediyor" (İşe Başla) yapana kadar statü "Usta Bekliyor" olmalıdır.
+            label = label === 'Devam Ediyor' ? 'Devam Ediyor' : 'Usta Bekliyor';
+        } else {
+            // Usta atanmamışsa "Beklemede" veya planlıysa "Gelecek" kalır.
+            label = label === 'Gelecek' ? 'Gelecek' : 'Beklemede';
+        }
     }
 
     let colorClass = statusColors[label] || 'bg-slate-100 text-slate-500 border-slate-200';
@@ -161,11 +178,11 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {pendingJobs.length > 0 ? pendingJobs.map((j: any) => {
+              {pendingJobs.length > 0 ? pendingJobs.map((j: any) => {
                   
-                  // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA
-                  const creator = j.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
-                  const manager = j.manager_name || null;
+                  // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA (Geriye Dönük Uyumluluk Eklendi)
+                  const creator = j.creator_name || j.details?.createdBy || (data?.ownerName?.split(' ')[0] || 'Sistem');
+                  const manager = j.manager_name || j.details?.managerName || null;
                   let worker = j.worker_name || null;
 
                   if (!worker) {
@@ -460,25 +477,21 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
 
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 relative z-10">
              {waitingForWorkerJobs.map((j: any) => {
-               // --- 🚀 MASAÜSTÜ İÇİN DÜZELTİLMİŞ HİYERARŞİ ---
-               const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
-               const creatorName = j.details?.createdBy || ownerName;
-               const assignedPerson = j.staff_id ? staff.find((s:any) => String(s.id) === String(j.staff_id)) : null;
-               const detailWorker = j.details?.worker_id ? staff.find((s:any) => String(s.id) === String(j.details.worker_id)) : null;
                
-               let managerName = j.details?.managerName || null;
-               let workerName = null;
+               // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA (Hiyerarşi Kusursuzlaştırıldı)
+               const creatorName = j.creator_name || j.details?.createdBy || (data?.ownerName?.split(' ')[0] || 'Sistem');
+               let managerName = j.manager_name || j.details?.managerName || null;
+               let workerName = j.worker_name || null;
 
-               if (assignedPerson) {
-                   if (assignedPerson.role === 'Yönetici') {
-                       if (!managerName) managerName = assignedPerson.name;
-                   } else {
-                       workerName = assignedPerson.name;
+               // Geriye dönük uyumluluk (Eski JSON veriler için fallback)
+               if (!workerName) {
+                   if (j.details?.worker_id) {
+                       const w = staff.find((s:any) => String(s.id) === String(j.details?.worker_id));
+                       if (w) workerName = w.name;
+                   } else if (j.staff_id) {
+                       const w = staff.find((s:any) => String(s.id) === String(j.staff_id));
+                       if (w && w.role === 'Usta') workerName = w.name;
                    }
-               }
-
-               if (detailWorker) {
-                   workerName = detailWorker.name;
                }
 
                const isCreatorSameAsManager = managerName && (creatorName === managerName);
