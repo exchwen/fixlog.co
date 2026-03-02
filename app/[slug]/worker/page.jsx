@@ -6,8 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Clock, CheckCircle2, MessageSquareText, LogOut, ChevronRight, PenTool, Loader2, AlertCircle, PlayCircle, ClipboardList, WifiOff, Download, Share, Check, Camera, X } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 import Header from '@/components/layout/Header';
+import Sidebar from '@/components/layout/Sidebar'; // 🚀 SIDEBAR EKLENDİ
 
-import ChatPanel from '@/components/chat/ChatPanel'; // 🚀 CHAT PANEL EKLENDİ
+import ChatPanel from '@/components/chat/ChatPanel';
 import DynamicPWA from '@/components/DynamicPWA'; 
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
@@ -422,13 +423,19 @@ export default function WorkerDashboard() {
   }
 
   const activeJobs = jobs.filter(j => j.status === 'Devam Ediyor' || j.status === 'Sahada');
-  const pendingJobs = jobs.filter(j => j.status === 'Beklemede' || j.status === 'Gelecek');
+  // 🚀 ÇÖZÜM: 'Usta Bekliyor' durumu filtreye eklendi, artık atanan işler ekranda görünecek!
+  const pendingJobs = jobs.filter(j => j.status === 'Beklemede' || j.status === 'Gelecek' || j.status === 'Usta Bekliyor');
   const completedJobs = jobs.filter(j => j.status === 'Tamamlandı');
 
   return (
-    <div className="min-h-[100dvh] bg-[#F8FAFC] text-slate-900 font-sans flex flex-col pb-20 selection:bg-blue-100 relative">
+    <div className="min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 bg-[#F8FAFC] text-slate-900">
       
-      <Header data={data} setIsMobileMenuOpen={setIsMobileMenuOpen} setSelectedJob={setSelectedJob} />
+      <div className="flex z-50">
+        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
+      </div>
+
+      <main className="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-y-auto relative z-10">
+        <Header data={data} setIsMobileMenuOpen={setIsMobileMenuOpen} setSelectedJob={setSelectedJob} />
 
       {/* PWA YÜKLEME MODALI */}
       <AnimatePresence>
@@ -500,7 +507,7 @@ export default function WorkerDashboard() {
       </AnimatePresence>
 
       {/* ÜST BİLGİ ALANI (HEADER) */}
-      <div className="bg-slate-900 text-white p-5 rounded-b-3xl shadow-xl z-40 relative">
+      <div className="bg-slate-900 text-white p-5 rounded-b-3xl shadow-xl z-40 relative md:mx-6 md:mt-6 md:rounded-3xl">
          <div className="flex justify-between items-start mb-4">
              <div>
                 <div className="text-[10px] text-emerald-400 font-black uppercase tracking-widest mb-1">{companyName}</div>
@@ -519,13 +526,13 @@ export default function WorkerDashboard() {
                  <div className="text-2xl font-black text-blue-400">{completedJobs.length}</div>
                  <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mt-0.5">Bitirilen</div>
              </div>
-         </div>
+             </div>
       </div>
 
       {/* ANA İÇERİK ALANI */}
-      <main className="flex-1 p-4 overflow-y-auto">
+      <div className="flex-1 p-4 md:p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">
         
-        {activeTab === 'jobs' && (
+        {(activeTab === 'jobs' || activeTab === 'home' || activeTab === 'my-jobs') && (
           <div className="space-y-6">
             
             {/* Devam Eden İşler (Öncelikli) */}
@@ -589,9 +596,9 @@ export default function WorkerDashboard() {
                </div>
             </div>
 
-          </div>
+            </div>
         )}
-      </main>
+      </div>
 
       {/* İŞ DETAY VE AKSİYON MODALI */}
       <AnimatePresence>
@@ -771,18 +778,7 @@ export default function WorkerDashboard() {
         sendMessage={sendMessage} 
       />
 
-      {/* MOBİL ALT MENÜ (SADECE GÖREVLER VE ÇIKIŞ) */}
-      <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 pb-safe pt-2 px-8 flex justify-between items-center z-30 h-20 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-          <button onClick={() => setActiveTab('jobs')} className="flex flex-col items-center gap-1.5 text-blue-600">
-              <div className="p-1.5 rounded-xl bg-blue-50"><PenTool size={22} strokeWidth={3} /></div>
-              <span className="text-[10px] font-black uppercase tracking-widest">Saha Görevleri</span>
-          </button>
-          
-          <button onClick={handleLogout} className="flex flex-col items-center gap-1.5 text-rose-400 hover:text-rose-600 transition-colors mr-2">
-              <div className="p-1.5"><LogOut size={22} strokeWidth={2} /></div>
-              <span className="text-[10px] font-black uppercase tracking-widest">Oturumu Kapat</span>
-          </button>
-      </nav>
+      </main>
 
     </div>
   );
