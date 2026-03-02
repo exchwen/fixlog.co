@@ -1,8 +1,8 @@
 // 🚀 Pusher Beams SDK
 importScripts("https://js.pusher.com/beams/service-worker.js");
 
-// Versiyonu yükselttik (v6) ki tarayıcılar değişikliği hemen anlasın
-const CACHE_NAME = 'isdokumu-mobile-final-v6';
+// Versiyonu yükselttik (v7) ki tarayıcılar değişikliği hemen anlasın
+const CACHE_NAME = 'isdokumu-mobile-final-v7';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting(); // Beklemeden yeni versiyona geç
@@ -40,6 +40,30 @@ self.addEventListener('fetch', (event) => {
     fetch(event.request).catch(() => caches.match(event.request))
   );
 });
+
+// 🚀 BİLDİRİM GÖSTERİM KONTROLÜ (YENİ EKLENDİ)
+// Pusher Beams'in varsayılan davranışını eziyoruz. 
+// Sadece uygulama arka plandaysa veya ekran kapalıysa üstten bildirim gösterilecek.
+PusherPushNotifications.onNotificationReceived = ({ pushEvent, payload, handleNotification }) => {
+  pushEvent.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      let isAppVisible = false;
+      
+      for (const client of clientList) {
+        // Eğer uygulamanın penceresi ekranda açıksa ve görünürse
+        if (client.visibilityState === 'visible') {
+          isAppVisible = true;
+          break;
+        }
+      }
+
+      // Eğer uygulama ekranda DEĞİLSE (arka planda veya kapalıysa) bildirimi göster
+      if (!isAppVisible) {
+        return handleNotification(payload);
+      }
+    })
+  );
+};
 
 // 🚀 BİLDİRİM TIKLAMA YÖNETİCİSİ (PWA FOCUS MODU)
 // Bu kod sayesinde bildirime tıklayınca Chrome sekmesi değil, Uygulama açılır.

@@ -414,21 +414,35 @@ export default function JobDetailModal({
                        </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-8 print-grid">
-                       <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print-no-bg">
-                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">Müşteri Bilgisi</div>
-                          <div className="font-bold text-sm text-slate-800">{previewPdfJob.customer_name}</div>
-                       </div>
-                       <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print-no-bg">
-                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">Cihaz / Apartman</div>
-                          <div className="font-bold text-sm text-slate-800">
-                              {(() => {
-                                  const asset = (data?.assets || []).find((a:any) => a.id === previewPdfJob.asset_id);
-                                  return asset ? `${asset.name} ${asset.apartmentName ? `- ${asset.apartmentName}` : ''}` : 'Belirtilmedi';
-                              })()}
-                          </div>
-                       </div>
-                    </div>
+                    {(() => {
+                        const isPdfGeneral = previewPdfJob.work_type === 'Genel Görev' || previewPdfJob.work_type === 'Görev' || !previewPdfJob.customer_name || previewPdfJob.customer_name === 'Genel Görev';
+                        const showCust = !(isPdfGeneral && (!previewPdfJob.customer_name || previewPdfJob.customer_name === 'Genel Görev'));
+                        const showAsset = !(isPdfGeneral && !previewPdfJob.asset_id);
+                        
+                        if (!showCust && !showAsset) return null;
+                        
+                        return (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-8 print-grid">
+                               {showCust && (
+                                   <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print-no-bg">
+                                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">Müşteri Bilgisi</div>
+                                      <div className="font-bold text-sm text-slate-800">{previewPdfJob.customer_name}</div>
+                                   </div>
+                               )}
+                               {showAsset && (
+                                   <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print-no-bg">
+                                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">Cihaz / Apartman</div>
+                                      <div className="font-bold text-sm text-slate-800">
+                                          {(() => {
+                                              const asset = (data?.assets || []).find((a:any) => a.id === previewPdfJob.asset_id);
+                                              return asset ? `${asset.name} ${asset.apartmentName ? `- ${asset.apartmentName}` : ''}` : 'Belirtilmedi';
+                                          })()}
+                                      </div>
+                                   </div>
+                               )}
+                            </div>
+                        );
+                    })()}
 
                     <div className="mb-8">
                        <div className="text-xs font-black text-slate-800 uppercase border-b border-slate-200 pb-2 mb-3">Yapılan İşlem / Rapor Detayı</div>
@@ -465,9 +479,18 @@ export default function JobDetailModal({
                    <button onClick={() => setShowPrintModeSelection(true)} className="flex-[2] bg-slate-900 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-md active:scale-95">
                       <Printer size={18} /> PDF Olarak Cihaza Kaydet
                    </button>
-                   <button onClick={() => sendCustomerWhatsApp(previewPdfJob)} className="flex-1 bg-emerald-500 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all shadow-md active:scale-95">
-                      <MessageSquareText size={18} /> Müşteriye Gönder
-                   </button>
+                   {(() => {
+                       const isPdfGeneral = previewPdfJob.work_type === 'Genel Görev' || previewPdfJob.work_type === 'Görev' || !previewPdfJob.customer_name || previewPdfJob.customer_name === 'Genel Görev';
+                       const hasPhone = !!(data?.customers || []).find((c:any) => c.name === previewPdfJob.customer_name)?.contact;
+                       
+                       if (isPdfGeneral && (!previewPdfJob.customer_name || previewPdfJob.customer_name === 'Genel Görev' || !hasPhone)) return null;
+                       
+                       return (
+                           <button onClick={() => sendCustomerWhatsApp(previewPdfJob)} className="flex-1 bg-emerald-500 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all shadow-md active:scale-95">
+                              <MessageSquareText size={18} /> Müşteriye Gönder
+                           </button>
+                       );
+                   })()}
                 </div>
              </motion.div>
              
@@ -845,9 +868,9 @@ export default function JobDetailModal({
                             </div>
                         )}
 
-                        {selectedJob.status === 'Tamamlandı' && (
+                        {selectedJob.status === 'Tamamlandı' && (  
                             <button onClick={() => setPreviewPdfJob(selectedJob)} className="w-full bg-emerald-100 border border-emerald-300 text-emerald-700 font-black py-3.5 rounded-xl hover:bg-emerald-200 transition-all flex justify-center items-center gap-2 shadow-sm active:scale-95 text-sm">
-                               <MessageSquareText size={18} /> Rapor Önizleme & WhatsApp Gönder
+                               <MessageSquareText size={18} /> {isGeneralTask && (!selectedJob.customer_name || selectedJob.customer_name === 'Genel Görev') ? 'Servis Formu / PDF Görüntüle' : 'Rapor Önizleme & WhatsApp Gönder'}
                             </button>
                         )}
 

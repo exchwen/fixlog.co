@@ -376,7 +376,8 @@ export default function WorkerDashboard() {
          const pos = await new Promise((resolve, reject) => {
             navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000 });
          });
-         gpsNote = `\n[📍 Konum Kaydı]: http://googleusercontent.com/maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+         // 🚀 DÜZELTİLDİ: Stabil Harita Linki
+         gpsNote = `\n[📍 Konum Kaydı]: https://www.google.com/maps/search/?api=1&query=${pos.coords.latitude},${pos.coords.longitude}`;
        } catch (e) {
          console.warn("Konum alınamadı.");
        }
@@ -449,7 +450,6 @@ export default function WorkerDashboard() {
   return (
     <div className="min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 bg-[#F8FAFC] text-slate-900">
       
-      {/* 🚀 SIDEBAR KATMANI (Artık kapsayıcı div'in width'i bozmasını engelliyoruz) */}
       <div className="z-[300] lg:relative absolute">
         <WorkerSidebar activeTab={activeTab} setActiveTab={setActiveTab} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
       </div>
@@ -457,7 +457,6 @@ export default function WorkerDashboard() {
       <main className="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-y-auto relative z-10 w-full">
         <Header data={data} setIsMobileMenuOpen={setIsMobileMenuOpen} setSelectedJob={setSelectedJob} />
 
-        {/* PWA YÜKLEME MODALI */}
         {showPwaPrompt && (
           <motion.div 
             initial={{ y: 100, opacity: 0 }} 
@@ -504,7 +503,6 @@ export default function WorkerDashboard() {
           </motion.div>
         )}
 
-        {/* İNTERNET YOK / KUYRUK UYARI BARI */}
         <AnimatePresence>
           {(isOffline || pendingSyncCount > 0) && (
               <motion.div 
@@ -524,7 +522,6 @@ export default function WorkerDashboard() {
           )}
         </AnimatePresence>
 
-        {/* ÜST BİLGİ ALANI (HEADER) */}
         <div className="bg-slate-900 text-white p-5 rounded-b-3xl shadow-xl z-40 relative md:mx-6 md:mt-6 md:rounded-3xl shrink-0">
           <div className="flex justify-between items-start mb-4">
               <div>
@@ -547,13 +544,11 @@ export default function WorkerDashboard() {
           </div>
         </div>
 
-        {/* ANA İÇERİK ALANI */}
         <div className="flex-1 p-4 md:p-6 space-y-6 max-w-6xl w-full mx-auto pb-24">
           
           {activeTab === 'jobs' && (
             <div className="space-y-6">
               
-              {/* Devam Eden İşler (Öncelikli) */}
               {activeJobs.length > 0 && (
                 <div>
                   <h2 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -567,18 +562,23 @@ export default function WorkerDashboard() {
                         <div key={job.id} onClick={() => setSelectedJob(job)} className="bg-blue-600 rounded-2xl p-4 shadow-lg shadow-blue-600/20 text-white active:scale-95 transition-transform cursor-pointer border border-blue-500 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
                             <div className="relative z-10">
-                                <div className="flex justify-between items-start mb-2">
+                            <div className="flex justify-between items-start mb-2">
                                   <span className="bg-white/20 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider backdrop-blur-md">Devam Ediyor</span>
                                   <span className="text-[10px] font-bold opacity-80 flex items-center gap-1"><Clock size={10}/> {job.scheduled_date || 'Anlık'}</span>
                                 </div>
-                                <h3 className="text-lg font-black leading-tight mb-1">{job.customer_name}</h3>
-                                <p className="text-blue-100 text-sm font-medium flex items-center gap-1.5 mb-1"><MapPin size={14} className="shrink-0"/> {job.work_type}</p>
                                 
-                                {asset && (
-                                   <div className="text-[11px] font-medium text-blue-200 mt-2 bg-blue-700/50 p-2 rounded-xl border border-blue-500/50 truncate">
-                                      🏢 {asset.apartmentName || asset.name} <br/> 📍 {asset.location}
-                                   </div>
-                                )}
+                                <h3 className="text-lg font-black leading-tight mb-1 truncate">
+                                    {asset ? (asset.apartmentName || asset.name) : job.customer_name}
+                                </h3>
+                                
+                                <p className="text-blue-100 text-xs font-medium flex items-center gap-1.5 mb-1 truncate">
+                                    <User size={12} className="shrink-0"/> {job.customer_name}
+                                </p>
+
+                                <div className="text-[11px] font-medium text-blue-200 mt-2 bg-blue-700/50 p-2 rounded-xl border border-blue-500/50 truncate">
+                                    <span className="font-bold flex items-center gap-1 mb-0.5"><Briefcase size={12}/> {job.work_type}</span>
+                                    {asset && `📍 ${asset.location}`}
+                                </div>
 
                                 <div className="mt-3 pt-3 border-t border-blue-500/50 flex items-center gap-1.5 text-[11px] text-blue-100">
                                   {assigner.icon === 'ShieldCheck' ? <ShieldCheck size={14} /> : <UserPlus size={14} />}
@@ -591,7 +591,6 @@ export default function WorkerDashboard() {
                 </div>
               )}
 
-              {/* Bekleyen İşler */}
               <div>
                 <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                     <AlertCircle size={14} /> SIRADAKİ GÖREVLER
@@ -606,14 +605,19 @@ export default function WorkerDashboard() {
                             <span className="bg-amber-100 text-amber-800 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">{job.status}</span>
                             <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Clock size={10}/> {job.scheduled_date || 'Anlık'}</span>
                           </div>
-                          <h3 className="text-base font-black text-slate-800 leading-tight mb-1">{job.customer_name}</h3>
-                          <p className="text-slate-500 text-xs font-medium flex items-center gap-1.5 mb-1"><PenTool size={12} className="shrink-0 text-blue-500"/> {job.work_type}</p>
                           
-                          {asset && (
-                             <div className="text-[11px] font-medium text-slate-500 mt-2 bg-slate-50 p-2 rounded-xl border border-slate-100 truncate">
-                                🏢 {asset.apartmentName || asset.name} <br/> 📍 {asset.location}
-                             </div>
-                          )}
+                          <h3 className="text-base font-black text-slate-800 leading-tight mb-1 truncate">
+                              {asset ? (asset.apartmentName || asset.name) : job.customer_name}
+                          </h3>
+                          
+                          <p className="text-slate-500 text-xs font-medium flex items-center gap-1.5 mb-1 truncate">
+                              <User size={12} className="shrink-0 text-slate-400"/> {job.customer_name}
+                          </p>
+                          
+                          <div className="text-[11px] font-medium text-slate-500 mt-2 bg-slate-50 p-2 rounded-xl border border-slate-100 truncate">
+                              <span className="font-bold flex items-center gap-1 mb-0.5 text-blue-600"><Briefcase size={12}/> {job.work_type}</span>
+                              {asset && `📍 ${asset.location}`}
+                          </div>
 
                           <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-500">
                             {assigner.icon === 'ShieldCheck' ? <ShieldCheck size={14} className="text-blue-500" /> : <UserPlus size={14} className="text-slate-400" />}
@@ -631,7 +635,6 @@ export default function WorkerDashboard() {
             </div>
           )}
 
-          {/* TAMAMLANAN İŞLER SEKMESİ */}
           {activeTab === 'completed' && (
              <div className="space-y-4">
                 <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
@@ -642,16 +645,30 @@ export default function WorkerDashboard() {
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                   {completedJobs.length > 0 ? completedJobs.map(job => (
-                      <div key={job.id} onClick={() => setSelectedJob(job)} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 cursor-pointer hover:border-emerald-300 transition-colors group">
-                          <div className="flex justify-between items-start mb-3">
-                             <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border border-emerald-100">{job.status}</span>
-                             <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Clock size={10}/> {new Date(job.created_at).toLocaleDateString('tr-TR')}</span>
+                {completedJobs.length > 0 ? completedJobs.map(job => {
+                      const asset = getAssetDetails(job.asset_id);
+                      return (
+                      <div key={job.id} onClick={() => setSelectedJob(job)} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 cursor-pointer hover:border-emerald-300 transition-colors group flex flex-col justify-between">
+                          <div>
+                              <div className="flex justify-between items-start mb-3">
+                                 <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border border-emerald-100">{job.status}</span>
+                                 <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Clock size={10}/> {new Date(job.created_at).toLocaleDateString('tr-TR')}</span>
+                              </div>
+                              
+                              <h3 className="text-base font-black text-slate-800 leading-tight mb-1 truncate group-hover:text-emerald-700 transition-colors">
+                                  {asset ? (asset.apartmentName || asset.name) : job.customer_name}
+                              </h3>
+                              
+                              <p className="text-slate-500 text-xs font-medium flex items-center gap-1.5 truncate">
+                                  <User size={12} className="shrink-0"/> {job.customer_name}
+                              </p>
                           </div>
-                          <h3 className="text-base font-black text-slate-800 leading-tight mb-2 group-hover:text-emerald-700 transition-colors">{job.customer_name}</h3>
-                          <p className="text-slate-500 text-xs font-medium flex items-center gap-1.5"><ClipboardList size={14} className="shrink-0 text-slate-400"/> {job.work_type}</p>
+                          
+                          <div className="text-[11px] font-medium text-slate-500 mt-3 bg-slate-50 p-2 rounded-xl border border-slate-100 truncate">
+                              <span className="font-bold flex items-center gap-1 text-emerald-600"><ClipboardList size={12}/> {job.work_type}</span>
+                          </div>
                       </div>
-                   )) : (
+                   )}) : (
                       <div className="col-span-full text-center p-12 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 font-medium">
                          Henüz tamamlanmış bir işiniz bulunmuyor.
                       </div>
@@ -662,19 +679,16 @@ export default function WorkerDashboard() {
 
         </div>
 
-        {/* 🚀 İŞ DETAY VE AKSİYON MODALI (KÜÇÜLTÜLMÜŞ, YENİ MÜŞTERİ BİLGİSİYLE) */}
         <AnimatePresence>
           {selectedJob && (
             <div className="fixed inset-0 z-[400] flex items-end md:items-center justify-center p-0 md:p-4">
               
-              {/* BACKDROP */}
               <motion.div 
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer" 
                 onClick={() => handleSmartClose()}
               ></motion.div>
               
-              {/* MODAL CONTENT */}
               <motion.div 
                 initial={{ y: "100%", opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.4 }}
                 className="relative w-full md:max-w-md bg-white rounded-t-3xl md:rounded-3xl p-6 pb-8 shadow-2xl flex flex-col max-h-[90vh] md:max-h-[85vh] border border-slate-200"
@@ -683,7 +697,6 @@ export default function WorkerDashboard() {
                 
                 <div className="overflow-y-auto custom-scrollbar flex-1 pr-1 space-y-4">
                     
-                    {/* ÜST BİLGİ VE ATAYAN */}
                     <div className="flex justify-between items-start">
                         <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100 shadow-sm">
                             {(() => {
@@ -699,7 +712,6 @@ export default function WorkerDashboard() {
                         <button onClick={() => handleSmartClose()} className="hidden md:flex p-1.5 bg-slate-100 text-slate-500 rounded-lg hover:bg-rose-100 hover:text-rose-600 transition-colors"><X size={16}/></button>
                     </div>
 
-                    {/* MÜŞTERİ BİLGİSİ VE ARAMA BUTONU */}
                     {(() => {
                         const customerInfo = data?.customers?.find(c => c.name === selectedJob.customer_name);
                         return (
@@ -728,13 +740,13 @@ export default function WorkerDashboard() {
                         );
                     })()}
 
-                    {/* VARLIK (CİHAZ/APARTMAN) BİLGİSİ VE HARİTA YÖNLENDİRMESİ */}
                     {(() => {
                         const asset = getAssetDetails(selectedJob.asset_id);
                         if (!asset) return null;
                         
                         const mapQuery = encodeURIComponent(asset.location || asset.apartmentName || asset.name);
-                        const mapUrl = `http://googleusercontent.com/maps.google.com/?q=${mapQuery}`;
+                        // 🚀 DÜZELTİLDİ: Stabil Harita Linki
+                        const mapUrl = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
                         return (
                            <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
@@ -751,7 +763,6 @@ export default function WorkerDashboard() {
                         );
                     })()}
                     
-                    {/* GÖREV DETAYI */}
                     <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                         <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">GÖREV BİLGİSİ / TALİMAT</div>
                         <div className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-1.5">
@@ -764,7 +775,6 @@ export default function WorkerDashboard() {
                         )}
                     </div>
 
-                    {/* DİNAMİK BRANŞ FORMU */}
                     {currentFields.length > 0 && (selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') && (
                         <div className="bg-blue-50/50 p-4 sm:p-5 rounded-2xl border border-blue-100 space-y-4">
                             <div className="text-[10px] font-black text-blue-700 uppercase tracking-widest flex items-center gap-1.5 border-b border-blue-200/50 pb-2 mb-3">
@@ -805,7 +815,6 @@ export default function WorkerDashboard() {
                         </div>
                     )}
 
-                    {/* GALERİ SEÇİMİ SERBEST BIRAKILAN FOTOĞRAF YÜKLEME ALANI */}
                     {(selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') && (
                         <div>
                             <div className="flex items-center justify-between mb-2">
@@ -843,7 +852,6 @@ export default function WorkerDashboard() {
                         </div>
                     )}
 
-                    {/* 🚀 NOT GİRİŞİ SADECE İŞE BAŞLANDIKTAN SONRA AÇILIR */}
                     {(selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') && (
                         <div>
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Saha Notu (Opsiyonel)</label>
@@ -858,7 +866,6 @@ export default function WorkerDashboard() {
                     )}
                 </div>
 
-                {/* AKSİYON BUTONLARI */}
                 <div className="pt-5 shrink-0 space-y-3">
                     {selectedJob.status === 'Beklemede' || selectedJob.status === 'Gelecek' || selectedJob.status === 'Usta Bekliyor' ? (
                         <button 
@@ -886,7 +893,6 @@ export default function WorkerDashboard() {
           )}
         </AnimatePresence>
 
-        {/* 🚀 EKSİK OLAN PWA KİMLİĞİ BURAYA EKLENDİ */}
         {data && (
           <DynamicPWA 
             companyName={data?.name} 
@@ -894,7 +900,6 @@ export default function WorkerDashboard() {
           />
         )}
 
-        {/* 🚀 CHAT BİLEŞENİ EKLENDİ */}
         <ChatPanel 
           isChatOpen={isChatOpen} 
           setIsChatOpen={setIsChatOpen} 
