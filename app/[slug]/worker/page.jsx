@@ -3,12 +3,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Clock, CheckCircle2, MessageSquareText, LogOut, ChevronRight, PenTool, Loader2, AlertCircle, PlayCircle, ClipboardList, WifiOff, Download, Share, Check, Camera, X, ShieldCheck, UserPlus, Box } from 'lucide-react';
+import { MapPin, Clock, CheckCircle2, MessageSquareText, LogOut, ChevronRight, PenTool, Loader2, AlertCircle, PlayCircle, ClipboardList, WifiOff, Download, Share, Check, Camera, X, ShieldCheck, UserPlus, Box, Phone } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 import Header from '@/components/layout/Header';
-import WorkerSidebar from '@/components/layout/WorkerSidebar';
+import WorkerSidebar from '@/components/layout/WorkerSidebar'; 
+
 import ChatPanel from '@/components/chat/ChatPanel';
-import DynamicPWA from '@/components/DynamicPWA';
+import DynamicPWA from '@/components/DynamicPWA'; 
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
@@ -46,6 +47,7 @@ export default function WorkerDashboard() {
   const [dynamicForm, setDynamicForm] = useState({}); 
   const [isSaving, setIsSaving] = useState(false);
 
+  // 🚀 CHAT (MESAJLAŞMA) STATE'LERİ
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeChatId, setActiveChatId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -95,9 +97,7 @@ export default function WorkerDashboard() {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        handleSmartClose(e);
-      }
+      if (e.key === 'Escape') handleSmartClose(e);
     };
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
@@ -110,13 +110,10 @@ export default function WorkerDashboard() {
   }, [selectedJob, isChatOpen, isMobileMenuOpen]);
 
   useEffect(() => {
-    const handlePopState = (e) => {
-      handleSmartClose(e);
-    };
+    const handlePopState = (e) => { handleSmartClose(e); };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [handleSmartClose]);
-
 
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -167,7 +164,6 @@ export default function WorkerDashboard() {
       setPendingSyncCount(0);
       return;
     }
-    
     const remaining = [];
     const token = localStorage.getItem('staff_authToken'); 
 
@@ -175,10 +171,7 @@ export default function WorkerDashboard() {
       try {
         const res = await fetch(`${API_URL}/${item.endpoint}`, { 
           method: 'POST', 
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }, 
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
           body: JSON.stringify({ ...item.body, slug }) 
         });
         if (!res.ok) remaining.push(item);
@@ -194,10 +187,8 @@ export default function WorkerDashboard() {
   useEffect(() => {
     const handleOnline = () => { setIsOffline(false); syncOfflineActions(); };
     const handleOffline = () => setIsOffline(true);
-    
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    
     const pending = JSON.parse(localStorage.getItem(`offline_actions_${slug}`) || '[]');
     setPendingSyncCount(pending.length);
     if (navigator.onLine) syncOfflineActions();
@@ -232,18 +223,12 @@ export default function WorkerDashboard() {
       if (res.ok) {
         const result = await res.json();
         setData(result); 
-        
         localStorage.setItem(`worker_cache_${slug}`, JSON.stringify(result));
         setIsOffline(false);
-
         setCompanyName(result.name);
         setCompanySector(result.sector || '');
-        
         const myStaffRecord = result.staff.find(s => String(s.id) === String(decoded.id));
-        if (myStaffRecord) {
-            setStaffBranch(myStaffRecord.branch);
-        }
-        
+        if (myStaffRecord) setStaffBranch(myStaffRecord.branch);
         const myJobs = result.jobs.filter(j => String(j.staff_id) === String(decoded.id));
         setJobs(myJobs);
       } else if (res.status === 401 || res.status === 403) {
@@ -284,12 +269,7 @@ export default function WorkerDashboard() {
     await fetch(`${API_URL}/send-message`, { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ 
-          slug, 
-          senderId: userData?.id, 
-          receiverId: activeChatId, 
-          message: messageInput 
-        }) 
+        body: JSON.stringify({ slug, senderId: userData?.id, receiverId: activeChatId, message: messageInput }) 
     });
     setMessageInput(''); 
     fetchMessages();
@@ -339,7 +319,7 @@ export default function WorkerDashboard() {
                     const canvas = document.createElement('canvas');
                     const MAX_WIDTH = 1920; 
                     let scale = 1;
-                    if (img.width > MAX_WIDTH) { scale = MAX_WIDTH / img.width; }
+                    if (img.width > MAX_WIDTH) scale = MAX_WIDTH / img.width; 
                     canvas.width = img.width * scale;
                     canvas.height = img.height * scale;
                     const ctx = canvas.getContext('2d');
@@ -358,9 +338,7 @@ export default function WorkerDashboard() {
     if(fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const removePhoto = (index) => {
-    setPhotos(prev => prev.filter((_, i) => i !== index));
-  };
+  const removePhoto = (index) => setPhotos(prev => prev.filter((_, i) => i !== index));
 
   const currentFields = (companySector && staffBranch && sectorsData.sectors?.[companySector]?.subTypes?.[staffBranch]?.fields) || [];
 
@@ -370,13 +348,8 @@ export default function WorkerDashboard() {
     let manager = job.manager_name || job.details?.managerName || null;
     
     const assignedPerson = data?.staff?.find(s => String(s.id) === String(job.staff_id));
-    if (assignedPerson && assignedPerson.role === 'Yönetici' && !manager) {
-        manager = assignedPerson.name;
-    }
-    
-    if (manager) {
-        return { name: manager, role: 'Sorumlu Yönetici', icon: 'ShieldCheck' };
-    }
+    if (assignedPerson && assignedPerson.role === 'Yönetici' && !manager) manager = assignedPerson.name;
+    if (manager) return { name: manager, role: 'Sorumlu Yönetici', icon: 'ShieldCheck' };
     return { name: creator, role: 'Görevlendiren', icon: 'UserPlus' };
   };
 
@@ -427,13 +400,9 @@ export default function WorkerDashboard() {
     try {
       const res = await fetch(`${API_URL}/update-job`, {
         method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ ...payload, slug })
       });
-
       if (!res.ok) throw new Error("Ağ hatası");
 
       setSelectedJob(null);
@@ -441,23 +410,18 @@ export default function WorkerDashboard() {
       setDynamicForm({});
       setPhotos([]);
       await fetchData(); 
-
     } catch (e) {
       const pending = JSON.parse(localStorage.getItem(`offline_actions_${slug}`) || '[]');
       pending.push({ endpoint: 'update-job', body: payload, timestamp: new Date().toISOString() });
       localStorage.setItem(`offline_actions_${slug}`, JSON.stringify(pending));
-      
       setPendingSyncCount(pending.length);
       setIsOffline(true);
 
       const updatedJobs = jobs.map(j => {
-          if (j.id === selectedJob.id) {
-             return { ...j, status: targetStatus, details: { ...j.details, note: finalNote } };
-          }
+          if (j.id === selectedJob.id) return { ...j, status: targetStatus, details: { ...j.details, note: finalNote } };
           return j;
       });
       setJobs(updatedJobs);
-
       setSelectedJob(null);
       setJobNote('');
       setDynamicForm({});
@@ -493,7 +457,7 @@ export default function WorkerDashboard() {
       <main className="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-y-auto relative z-10 w-full">
         <Header data={data} setIsMobileMenuOpen={setIsMobileMenuOpen} setSelectedJob={setSelectedJob} />
 
-        {/* PWA YÜKLEME MODALI (Görünür olması için AnimatePresence'ı dışarı aldık) */}
+        {/* PWA YÜKLEME MODALI */}
         {showPwaPrompt && (
           <motion.div 
             initial={{ y: 100, opacity: 0 }} 
@@ -698,7 +662,7 @@ export default function WorkerDashboard() {
 
         </div>
 
-        {/* 🚀 İŞ DETAY VE AKSİYON MODALI (MASAÜSTÜ UYUMLU, KÜÇÜLTÜLMÜŞ BOYUT) */}
+        {/* 🚀 İŞ DETAY VE AKSİYON MODALI (KÜÇÜLTÜLMÜŞ, YENİ MÜŞTERİ BİLGİSİYLE) */}
         <AnimatePresence>
           {selectedJob && (
             <div className="fixed inset-0 z-[400] flex items-end md:items-center justify-center p-0 md:p-4">
@@ -717,36 +681,63 @@ export default function WorkerDashboard() {
               >
                 <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6 shrink-0 md:hidden"></div>
                 
-                <div className="overflow-y-auto custom-scrollbar flex-1 pr-1 space-y-5">
+                <div className="overflow-y-auto custom-scrollbar flex-1 pr-1 space-y-4">
                     
-                    {/* ÜST BİLGİLER */}
-                    <div>
-                        <div className="flex justify-between items-start mb-1">
-                           <div className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5"><MapPin size={12}/> Müşteri Profili</div>
-                           <button onClick={() => handleSmartClose()} className="hidden md:flex p-1.5 bg-slate-100 text-slate-500 rounded-lg hover:bg-rose-100 hover:text-rose-600 transition-colors"><X size={16}/></button>
+                    {/* ÜST BİLGİ VE ATAYAN */}
+                    <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100 shadow-sm">
+                            {(() => {
+                                const assigner = getAssignerInfo(selectedJob);
+                                return (
+                                    <>
+                                        {assigner.icon === 'ShieldCheck' ? <ShieldCheck size={14} className="text-blue-500"/> : <UserPlus size={14} className="text-slate-400"/>} 
+                                        {assigner.role}: <span className="text-slate-700">{assigner.name}</span>
+                                    </>
+                                );
+                            })()}
                         </div>
-                        <h2 className="text-2xl font-black text-slate-900 leading-tight">{selectedJob.customer_name}</h2>
-                        
-                        {(() => {
-                            const assigner = getAssignerInfo(selectedJob);
-                            return (
-                                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 mt-3 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100 w-fit shadow-sm">
-                                    {assigner.icon === 'ShieldCheck' ? <ShieldCheck size={14} className="text-blue-500"/> : <UserPlus size={14} className="text-slate-400"/>} 
-                                    {assigner.role}: <span className="font-bold text-slate-700">{assigner.name}</span>
-                                </div>
-                            );
-                        })()}
+                        <button onClick={() => handleSmartClose()} className="hidden md:flex p-1.5 bg-slate-100 text-slate-500 rounded-lg hover:bg-rose-100 hover:text-rose-600 transition-colors"><X size={16}/></button>
                     </div>
+
+                    {/* MÜŞTERİ BİLGİSİ VE ARAMA BUTONU */}
+                    {(() => {
+                        const customerInfo = data?.customers?.find(c => c.name === selectedJob.customer_name);
+                        return (
+                            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-4">
+                                <div className="min-w-0">
+                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+                                        <MapPin size={12}/> Müşteri
+                                    </div>
+                                    <h2 className="text-lg font-black text-slate-900 leading-tight mb-1 truncate">{selectedJob.customer_name}</h2>
+                                    {customerInfo?.contact ? (
+                                        <div className="text-xs font-bold text-slate-600">{customerInfo.contact}</div>
+                                    ) : (
+                                        <div className="text-xs font-semibold text-slate-400 italic">Telefon bilgisi yok</div>
+                                    )}
+                                </div>
+                                {customerInfo?.contact && (
+                                    <a 
+                                        href={`tel:${customerInfo.contact.replace(/\s+/g, '')}`} 
+                                        className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm shrink-0 border border-emerald-100"
+                                        title="Müşteriyi Ara"
+                                    >
+                                        <Phone size={20} />
+                                    </a>
+                                )}
+                            </div>
+                        );
+                    })()}
 
                     {/* VARLIK (CİHAZ/APARTMAN) BİLGİSİ VE HARİTA YÖNLENDİRMESİ */}
                     {(() => {
                         const asset = getAssetDetails(selectedJob.asset_id);
                         if (!asset) return null;
                         
-                        const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(asset.location || asset.apartmentName || asset.name)}`;
+                        const mapQuery = encodeURIComponent(asset.location || asset.apartmentName || asset.name);
+                        const mapUrl = `http://googleusercontent.com/maps.google.com/?q=${mapQuery}`;
 
                         return (
-                           <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                           <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
                                <div className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                   <Box size={14} /> İlgili Varlık & Konum
                                </div>
@@ -761,11 +752,13 @@ export default function WorkerDashboard() {
                     })()}
                     
                     {/* GÖREV DETAYI */}
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                         <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">GÖREV BİLGİSİ / TALİMAT</div>
-                        <div className="text-sm font-bold text-slate-800 mb-2">{selectedJob.work_type}</div>
+                        <div className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-1.5">
+                            <PenTool size={14} className="text-blue-500"/> {selectedJob.work_type}
+                        </div>
                         {selectedJob.details?.note && (
-                            <div className="text-xs text-slate-600 italic border-l-2 border-slate-300 pl-2 whitespace-pre-wrap leading-relaxed">
+                            <div className="text-xs text-slate-600 italic border-l-2 border-slate-300 pl-3 whitespace-pre-wrap leading-relaxed">
                                 "{selectedJob.details.note}"
                             </div>
                         )}
@@ -773,7 +766,7 @@ export default function WorkerDashboard() {
 
                     {/* DİNAMİK BRANŞ FORMU */}
                     {currentFields.length > 0 && (selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') && (
-                        <div className="bg-blue-50/50 p-4 sm:p-5 rounded-xl border border-blue-100 space-y-4">
+                        <div className="bg-blue-50/50 p-4 sm:p-5 rounded-2xl border border-blue-100 space-y-4">
                             <div className="text-[10px] font-black text-blue-700 uppercase tracking-widest flex items-center gap-1.5 border-b border-blue-200/50 pb-2 mb-3">
                               <ClipboardList size={14} /> {staffBranch} KONTROL FORMU
                             </div>
@@ -866,7 +859,7 @@ export default function WorkerDashboard() {
                 </div>
 
                 {/* AKSİYON BUTONLARI */}
-                <div className="pt-6 shrink-0 space-y-3">
+                <div className="pt-5 shrink-0 space-y-3">
                     {selectedJob.status === 'Beklemede' || selectedJob.status === 'Gelecek' || selectedJob.status === 'Usta Bekliyor' ? (
                         <button 
                             disabled={isSaving}
@@ -884,7 +877,7 @@ export default function WorkerDashboard() {
                             {isSaving ? <Loader2 className="animate-spin" /> : <><CheckCircle2 size={20} /> Formu Kaydet & İşi Tamamla</>}
                         </button>
                     )}
-                    <button onClick={() => handleSmartClose()} className="w-full bg-white text-slate-600 py-3 rounded-2xl font-bold text-sm border-2 border-slate-200 active:scale-95 transition-all">
+                    <button onClick={() => handleSmartClose()} className="w-full bg-white text-slate-600 py-3 rounded-2xl font-bold text-sm border-2 border-slate-200 active:scale-95 transition-all md:hidden">
                         Vazgeç / Kapat
                     </button>
                 </div>

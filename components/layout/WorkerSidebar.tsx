@@ -1,13 +1,22 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, LayoutDashboard, CheckCircle2, ChevronRight, Menu, X, ListTodo, Wrench } from 'lucide-react';
+import { LogOut, CheckCircle2, ChevronRight, X, ListTodo, Wrench } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 
 export default function WorkerSidebar({ activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen }: any) {
   const { slug } = useParams();
   const router = useRouter();
+  const [isDesktop, setIsDesktop] = useState(true);
+
+  // 🚀 Ekran boyutunu dinleyerek animasyon çakışmasını engelliyoruz
+  useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
+    checkDesktop(); 
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('staff_authToken');
@@ -25,7 +34,7 @@ export default function WorkerSidebar({ activeTab, setActiveTab, isMobileMenuOpe
   return (
     <>
       <AnimatePresence>
-        {isMobileMenuOpen && (
+        {isMobileMenuOpen && !isDesktop && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -38,8 +47,9 @@ export default function WorkerSidebar({ activeTab, setActiveTab, isMobileMenuOpe
 
       <motion.aside
         initial={false}
-        animate={{ x: isMobileMenuOpen ? 0 : '-100%' }}
-        className={`fixed lg:sticky top-0 left-0 h-[100dvh] bg-white border-r border-slate-200 z-[210] lg:z-40 w-72 lg:w-20 lg:hover:w-64 hover:shadow-2xl transition-all duration-300 ease-in-out group flex flex-col transform lg:translate-x-0 overflow-hidden shadow-2xl lg:shadow-none`}
+        animate={isDesktop ? { x: 0 } : { x: isMobileMenuOpen ? 0 : '-100%' }}
+        transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+        className={`fixed lg:sticky top-0 left-0 h-[100dvh] bg-white border-r border-slate-200 z-[210] lg:z-40 w-72 lg:w-20 lg:hover:w-64 hover:shadow-2xl transition-all duration-300 ease-in-out group flex flex-col overflow-hidden shadow-2xl lg:shadow-none shrink-0`}
       >
         <div className="p-6 flex items-center justify-between border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3 w-full">
@@ -51,7 +61,7 @@ export default function WorkerSidebar({ activeTab, setActiveTab, isMobileMenuOpe
                <span className="text-[10px] text-blue-600 font-bold uppercase tracking-widest whitespace-nowrap">Personel Modu</span>
             </div>
           </div>
-          <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden p-2 text-slate-400 hover:text-slate-700 bg-slate-50 rounded-xl">
+          <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden p-2 text-slate-400 hover:text-slate-700 bg-slate-50 rounded-xl transition-colors">
             <X size={20} />
           </button>
         </div>
