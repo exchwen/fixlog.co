@@ -1017,10 +1017,14 @@ export default function JobDetailModal({
                                                                             canvas.width = img.width * scale;
                                                                             canvas.height = img.height * scale;
                                                                             const ctx = canvas.getContext('2d');
-                                                                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                                                            if (ctx) { // TypeScript ctx null hatası çözümü
+                                                                                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                                                            }
                                                                             resolve(canvas.toDataURL('image/jpeg', 0.90)); 
                                                                         };
-                                                                        img.src = event.target.result as string;
+                                                                        if (event.target && event.target.result) { // TypeScript event.target null hatası çözümü
+                                                                            img.src = event.target.result as string;
+                                                                        }
                                                                     };
                                                                     reader.readAsDataURL(file);
                                                                 });
