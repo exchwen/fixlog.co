@@ -1,15 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Clock, CheckCircle2, MessageSquareText, LogOut, ChevronRight, PenTool, Loader2, AlertCircle, PlayCircle, ClipboardList, WifiOff, Download, Share, Check, Camera, X, ShieldCheck, UserPlus } from 'lucide-react';
+import { MapPin, Clock, CheckCircle2, MessageSquareText, LogOut, ChevronRight, PenTool, Loader2, AlertCircle, PlayCircle, ClipboardList, WifiOff, Download, Share, Check, Camera, X, ShieldCheck, UserPlus, Box } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 import Header from '@/components/layout/Header';
-import WorkerSidebar from '@/components/layout/WorkerSidebar'; // 🚀 USTA SİDEBAR EKLENDİ
-
+import WorkerSidebar from '@/components/layout/WorkerSidebar';
 import ChatPanel from '@/components/chat/ChatPanel';
-import DynamicPWA from '@/components/DynamicPWA'; 
+import DynamicPWA from '@/components/DynamicPWA';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
@@ -47,7 +46,6 @@ export default function WorkerDashboard() {
   const [dynamicForm, setDynamicForm] = useState({}); 
   const [isSaving, setIsSaving] = useState(false);
 
-  // 🚀 CHAT (MESAJLAŞMA) STATE'LERİ
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeChatId, setActiveChatId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -62,6 +60,63 @@ export default function WorkerDashboard() {
   const [showPwaPrompt, setShowPwaPrompt] = useState(false);
   const [isIos, setIsIos] = useState(false);
   const [installState, setInstallState] = useState('idle');
+
+  // 🚀 AKILLI VE KADEMELİ KAPATMA (ESC ve Geri Tuşu)
+  const handleSmartClose = useCallback((e) => {
+    const stopEvent = () => {
+      if (e) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        else if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') e.nativeEvent.stopImmediatePropagation();
+      }
+    };
+
+    if (isChatOpen) {
+      stopEvent();
+      setIsChatOpen(false);
+      return true;
+    }
+
+    if (selectedJob) {
+      stopEvent();
+      setSelectedJob(null);
+      return true;
+    }
+
+    if (isMobileMenuOpen) {
+      stopEvent();
+      setIsMobileMenuOpen(false);
+      return true;
+    }
+
+    return false;
+  }, [selectedJob, isChatOpen, isMobileMenuOpen]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        handleSmartClose(e);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [handleSmartClose]);
+
+  useEffect(() => {
+    if (selectedJob || isChatOpen || isMobileMenuOpen) {
+        window.history.pushState({ internalLayer: true }, '');
+    }
+  }, [selectedJob, isChatOpen, isMobileMenuOpen]);
+
+  useEffect(() => {
+    const handlePopState = (e) => {
+      handleSmartClose(e);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [handleSmartClose]);
+
 
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -154,7 +209,6 @@ export default function WorkerDashboard() {
   }, [slug]);
 
   const fetchData = async (isInitial = false) => {
-    // 🚀 BUG FIX: Sadece 'Usta' olanlar için net yetki kontrolü
     const token = localStorage.getItem('staff_authToken'); 
     const role = localStorage.getItem('staff_userRole'); 
 
@@ -247,7 +301,6 @@ export default function WorkerDashboard() {
     return () => clearInterval(int);
   }, [slug, router]);
 
-  // Sohbet açıldığında mesajları çek
   useEffect(() => { 
     if (isChatOpen && activeChatId) fetchMessages(); 
   }, [isChatOpen, activeChatId]);
@@ -311,7 +364,6 @@ export default function WorkerDashboard() {
 
   const currentFields = (companySector && staffBranch && sectorsData.sectors?.[companySector]?.subTypes?.[staffBranch]?.fields) || [];
 
-  // 🚀 İşi Atayan veya Sorumlu Yöneticiyi Hesaplayan Yardımcı Fonksiyon
   const getAssignerInfo = (job) => {
     const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
     const creator = job.creator_name || job.details?.createdBy || ownerName;
@@ -326,6 +378,11 @@ export default function WorkerDashboard() {
         return { name: manager, role: 'Sorumlu Yönetici', icon: 'ShieldCheck' };
     }
     return { name: creator, role: 'Görevlendiren', icon: 'UserPlus' };
+  };
+
+  const getAssetDetails = (assetId) => {
+    if (!assetId || !data?.assets) return null;
+    return data.assets.find(a => String(a.id) === String(assetId)) || null;
   };
 
   const handleStatusUpdate = async (newStatus) => {
@@ -346,8 +403,7 @@ export default function WorkerDashboard() {
          const pos = await new Promise((resolve, reject) => {
             navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000 });
          });
-         // 🚀 BUG FIX: GPS URL oluşturulurken $ işareti eksikti ve link bozuktu, düzeltildi.
-         gpsNote = `\n[📍 Konum Kaydı]: https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+         gpsNote = `\n[📍 Konum Kaydı]: http://googleusercontent.com/maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
        } catch (e) {
          console.warn("Konum alınamadı.");
        }
@@ -423,66 +479,66 @@ export default function WorkerDashboard() {
   }
 
   const activeJobs = jobs.filter(j => j.status === 'Devam Ediyor' || j.status === 'Sahada');
-  // 🚀 ÇÖZÜM: 'Usta Bekliyor' durumu filtreye eklendi, artık atanan işler ekranda görünecek!
   const pendingJobs = jobs.filter(j => j.status === 'Beklemede' || j.status === 'Gelecek' || j.status === 'Usta Bekliyor');
   const completedJobs = jobs.filter(j => j.status === 'Tamamlandı');
 
   return (
     <div className="min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 bg-[#F8FAFC] text-slate-900">
       
-      <WorkerSidebar activeTab={activeTab} setActiveTab={setActiveTab} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
+      {/* 🚀 SIDEBAR KATMANI (Artık kapsayıcı div'in width'i bozmasını engelliyoruz) */}
+      <div className="z-[300] lg:relative absolute">
+        <WorkerSidebar activeTab={activeTab} setActiveTab={setActiveTab} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
+      </div>
 
-      <main className="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-y-auto relative z-10">
+      <main className="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-y-auto relative z-10 w-full">
         <Header data={data} setIsMobileMenuOpen={setIsMobileMenuOpen} setSelectedJob={setSelectedJob} />
 
-        {/* PWA YÜKLEME MODALI */}
-        <AnimatePresence>
-          {showPwaPrompt && (
-            <motion.div 
-              initial={{ y: 100, opacity: 0 }} 
-              animate={{ y: 0, opacity: 1 }} 
-              exit={{ y: 100, opacity: 0 }} 
-              className="fixed bottom-6 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[420px] bg-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-2xl z-[9999] flex flex-row items-center justify-between border border-slate-700"
-            >
-              {installState === 'success' ? (
-                <div className="flex items-center gap-3 w-full justify-center py-1">
-                  <div className="bg-emerald-500 p-2 rounded-full shrink-0">
-                    <Check size={20} className="text-white" />
+        {/* PWA YÜKLEME MODALI (Görünür olması için AnimatePresence'ı dışarı aldık) */}
+        {showPwaPrompt && (
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }} 
+            exit={{ y: 100, opacity: 0 }} 
+            className="fixed bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-[420px] bg-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-2xl z-[9999] flex flex-row items-center justify-between border border-slate-700"
+          >
+            {installState === 'success' ? (
+              <div className="flex items-center gap-3 w-full justify-center py-1">
+                <div className="bg-emerald-500 p-2 rounded-full shrink-0">
+                  <Check size={20} className="text-white" />
+                </div>
+                <div className="flex flex-col flex-1 min-w-0 pr-2">
+                  <span className="font-bold text-sm text-emerald-400">Kurulum Başarılı!</span>
+                  <span className="text-xs text-slate-400 mt-0.5">Saha uygulamasını ana ekrandan açabilirsiniz.</span>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-3 w-full">
+                  <div className="bg-blue-500 p-2.5 rounded-xl shrink-0">
+                    <Download size={20} className="text-white" />
                   </div>
                   <div className="flex flex-col flex-1 min-w-0 pr-2">
-                    <span className="font-bold text-sm text-emerald-400">Kurulum Başarılı!</span>
-                    <span className="text-xs text-slate-400 mt-0.5">Saha uygulamasını ana ekrandan açabilirsiniz.</span>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-3 w-full">
-                    <div className="bg-blue-500 p-2.5 rounded-xl shrink-0">
-                      <Download size={20} className="text-white" />
-                    </div>
-                    <div className="flex flex-col flex-1 min-w-0 pr-2">
-                      <span className="font-bold text-sm">Uygulamayı Yükle</span>
-                      {isIos ? (
-                        <span className="text-[11px] text-slate-400 mt-0.5 leading-tight">
-                          Yüklemek için <Share size={12} className="inline-block mx-0.5 mb-0.5" /> <b>Paylaş</b> ikonuna basıp <br/> <b>Ana Ekrana Ekle</b>'yi seçin.
-                        </span>
-                      ) : (
-                        <span className="text-xs text-slate-400 mt-0.5">Saha işlemlerini hızlıca yönetin.</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex gap-2 shrink-0 items-center">
-                    {!isIos && (
-                      <button onClick={handleInstallPwa} className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95">
-                        Yükle
-                      </button>
+                    <span className="font-bold text-sm">Uygulamayı Yükle</span>
+                    {isIos ? (
+                      <span className="text-[11px] text-slate-400 mt-0.5 leading-tight">
+                        Yüklemek için <Share size={12} className="inline-block mx-0.5 mb-0.5" /> <b>Paylaş</b> ikonuna basıp <br/> <b>Ana Ekrana Ekle</b>'yi seçin.
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400 mt-0.5">Saha işlemlerini hızlıca yönetin.</span>
                     )}
                   </div>
-                </>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+                </div>
+                <div className="flex gap-2 shrink-0 items-center">
+                  {!isIos && (
+                    <button onClick={handleInstallPwa} className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95">
+                      Yükle
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </motion.div>
+        )}
 
         {/* İNTERNET YOK / KUYRUK UYARI BARI */}
         <AnimatePresence>
@@ -505,7 +561,7 @@ export default function WorkerDashboard() {
         </AnimatePresence>
 
         {/* ÜST BİLGİ ALANI (HEADER) */}
-        <div className="bg-slate-900 text-white p-5 rounded-b-3xl shadow-xl z-40 relative md:mx-6 md:mt-6 md:rounded-3xl">
+        <div className="bg-slate-900 text-white p-5 rounded-b-3xl shadow-xl z-40 relative md:mx-6 md:mt-6 md:rounded-3xl shrink-0">
           <div className="flex justify-between items-start mb-4">
               <div>
                   <div className="text-[10px] text-emerald-400 font-black uppercase tracking-widest mb-1">{companyName}</div>
@@ -528,7 +584,7 @@ export default function WorkerDashboard() {
         </div>
 
         {/* ANA İÇERİK ALANI */}
-        <div className="flex-1 p-4 md:p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">
+        <div className="flex-1 p-4 md:p-6 space-y-6 max-w-6xl w-full mx-auto pb-24">
           
           {activeTab === 'jobs' && (
             <div className="space-y-6">
@@ -539,9 +595,10 @@ export default function WorkerDashboard() {
                   <h2 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-2">
                       <PlayCircle size={14} /> ŞU AN ÜZERİNDE ÇALIŞTIĞINIZ
                   </h2>
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                       {activeJobs.map(job => {
                         const assigner = getAssignerInfo(job);
+                        const asset = getAssetDetails(job.asset_id);
                         return (
                         <div key={job.id} onClick={() => setSelectedJob(job)} className="bg-blue-600 rounded-2xl p-4 shadow-lg shadow-blue-600/20 text-white active:scale-95 transition-transform cursor-pointer border border-blue-500 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
@@ -551,8 +608,14 @@ export default function WorkerDashboard() {
                                   <span className="text-[10px] font-bold opacity-80 flex items-center gap-1"><Clock size={10}/> {job.scheduled_date || 'Anlık'}</span>
                                 </div>
                                 <h3 className="text-lg font-black leading-tight mb-1">{job.customer_name}</h3>
-                                <p className="text-blue-100 text-sm font-medium flex items-center gap-1.5"><MapPin size={14} className="shrink-0"/> {job.work_type}</p>
+                                <p className="text-blue-100 text-sm font-medium flex items-center gap-1.5 mb-1"><MapPin size={14} className="shrink-0"/> {job.work_type}</p>
                                 
+                                {asset && (
+                                   <div className="text-[11px] font-medium text-blue-200 mt-2 bg-blue-700/50 p-2 rounded-xl border border-blue-500/50 truncate">
+                                      🏢 {asset.apartmentName || asset.name} <br/> 📍 {asset.location}
+                                   </div>
+                                )}
+
                                 <div className="mt-3 pt-3 border-t border-blue-500/50 flex items-center gap-1.5 text-[11px] text-blue-100">
                                   {assigner.icon === 'ShieldCheck' ? <ShieldCheck size={14} /> : <UserPlus size={14} />}
                                   <span className="opacity-80">{assigner.role}:</span> <span className="font-bold text-white">{assigner.name}</span>
@@ -569,9 +632,10 @@ export default function WorkerDashboard() {
                 <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                     <AlertCircle size={14} /> SIRADAKİ GÖREVLER
                 </h2>
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {pendingJobs.length > 0 ? pendingJobs.map(job => {
                       const assigner = getAssignerInfo(job);
+                      const asset = getAssetDetails(job.asset_id);
                       return (
                       <div key={job.id} onClick={() => setSelectedJob(job)} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 active:scale-95 transition-transform cursor-pointer hover:border-blue-200">
                           <div className="flex justify-between items-start mb-2">
@@ -579,15 +643,21 @@ export default function WorkerDashboard() {
                             <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Clock size={10}/> {job.scheduled_date || 'Anlık'}</span>
                           </div>
                           <h3 className="text-base font-black text-slate-800 leading-tight mb-1">{job.customer_name}</h3>
-                          <p className="text-slate-500 text-xs font-medium flex items-center gap-1.5"><PenTool size={12} className="shrink-0 text-blue-500"/> {job.work_type}</p>
+                          <p className="text-slate-500 text-xs font-medium flex items-center gap-1.5 mb-1"><PenTool size={12} className="shrink-0 text-blue-500"/> {job.work_type}</p>
                           
+                          {asset && (
+                             <div className="text-[11px] font-medium text-slate-500 mt-2 bg-slate-50 p-2 rounded-xl border border-slate-100 truncate">
+                                🏢 {asset.apartmentName || asset.name} <br/> 📍 {asset.location}
+                             </div>
+                          )}
+
                           <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-500">
                             {assigner.icon === 'ShieldCheck' ? <ShieldCheck size={14} className="text-blue-500" /> : <UserPlus size={14} className="text-slate-400" />}
                             <span>{assigner.role}:</span> <span className="font-bold text-slate-700">{assigner.name}</span>
                           </div>
                       </div>
                     )}) : (
-                      <div className="text-center p-8 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 font-medium text-sm">
+                      <div className="col-span-full text-center p-8 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 font-medium text-sm">
                         Bekleyen yeni bir göreviniz yok.
                       </div>
                     )}
@@ -628,24 +698,35 @@ export default function WorkerDashboard() {
 
         </div>
 
-        {/* İŞ DETAY VE AKSİYON MODALI */}
-      <AnimatePresence>
-        {selectedJob && (
-          <div className="fixed inset-0 z-[400] flex items-end md:items-center justify-center p-0 md:p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedJob(null)}
-            ></motion.div>
-            <motion.div 
-              initial={{ y: "100%", opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-              className="relative z-10 w-full md:max-w-lg bg-white rounded-t-3xl md:rounded-3xl p-6 pb-8 shadow-2xl flex flex-col max-h-[90vh] md:max-h-[85vh]"
-            >
-              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6 shrink-0 md:hidden"></div>
+        {/* 🚀 İŞ DETAY VE AKSİYON MODALI (MASAÜSTÜ UYUMLU, KÜÇÜLTÜLMÜŞ BOYUT) */}
+        <AnimatePresence>
+          {selectedJob && (
+            <div className="fixed inset-0 z-[400] flex items-end md:items-center justify-center p-0 md:p-4">
+              
+              {/* BACKDROP */}
+              <motion.div 
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer" 
+                onClick={() => handleSmartClose()}
+              ></motion.div>
+              
+              {/* MODAL CONTENT */}
+              <motion.div 
+                initial={{ y: "100%", opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                className="relative w-full md:max-w-md bg-white rounded-t-3xl md:rounded-3xl p-6 pb-8 shadow-2xl flex flex-col max-h-[90vh] md:max-h-[85vh] border border-slate-200"
+              >
+                <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6 shrink-0 md:hidden"></div>
                 
                 <div className="overflow-y-auto custom-scrollbar flex-1 pr-1 space-y-5">
+                    
+                    {/* ÜST BİLGİLER */}
                     <div>
-                        <div className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1 flex items-center gap-1.5"><MapPin size={12}/> Müşteri / Konum</div>
+                        <div className="flex justify-between items-start mb-1">
+                           <div className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5"><MapPin size={12}/> Müşteri Profili</div>
+                           <button onClick={() => handleSmartClose()} className="hidden md:flex p-1.5 bg-slate-100 text-slate-500 rounded-lg hover:bg-rose-100 hover:text-rose-600 transition-colors"><X size={16}/></button>
+                        </div>
                         <h2 className="text-2xl font-black text-slate-900 leading-tight">{selectedJob.customer_name}</h2>
+                        
                         {(() => {
                             const assigner = getAssignerInfo(selectedJob);
                             return (
@@ -656,12 +737,35 @@ export default function WorkerDashboard() {
                             );
                         })()}
                     </div>
+
+                    {/* VARLIK (CİHAZ/APARTMAN) BİLGİSİ VE HARİTA YÖNLENDİRMESİ */}
+                    {(() => {
+                        const asset = getAssetDetails(selectedJob.asset_id);
+                        if (!asset) return null;
+                        
+                        const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(asset.location || asset.apartmentName || asset.name)}`;
+
+                        return (
+                           <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                               <div className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                  <Box size={14} /> İlgili Varlık & Konum
+                               </div>
+                               <div className="text-sm font-black text-slate-800 mb-1">{asset.apartmentName || asset.name}</div>
+                               <div className="text-xs font-medium text-slate-600 mb-3">{asset.location || 'Konum belirtilmemiş.'}</div>
+                               
+                               <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="w-full bg-white border border-blue-200 text-blue-700 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 hover:bg-blue-600 hover:text-white transition-all shadow-sm">
+                                  <MapPin size={16} /> Haritada Yol Tarifi Al
+                               </a>
+                           </div>
+                        );
+                    })()}
                     
+                    {/* GÖREV DETAYI */}
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">GÖREV DETAYI</div>
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">GÖREV BİLGİSİ / TALİMAT</div>
                         <div className="text-sm font-bold text-slate-800 mb-2">{selectedJob.work_type}</div>
                         {selectedJob.details?.note && (
-                            <div className="text-xs text-slate-600 italic border-l-2 border-slate-300 pl-2 whitespace-pre-wrap">
+                            <div className="text-xs text-slate-600 italic border-l-2 border-slate-300 pl-2 whitespace-pre-wrap leading-relaxed">
                                 "{selectedJob.details.note}"
                             </div>
                         )}
@@ -746,16 +850,16 @@ export default function WorkerDashboard() {
                         </div>
                     )}
 
-                    {/* Ustadan Serbest Not Alma Alanı */}
+                    {/* 🚀 NOT GİRİŞİ SADECE İŞE BAŞLANDIKTAN SONRA AÇILIR */}
                     {(selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') && (
                         <div>
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Saha Notu (Opsiyonel)</label>
                             <textarea 
-                                rows={2} 
+                                rows={3} 
                                 value={jobNote}
                                 onChange={(e) => setJobNote(e.target.value)}
-                                placeholder="Kullanılan ekstra malzeme, karşılaşılan durum vb." 
-                                className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-none" 
+                                placeholder="Kullanılan ekstra malzeme, değişen parçalar, karşılaşılan sürpriz durumlar vb." 
+                                className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-none shadow-sm" 
                             />
                         </div>
                     )}
@@ -780,7 +884,7 @@ export default function WorkerDashboard() {
                             {isSaving ? <Loader2 className="animate-spin" /> : <><CheckCircle2 size={20} /> Formu Kaydet & İşi Tamamla</>}
                         </button>
                     )}
-                    <button onClick={() => setSelectedJob(null)} className="w-full bg-white text-slate-600 py-3 rounded-2xl font-bold text-sm border-2 border-slate-200 active:scale-95 transition-all">
+                    <button onClick={() => handleSmartClose()} className="w-full bg-white text-slate-600 py-3 rounded-2xl font-bold text-sm border-2 border-slate-200 active:scale-95 transition-all">
                         Vazgeç / Kapat
                     </button>
                 </div>
@@ -811,8 +915,8 @@ export default function WorkerDashboard() {
           sendMessage={sendMessage} 
         />
 
-</main>
+      </main>
 
-</div>
-);
+    </div>
+  );
 }
