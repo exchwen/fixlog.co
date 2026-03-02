@@ -28,6 +28,11 @@ export default function CustomerDetailModal({
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [buildingNo, setBuildingNo] = useState('');
 
+  // 🚀 Yeni Varlık Ekleme / Atama State'leri
+  const [assignAssetId, setAssignAssetId] = useState('');
+  const [isCreatingAsset, setIsCreatingAsset] = useState(false);
+  const [newAssetForm, setNewAssetForm] = useState({ name: '', apartmentName: '' });
+
   // 🚀 Hangi alt modalın BU modal tarafından açıldığını takip ediyoruz
   const [openedChild, setOpenedChild] = useState<'asset' | 'job' | null>(null);
 
@@ -130,6 +135,8 @@ export default function CustomerDetailModal({
     if (setSelectedCustomer) { 
         setSelectedCustomer(null); 
         setIsEditingCustomer(false);
+        setIsCreatingAsset(false);
+        setAssignAssetId('');
         setSelectedCity(''); 
         setSelectedDistrict(''); 
         setBuildingNo('');
@@ -137,7 +144,6 @@ export default function CustomerDetailModal({
   };
 
   const handleSmartClose = useCallback((e?: any) => {
-    // 🚀 İçeriden bir modal açtıysak esc/geri tuşuna karışmıyoruz (Kalkan devrede)
     if (openedChild !== null) return true;
 
     const stopEvent = () => {
@@ -162,6 +168,7 @@ export default function CustomerDetailModal({
     if (isEditingCustomer) {
         stopEvent();
         setIsEditingCustomer(false);
+        setIsCreatingAsset(false);
         return true;
     }
 
@@ -282,9 +289,23 @@ export default function CustomerDetailModal({
                                                   <Building2 size={16} className="shrink-0" />
                                                   <span className="truncate">{aptName || 'Bağımsız Adres'}</span>
                                               </div>
-                                              <div className="flex items-center gap-1.5 text-slate-500 font-semibold text-xs ml-6">
-                                                  <Box size={14} className="shrink-0" /> 
-                                                  <span>{a.name}</span>
+                                              <div className="flex items-center justify-between ml-6 mt-1">
+                                                  <div className="flex items-center gap-1.5 text-slate-500 font-semibold text-xs">
+                                                      <Box size={14} className="shrink-0" /> 
+                                                      <span>{a.name}</span>
+                                                  </div>
+                                                  {/* 🚀 SADECE HARİTADA GÖSTER BUTONU */}
+                                                  {(a.location || selectedCustomer?.address) && (
+                                                      <a 
+                                                          href={`http://maps.google.com/?q=${encodeURIComponent(a.location || selectedCustomer?.address || '')}`} 
+                                                          target="_blank" 
+                                                          rel="noopener noreferrer" 
+                                                          onClick={(e) => e.stopPropagation()} 
+                                                          className="flex items-center justify-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-100/50 hover:bg-blue-200 px-2.5 py-1.5 rounded-md transition-all active:scale-95 whitespace-nowrap shrink-0 shadow-sm"
+                                                      >
+                                                          <MapPin size={12} /> Haritada Göster
+                                                      </a>
+                                                  )}
                                               </div>
                                           </div>
                                       );
@@ -295,7 +316,7 @@ export default function CustomerDetailModal({
                           <div>
                               <h4 className="text-[11px] font-black text-slate-500 mb-2 uppercase tracking-widest flex items-center gap-1.5"><Calendar size={14}/> Geçmiş İş Kayıtları</h4>
                               
-                              {/* 🚀 KUTU İÇİ SCROLL VE SABİT BOY EKLENDİ */}
+                              {/* 🚀 KUTU İÇİ SCROLL VE SABİT BOY */}
                               {(data?.jobs || []).filter((j: any) => j.customer_name === selectedCustomer?.name).length > 0 ? (
                                   <div className="space-y-2 max-h-[320px] overflow-y-auto custom-scrollbar pr-1">
                                       {(data?.jobs || []).filter((j: any) => j.customer_name === selectedCustomer?.name).map((j: any) => {
@@ -389,20 +410,135 @@ export default function CustomerDetailModal({
                                 <input className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 focus:bg-white transition-all" value={editCustomerForm.tax_info} onChange={(e) => setEditCustomerForm({...editCustomerForm, tax_info: e.target.value})} placeholder="Vergi Dairesi ve No / T.C." />
                             </div>
 
-                            {/* 🚀 MÜŞTERİ DÜZENLERKEN VARLIKLARIN GÖRÜNMESİ İÇİN YENİ BÖLÜM */}
+                            {/* 🚀 MÜŞTERİ DÜZENLERKEN VARLIKLARIN GÖRÜNMESİ VE YÖNETİLMESİ */}
                             <div className="sm:col-span-2 pt-4 mt-2 border-t border-slate-200">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Müşteriye Kayıtlı Varlıklar (Görüntüleme)</label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Müşteriye Kayıtlı Varlıklar</label>
+                                
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                                     {(data?.assets || []).filter((a: any) => a.customer_id === selectedCustomer?.id).map((a: any) => (
-                                        <div key={a.id} className="p-3 bg-white border border-slate-200 rounded-xl shadow-sm text-xs flex flex-col gap-1">
-                                            <span className="font-bold text-slate-800">{a.apartmentName || a.apartment_name || 'Bağımsız Adres'}</span>
-                                            <span className="font-medium text-slate-500 flex items-center gap-1.5"><Box size={12} /> {a.name}</span>
+                                        <div key={a.id} className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-sm text-xs flex flex-col gap-2 relative group">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <div className="font-bold text-slate-800">{a.apartmentName || a.apartment_name || 'Bağımsız Adres'}</div>
+                                                    <div className="font-medium text-slate-500 flex items-center gap-1.5 mt-1"><Box size={12} /> {a.name}</div>
+                                                </div>
+                                                {/* Müşteriden Çıkar Butonu */}
+                                                <button 
+                                                    onClick={async (e) => {
+                                                        e.preventDefault();
+                                                        await handleAction('update-asset', { id: a.id, customer_id: null });
+                                                    }} 
+                                                    title="Müşteriden Çıkar"
+                                                    className="p-1.5 text-rose-400 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-colors"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                            
+                                            {/* Sadece Haritada Göster Butonu */}
+                                            {(a.location || editCustomerForm.address) && (
+                                                <div className="flex justify-end border-t border-slate-50 pt-2 mt-1">
+                                                    <a 
+                                                        href={`http://maps.google.com/?q=${encodeURIComponent(a.location || editCustomerForm.address || '')}`} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer" 
+                                                        onClick={(e) => e.stopPropagation()} 
+                                                        className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg transition-all shrink-0"
+                                                    >
+                                                        <MapPin size={12} /> Haritada Göster
+                                                    </a>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                     {(data?.assets || []).filter((a: any) => a.customer_id === selectedCustomer?.id).length === 0 && (
-                                        <div className="text-xs font-medium text-slate-400 col-span-2 p-3 border-2 border-dashed border-slate-200 rounded-xl text-center">
+                                        <div className="text-xs font-medium text-slate-400 col-span-1 sm:col-span-2 p-4 border-2 border-dashed border-slate-200 rounded-xl text-center">
                                             Müşteriye kayıtlı varlık bulunmamaktadır.
                                         </div>
+                                    )}
+                                </div>
+
+                                {/* YENİ VARLIK EKLEME / ATAMA ALANI */}
+                                <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-3 shadow-inner">
+                                    <h5 className="text-[11px] font-black text-blue-700 uppercase tracking-widest flex items-center gap-1.5">
+                                        <Box size={14} /> Varlık Ekle / Ata
+                                    </h5>
+                                    
+                                    {!isCreatingAsset ? (
+                                        <div className="space-y-3">
+                                            <div className="flex flex-col sm:flex-row gap-2">
+                                                <select 
+                                                    className="flex-1 px-3 py-2.5 border border-blue-200 rounded-lg text-xs font-semibold outline-none bg-white focus:border-blue-500 transition-all appearance-none"
+                                                    value={assignAssetId}
+                                                    onChange={(e) => setAssignAssetId(e.target.value)}
+                                                >
+                                                    <option value="">Boştaki bir varlığı seçin...</option>
+                                                    {(data?.assets || []).filter((a: any) => !a.customer_id).map((a: any) => (
+                                                        <option key={a.id} value={a.id}>{a.apartmentName || a.apartment_name || 'İsimsiz'} - {a.name}</option>
+                                                    ))}
+                                                </select>
+                                                <button 
+                                                    disabled={!assignAssetId || isSaving}
+                                                    onClick={async (e) => {
+                                                        e.preventDefault();
+                                                        await handleAction('update-asset', { id: assignAssetId, customer_id: selectedCustomer.id });
+                                                        setAssignAssetId('');
+                                                    }}
+                                                    className="bg-blue-600 text-white px-4 py-2.5 rounded-lg text-xs font-bold hover:bg-blue-700 transition-all disabled:opacity-50 shrink-0"
+                                                >
+                                                    {isSaving && assignAssetId ? <Loader2 size={14} className="animate-spin" /> : 'Seçileni Ata'}
+                                                </button>
+                                            </div>
+                                            <div className="relative flex py-2 items-center">
+                                                <div className="flex-grow border-t border-blue-200"></div>
+                                                <span className="flex-shrink-0 mx-4 text-blue-400 text-[10px] font-bold uppercase tracking-widest">veya</span>
+                                                <div className="flex-grow border-t border-blue-200"></div>
+                                            </div>
+                                            <button 
+                                                onClick={(e) => { e.preventDefault(); setIsCreatingAsset(true); }}
+                                                className="w-full bg-white text-blue-600 border border-blue-200 py-2.5 rounded-lg text-xs font-bold hover:bg-blue-100 transition-all shadow-sm"
+                                            >
+                                                + Sıfırdan Yeni Varlık Oluştur
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-3 bg-white p-3 rounded-lg border border-blue-200 shadow-sm">
+                                            <input 
+                                                type="text" 
+                                                placeholder="Apartman / Tesis Adı" 
+                                                className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white"
+                                                value={newAssetForm.apartmentName}
+                                                onChange={e => setNewAssetForm({...newAssetForm, apartmentName: e.target.value})}
+                                            />
+                                            <input 
+                                                type="text" 
+                                                placeholder="Cihaz / Varlık Türü (Örn: Asansör)" 
+                                                className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white"
+                                                value={newAssetForm.name}
+                                                onChange={e => setNewAssetForm({...newAssetForm, name: e.target.value})}
+                                            />
+                                            <div className="flex gap-2 pt-1">
+                                                <button 
+                                                    disabled={!newAssetForm.name || isSaving}
+                                                    onClick={async (e) => {
+                                                        e.preventDefault();
+                                                        const combinedAddress = getFullAddress(editCustomerForm.address, buildingNo, selectedCity, selectedDistrict);
+                                                        await handleAction('add-asset', { ...newAssetForm, customer_id: selectedCustomer.id, location: combinedAddress });
+                                                        setIsCreatingAsset(false);
+                                                        setNewAssetForm({ name: '', apartmentName: '' });
+                                                    }}
+                                                    className="flex-[2] bg-emerald-600 text-white py-2 rounded-md text-xs font-bold hover:bg-emerald-700 transition-all disabled:opacity-50 flex justify-center items-center"
+                                                >
+                                                    {isSaving && !assignAssetId ? <Loader2 size={14} className="animate-spin" /> : 'Kaydet ve Ata'}
+                                                </button>
+                                                <button 
+                                                    onClick={(e) => { e.preventDefault(); setIsCreatingAsset(false); }}
+                                                    className="flex-1 bg-slate-100 text-slate-600 py-2 rounded-md text-xs font-bold hover:bg-slate-200 transition-all"
+                                                >
+                                                    İptal
+                                                </button>
+                                            </div>
+                                        </motion.div>
                                     )}
                                 </div>
                             </div>
@@ -416,9 +552,9 @@ export default function CustomerDetailModal({
                                 }} 
                                 className="flex-[2] bg-blue-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-md shadow-blue-200 flex justify-center items-center"
                             >
-                                {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Değişiklikleri Kaydet'}
+                                {isSaving && assignAssetId === '' && !isCreatingAsset ? <Loader2 className="animate-spin" size={18} /> : 'Değişiklikleri Kaydet'}
                             </button>
-                            <button onClick={() => setIsEditingCustomer(false)} className="flex-1 bg-white border-2 border-slate-200 text-slate-700 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95">İptal</button>
+                            <button onClick={() => { setIsEditingCustomer(false); setIsCreatingAsset(false); setAssignAssetId(''); }} className="flex-1 bg-white border-2 border-slate-200 text-slate-700 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95">İptal</button>
                           </div>
                         </div>
                   )}
