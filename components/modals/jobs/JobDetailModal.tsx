@@ -1070,13 +1070,32 @@ export default function JobDetailModal({
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3 w-full pt-4 mt-2 border-t border-slate-100">
+                        {/* 🚀 DÜZELTİLDİ: STATÜ GÜNCELLEMESİ BURAYA ENTEGRE EDİLDİ */}
                         <button 
                             disabled={!isEditJobValid || isSaving}
-                            onClick={() => handleAction('update-job', { 
-                                ...editJobDetailForm, 
-                                id: selectedJob.id,
-                                lastEditedBy: data?.ownerName || 'Yönetici' 
-                            }, () => setSelectedJob(null), () => setIsEditingJobDetail(false))} 
+                            onClick={() => {
+                                let nextStatus = selectedJob.status;
+                                const isGeneral = editJobDetailForm.workCategory === 'Genel İş Atama' || editJobDetailForm.workType === 'Genel Görev';
+
+                                // Durum Otomatik Güncelleme Mantığı
+                                if (editJobDetailForm.staffId) {
+                                    // Usta atandıysa durum kesinlikle Devam Ediyor olmalı
+                                    nextStatus = 'Devam Ediyor';
+                                } else if ((nextStatus === 'Beklemede' || nextStatus === 'Gelecek') && !editJobDetailForm.staffId) {
+                                    // Usta atanmamışsa ama iş düzenlenip kaydediliyorsa Usta Bekliyor'a geçmeli
+                                    nextStatus = isGeneral ? 'Devam Ediyor' : 'Usta Bekliyor';
+                                } else if (nextStatus === 'Devam Ediyor' && !editJobDetailForm.staffId && !isGeneral) {
+                                    // Yanlışlıkla Devam Eden işten usta silindiyse tekrar Usta Bekliyor'a düşür
+                                    nextStatus = 'Usta Bekliyor';
+                                }
+
+                                handleAction('update-job', { 
+                                    ...editJobDetailForm, 
+                                    id: selectedJob.id,
+                                    status: nextStatus !== selectedJob.status ? nextStatus : undefined,
+                                    lastEditedBy: data?.ownerName || 'Yönetici' 
+                                }, () => setSelectedJob(null), () => setIsEditingJobDetail(false));
+                            }} 
                             className="flex-1 w-full bg-slate-900 text-white py-3.5 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 shadow-md flex justify-center items-center gap-2"
                         >
                             {isSaving ? <Loader2 className="animate-spin" size={18} /> : (jobModalType === 'ASSIGN' || selectedJob?.status === 'Usta Bekliyor' ? 'Ustayı Ata' : 'Değişiklikleri Kaydet')}
