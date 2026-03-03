@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, User, Phone, ShieldCheck, Briefcase, KeyRound } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
@@ -8,17 +8,22 @@ import sectorsData from '@/lib/data/sectors.json';
 export default function AddStaffModal({
   showAddStaff, setShowAddStaff,
   newStaff, setNewStaff,
-  isSaving, handleAction, data
+  isSaving, handleAction, data, userRole // 🚀 userRole eklendi
 }: any) {
 
-  // Sektör branşlarını çekmek için
   const currentSector = data?.sector || '';
   const safeSectors: any = sectorsData;
   const branchList = currentSector && safeSectors?.sectors?.[currentSector]?.subTypes 
     ? Object.keys(safeSectors.sectors[currentSector].subTypes) 
     : [];
 
-  // Form doğrulama: İsim ve Rol zorunlu
+  // Modal açıldığında varsayılan rolü 'Usta' yapalım ki hata çıkmasın
+  useEffect(() => {
+    if (showAddStaff && !newStaff?.role) {
+        setNewStaff((prev: any) => ({ ...prev, role: 'Usta' }));
+    }
+}, [showAddStaff, newStaff?.role, setNewStaff]);
+
   const isFormValid = newStaff?.name?.trim() !== '' && newStaff?.role?.trim() !== '';
 
   return (
@@ -28,7 +33,7 @@ export default function AddStaffModal({
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }} // Çıkış animasyonu kısaltıldı
+          transition={{ duration: 0.15 }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm pointer-events-auto"
         >
           <div className="absolute inset-0 cursor-pointer" onClick={() => setShowAddStaff(false)}></div>
@@ -37,11 +42,10 @@ export default function AddStaffModal({
             initial={{ opacity: 0, scale: 0.95, y: 10 }} 
             animate={{ opacity: 1, scale: 1, y: 0 }} 
             exit={{ opacity: 0, scale: 0.95, y: 10 }} 
-            transition={{ duration: 0.15 }} // Çıkış animasyonu kısaltıldı
+            transition={{ duration: 0.15 }}
             className="bg-white w-full max-w-md rounded-2xl p-0 shadow-2xl relative overflow-hidden border border-slate-200 flex flex-col max-h-[90vh] cursor-default"
-            onClick={(e) => e.stopPropagation()} // Arka plana tıklanmasını engelle
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* HEADER */}
             <div className="flex justify-between items-center p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50 shrink-0">
                <div>
                   <h2 className="text-xl font-black text-slate-800 tracking-tight">Yeni Personel Ekle</h2>
@@ -55,10 +59,8 @@ export default function AddStaffModal({
                </button>
             </div>
 
-            {/* BODY */}
             <div className="p-5 sm:p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
                 
-                {/* Ad Soyad */}
                 <div>
                   <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
                       <User size={14} /> Ad Soyad
@@ -73,24 +75,22 @@ export default function AddStaffModal({
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                    {/* Yetki Rolü */}
                     <div>
                     <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
                         <ShieldCheck size={14} /> Yetki / Rol
                     </label>
                     <select 
                         className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" 
-                        value={newStaff.role || ''} 
+                        value={newStaff.role || 'Usta'} 
                         onChange={e => setNewStaff({...newStaff, role: e.target.value})}
                     >
-                        <option value="" disabled>Seçiniz...</option>
-                        <option value="Yönetici">Yönetici</option>
+                        {/* 🚀 Yönetici ekleme seçeneği SADECE Patron'a gösterilir */}
+                        {userRole === 'Patron' && <option value="Yönetici">Yönetici</option>}
                         <option value="Usta">Usta</option>
                         <option value="Çırak">Çırak</option>
                     </select>
                     </div>
 
-                    {/* Branş */}
                     <div>
                     <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
                         <Briefcase size={14} /> Branş
@@ -109,7 +109,6 @@ export default function AddStaffModal({
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 mt-2">
-                    {/* Kullanıcı Adı */}
                     <div>
                     <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
                         <User size={14} /> Kullanıcı Adı
@@ -123,7 +122,6 @@ export default function AddStaffModal({
                     />
                     </div>
 
-                    {/* Şifre */}
                     <div>
                     <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
                         <KeyRound size={14} /> Şifre
@@ -138,7 +136,6 @@ export default function AddStaffModal({
                     </div>
                 </div>
 
-                {/* Telefon */}
                 <div>
                   <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5 mt-2">
                       <Phone size={14} /> Telefon Numarası
@@ -154,7 +151,6 @@ export default function AddStaffModal({
 
             </div>
 
-            {/* FOOTER */}
             <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0">
                <button 
                   disabled={isSaving || !isFormValid} 
