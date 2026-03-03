@@ -126,10 +126,15 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
         setPrintMode('color');
     },
     pageStyle: `
+      /* 🚀 SAYFA BOYUTUNU 80x80MM OLARAK KİLİTLİYORUZ */
+      @page { 
+        size: 80mm 80mm; 
+        margin: 0; 
+      }
       @media print { 
         html, body { 
-          width: 100% !important; 
-          height: 100% !important; 
+          width: 80mm !important; 
+          height: 80mm !important; 
           margin: 0 !important; 
           padding: 0 !important; 
           background-color: white !important;
@@ -138,24 +143,25 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           color-adjust: exact !important;
         } 
         
-        /* 🚀 Sayfanın geneli - Etiketi A4'ün ya da seçilen kağıdın ortasına oturtur */
         .print-wrapper {
-          width: 100% !important;
-          height: 100% !important;
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 80mm !important;
+          height: 80mm !important;
           display: flex !important;
-          align-items: flex-start !important; /* Üstten başlasın, sayfa ortasında kaybolmasın */
+          align-items: center !important;
           justify-content: center !important;
           background: white !important;
-          padding-top: 10mm !important; /* Mobilde veya A4'te üstten biraz boşluk */
+          padding: 0 !important;
         }
 
-        /* 🚀 Etiketin kendi boyutu - Sabit 80x80mm, termal için de ideal, PDF için de okunaklı */
         .print-container { 
           width: 80mm !important; 
           height: 80mm !important; 
-          border: 1px solid #e2e8f0 !important; /* Mobilde A4 içinde etiketin sınırları belli olsun diye ince bir çizgi */
+          border: none !important; 
           box-shadow: none !important; 
-          border-radius: 4mm !important; /* Hafif kavis şık durur */
+          border-radius: 0 !important; 
           padding: 4mm 2mm !important; 
           margin: 0 !important;
           display: flex !important;
@@ -167,11 +173,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           page-break-inside: avoid !important;
           overflow: hidden !important;
           background-color: white !important;
-        }
-
-        /* 🚀 Eğer baskı siyah beyaz modundaysa kenarlığı siyah yap */
-        .print-container-bw {
-          border: 1px solid #000 !important;
         }
 
         /* 🚀 PDF YAZI TİPLERİ 80MM'YE UYGUN KÜÇÜLTÜLDÜ */
@@ -313,10 +314,9 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           <div className="flex-1 py-6 overflow-y-auto flex flex-col items-center justify-center bg-slate-100 print:bg-white print:p-0 print:m-0 print:block print:overflow-visible">
             
             <div className="print-wrapper w-full flex items-center justify-center">
-              {/* 🚀 EKRAN ÖNİZLEMESİ: Sabit height (h-[...]) silindi! Artık içeriğe göre aşağı esner, taşma/kesilme yapmaz. */}
               <div 
                 ref={printRef} 
-                className={`print-container w-full max-w-[280px] sm:max-w-[310px] bg-white border border-slate-200 shadow-xl rounded-2xl flex flex-col items-center justify-between p-4 box-border shrink-0 gap-2 print:shadow-none ${printMode === 'bw' ? 'print:border-solid print:border-black print-container-bw' : 'print:border-solid print:border-slate-200'}`}
+                className={`print-container w-full max-w-[280px] sm:max-w-[310px] bg-white border border-slate-200 shadow-xl rounded-2xl flex flex-col items-center justify-between p-4 box-border shrink-0 gap-2 print:border-none print:shadow-none print:rounded-none`}
               >
                 
                 {/* 1. LOGO VE FİRMA ADI */}
@@ -433,7 +433,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           </div>
 
         </motion.div>
-      </div>a
+      </div>
     </AnimatePresence>
   );
 }
