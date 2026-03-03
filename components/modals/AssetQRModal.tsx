@@ -439,7 +439,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                   )}
                 </div>
 
-                {/* 4. ALT BİLGİ (FOOTER) - PDF'TE GRİ OLMA GARANTİSİ */}
+                {/* 4. ALT BİLGİ (FOOTER) - PDF'TE GRİ OLMA GARANTİSİ 1 */}
                 <div className="flex flex-col items-center justify-center shrink-0 w-full pt-1 print-footer">
                   <span className="text-[9px] font-medium text-slate-400 print-simple-footer">
                      Powered by <span className="font-bold">Fixlog.co</span>
