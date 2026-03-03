@@ -3,7 +3,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { X, Printer, Copy, Check, Building2, Phone, Globe, Palette } from 'lucide-react';
-// Orijinal WhatsApp ikonu için react-icons kullanıyoruz
 import { FaWhatsapp } from 'react-icons/fa'; 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReactToPrint } from 'react-to-print';
@@ -156,13 +155,13 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
         }
 
         .print-container { 
-          width: 76mm !important; 
-          height: 76mm !important; 
+          width: 80mm !important; 
+          height: 80mm !important; 
           border: none !important; 
           box-shadow: none !important; 
           border-radius: 0 !important; 
-          padding: 2mm !important; 
-          margin: 0 auto !important;
+          padding: 4mm 2mm !important; 
+          margin: 0 !important;
           display: flex !important;
           flex-direction: column !important;
           align-items: center !important;
@@ -171,34 +170,63 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           box-sizing: border-box !important;
           page-break-inside: avoid !important;
           overflow: hidden !important;
-          transform: scale(1) !important;
-          transform-origin: center center !important;
+          background-color: white !important;
         }
 
-        /* 🚀 PDF'TE YAZI TİPLERİNİN KÜÇÜLMESİNİ ENGELLEYEN SABİT CSS */
-        .print-title { font-size: 11pt !important; line-height: 1.1 !important; margin-bottom: 1mm !important; }
-        .print-subtitle { font-size: 10pt !important; line-height: 1.1 !important; }
-        .print-id-box { font-size: 8pt !important; margin-top: 1.5mm !important; padding: 1mm 2.5mm !important; border: 1px solid #e2e8f0 !important; border-radius: 4px !important; }
-        .print-badge { font-size: 7pt !important; padding: 1px 4px !important; border-radius: 4px !important; margin-bottom: 1.5mm !important; }
+        /* 🚀 PDF YAZI TİPLERİ 80MM'YE UYGUN KÜÇÜLTÜLDÜ */
+        .print-title { font-size: 11pt !important; line-height: 1.1 !important; margin-bottom: 0 !important; color: #000 !important; }
+        .print-subtitle { font-size: 10pt !important; line-height: 1.1 !important; margin-bottom: 0.5mm !important; color: #000 !important; }
         
-        .print-info-wrap { display: flex !important; flex-wrap: wrap !important; align-items: center !important; justify-content: center !important; gap: 1.5mm !important; margin-top: 1mm !important;}
-        .print-info-text { font-size: 7.5pt !important; display: flex !important; align-items: center !important; gap: 0.5mm !important; }
-        
-        /* 🚀 PDF'TE QR KODUNUN TAM ORTADA VE NET ÇIKMASINI SAĞLAR */
+        /* 🚀 QR KOD SABİT BİR ALANA OTURTULDU Kİ TAŞMASIN */
         .print-qr-wrapper {
-           width: 30mm !important;
-           height: 30mm !important;
-           margin: 1mm 0 !important;
+           width: 32mm !important;
+           height: 32mm !important;
+           margin: 1.5mm 0 !important;
         }
-        .print-qr-wrapper svg { width: 100% !important; height: 100% !important; }
+        .print-qr-svg { width: 100% !important; height: 100% !important; }
 
-        /* 🚀 POWERED BY YAZISININ PDF'TE DAİMA GRİ VE KÜÇÜK GÖRÜNMESİ */
-        .print-simple-footer { color: #94a3b8 !important; font-size: 6.5pt !important; }
-        .print-simple-footer-link { color: #cbd5e1 !important; font-size: 5.5pt !important; }
+        .print-id-box { 
+            font-size: 7.5pt !important; 
+            padding: 0.5mm 2.5mm !important; 
+            margin-top: 1mm !important; 
+            border: 1px solid #000 !important; 
+            border-radius: 2mm !important; 
+            color: #000 !important; 
+            background: transparent !important; 
+        }
+
+        .print-badge { 
+            font-size: 7.5pt !important; 
+            padding: 0.5mm 2mm !important; 
+            border-radius: 1mm !important; 
+            margin-bottom: 1.5mm !important; 
+            border: 1px solid #000 !important;
+            color: #000 !important;
+            background: transparent !important;
+        }
         
-        .print-bw-icon { color: black !important; fill: black !important; }
-        .print-id-text { color: black !important; font-weight: bold !important; }
-        .print-icon { width: 3mm !important; height: 3mm !important; }
+        /* 🚀 İLETİŞİM BİLGİLERİ (ASLA TAŞMAZ, GEREKİRSE ALTA İNER) */
+        .print-info-wrap { 
+            display: flex !important; 
+            flex-wrap: wrap !important; 
+            align-items: center !important; 
+            justify-content: center !important; 
+            gap: 1.5mm !important; 
+            margin-top: 1mm !important;
+            width: 100% !important;
+        }
+        .print-info-text { 
+            font-size: 6.5pt !important; 
+            display: flex !important; 
+            align-items: center !important; 
+            gap: 0.5mm !important; 
+            color: #000 !important; 
+        }
+        .print-icon { width: 2.5mm !important; height: 2.5mm !important; fill: #000 !important; color: #000 !important; }
+
+        /* 🚀 POWERED BY YAZISI (DAİMA GRİ VE KÜÇÜK) */
+        .print-footer { margin-top: 1mm !important; }
+        .print-simple-footer { color: #64748b !important; font-size: 6pt !important; text-align: center !important; }
         
         ::-webkit-scrollbar { display: none; }
       }
@@ -228,7 +256,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
         className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print:p-0 print:bg-white print:fixed print:inset-0"
         onClick={onClose} 
       >
-        
         <motion.div 
           onClick={(e) => e.stopPropagation()} 
           initial={{ opacity: 0, scale: 0.95 }} 
@@ -282,19 +309,19 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
             </button>
           </div>
 
-          <div className="flex-1 py-4 sm:py-6 overflow-y-auto flex flex-col items-center justify-center bg-slate-100 print:bg-white print:p-0 print:m-0 print:block print:overflow-visible">
+          <div className="flex-1 py-6 overflow-y-auto flex flex-col items-center justify-center bg-slate-100 print:bg-white print:p-0 print:m-0 print:block print:overflow-visible">
             
             <div className="print-wrapper w-full flex items-center justify-center">
-              {/* 🚀 Mobilde taşmayı önleyen, ekran oranına otomatik uyum sağlayan kapsayıcı */}
+              {/* 🚀 EKRAN ÖNİZLEMESİ: Sabit height (h-[...]) silindi! Artık içeriğe göre aşağı esner, taşma/kesilme yapmaz. */}
               <div 
                 ref={printRef} 
-                className="print-container w-[280px] h-[280px] sm:w-[310px] sm:h-[310px] bg-white border border-slate-200 shadow-xl rounded-2xl flex flex-col items-center justify-between py-3 sm:py-4 px-2 relative box-border print:border-none print:shadow-none print:rounded-none shrink-0"
+                className="print-container w-full max-w-[280px] sm:max-w-[310px] bg-white border border-slate-200 shadow-xl rounded-2xl flex flex-col items-center justify-between p-4 box-border shrink-0 gap-2 print:border-none print:shadow-none print:rounded-none"
               >
                 
-                {/* LOGO VE FİRMA ADI */}
+                {/* 1. LOGO VE FİRMA ADI */}
                 <div className="w-full flex flex-col items-center justify-center shrink-0">
                   <div 
-                    className={`w-8 h-8 sm:w-10 sm:h-10 print:w-[10mm] print:h-[10mm] rounded-lg flex items-center justify-center mb-1.5 overflow-hidden shadow-sm border-2 ${printMode === 'bw' ? 'border-black bg-white' : 'border-white ring-1 ring-slate-100'}`}
+                    className={`w-10 h-10 print:w-[10mm] print:h-[10mm] rounded-lg flex items-center justify-center mb-1.5 overflow-hidden shadow-sm border-2 ${printMode === 'bw' ? 'border-black bg-white' : 'border-white ring-1 ring-slate-100'}`}
                     style={{ backgroundColor: printMode === 'bw' ? '#ffffff' : (companyLogo ? logoBgColor : '#f8fafc') }}
                   >
                     {companyLogo ? (
@@ -302,20 +329,20 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                         src={getSafeImageUrl(companyLogo)} 
                         alt="Logo" 
                         crossOrigin="anonymous"
-                        className={`w-6 h-6 sm:w-7 sm:h-7 print:w-[7mm] print:h-[7mm] object-contain drop-shadow-md print:drop-shadow-none ${printMode === 'bw' ? 'grayscale brightness-0' : ''}`} 
+                        className={`w-7 h-7 print:w-[7mm] print:h-[7mm] object-contain drop-shadow-md print:drop-shadow-none ${printMode === 'bw' ? 'grayscale brightness-0' : ''}`} 
                       />
                     ) : (
-                      <Building2 className={`w-5 h-5 print:w-[6mm] print:h-[6mm] ${printMode === 'bw' ? 'text-black' : 'text-slate-400'}`} />
+                      <Building2 className={`w-6 h-6 print:w-[6mm] print:h-[6mm] ${printMode === 'bw' ? 'text-black' : 'text-slate-400'}`} />
                     )}
                   </div>
-                  <div className={`text-[12px] sm:text-[14px] print-title font-black tracking-tight uppercase leading-none text-center truncate w-full px-2 ${printMode === 'bw' ? 'text-black' : 'text-slate-900'}`}>
+                  <div className={`text-[13px] print-title font-black tracking-tight uppercase leading-none text-center w-full px-2 ${printMode === 'bw' ? 'text-black' : 'text-slate-900'}`}>
                     {companyName || 'İşletme Adı'}
                   </div>
                 </div>
 
-                {/* QR KOD VE ID */}
-                <div className="flex flex-col items-center justify-center w-full relative my-1 sm:my-2 shrink-0">
-                  <div className="w-[85px] h-[85px] sm:w-[100px] sm:h-[100px] print-qr-wrapper flex items-center justify-center">
+                {/* 2. QR KOD VE ID */}
+                <div className="flex flex-col items-center justify-center w-full relative shrink-0 print-qr-wrapper">
+                  <div className="w-[100px] h-[100px] flex items-center justify-center print-qr-svg">
                       <QRCodeSVG 
                         value={qrUrl} 
                         style={{ width: '100%', height: '100%' }}
@@ -329,57 +356,54 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                        setIdCopied(true);
                        setTimeout(() => setIdCopied(false), 2000);
                      }}
-                     className={`mt-2 flex items-center justify-center gap-1.5 text-[9px] sm:text-[10px] print-id-box font-bold tracking-widest uppercase px-3 py-1 rounded-md border border-slate-200 cursor-pointer transition-colors print:bg-transparent ${printMode === 'bw' ? 'text-black print:border-black' : 'text-slate-600 bg-slate-50 hover:bg-slate-100'}`}
+                     className={`mt-2 flex items-center justify-center gap-1.5 text-[10px] print-id-box font-bold tracking-widest uppercase px-3 py-1 rounded-md border border-slate-200 cursor-pointer transition-colors ${printMode === 'bw' ? 'text-black bg-white' : 'text-slate-600 bg-slate-50 hover:bg-slate-100'}`}
                      title="Kodu Kopyalamak İçin Tıklayın"
                   >
                      ID: {asset.id}
                      <span className="print:hidden">
-                       {idCopied ? <Check size={8} className="text-emerald-500" /> : <Copy size={8} className="text-slate-400" />}
+                       {idCopied ? <Check size={10} className="text-emerald-500" /> : <Copy size={10} className="text-slate-400" />}
                      </span>
                   </div>
                 </div>
 
-                {/* BAŞLIK VE İLETİŞİM BİLGİLERİ */}
+                {/* 3. BAŞLIK VE İLETİŞİM BİLGİLERİ */}
                 <div className="w-full flex flex-col items-center shrink-0">
-                  <h2 className={`text-sm sm:text-base print-subtitle font-black leading-tight mb-1 text-center truncate w-full px-1 ${printMode === 'bw' ? 'text-black' : 'text-slate-900'}`}>
+                  <h2 className={`text-base print-subtitle font-black leading-tight mb-1 text-center w-full px-1 ${printMode === 'bw' ? 'text-black' : 'text-slate-900'}`}>
                     {mainTitle}
                   </h2>
                   
                   {subTitle && (
-                    <div className={`text-[9px] sm:text-[10px] print-badge font-bold px-2.5 py-0.5 rounded mb-1.5 max-w-full truncate ${printMode === 'bw' ? 'bg-transparent border border-black text-black' : 'bg-slate-100 text-slate-600'}`}>
+                    <div className={`text-[10px] print-badge font-bold px-2.5 py-0.5 rounded mb-1.5 max-w-full text-center ${printMode === 'bw' ? 'bg-transparent text-black' : 'bg-slate-100 text-slate-600'}`}>
                       {subTitle}
                     </div>
                   )}
 
                   {/* İLETİŞİM BİLGİLERİ WRAPPER'I */}
                   {(landlinePhone || whatsappPhone || companyWebsite) && (
-                    <div className="print-info-wrap flex flex-wrap items-center justify-center gap-x-2 gap-y-1 mt-0.5 w-full px-1">
+                    <div className="print-info-wrap flex flex-wrap items-center justify-center gap-x-3 gap-y-1 mt-1 w-full px-1">
                       {landlinePhone && (
-                        <div className={`print-info-text flex items-center gap-1 text-[9px] sm:text-[10px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-800'}`}>
-                          <Phone className={`w-3 h-3 print-icon ${printMode === 'bw' ? 'print-bw-icon' : ''}`} /> {landlinePhone}
+                        <div className={`print-info-text flex items-center gap-1 text-[10px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-800'}`}>
+                          <Phone className={`w-3.5 h-3.5 print-icon ${printMode === 'bw' ? 'text-black' : 'text-slate-500'}`} /> {landlinePhone}
                         </div>
                       )}
                       {whatsappPhone && (
-                        <div className={`print-info-text flex items-center gap-1 text-[9px] sm:text-[10px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-800'}`}>
-                          <FaWhatsapp className={`w-3 h-3 print-icon ${printMode === 'bw' ? 'print-bw-icon' : 'text-[#25D366]'}`} /> {whatsappPhone}
+                        <div className={`print-info-text flex items-center gap-1 text-[10px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-800'}`}>
+                          <FaWhatsapp className={`w-3.5 h-3.5 print-icon ${printMode === 'bw' ? 'text-black' : 'text-[#25D366]'}`} /> {whatsappPhone}
                         </div>
                       )}
                       {companyWebsite && (
-                        <div className={`print-info-text flex items-center gap-1 text-[9px] sm:text-[10px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-600'}`}>
-                          <Globe className={`w-3 h-3 print-icon ${printMode === 'bw' ? 'print-bw-icon' : ''}`} /> {companyWebsite.replace(/^https?:\/\//, '')}
+                        <div className={`print-info-text flex items-center gap-1 text-[10px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-600'}`}>
+                          <Globe className={`w-3.5 h-3.5 print-icon ${printMode === 'bw' ? 'text-black' : 'text-slate-500'}`} /> {companyWebsite.replace(/^https?:\/\//, '')}
                         </div>
                       )}
                     </div>
                   )}
                 </div>
 
-                {/* ALT BİLGİ (FOOTER) */}
-                <div className="flex flex-col items-center justify-center shrink-0 mt-auto pt-1">
-                  <span className="text-[8px] font-medium text-slate-400 print-simple-footer">
-                     Powered by Fixlog
-                  </span>
-                  <span className="text-[7px] font-medium text-slate-300 print-simple-footer-link mt-0.5">
-                     www.fixlog.co
+                {/* 4. ALT BİLGİ (FOOTER) - PDF'TE GRİ OLMA GARANTİSİ */}
+                <div className="flex flex-col items-center justify-center shrink-0 w-full pt-1 print-footer">
+                  <span className="text-[9px] font-medium text-slate-400 print-simple-footer">
+                     Powered by <span className="font-bold">Fixlog.co</span>
                   </span>
                 </div>
 
