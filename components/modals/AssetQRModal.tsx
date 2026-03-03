@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { X, Printer, Copy, Check, Building2, Phone, Globe, Palette } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa'; 
@@ -126,11 +127,19 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
         setPrintMode('color');
     },
     pageStyle: `
-      /* 🚀 SAYFA BOYUTUNU 80x80MM OLARAK KİLİTLİYORUZ */
+      /* 🚀 MASAÜSTÜ TERMAL YAZICILAR İÇİN KUSURSUZ 80x80 KİLİDİ */
       @page { 
         size: 80mm 80mm; 
         margin: 0; 
       }
+
+      /* 🚀 MOBİL İÇİN A4 SERBESTLİĞİ (PDF Motoru Çökmesin Diye) */
+      @media (pointer: coarse) {
+        @page {
+          size: auto !important;
+        }
+      }
+
       @media print { 
         html, body { 
           width: 80mm !important; 
@@ -154,11 +163,17 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           justify-content: center !important;
           background: white !important;
           padding: 0 !important;
+          margin: 0 !important;
+          overflow: hidden !important;
         }
 
         .print-container { 
           width: 80mm !important; 
           height: 80mm !important; 
+          min-width: 80mm !important;
+          min-height: 80mm !important;
+          max-width: 80mm !important;
+          max-height: 80mm !important;
           border: none !important; 
           box-shadow: none !important; 
           border-radius: 0 !important; 
@@ -173,22 +188,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           page-break-inside: avoid !important;
           overflow: hidden !important;
           background-color: white !important;
-        }
-
-        /* 🚀 MOBİL İÇİN KUSURSUZ ÖLÇEKLENDİRME (Masaüstü Etkilenmez) */
-        @media (max-width: 1024px), (max-device-width: 1024px) {
-          html, body, .print-wrapper {
-            width: 100% !important;
-            height: 100vh !important;
-          }
-          .print-wrapper {
-            align-items: flex-start !important; /* Etiketi yukarı sabitler */
-            padding-top: 15mm !important; /* Üstten nefes boşluğu bırakır */
-          }
-          .print-container {
-            transform: scale(2.4) !important; /* A4'ün genişliğini dolduracak kadar (80x2.4=192mm) büyütür */
-            transform-origin: top center !important;
-          }
+          transform: none !important;
         }
 
         /* 🚀 PDF YAZI TİPLERİ 80MM'YE UYGUN KÜÇÜLTÜLDÜ */
@@ -247,16 +247,38 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
         .print-simple-footer { color: #64748b !important; font-size: 6pt !important; text-align: center !important; }
         
         ::-webkit-scrollbar { display: none; }
+
+        /* 🚀 SADECE DOKUNMATİK MOBİL CİHAZLAR İÇİN GÜVENLİ A4 ORTALAMASI VE BÜYÜTME */
+        @media (pointer: coarse) {
+          html, body {
+            width: 100% !important;
+            height: 100% !important;
+          }
+          .print-wrapper {
+            position: relative !important;
+            width: 100% !important;
+            height: 100% !important;
+            align-items: flex-start !important;
+            padding-top: 15mm !important;
+          }
+          .print-container {
+            transform: scale(1.8) !important; /* Etiketi A4 içinde 1.8 kat güvenle büyütür */
+            transform-origin: top center !important;
+            margin: 0 auto !important;
+          }
+        }
       }
     `
   });
 
   const executePrint = (mode: 'color' | 'bw') => {
-    setPrintMode(mode);
-    setShowPrintModeSelection(false);
-    setTimeout(() => {
-      handlePrint();
-    }, 150);
+    // 🚀 Mobilde popup engelleyiciye takılmamak için flushSync kullanıyoruz!
+    flushSync(() => {
+      setPrintMode(mode);
+      setShowPrintModeSelection(false);
+    });
+    // 🚀 setTimeout olmadan hemen yazdırıyoruz ki tarayıcı engellemesin.
+    handlePrint();
   };
 
   if (!isOpen || !asset) return null;
