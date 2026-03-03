@@ -178,7 +178,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           border: none !important; 
           box-shadow: none !important; 
           border-radius: 0 !important; 
-          padding: 4mm 2mm !important; 
+          padding: 3mm 2mm !important; /* 🚀 Footer'a yer açmak için üst/alt boşluğu 4'ten 3'e düşürdük */
           margin: 0 !important;
           display: flex !important;
           flex-direction: column !important;
@@ -192,14 +192,20 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           transform: none !important;
         }
 
-        /* 🚀 MASAÜSTÜ PDF YAZI TİPLERİ 80MM'YE UYGUN KÜÇÜLTÜLDÜ */
+        /* 🚀 MASAÜSTÜ LOGO BOYUTLARI (Tailwind engelini CSS ile devraldık) */
+        .print-logo-box { width: 12mm !important; height: 12mm !important; }
+        .print-logo-img { width: 8mm !important; height: 8mm !important; }
+        .print-logo-icon { width: 7mm !important; height: 7mm !important; }
+
+        /* 🚀 MASAÜSTÜ PDF YAZI TİPLERİ */
         .print-title { font-size: 11pt !important; line-height: 1.1 !important; margin-bottom: 0 !important; color: #000 !important; }
         .print-subtitle { font-size: 10pt !important; line-height: 1.1 !important; margin-bottom: 0.5mm !important; color: #000 !important; }
         
+        /* 🚀 QR KOD BOYUTU HAFİF KÜÇÜLTÜLDÜ Kİ FOOTER KESİLMESİN */
         .print-qr-wrapper {
-           width: 32mm !important;
-           height: 32mm !important;
-           margin: 1.5mm 0 !important;
+           width: 28mm !important;
+           height: 28mm !important;
+           margin: 1mm 0 !important;
         }
         .print-qr-svg { width: 100% !important; height: 100% !important; }
 
@@ -264,28 +270,36 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
             overflow: visible !important;
           }
           
-          /* 🚀 Etiketin kasasını A4 kağıdı büyüklüğüne (190mm) çıkarıyoruz */
+          /* 🚀 MOBİL A4 DOLDURMA: Yüksekliği 270mm'ye çekip tüm kağıdı doldurtuyoruz */
           .print-container {
             width: 190mm !important; 
-            height: auto !important; 
-            min-height: 250mm !important;
+            height: 270mm !important; 
+            min-height: 270mm !important;
             max-width: none !important;
             max-height: none !important;
-            transform: none !important; /* Scale hatasını iptal ettik */
+            transform: none !important; 
             margin: 0 auto !important;
             padding: 15mm 10mm !important;
             border-radius: 6mm !important;
+            justify-content: space-between !important; /* İçeriği kağıdın en altı ve en üstü arasına şıkça yayar */
           }
 
-          /* 🚀 İçerikleri devasa kasaya uyumlu şekilde orantılı büyütüyoruz */
-          .print-container img { width: 25mm !important; height: 25mm !important; }
-          svg.lucide-building-2 { width: 20mm !important; height: 20mm !important; }
+          /* 🚀 MOBİL LOGO BÜYÜTME: Kafes kırıldı, devasa oldu */
+          .print-logo-box {
+            width: 35mm !important;
+            height: 35mm !important;
+            border-width: 4px !important;
+            border-radius: 8mm !important;
+            margin-bottom: 5mm !important;
+          }
+          .print-logo-img { width: 25mm !important; height: 25mm !important; }
+          .print-logo-icon { width: 20mm !important; height: 20mm !important; }
           
           .print-title { font-size: 26pt !important; margin-top: 2mm !important; }
           .print-subtitle { font-size: 20pt !important; margin-bottom: 2mm !important; }
           
           .print-qr-wrapper {
-             width: 110mm !important; /* QR Kod neredeyse sayfanın yarısını kaplayacak */
+             width: 110mm !important; 
              height: 110mm !important;
              margin: 8mm 0 !important;
           }
@@ -310,8 +324,8 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           .print-info-text { font-size: 13pt !important; gap: 2mm !important; }
           .print-icon { width: 6mm !important; height: 6mm !important; }
 
-          .print-footer { margin-top: 6mm !important; }
-          .print-simple-footer { font-size: 11pt !important; }
+          .print-footer { margin-top: 6mm !important; padding-bottom: 5mm !important; }
+          .print-simple-footer { font-size: 14pt !important; } /* 🚀 Mobilde alt yazı daha okunaklı oldu */
         }
       }
     `
@@ -403,8 +417,9 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                 
                 {/* 1. LOGO VE FİRMA ADI */}
                 <div className="w-full flex flex-col items-center justify-center shrink-0">
+                  {/* 🚀 Tailwind'in baskı sınıflarını (print:w-[10mm]) silip kontrolü tamamen CSS'e verdik */}
                   <div 
-                    className={`w-10 h-10 print:w-[10mm] print:h-[10mm] rounded-lg flex items-center justify-center mb-1.5 overflow-hidden shadow-sm border-2 ${printMode === 'bw' ? 'border-black bg-white' : 'border-white ring-1 ring-slate-100'}`}
+                    className={`w-10 h-10 print-logo-box rounded-lg flex items-center justify-center mb-1.5 overflow-hidden shadow-sm border-2 ${printMode === 'bw' ? 'border-black bg-white' : 'border-white ring-1 ring-slate-100'}`}
                     style={{ backgroundColor: printMode === 'bw' ? '#ffffff' : (companyLogo ? logoBgColor : '#f8fafc') }}
                   >
                     {companyLogo ? (
@@ -412,10 +427,10 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                         src={getSafeImageUrl(companyLogo)} 
                         alt="Logo" 
                         crossOrigin="anonymous"
-                        className={`w-7 h-7 print:w-[7mm] print:h-[7mm] object-contain drop-shadow-md print:drop-shadow-none ${printMode === 'bw' ? 'grayscale brightness-0' : ''}`} 
+                        className={`w-7 h-7 print-logo-img object-contain drop-shadow-md print:drop-shadow-none ${printMode === 'bw' ? 'grayscale brightness-0' : ''}`} 
                       />
                     ) : (
-                      <Building2 className={`w-6 h-6 print:w-[6mm] print:h-[6mm] ${printMode === 'bw' ? 'text-black' : 'text-slate-400'}`} />
+                      <Building2 className={`w-6 h-6 print-logo-icon ${printMode === 'bw' ? 'text-black' : 'text-slate-400'}`} />
                     )}
                   </div>
                   <div className={`text-[13px] print-title font-black tracking-tight uppercase leading-none text-center w-full px-2 ${printMode === 'bw' ? 'text-black' : 'text-slate-900'}`}>
