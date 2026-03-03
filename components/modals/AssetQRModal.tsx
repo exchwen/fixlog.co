@@ -178,7 +178,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           border: none !important; 
           box-shadow: none !important; 
           border-radius: 0 !important; 
-          padding: 3mm 2mm !important; /* 🚀 Footer'a yer açmak için üst/alt boşluğu 4'ten 3'e düşürdük */
+          padding: 3.5mm 2.5mm !important; /* Ferahlatıldı */
           margin: 0 !important;
           display: flex !important;
           flex-direction: column !important;
@@ -192,42 +192,45 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           transform: none !important;
         }
 
-        /* 🚀 MASAÜSTÜ LOGO BOYUTLARI (Tailwind engelini CSS ile devraldık) */
         .print-logo-box { width: 12mm !important; height: 12mm !important; }
         .print-logo-img { width: 8mm !important; height: 8mm !important; }
         .print-logo-icon { width: 7mm !important; height: 7mm !important; }
 
-        /* 🚀 MASAÜSTÜ PDF YAZI TİPLERİ */
         .print-title { font-size: 11pt !important; line-height: 1.1 !important; margin-bottom: 0 !important; color: #000 !important; }
-        .print-subtitle { font-size: 10pt !important; line-height: 1.1 !important; margin-bottom: 0.5mm !important; color: #000 !important; }
         
-        /* 🚀 QR KOD BOYUTU HAFİF KÜÇÜLTÜLDÜ Kİ FOOTER KESİLMESİN */
+        /* 🚀 QR KOD BÜYÜTÜLDÜ, NEFES ALDI */
         .print-qr-wrapper {
-           width: 28mm !important;
-           height: 28mm !important;
-           margin: 1mm 0 !important;
+           width: 30mm !important;
+           height: 30mm !important;
+           margin: 1.5mm 0 !important;
         }
         .print-qr-svg { width: 100% !important; height: 100% !important; }
 
-        .print-id-box { 
-            font-size: 7.5pt !important; 
-            padding: 0.5mm 2.5mm !important; 
-            margin-top: 1mm !important; 
-            border: 1px solid #000 !important; 
-            border-radius: 2mm !important; 
-            color: #000 !important; 
-            background: transparent !important; 
+        /* 🚀 ID VE ROZET AYNI HİZADA KUSURSUZ GÖRÜNÜM */
+        .print-badge-wrapper {
+           display: flex !important;
+           align-items: center !important;
+           justify-content: center !important;
+           gap: 1.5mm !important;
+           margin-bottom: 1.5mm !important;
+           width: 100% !important;
         }
 
-        .print-badge { 
+        .print-badge, .print-id-box { 
             font-size: 7.5pt !important; 
             padding: 0.5mm 2mm !important; 
             border-radius: 1mm !important; 
-            margin-bottom: 1.5mm !important; 
-            border: 1px solid #000 !important;
+            border: 1px solid #000 !important; 
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
             color: #000 !important;
-            background: transparent !important;
+            height: 4.5mm !important; /* 🚀 İkisinin boyunu eşitledik */
+            box-sizing: border-box !important;
         }
+
+        /* Renkli modda rozet kenarlığını kaldır */
+        .print-badge.color-mode { border: none !important; }
         
         .print-info-wrap { 
             display: flex !important; 
@@ -235,7 +238,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
             align-items: center !important; 
             justify-content: center !important; 
             gap: 1.5mm !important; 
-            margin-top: 1mm !important;
+            margin-top: 0 !important;
             width: 100% !important;
         }
         .print-info-text { 
@@ -252,7 +255,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
         
         ::-webkit-scrollbar { display: none; }
 
-        /* 🚀 SADECE DOKUNMATİK MOBİL CİHAZLAR İÇİN: A4'E TAM OTURAN DEV BOYUTLAR */
+        /* 🚀 SADECE DOKUNMATİK MOBİL CİHAZLAR İÇİN: GÜVENLİ A4 DOLDURMA */
         @media (pointer: coarse) {
           html, body {
             width: 100vw !important;
@@ -270,62 +273,57 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
             overflow: visible !important;
           }
           
-          /* 🚀 MOBİL A4 DOLDURMA: Yüksekliği 270mm'ye çekip tüm kağıdı doldurtuyoruz */
+          /* 🚀 MOBİL A4 GÜVENLİ BÖLGE: Kesilme ihtimalini tamamen sıfırladık */
           .print-container {
-            width: 190mm !important; 
-            height: 270mm !important; 
-            min-height: 270mm !important;
+            width: 180mm !important; 
+            height: 250mm !important; 
+            min-height: 250mm !important;
             max-width: none !important;
             max-height: none !important;
             transform: none !important; 
             margin: 0 auto !important;
-            padding: 15mm 10mm !important;
+            padding: 15mm 12mm !important;
             border-radius: 6mm !important;
-            justify-content: space-between !important; /* İçeriği kağıdın en altı ve en üstü arasına şıkça yayar */
+            justify-content: space-between !important; 
           }
 
-          /* 🚀 MOBİL LOGO BÜYÜTME: Kafes kırıldı, devasa oldu */
           .print-logo-box {
-            width: 35mm !important;
-            height: 35mm !important;
+            width: 32mm !important;
+            height: 32mm !important;
             border-width: 4px !important;
             border-radius: 8mm !important;
             margin-bottom: 5mm !important;
           }
-          .print-logo-img { width: 25mm !important; height: 25mm !important; }
-          .print-logo-icon { width: 20mm !important; height: 20mm !important; }
+          .print-logo-img { width: 22mm !important; height: 22mm !important; }
+          .print-logo-icon { width: 18mm !important; height: 18mm !important; }
           
-          .print-title { font-size: 26pt !important; margin-top: 2mm !important; }
-          .print-subtitle { font-size: 20pt !important; margin-bottom: 2mm !important; }
+          .print-title { font-size: 24pt !important; margin-top: 2mm !important; }
           
           .print-qr-wrapper {
-             width: 110mm !important; 
-             height: 110mm !important;
+             width: 100mm !important; 
+             height: 100mm !important;
              margin: 8mm 0 !important;
           }
           
-          .print-id-box { 
-              font-size: 16pt !important; 
-              padding: 3mm 10mm !important; 
-              border-width: 2px !important;
-              border-radius: 4mm !important;
-              margin-top: 4mm !important;
+          .print-badge-wrapper {
+             gap: 4mm !important;
+             margin-bottom: 6mm !important;
           }
 
-          .print-badge { 
-              font-size: 16pt !important; 
-              padding: 2mm 8mm !important; 
-              border-radius: 3mm !important; 
-              margin-bottom: 4mm !important; 
+          .print-id-box, .print-badge { 
+              font-size: 15pt !important; 
+              padding: 4mm 8mm !important; 
               border-width: 2px !important;
+              border-radius: 3mm !important;
+              height: auto !important;
           }
           
-          .print-info-wrap { gap: 5mm !important; margin-top: 6mm !important; }
-          .print-info-text { font-size: 13pt !important; gap: 2mm !important; }
-          .print-icon { width: 6mm !important; height: 6mm !important; }
+          .print-info-wrap { gap: 5mm !important; margin-top: 4mm !important; }
+          .print-info-text { font-size: 12pt !important; gap: 2mm !important; }
+          .print-icon { width: 5.5mm !important; height: 5.5mm !important; }
 
-          .print-footer { margin-top: 6mm !important; padding-bottom: 5mm !important; }
-          .print-simple-footer { font-size: 14pt !important; } /* 🚀 Mobilde alt yazı daha okunaklı oldu */
+          .print-footer { margin-top: 6mm !important; padding-bottom: 2mm !important; }
+          .print-simple-footer { font-size: 12pt !important; }
         }
       }
     `
@@ -417,7 +415,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                 
                 {/* 1. LOGO VE FİRMA ADI */}
                 <div className="w-full flex flex-col items-center justify-center shrink-0">
-                  {/* 🚀 Tailwind'in baskı sınıflarını (print:w-[10mm]) silip kontrolü tamamen CSS'e verdik */}
                   <div 
                     className={`w-10 h-10 print-logo-box rounded-lg flex items-center justify-center mb-1.5 overflow-hidden shadow-sm border-2 ${printMode === 'bw' ? 'border-black bg-white' : 'border-white ring-1 ring-slate-100'}`}
                     style={{ backgroundColor: printMode === 'bw' ? '#ffffff' : (companyLogo ? logoBgColor : '#f8fafc') }}
@@ -438,7 +435,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                   </div>
                 </div>
 
-                {/* 2. QR KOD VE ID */}
+                {/* 2. QR KOD (Tek Başına, ID Aşağı Taşındı) */}
                 <div className="flex flex-col items-center justify-center w-full relative shrink-0 print-qr-wrapper">
                   <div className="w-[100px] h-[100px] flex items-center justify-center print-qr-svg">
                       <QRCodeSVG 
@@ -448,37 +445,40 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                         includeMargin={false}
                       />
                   </div>
-                  <div 
-                     onClick={() => {
-                       navigator.clipboard.writeText(uniqueId);
-                       setIdCopied(true);
-                       setTimeout(() => setIdCopied(false), 2000);
-                     }}
-                     className={`mt-2 flex items-center justify-center gap-1.5 text-[10px] print-id-box font-bold tracking-widest uppercase px-3 py-1 rounded-md border border-slate-200 cursor-pointer transition-colors ${printMode === 'bw' ? 'text-black bg-white' : 'text-slate-600 bg-slate-50 hover:bg-slate-100'}`}
-                     title="Kodu Kopyalamak İçin Tıklayın"
-                  >
-                     ID: {asset.id}
-                     <span className="print:hidden">
-                       {idCopied ? <Check size={10} className="text-emerald-500" /> : <Copy size={10} className="text-slate-400" />}
-                     </span>
-                  </div>
                 </div>
 
-                {/* 3. BAŞLIK VE İLETİŞİM BİLGİLERİ */}
+                {/* 3. BAŞLIK, ROZETLER VE İLETİŞİM BİLGİLERİ */}
                 <div className="w-full flex flex-col items-center shrink-0">
-                  <h2 className={`text-base print-subtitle font-black leading-tight mb-1 text-center w-full px-1 ${printMode === 'bw' ? 'text-black' : 'text-slate-900'}`}>
+                  <h2 className={`text-base print-title font-black leading-tight mb-1.5 text-center w-full px-1 ${printMode === 'bw' ? 'text-black' : 'text-slate-900'}`}>
                     {mainTitle}
                   </h2>
                   
-                  {subTitle && (
-                    <div className={`text-[10px] print-badge font-bold px-2.5 py-0.5 rounded mb-1.5 max-w-full text-center ${printMode === 'bw' ? 'bg-transparent text-black' : 'bg-slate-100 text-slate-600'}`}>
-                      {subTitle}
+                  {/* 🚀 ROZET VE ID YAN YANA GELDİ, NEFES ALDIRILDI */}
+                  <div className="flex items-center justify-center gap-2 mb-1.5 w-full flex-wrap print-badge-wrapper">
+                    {subTitle && (
+                      <div className={`text-[10px] print-badge font-bold px-2 py-0.5 rounded text-center ${printMode === 'bw' ? 'bg-transparent text-black border-black' : 'bg-slate-100 text-slate-600 border-transparent color-mode'}`}>
+                        {subTitle}
+                      </div>
+                    )}
+                    <div 
+                       onClick={() => {
+                         navigator.clipboard.writeText(uniqueId);
+                         setIdCopied(true);
+                         setTimeout(() => setIdCopied(false), 2000);
+                       }}
+                       className={`flex items-center justify-center gap-1.5 text-[10px] print-id-box font-bold tracking-widest uppercase px-2 py-0.5 rounded cursor-pointer transition-colors ${printMode === 'bw' ? 'text-black bg-white border-black' : 'text-slate-600 bg-slate-50 hover:bg-slate-100 border-slate-200'}`}
+                       title="Kodu Kopyalamak İçin Tıklayın"
+                    >
+                       ID: {asset.id}
+                       <span className="print:hidden">
+                         {idCopied ? <Check size={10} className="text-emerald-500" /> : <Copy size={10} className="text-slate-400" />}
+                       </span>
                     </div>
-                  )}
+                  </div>
 
                   {/* İLETİŞİM BİLGİLERİ WRAPPER'I */}
                   {(landlinePhone || whatsappPhone || companyWebsite) && (
-                    <div className="print-info-wrap flex flex-wrap items-center justify-center gap-x-3 gap-y-1 mt-1 w-full px-1">
+                    <div className="print-info-wrap flex flex-wrap items-center justify-center gap-x-3 gap-y-1 w-full px-1">
                       {landlinePhone && (
                         <div className={`print-info-text flex items-center gap-1 text-[10px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-800'}`}>
                           <Phone className={`w-3.5 h-3.5 print-icon ${printMode === 'bw' ? 'text-black' : 'text-slate-500'}`} /> {landlinePhone}
