@@ -297,16 +297,11 @@ export default function ManagerDashboard() {
         return false;
     }
 
-    if (endpoint === 'add-staff') {
-        setShowErrorModal({
-            show: true,
-            message: 'Sisteme yeni personel ekleme ve personel yetkilendirme işlemleri sadece sistem yöneticisi (Patron) tarafından yapılabilir.'
-        });
-        return false;
-    }
+    // Yöneticilerin usta ekleyebilmesi için 'add-staff' frontend engeli kaldırıldı.
+    // Rol (Sadece Usta) denetimi backend ve modal içerisindeki userRole mantığıyla korunuyor.
 
     setIsSaving(true);
-    const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken'); 
+    const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
 
     // İş güncellenirken Manager ID'yi kaydet
     if (endpoint === 'update-job' && userData && userData.role === 'Yönetici') {
