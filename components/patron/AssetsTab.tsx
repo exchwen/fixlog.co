@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Box, MapPin, Users, Search, QrCode, ExternalLink } from 'lucide-react';
+import { Plus, Box, MapPin, Users, Search, QrCode, ExternalLink, Tag } from 'lucide-react';
 
 export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, setShowQRModal, setSelectedQRAsset }: any) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -134,17 +134,58 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
         {filteredAssets.length > 0 ? filteredAssets.map((a: any) => {
             const aptName = a.apartmentName || a.apartment_name;
             
+            // 🚀 GEÇMİŞ İŞLERİ TARAYARAK EN GÜNCEL ETİKET RENGİNİ BULMA ALGORİTMASI
+            const latestColor = (() => {
+              const assetJobs = (data?.jobs || [])
+                .filter((j: any) => String(j.asset_id) === String(a.id) && j.details && (j.details.label_color || j.details['Mevcut Etiket']))
+                .sort((j1: any, j2: any) => new Date(j2.created_at || 0).getTime() - new Date(j1.created_at || 0).getTime());
+              
+              return assetJobs[0]?.details?.label_color || assetJobs[0]?.details?.['Mevcut Etiket'] || a.label_color || a.labelColor || null;
+            })();
+
+            // 🚀 RENGE GÖRE KARTIN ÇERÇEVE VE GÖLGE STİLLERİ
+            const getBorderClass = (color: string) => {
+              switch(color?.toLowerCase()) {
+                case 'kırmızı': return 'border-rose-500 hover:border-rose-600 shadow-rose-100/50 bg-rose-50/10';
+                case 'sarı': return 'border-amber-400 hover:border-amber-500 shadow-amber-100/50 bg-amber-50/10';
+                case 'mavi': return 'border-blue-500 hover:border-blue-600 shadow-blue-100/50 bg-blue-50/10';
+                case 'yeşil': return 'border-emerald-500 hover:border-emerald-600 shadow-emerald-100/50 bg-emerald-50/10';
+                default: return 'border-slate-200 hover:border-blue-300 shadow-slate-100/50 bg-white';
+              }
+            };
+
+            const getBadgeClass = (color: string) => {
+              switch(color?.toLowerCase()) {
+                case 'kırmızı': return 'bg-rose-100 text-rose-700 border-rose-200';
+                case 'sarı': return 'bg-amber-100 text-amber-800 border-amber-200';
+                case 'mavi': return 'bg-blue-100 text-blue-700 border-blue-200';
+                case 'yeşil': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+                default: return 'hidden';
+              }
+            };
+
+            const borderClass = getBorderClass(latestColor);
+            const badgeClass = getBadgeClass(latestColor);
+            
             return (
               <div 
                 key={a.id} 
                 onClick={() => setSelectedAsset && setSelectedAsset(a)}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer flex flex-col group overflow-hidden"
+                // 🚀 DİNAMİK ÇERÇEVE SINIFI BURAYA EKLENDİ (border-2 yapılarak belirginleştirildi)
+                className={`rounded-2xl border-2 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col group overflow-hidden relative ${borderClass}`}
               >
+                {/* 🚀 SAĞ ÜST KÖŞEDEKİ ŞIK RENK ETİKETİ ROZETİ */}
+                {latestColor && badgeClass !== 'hidden' && (
+                  <div className={`absolute top-4 right-4 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border flex items-center gap-1 shadow-sm ${badgeClass}`}>
+                    <Tag size={10} /> {latestColor}
+                  </div>
+                )}
+
                 <div className="p-5 flex-1 flex flex-col">
                   <div className="flex items-start justify-between mb-4 gap-3 flex-wrap sm:flex-nowrap">
                     <div 
                       className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center border border-slate-100 shadow-sm overflow-hidden shrink-0 transition-transform duration-500 group-hover:scale-105"
-                      style={{ backgroundColor: data?.logo ? logoBgColor : '#f8fafc' }}
+                      style={{ backgroundColor: data?.logo ? logoBgColor : '#ffffff' }}
                     >
                       {data?.logo ? (
                         <img 
@@ -158,12 +199,12 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
                       )}
                     </div>
 
-                    <div className="bg-blue-50 border border-blue-100 text-blue-700 px-2.5 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 shrink-0 shadow-sm">
+                    <div className="bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 shrink-0 shadow-sm">
                       <Users size={12}/> <span className="truncate max-w-[100px] sm:max-w-[120px]">{data?.customers?.find((c: any) => c.id === a.customer_id)?.name || 'Genel Müşteri'}</span>
                     </div>
                   </div>
 
-                  <div className="flex-1">
+                  <div className="flex-1 mt-1">
                     <div className="font-bold text-slate-800 text-lg sm:text-base leading-tight mb-1 group-hover:text-blue-600 transition-colors line-clamp-2">
                       {aptName || a.name}
                     </div>
@@ -199,7 +240,7 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
                   </div>
                 </div>
 
-                <div className="p-3 sm:p-4 bg-slate-50 border-t border-slate-100 mt-auto">
+                <div className="p-3 sm:p-4 bg-slate-50/50 border-t border-slate-100 mt-auto">
                   <button 
                     onClick={(e) => { 
                       e.stopPropagation();

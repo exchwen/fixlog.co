@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Search, User, Box, Calendar, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle, Clock, Image as ImageIcon, Download, MessageSquareText, Settings, CheckSquare, Tag, Wrench, ArrowUpRight, UserPlus, UserCheck, Printer, Palette } from 'lucide-react';
+import { X, Loader2, Search, User, Box, Calendar, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle, Clock, Image as ImageIcon, Download, MessageSquareText, Settings, CheckSquare, Tag, Wrench, ArrowUpRight, UserPlus, UserCheck, Printer, Palette, Bluetooth } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 
 export default function JobDetailModal({
@@ -14,7 +14,8 @@ export default function JobDetailModal({
   isAnyProfileDetailOpen, isMobile, handleCloseDetail, userRole,
   searchCust, setSearchCust, searchAsset, setSearchAsset,
   selectedCustomer, setSelectedCustomer,
-  selectedAsset, setSelectedAsset
+  selectedAsset, setSelectedAsset,
+  setShowThermalPrintModal, setSelectedThermalJob
 }: any) {
 
   // 🚀 Hangi alt modalın BU modal tarafından açıldığını takip ediyoruz
@@ -32,6 +33,12 @@ export default function JobDetailModal({
 
   // 🚀 Fotoğraf Yükleme Durumu
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  // 🚀 İMZA STATE VE REF'LERİ
+  const [signatureName, setSignatureName] = useState('');
+  const [signatureImage, setSignatureImage] = useState<string | null>(null);
+  const signatureCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
 
   const executePrint = (mode: 'color' | 'bw') => {
     setPrintMode(mode);
@@ -180,6 +187,9 @@ export default function JobDetailModal({
       
       stopEvent();
       setSelectedJob(null);
+      // Modal kapanırken imza alanını sıfırla
+      setSignatureImage(null);
+      setSignatureName('');
       if (handleCloseDetail) handleCloseDetail('job');
       return true;
     }
@@ -226,6 +236,57 @@ export default function JobDetailModal({
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [selectedJob, isAnyProfileDetailOpen, openedChild, handleSmartClose]);
+
+  // 🚀 İMZA ÇİZİM (CANVAS) FONKSİYONLARI
+  const getCoordinates = (e: any) => {
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    if (e.touches && e.touches.length > 0) {
+        return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+    }
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
+
+  const startDrawing = (e: any) => {
+    setIsDrawing(true);
+    const coords = getCoordinates(e);
+    const ctx = signatureCanvasRef.current?.getContext('2d');
+    if (ctx) {
+        ctx.beginPath();
+        ctx.moveTo(coords.x, coords.y);
+    }
+  };
+
+  const draw = (e: any) => {
+    if (!isDrawing) return;
+    e.preventDefault(); // Ekranda kaymayı engelle
+    const coords = getCoordinates(e);
+    const ctx = signatureCanvasRef.current?.getContext('2d');
+    if (ctx) {
+        ctx.lineTo(coords.x, coords.y);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+  };
+
+  const endDrawing = () => {
+    setIsDrawing(false);
+    const canvas = signatureCanvasRef.current;
+    if (canvas) {
+        setSignatureImage(canvas.toDataURL('image/png'));
+    }
+  };
+
+  const clearSignature = () => {
+    const canvas = signatureCanvasRef.current;
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if(ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+        setSignatureImage(null);
+    }
+  };
 
   const sendCustomerWhatsApp = (jobData: any) => {
     const custPhone = (data?.customers || []).find((c:any) => c.name === jobData.customer_name)?.contact;
@@ -891,39 +952,53 @@ export default function JobDetailModal({
                     <div className="pt-4 border-t border-slate-100 space-y-3">
                         {/* 🚀 ONAY BEKLİYOR DÜZELTMESİ: 2 Faktörlü Sistem ve Genel Görev Fiyat Ayrımı */}
                         {selectedJob.status === 'Onay Bekliyor' && (
-                            <div className="bg-amber-50 border border-amber-200 p-4 sm:p-5 rounded-2xl flex flex-col gap-3 shadow-inner">
-                               <div className="text-amber-800 font-black text-sm flex items-center gap-2"><AlertTriangle size={18}/> Personel İşi Tamamladı. Onayınız Bekleniyor.</div>
-                               
-                               {isGeneralTask ? (
-                                   <button disabled={isApproving} onClick={async () => {
-                                       setIsApproving(true);
-                                       await handleAction('update-job', { id: selectedJob.id, status: 'Tamamlandı', lastEditedBy: data?.ownerName, workType: selectedJob.work_type, details: selectedJob.details }, () => setSelectedJob(null), null);
-                                       setIsApproving(false);
-                                   }} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 sm:py-3.5 rounded-xl transition-all shadow-md flex justify-center items-center active:scale-95 text-sm">
-                                       {isApproving ? <Loader2 className="animate-spin" size={18}/> : 'Görevi Onayla ve Tamamla'}
-                                   </button>
-                               ) : (
-                                   <>
-                                       <input type="number" placeholder="Müşteriye yansıtılacak işlem ücreti (₺)" value={jobPrice} onChange={e => setJobPrice(e.target.value)} className="px-4 py-3 sm:py-3.5 rounded-xl border border-amber-300 font-bold outline-none focus:border-amber-500 w-full text-sm bg-white" />
-                                       <button disabled={isApproving || !jobPrice} onClick={async () => {
-                                           setIsApproving(true);
-                                           const newDetails = { ...selectedJob.details, price: jobPrice + ' TL' };
-                                           await handleAction('update-job', { id: selectedJob.id, status: 'Tamamlandı', taskNote: selectedJob.details?.note, lastEditedBy: data?.ownerName, workType: selectedJob.work_type, details: newDetails }, null, null);
-                                           await handleAction('approve-job', { jobId: selectedJob.id, amount: jobPrice, customerName: selectedJob.customer_name }, () => setSelectedJob(null), () => setJobPrice(''));
-                                           setIsApproving(false);
-                                       }} className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black py-3 sm:py-3.5 rounded-xl transition-all shadow-md flex justify-center items-center active:scale-95 text-sm">
-                                           {isApproving ? <Loader2 className="animate-spin" size={18}/> : 'Fiyatı Onayla ve Kasa\'ya İşle'}
-                                       </button>
-                                   </>
-                               )}
-                            </div>
-                        )}
+                                    <div className="bg-amber-50 border border-amber-200 p-4 sm:p-5 rounded-2xl flex flex-col gap-3 shadow-inner">
+                                       <div className="text-amber-800 font-black text-sm flex items-center gap-2"><AlertTriangle size={18}/> Personel İşi Tamamladı. Onayınız Bekleniyor.</div>
+                                       
+                                       {isGeneralTask ? (
+                                           <button disabled={isApproving} onClick={async () => {
+                                               setIsApproving(true);
+                                               await handleAction('update-job', { id: selectedJob.id, status: 'Tamamlandı', lastEditedBy: data?.ownerName, workType: selectedJob.work_type, details: selectedJob.details }, () => setSelectedJob(null), null);
+                                               setIsApproving(false);
+                                           }} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 sm:py-3.5 rounded-xl transition-all shadow-md flex justify-center items-center active:scale-95 text-sm">
+                                               {isApproving ? <Loader2 className="animate-spin" size={18}/> : 'Görevi Onayla ve Tamamla'}
+                                           </button>
+                                       ) : (
+                                           <>
+                                               <input type="number" placeholder="Müşteriye yansıtılacak işlem ücreti (₺)" value={jobPrice} onChange={e => setJobPrice(e.target.value)} className="px-4 py-3 sm:py-3.5 rounded-xl border border-amber-300 font-bold outline-none focus:border-amber-500 w-full text-sm bg-white" />
+                                               <button disabled={isApproving || !jobPrice} onClick={async () => {
+                                                   setIsApproving(true);
+                                                   const newDetails = { ...selectedJob.details, price: jobPrice + ' TL' };
+                                                   await handleAction('update-job', { id: selectedJob.id, status: 'Tamamlandı', taskNote: selectedJob.details?.note, lastEditedBy: data?.ownerName, workType: selectedJob.work_type, details: newDetails }, null, null);
+                                                   await handleAction('approve-job', { jobId: selectedJob.id, amount: jobPrice, customerName: selectedJob.customer_name }, () => setSelectedJob(null), () => setJobPrice(''));
+                                                   setIsApproving(false);
+                                               }} className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black py-3 sm:py-3.5 rounded-xl transition-all shadow-md flex justify-center items-center active:scale-95 text-sm">
+                                                   {isApproving ? <Loader2 className="animate-spin" size={18}/> : 'Fiyatı Onayla ve Kasa\'ya İşle'}
+                                               </button>
+                                           </>
+                                       )}
+                                    </div>
+                                )}
 
-                        {selectedJob.status === 'Tamamlandı' && (  
-                            <button onClick={() => setPreviewPdfJob(selectedJob)} className="w-full bg-emerald-100 border border-emerald-300 text-emerald-700 font-black py-3.5 rounded-xl hover:bg-emerald-200 transition-all flex justify-center items-center gap-2 shadow-sm active:scale-95 text-sm">
-                               <MessageSquareText size={18} /> {isGeneralTask && (!selectedJob.customer_name || selectedJob.customer_name === 'Genel Görev') ? 'Servis Formu / PDF Görüntüle' : 'Rapor Önizleme & WhatsApp Gönder'}
-                            </button>
-                        )}
+                                {selectedJob.status === 'Tamamlandı' && selectedJob.work_type === 'Periyodik Bakım' && (  
+                                    <button 
+                                        onClick={() => {
+                                            if (setShowThermalPrintModal && setSelectedThermalJob) {
+                                                setSelectedThermalJob(selectedJob);
+                                                setShowThermalPrintModal(true);
+                                            }
+                                        }} 
+                                        className="w-full bg-blue-600 border border-blue-700 text-white font-black py-3.5 rounded-xl hover:bg-blue-700 transition-all flex justify-center items-center gap-2 shadow-sm active:scale-95 text-sm mt-3"
+                                    >
+                                        <Bluetooth size={18} /> Bluetooth ile Fiş Yazdır
+                                    </button>
+                                )}
+
+                                {selectedJob.status === 'Tamamlandı' && (  
+                                    <button onClick={() => setPreviewPdfJob(selectedJob)} className="w-full bg-emerald-100 border border-emerald-300 text-emerald-700 font-black py-3.5 rounded-xl hover:bg-emerald-200 transition-all flex justify-center items-center gap-2 shadow-sm active:scale-95 text-sm mt-3">
+                                       <MessageSquareText size={18} /> {isGeneralTask && (!selectedJob.customer_name || selectedJob.customer_name === 'Genel Görev') ? 'Servis Formu / PDF Görüntüle' : 'Rapor Önizleme & WhatsApp Gönder'}
+                                    </button>
+                                )}
 
                         {selectedJob.status !== 'Tamamlandı' && selectedJob.status !== 'İptal' && (
                         <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3 w-full pt-4 mt-2 border-t border-slate-100 flex-wrap">
@@ -1047,28 +1122,77 @@ export default function JobDetailModal({
                                                             }} 
                                                         />
                                                     </label>
+                                                </div>
+                                            )}
+                                            
+                                            {/* 🚀 MÜŞTERİ İMZA ALANI (SADECE PERİYODİK BAKIMDA VE SAHADAYKEN ÇIKAR) */}
+                                            {selectedJob.status === 'Devam Ediyor' && selectedJob.work_type === 'Periyodik Bakım' && (
+                                                <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-xl shadow-sm">
+                                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center justify-between">
+                                                        <span>Müşteri / Yetkili İmzası</span>
+                                                        {signatureImage && <button onClick={clearSignature} className="text-rose-500 underline">Temizle</button>}
+                                                    </div>
+                                                    
+                                                    <input 
+                                                        type="text" 
+                                                        placeholder="İmzalayan Kişinin Adı Soyadı" 
+                                                        value={signatureName}
+                                                        onChange={(e) => setSignatureName(e.target.value)}
+                                                        className="w-full px-4 py-2.5 mb-3 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                                                    />
 
-                                                    {/* Sadece iş ustaya atandıysa o usta görebilir, ya da yönetici kendine iş açtıysa kendi görebilir. Çakışma Düzeltildi. */}
-                                                    {(userRole === 'Usta' || !hasWorker) && (
-                                                        <button 
-                                                            onClick={async () => {
-                                                                setIsApproving(true);
-                                                                // Yönetici kimsiz işi bitiriyorsa direkt Tamamlandı, Usta bitiriyorsa 2. Faktör (Onay Bekliyor)
-                                                                const nextStatus = userRole === 'Usta' ? 'Onay Bekliyor' : 'Tamamlandı';
-                                                                await handleAction('update-job', {
-                                                                    id: selectedJob.id,
-                                                                    status: nextStatus,
-                                                                    lastEditedBy: data?.ownerName || 'Yönetici',
-                                                                }, () => setSelectedJob(null), null);
-                                                                setIsApproving(false);
-                                                            }}
-                                                            disabled={isApproving}
-                                                            className={`flex-1 w-full text-white py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50 ${userRole === 'Usta' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-500 hover:bg-emerald-600'}`}
-                                                        >
-                                                            {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
-                                                            {userRole === 'Usta' ? 'İşi Bitir & Onaya Gönder' : 'İşi Tamamla'}
-                                                        </button>
-                                                    )}
+                                                    <div className="border-2 border-dashed border-slate-300 rounded-lg overflow-hidden bg-white touch-none">
+                                                        <canvas 
+                                                            ref={signatureCanvasRef}
+                                                            width={300}
+                                                            height={150}
+                                                            className="w-full h-[150px] cursor-crosshair"
+                                                            onMouseDown={startDrawing}
+                                                            onMouseMove={draw}
+                                                            onMouseUp={endDrawing}
+                                                            onMouseLeave={endDrawing}
+                                                            onTouchStart={startDrawing}
+                                                            onTouchMove={draw}
+                                                            onTouchEnd={endDrawing}
+                                                        ></canvas>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Sadece iş ustaya atandıysa o usta görebilir, ya da yönetici kendine iş açtıysa kendi görebilir. Çakışma Düzeltildi. */}
+                                            {(userRole === 'Usta' || !hasWorker) && selectedJob.status === 'Devam Ediyor' && (
+                                                <div className="mt-4">
+                                                    <button
+                                                        onClick={async () => {
+                                                            // 🚀 İMZA ZORUNLULUĞU KONTROLÜ
+                                                            if (selectedJob.work_type === 'Periyodik Bakım') {
+                                                                if (!signatureImage) {
+                                                                    alert("Lütfen müşteriden imza alınız.");
+                                                                    return;
+                                                                }
+                                                                if (!signatureName.trim()) {
+                                                                    alert("Lütfen imzalayan kişinin adını giriniz.");
+                                                                    return;
+                                                                }
+                                                            }
+
+                                                            setIsApproving(true);
+                                                            const nextStatus = userRole === 'Usta' ? 'Onay Bekliyor' : 'Tamamlandı';
+                                                            await handleAction('update-job', {
+                                                                id: selectedJob.id,
+                                                                status: nextStatus,
+                                                                lastEditedBy: data?.ownerName || 'Yönetici',
+                                                                signatureImage: signatureImage, // 🚀 İmzayı Gönder
+                                                                signatureName: signatureName    // 🚀 İsmi Gönder
+                                                            }, () => setSelectedJob(null), null);
+                                                            setIsApproving(false);
+                                                        }}
+                                                        disabled={isApproving}
+                                                        className={`w-full text-white py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50 ${userRole === 'Usta' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-500 hover:bg-emerald-600'}`}
+                                                    >
+                                                        {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
+                                                        {userRole === 'Usta' ? 'İşi Bitir & Onaya Gönder' : 'İşi Tamamla'}
+                                                    </button>
                                                 </div>
                                             )}
                                         </>

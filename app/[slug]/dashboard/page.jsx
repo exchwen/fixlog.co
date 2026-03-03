@@ -84,6 +84,10 @@ export default function PatronDashboard() {
   const [showQRModal, setShowQRModal] = useState(false);
   const [selectedQRAsset, setSelectedQRAsset] = useState(null);
 
+  // 🚀 EKLENDİ: Fiş Yazdırma Modalı State'leri
+  const [showThermalPrintModal, setShowThermalPrintModal] = useState(false);
+  const [selectedThermalJob, setSelectedThermalJob] = useState(null);
+
   // =================================================================================
   // 2. FORM DATA STATES 
   // =================================================================================
@@ -461,6 +465,10 @@ export default function PatronDashboard() {
         showQRModal={showQRModal} setShowQRModal={setShowQRModal}
         selectedQRAsset={selectedQRAsset} setSelectedQRAsset={setSelectedQRAsset}
 
+        // 🚀 EKLENDİ: Propsların Modallara geçirilmesi
+        showThermalPrintModal={showThermalPrintModal} setShowThermalPrintModal={setShowThermalPrintModal}
+        selectedThermalJob={selectedThermalJob} setSelectedThermalJob={setSelectedThermalJob}
+
         searchCust={searchCust} setSearchCust={setSearchCust}
         searchAsset={searchAsset} setSearchAsset={setSearchAsset}
         userRole="Patron"
@@ -468,7 +476,7 @@ export default function PatronDashboard() {
       
           <AssetQRModal 
       isOpen={showQRModal} 
-      onClose={() => setShowQRModal(false)} 
+      onClose={() => setShowQRModal(false)}
       asset={selectedQRAsset} 
       companyName={data?.name} 
       companyLogo={data?.logo} 

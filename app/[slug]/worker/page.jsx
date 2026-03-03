@@ -10,6 +10,7 @@ import WorkerSidebar from '@/components/layout/WorkerSidebar';
 
 import ChatPanel from '@/components/chat/ChatPanel';
 import DynamicPWA from '@/components/DynamicPWA'; 
+import ThermalPrintModal from '@/components/modals/jobs/ThermalPrintModal'; // 🚀 EKLENDİ
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
@@ -55,6 +56,10 @@ export default function WorkerDashboard() {
 
   const [photos, setPhotos] = useState([]);
   const fileInputRef = useRef(null);
+
+  // 🚀 EKLENDİ: Fiş Yazdırma Modalı State'leri
+  const [showThermalPrintModal, setShowThermalPrintModal] = useState(false);
+  const [selectedThermalJob, setSelectedThermalJob] = useState(null);
 
   const [isOffline, setIsOffline] = useState(false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
@@ -358,7 +363,17 @@ export default function WorkerDashboard() {
     return data.assets.find(a => String(a.id) === String(assetId)) || null;
   };
 
+// 🚀 İMZA STATE VE REF'LERİ (USTA.JSX EN ÜSTE EKLENECEK - photos state'inin altına)
+  // const [signatureName, setSignatureName] = useState('');
+  // const [signatureImage, setSignatureImage] = useState<string | null>(null);
+
   const handleStatusUpdate = async (newStatus) => {
+    // 🚀 ANA EKRAN HIZLI TAMAMLAMA ENGELLENİYOR! Usta modalı açıp imza atmak ZORUNDA.
+    if (newStatus === 'Tamamlandı' && selectedJob.work_type === 'Periyodik Bakım') {
+        alert("Periyodik Bakım işlemini bitirmek için 'İş Detayı'na girip müşteriden imza almanız gerekmektedir.");
+        return;
+    }
+
     setIsSaving(true);
     const token = localStorage.getItem('staff_authToken'); 
 
@@ -900,7 +915,7 @@ export default function WorkerDashboard() {
           />
         )}
 
-        <ChatPanel 
+<ChatPanel 
           isChatOpen={isChatOpen} 
           setIsChatOpen={setIsChatOpen} 
           activeChatId={activeChatId} 
@@ -911,6 +926,14 @@ export default function WorkerDashboard() {
           messageInput={messageInput} 
           setMessageInput={setMessageInput} 
           sendMessage={sendMessage} 
+        />
+
+        {/* 🚀 EKLENDİ: Usta için Termal Yazıcı Modalı */}
+        <ThermalPrintModal 
+          isOpen={showThermalPrintModal} 
+          onClose={() => setShowThermalPrintModal(false)} 
+          job={selectedThermalJob} 
+          companyName={data?.name || 'İşletme'} 
         />
 
       </main>

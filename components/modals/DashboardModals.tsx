@@ -5,6 +5,7 @@ import React from 'react';
 // 1. İş ve Görev Modalları
 import JobDetailModal from './jobs/JobDetailModal';
 import AddJobModal from './jobs/AddJobModal';
+import ThermalPrintModal from './jobs/ThermalPrintModal'; // 🚀 YENİ EKLENDİ
 
 // 2. Profil ve Detay Modalları
 import CustomerDetailModal from './profiles/CustomerDetailModal';
@@ -28,6 +29,14 @@ export default function DashboardModals(props: any) {
       {/* İŞ VE GÖREV MODALLARI */}
       <JobDetailModal {...props} />
       <AddJobModal {...props} />
+      
+      {/* 🚀 YENİ TERMAL YAZICI MODALI */}
+      <ThermalPrintModal 
+        isOpen={props.showThermalPrintModal} 
+        onClose={() => props.setShowThermalPrintModal(false)} 
+        job={props.selectedThermalJob} 
+        companyName={props.data?.name || 'İşletme'} 
+      />
 
       {/* PROFİL VE DETAY MODALLARI */}
       <CustomerDetailModal {...props} />
