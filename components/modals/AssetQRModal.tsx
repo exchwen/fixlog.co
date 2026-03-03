@@ -126,16 +126,10 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
         setPrintMode('color');
     },
     pageStyle: `
-      @page { 
-        size: 80mm 80mm; 
-        margin: 0; 
-      }
       @media print { 
         html, body { 
           width: 100% !important; 
           height: 100% !important; 
-          min-width: 80mm !important;
-          min-height: 80mm !important;
           margin: 0 !important; 
           padding: 0 !important; 
           background-color: white !important;
@@ -144,28 +138,26 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           color-adjust: exact !important;
         } 
         
+        /* 🚀 Sayfanın geneli - Etiketi A4'ün ya da seçilen kağıdın ortasına oturtur */
         .print-wrapper {
-          position: absolute;
-          top: 0;
-          left: 0;
           width: 100% !important;
           height: 100% !important;
           display: flex !important;
-          align-items: flex-start !important;
+          align-items: flex-start !important; /* Üstten başlasın, sayfa ortasında kaybolmasın */
           justify-content: center !important;
           background: white !important;
+          padding-top: 10mm !important; /* Mobilde veya A4'te üstten biraz boşluk */
         }
 
+        /* 🚀 Etiketin kendi boyutu - Sabit 80x80mm, termal için de ideal, PDF için de okunaklı */
         .print-container { 
-          width: 100% !important; 
-          height: 100% !important; 
-          max-width: 80mm !important;
-          max-height: 80mm !important;
-          border: none !important; 
+          width: 80mm !important; 
+          height: 80mm !important; 
+          border: 1px solid #e2e8f0 !important; /* Mobilde A4 içinde etiketin sınırları belli olsun diye ince bir çizgi */
           box-shadow: none !important; 
-          border-radius: 0 !important; 
+          border-radius: 4mm !important; /* Hafif kavis şık durur */
           padding: 4mm 2mm !important; 
-          margin: 0 auto !important;
+          margin: 0 !important;
           display: flex !important;
           flex-direction: column !important;
           align-items: center !important;
@@ -177,18 +169,9 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           background-color: white !important;
         }
 
-        /* 🚀 SADECE MOBİL PDF ÇIKTILARI İÇİN BÜYÜTME (Masaüstü Termal Etkilenmez) */
-        @media (max-device-width: 768px) {
-          html, body {
-            zoom: 1.6 !important;
-          }
-          .print-wrapper {
-            padding-top: 5mm !important;
-          }
-          .print-container {
-            transform: scale(1.15) !important;
-            transform-origin: top center !important;
-          }
+        /* 🚀 Eğer baskı siyah beyaz modundaysa kenarlığı siyah yap */
+        .print-container-bw {
+          border: 1px solid #000 !important;
         }
 
         /* 🚀 PDF YAZI TİPLERİ 80MM'YE UYGUN KÜÇÜLTÜLDÜ */
@@ -333,7 +316,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
               {/* 🚀 EKRAN ÖNİZLEMESİ: Sabit height (h-[...]) silindi! Artık içeriğe göre aşağı esner, taşma/kesilme yapmaz. */}
               <div 
                 ref={printRef} 
-                className="print-container w-full max-w-[280px] sm:max-w-[310px] bg-white border border-slate-200 shadow-xl rounded-2xl flex flex-col items-center justify-between p-4 box-border shrink-0 gap-2 print:border-none print:shadow-none print:rounded-none"
+                className={`print-container w-full max-w-[280px] sm:max-w-[310px] bg-white border border-slate-200 shadow-xl rounded-2xl flex flex-col items-center justify-between p-4 box-border shrink-0 gap-2 print:shadow-none ${printMode === 'bw' ? 'print:border-solid print:border-black print-container-bw' : 'print:border-solid print:border-slate-200'}`}
               >
                 
                 {/* 1. LOGO VE FİRMA ADI */}
