@@ -178,7 +178,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           border: none !important; 
           box-shadow: none !important; 
           border-radius: 0 !important; 
-          padding: 3.5mm 2.5mm !important; /* Ferahlatıldı */
+          padding: 3.5mm 2.5mm !important; 
           margin: 0 !important;
           display: flex !important;
           flex-direction: column !important;
@@ -196,9 +196,8 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
         .print-logo-img { width: 8mm !important; height: 8mm !important; }
         .print-logo-icon { width: 7mm !important; height: 7mm !important; }
 
-        .print-title { font-size: 11pt !important; line-height: 1.1 !important; margin-bottom: 0 !important; color: #000 !important; }
+        .print-title { font-size: 11pt !important; line-height: 1.1 !important; margin-bottom: 0 !important; }
         
-        /* 🚀 QR KOD BÜYÜTÜLDÜ, NEFES ALDI */
         .print-qr-wrapper {
            width: 30mm !important;
            height: 30mm !important;
@@ -206,7 +205,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
         }
         .print-qr-svg { width: 100% !important; height: 100% !important; }
 
-        /* 🚀 ID VE ROZET AYNI HİZADA KUSURSUZ GÖRÜNÜM */
         .print-badge-wrapper {
            display: flex !important;
            align-items: center !important;
@@ -216,21 +214,17 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
            width: 100% !important;
         }
 
+        /* 🚀 Çekiç (color: #000 !important) kaldırıldı, renkler Tailwind'den gelecek */
         .print-badge, .print-id-box { 
             font-size: 7.5pt !important; 
             padding: 0.5mm 2mm !important; 
             border-radius: 1mm !important; 
-            border: 1px solid #000 !important; 
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            color: #000 !important;
-            height: 4.5mm !important; /* 🚀 İkisinin boyunu eşitledik */
+            height: 4.5mm !important; 
             box-sizing: border-box !important;
         }
-
-        /* Renkli modda rozet kenarlığını kaldır */
-        .print-badge.color-mode { border: none !important; }
         
         .print-info-wrap { 
             display: flex !important; 
@@ -241,14 +235,16 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
             margin-top: 0 !important;
             width: 100% !important;
         }
+
         .print-info-text { 
             font-size: 6.5pt !important; 
             display: flex !important; 
             align-items: center !important; 
             gap: 0.5mm !important; 
-            color: #000 !important; 
         }
-        .print-icon { width: 2.5mm !important; height: 2.5mm !important; fill: #000 !important; color: #000 !important; }
+
+        /* 🚀 İkonları siyaha zorlayan fill ve color kuralları kaldırıldı! */
+        .print-icon { width: 2.5mm !important; height: 2.5mm !important; }
 
         .print-footer { margin-top: 1mm !important; }
         .print-simple-footer { color: #64748b !important; font-size: 6pt !important; text-align: center !important; }
@@ -273,7 +269,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
             overflow: visible !important;
           }
           
-          /* 🚀 MOBİL A4 GÜVENLİ BÖLGE: Kesilme ihtimalini tamamen sıfırladık */
           .print-container {
             width: 180mm !important; 
             height: 250mm !important; 
@@ -313,7 +308,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           .print-id-box, .print-badge { 
               font-size: 15pt !important; 
               padding: 4mm 8mm !important; 
-              border-width: 2px !important;
+              border-width: 2px !important; /* Mobilde sınır kalınlığı */
               border-radius: 3mm !important;
               height: auto !important;
           }
@@ -435,7 +430,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                   </div>
                 </div>
 
-                {/* 2. QR KOD (Tek Başına, ID Aşağı Taşındı) */}
+                {/* 2. QR KOD */}
                 <div className="flex flex-col items-center justify-center w-full relative shrink-0 print-qr-wrapper">
                   <div className="w-[100px] h-[100px] flex items-center justify-center print-qr-svg">
                       <QRCodeSVG 
@@ -453,10 +448,10 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                     {mainTitle}
                   </h2>
                   
-                  {/* 🚀 ROZET VE ID YAN YANA GELDİ, NEFES ALDIRILDI */}
+                  {/* 🚀 ID VE ROZET (İkisi de renkli modda uyumlu, BW modda siyah/beyaz) */}
                   <div className="flex items-center justify-center gap-2 mb-1.5 w-full flex-wrap print-badge-wrapper">
                     {subTitle && (
-                      <div className={`text-[10px] print-badge font-bold px-2 py-0.5 rounded text-center ${printMode === 'bw' ? 'bg-transparent text-black border-black' : 'bg-slate-100 text-slate-600 border-transparent color-mode'}`}>
+                      <div className={`text-[10px] print-badge font-bold px-2 py-0.5 rounded text-center border ${printMode === 'bw' ? 'bg-transparent text-black border-black' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>
                         {subTitle}
                       </div>
                     )}
@@ -466,7 +461,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                          setIdCopied(true);
                          setTimeout(() => setIdCopied(false), 2000);
                        }}
-                       className={`flex items-center justify-center gap-1.5 text-[10px] print-id-box font-bold tracking-widest uppercase px-2 py-0.5 rounded cursor-pointer transition-colors ${printMode === 'bw' ? 'text-black bg-white border-black' : 'text-slate-600 bg-slate-50 hover:bg-slate-100 border-slate-200'}`}
+                       className={`flex items-center justify-center gap-1.5 text-[10px] print-id-box font-bold tracking-widest uppercase px-2 py-0.5 rounded cursor-pointer transition-colors border ${printMode === 'bw' ? 'text-black bg-white border-black' : 'text-slate-700 bg-slate-50 hover:bg-slate-100 border-slate-200'}`}
                        title="Kodu Kopyalamak İçin Tıklayın"
                     >
                        ID: {asset.id}
@@ -480,18 +475,21 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                   {(landlinePhone || whatsappPhone || companyWebsite) && (
                     <div className="print-info-wrap flex flex-wrap items-center justify-center gap-x-3 gap-y-1 w-full px-1">
                       {landlinePhone && (
-                        <div className={`print-info-text flex items-center gap-1 text-[10px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-800'}`}>
-                          <Phone className={`w-3.5 h-3.5 print-icon ${printMode === 'bw' ? 'text-black' : 'text-slate-500'}`} /> {landlinePhone}
+                        <div className={`print-info-text flex items-center gap-1 text-[10px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-700'}`}>
+                          {/* 🚀 TELEFON İKONU (RENKLİ MODDA MAVİ) */}
+                          <Phone className={`w-3.5 h-3.5 print-icon ${printMode === 'bw' ? 'text-black' : 'text-blue-500'}`} /> {landlinePhone}
                         </div>
                       )}
                       {whatsappPhone && (
-                        <div className={`print-info-text flex items-center gap-1 text-[10px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-800'}`}>
+                        <div className={`print-info-text flex items-center gap-1 text-[10px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-700'}`}>
+                          {/* 🚀 WHATSAPP İKONU (RENKLİ MODDA YEŞİL) */}
                           <FaWhatsapp className={`w-3.5 h-3.5 print-icon ${printMode === 'bw' ? 'text-black' : 'text-[#25D366]'}`} /> {whatsappPhone}
                         </div>
                       )}
                       {companyWebsite && (
-                        <div className={`print-info-text flex items-center gap-1 text-[10px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-600'}`}>
-                          <Globe className={`w-3.5 h-3.5 print-icon ${printMode === 'bw' ? 'text-black' : 'text-slate-500'}`} /> {companyWebsite.replace(/^https?:\/\//, '')}
+                        <div className={`print-info-text flex items-center gap-1 text-[10px] font-bold ${printMode === 'bw' ? 'text-black' : 'text-slate-700'}`}>
+                          {/* 🚀 WEB SİTESİ İKONU (RENKLİ MODDA İNDİGO) */}
+                          <Globe className={`w-3.5 h-3.5 print-icon ${printMode === 'bw' ? 'text-black' : 'text-indigo-500'}`} /> {companyWebsite.replace(/^https?:\/\//, '')}
                         </div>
                       )}
                     </div>
