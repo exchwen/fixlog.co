@@ -56,16 +56,20 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName }:
     
     txt += divider;
     
-    // Periyodik Bakım Form Detayları
+    // 🚀 DİNAMİK FORM DETAYLARI (TÜM SEKTÖRLER İÇİN OTOMATİK ÇALIŞIR)
     if (job.details) {
-        if (job.details.label_color || job.details['Mevcut Etiket']) {
-            txt += 'Etiket Rengi: ' + sanitizeText(job.details.label_color || job.details['Mevcut Etiket']) + '\n';
-        }
-        if (job.details.oil_check || job.details['Ray Yağlama Yapıldı mı?']) {
-            txt += 'Ray Yaglama: ' + sanitizeText(job.details.oil_check || job.details['Ray Yağlama Yapıldı mı?']) + '\n';
-        }
-        if (job.details.brake_check || job.details['Fren Balata Durumu']) {
-            txt += 'Fren Balata: ' + sanitizeText(job.details.brake_check || job.details['Fren Balata Durumu']) + '\n';
+        const excludeKeys = ['note', 'price', 'lastEditedBy', 'lastEditedAt', 'managerName', 'managerId', 'createdBy', 'worker_id', 'assetName'];
+        const formEntries = Object.entries(job.details).filter(([k]) => !excludeKeys.includes(k));
+        
+        if (formEntries.length > 0) {
+            formEntries.forEach(([key, value]) => {
+                // Anahtarı ve değeri termal yazıcıya uygun (ASCII) hale getiriyoruz
+                // Termal kağıt (58mm) dar olduğu için başlıklar 14 karakterden uzunsa kısaltıyoruz ki yan yana sığsın
+                let cleanKey = sanitizeText(key);
+                if (cleanKey.length > 14) cleanKey = cleanKey.substring(0, 14) + '.'; 
+                
+                txt += cleanKey + ': ' + sanitizeText(String(value)) + '\n';
+            });
         }
     }
 
@@ -181,17 +185,34 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName }:
         </div>
 
         <div className="p-6">
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center mb-6">
-                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Önizleme (ESC/POS)</div>
-                <div className="text-xs font-mono text-slate-700 leading-relaxed">
-                    <div>{sanitizeText(companyName)}</div>
-                    <div>--------------------------------</div>
-                    <div className="font-bold">PERIYODIK BAKIM FISI</div>
-                    <div>--------------------------------</div>
-                    <div className="text-left mt-2">
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center mb-6 text-left">
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-center">Önizleme (ESC/POS)</div>
+                <div className="text-[11px] font-mono text-slate-700 leading-relaxed">
+                    <div className="text-center">{sanitizeText(companyName)}</div>
+                    <div className="text-center">--------------------------------</div>
+                    <div className="font-bold text-center">PERIYODIK BAKIM FISI</div>
+                    <div className="text-center">--------------------------------</div>
+                    <div className="mt-2 whitespace-pre-wrap">
                         Tarih: {new Date().toLocaleDateString('tr-TR')} <br/>
                         Musteri: {sanitizeText(job.customer_name || '')} <br/>
-                        Etiket: {sanitizeText(job.details?.label_color || job.details?.['Mevcut Etiket'] || 'Belirtilmedi')}
+                        {(() => {
+                            const assetName = job.asset_name || (job.details?.assetName) || 'Belirtilmedi';
+                            return assetName !== 'Belirtilmedi' ? `Varlik: ${sanitizeText(assetName)}\n` : '';
+                        })()}
+                        --------------------------------<br/>
+                        {(() => {
+                            if (!job.details) return '';
+                            const excludeKeys = ['note', 'price', 'lastEditedBy', 'lastEditedAt', 'managerName', 'managerId', 'createdBy', 'worker_id', 'assetName'];
+                            const formEntries = Object.entries(job.details).filter(([k]) => !excludeKeys.includes(k));
+                            
+                            if (formEntries.length === 0) return '';
+                            
+                            return formEntries.map(([key, value]) => {
+                                let cleanKey = sanitizeText(key);
+                                if (cleanKey.length > 14) cleanKey = cleanKey.substring(0, 14) + '.'; 
+                                return `${cleanKey}: ${sanitizeText(String(value))}`;
+                            }).join('\n');
+                        })()}
                     </div>
                 </div>
             </div>

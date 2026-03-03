@@ -449,128 +449,128 @@ export default function JobDetailModal({
                    <button onClick={() => handleSmartClose()} className="p-2 bg-white rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"><X size={18} /></button>
                 </div>
                 
-                <div id="pdf-printable-area" className={`p-4 sm:p-8 overflow-y-auto custom-scrollbar bg-white text-black flex-1 relative ${printMode === 'bw' ? 'bw-mode' : ''}`}>
-                <div className="border-b-2 border-slate-800 pb-4 mb-6 flex flex-col sm:flex-row justify-between items-start gap-4 sm:gap-0 print-header">
-                       <div className="flex items-center gap-3 sm:gap-4">
-                          {data?.logo && (
-                             <div 
-                                className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center overflow-hidden border border-slate-200 shadow-sm shrink-0"
-                                style={{ backgroundColor: printMode === 'bw' ? '#ffffff' : logoBgColor }}
-                             >
-                                <img 
-                                   src={getSafeImageUrl(data.logo)} 
-                                   alt="Firma Logosu" 
-                                   crossOrigin="anonymous"
-                                   className="w-10 h-10 sm:w-12 sm:h-12 object-contain" 
-                                />
-                             </div>
-                          )}
-                          <div>
-                             <h1 className="text-xl sm:text-2xl font-black leading-tight">{data?.name || 'Firma Adı'}</h1>
-                             <p className="text-xs sm:text-sm text-slate-500 mt-1 print-text-black">{data?.address}</p>
-                             <p className="text-[10px] sm:text-xs font-bold text-slate-400 mt-0.5 print-text-black">{data?.phone}</p>
-                          </div>
-                       </div>
-                       <div className="text-left sm:text-right print-header-right">
-                          <div className="text-lg sm:text-xl font-black text-slate-900 tracking-widest">SERVİS FORMU</div>
-                          <div className="text-xs sm:text-sm font-bold mt-1">Kayıt No: #{previewPdfJob.id}</div>
-                          <div className="text-[10px] sm:text-xs text-slate-500 mt-0.5 print-text-black">{new Date().toLocaleDateString('tr-TR')}</div>
-                       </div>
-                    </div>
+                <div id="pdf-printable-area" className={`p-6 sm:p-10 overflow-y-auto custom-scrollbar bg-white text-black flex-1 relative ${printMode === 'bw' ? 'bw-mode' : ''}`}>
                     
-                    {(() => {
-                        const isPdfGeneral = previewPdfJob.work_type === 'Genel Görev' || previewPdfJob.work_type === 'Görev' || !previewPdfJob.customer_name || previewPdfJob.customer_name === 'Genel Görev';
-                        const showCust = !(isPdfGeneral && (!previewPdfJob.customer_name || previewPdfJob.customer_name === 'Genel Görev'));
-                        const showAsset = !(isPdfGeneral && !previewPdfJob.asset_id);
-                        
-                        if (!showCust && !showAsset) return null;
-                        
-                        return (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 print-grid">
-                               {showCust && (
-                                   <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print-no-bg">
-                                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">Müşteri Bilgisi</div>
-                                      <div className="font-bold text-sm text-slate-800">{previewPdfJob.customer_name}</div>
-                                   </div>
-                               )}
-                               {showAsset && (
-                                   <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print-no-bg">
-                                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">Cihaz / Apartman</div>
-                                      <div className="font-bold text-sm text-slate-800">
-                                          {(() => {
-                                              const asset = (data?.assets || []).find((a:any) => a.id === previewPdfJob.asset_id);
-                                              return asset ? `${asset.name} ${asset.apartmentName ? `- ${asset.apartmentName}` : ''}` : 'Belirtilmedi';
-                                          })()}
-                                      </div>
-                                   </div>
-                               )}
-                            </div>
-                        );
-                    })()}
-
-                    {/* 🚀 EKLENDİ: Atayan, Sorumlu ve Usta Bilgileri PDF'te Görüntülenecek */}
-                    {(() => {
-                        const creator = previewPdfJob.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
-                        let managerName = previewPdfJob.manager_name || null;
-                        let finalWorkerName = previewPdfJob.worker_name || null;
-
-                        if (!finalWorkerName) {
-                            if (previewPdfJob.details?.worker_id) {
-                                const w = (data?.staff || []).find((s:any) => String(s.id) === String(previewPdfJob.details?.worker_id));
-                                if (w) finalWorkerName = w.name;
-                            } else if (previewPdfJob.staff_id) {
-                                const w = (data?.staff || []).find((s:any) => String(s.id) === String(previewPdfJob.staff_id));
-                                if (w && w.role === 'Usta') finalWorkerName = w.name;
-                            }
-                        }
-
-                        return (
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8 print-grid">
-                               <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print-no-bg">
-                                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">İşi Atayan</div>
-                                  <div className="font-bold text-sm text-slate-800">{creator}</div>
-                               </div>
-                               <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print-no-bg">
-                                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">Sorumlu Yönetici</div>
-                                  <div className="font-bold text-sm text-slate-800">{managerName || '-'}</div>
-                               </div>
-                               <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl print-no-bg">
-                                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">Saha Ustası</div>
-                                  <div className="font-bold text-sm text-slate-800">{finalWorkerName || '-'}</div>
-                               </div>
-                            </div>
-                        );
-                    })()}
-
-                    <div className="mb-8">
-                       <div className="text-xs font-black text-slate-800 uppercase border-b border-slate-200 pb-2 mb-3">Yapılan İşlem / Rapor Detayı</div>
-                       <div className="text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed print-text-black">
-                           {previewPdfJob.details?.note?.replace(/\[📍 Konum Kaydı\].*/g, '') || 'Rapor girilmemiş.'}
-                       </div>
+                    {/* 🚀 PREMIUM LOGO & BAŞLIK (ORTALANMIŞ) */}
+                    <div className="flex flex-col items-center justify-center mb-6 text-center">
+                        {data?.logo && (
+                            <img 
+                                src={getSafeImageUrl(data.logo)} 
+                                alt="Firma Logosu" 
+                                crossOrigin="anonymous"
+                                className="h-16 sm:h-20 object-contain mb-3" 
+                            />
+                        )}
+                        <h1 className="text-xl font-black uppercase tracking-widest">{data?.name || 'Firma Adı'}</h1>
+                        <h2 className="text-lg font-bold mt-1 text-slate-800">{previewPdfJob.work_type === 'Periyodik Bakım' ? 'Bakım Fişi' : 'Servis Raporu'}</h2>
                     </div>
 
-                    {previewPdfJob.details?.price && (
-                      <div className="flex justify-end border-t-2 border-slate-800 pt-4 mb-8">
-                         <div className="text-right">
-                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 print-text-gray">Toplam İşlem Tutarı</div>
-                            <div className="text-3xl font-black text-slate-900">{previewPdfJob.details.price}</div>
-                         </div>
-                      </div>
-                    )}
+                    {/* 🚀 ÜST BİLGİLER (KAYIT NO, TARİH, TESİS) */}
+                    <div className="grid grid-cols-3 gap-2 text-sm font-medium border-b-2 border-slate-800 pb-4 mb-6">
+                        <div className="col-span-3 sm:col-span-1 flex items-center justify-between sm:block">
+                            <div className="text-xs text-slate-500 font-bold">Fiş Numarası</div>
+                            <div className="font-black">#{previewPdfJob.id}</div>
+                        </div>
+                        <div className="col-span-3 sm:col-span-1 flex items-center justify-between sm:block">
+                            <div className="text-xs text-slate-500 font-bold">Tarih</div>
+                            <div className="font-black">{new Date(previewPdfJob.created_at || Date.now()).toLocaleString('tr-TR')}</div>
+                        </div>
+                        <div className="col-span-3 sm:col-span-1 flex items-center justify-between sm:block">
+                            <div className="text-xs text-slate-500 font-bold">Tesis Adı</div>
+                            <div className="font-black leading-tight text-right sm:text-left">
+                                {(() => {
+                                    const asset = (data?.assets || []).find((a:any) => a.id === previewPdfJob.asset_id);
+                                    return asset ? `${asset.apartmentName || asset.name}` : (previewPdfJob.customer_name || 'Bilinmiyor');
+                                })()}
+                            </div>
+                        </div>
+                    </div>
 
-                    {/* FOTOĞRAFLARIN PDF'E EKLENMESİ */}
+                    {/* 🚀 DİNAMİK KONTROL LİSTESİ (CHECKLIST GÖRÜNÜMÜ) */}
+                    {(() => {
+                        if (!previewPdfJob.details) return null;
+                        
+                        // Sisteme ait özel fieldları filtreliyoruz (Sadece ustanın doldurduğu form alanları kalsın)
+                        const excludeKeys = ['note', 'price', 'lastEditedBy', 'lastEditedAt', 'managerName', 'managerId', 'createdBy', 'worker_id', 'assetName'];
+                        const formEntries = Object.entries(previewPdfJob.details).filter(([k]) => !excludeKeys.includes(k));
+                        
+                        if (formEntries.length === 0) return null;
+
+                        return (
+                            <div className="mb-6">
+                                <div className="text-xs font-black text-slate-800 uppercase border-b border-slate-200 pb-2 mb-3">Kontrol Edilen Aksamlar</div>
+                                <div className="space-y-1">
+                                    {formEntries.map(([key, value], idx) => (
+                                        <div key={idx} className="flex justify-between items-center py-2.5 border-b border-slate-100 last:border-0 text-sm">
+                                            <span className="font-semibold text-slate-700">{key}</span>
+                                            <span className="font-black flex items-center gap-3 text-slate-900">
+                                                {String(value)}
+                                                <div className="text-slate-800"><CheckCircle size={18} strokeWidth={3} /></div>
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })()}
+
+                    {/* 🚀 BAKIM NOTU VE FİYAT (YAN YANA VEYA ALT ALTA) */}
+                    <div className="mb-8 mt-6">
+                        <div className="flex flex-col sm:flex-row sm:items-start gap-4 bg-slate-50 p-4 rounded-xl print-no-bg border border-slate-200">
+                            <div className="flex-1">
+                                <span className="text-xs font-black text-slate-800 uppercase tracking-widest block mb-1">Bakım / Servis Notu:</span>
+                                <span className="text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed">
+                                    {previewPdfJob.details?.note?.replace(/\[📍 Konum Kaydı\].*/g, '') || 'Rapor girilmemiş.'}
+                                </span>
+                            </div>
+                            
+                            {previewPdfJob.details?.price && (
+                                <div className="shrink-0 text-left sm:text-right mt-4 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-slate-200">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Toplam Tutar</span>
+                                    <span className="text-2xl font-black text-slate-900">{previewPdfJob.details.price}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* 🚀 FOTOĞRAFLAR (Varsa) */}
                     {previewPdfJob.photos && previewPdfJob.photos.length > 0 && (
-                       <div className="mt-8 pt-6 border-t-2 border-slate-200 print-always-break">
+                       <div className="mb-8 print-always-break">
                           <div className="text-xs font-black text-slate-800 uppercase pb-4">Saha Kayıt Fotoğrafları</div>
                           <div className="grid grid-cols-2 gap-4 print-grid">
                              {previewPdfJob.photos.map((p: string, i: number) => (
                                <div key={i} className="page-break-avoid w-full">
-                                  <img src={p} alt="Saha" className="w-full h-auto max-h-64 object-contain rounded-lg border border-slate-300" />
+                                  <img src={p} alt="Saha" className="w-full h-auto max-h-64 object-contain rounded-lg border border-slate-300" crossOrigin="anonymous" />
                                </div>
                              ))}
                           </div>
                        </div>
                     )}
+
+                    {/* 🚀 ELEKTRONİK İMZA ALANI (En Altta Mühür Gibi) */}
+                    {previewPdfJob.signature_url && (
+                        <div className="mt-8 pt-6 border-t-2 border-slate-800 text-center page-break-avoid flex flex-col items-center">
+                            <p className="text-xs text-slate-500 mb-6 italic max-w-md">
+                                Bu form <strong className="text-slate-700">{previewPdfJob.worker_name || 'personelimiz'}</strong> tarafından, {new Date(previewPdfJob.created_at || Date.now()).toLocaleString('tr-TR')} tarihinde müşteri nezaretinde elektronik imza ile imza altına alınmıştır.
+                            </p>
+                            <div className="flex flex-col items-center justify-center">
+                                <div className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">İmzalayan:</span> 
+                                    {previewPdfJob.customer_signature_name}
+                                </div>
+                                <img 
+                                    src={previewPdfJob.signature_url} 
+                                    alt="Müşteri İmzası" 
+                                    className="h-24 object-contain mix-blend-multiply" 
+                                    crossOrigin="anonymous" 
+                                />
+                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-4">
+                                    {data?.name || 'Firma Adı'}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                 </div>
 
                 <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row gap-3 no-print z-10">

@@ -10,8 +10,20 @@
           "Periyodik Bakım": {
             "fields": [
               { "name": "label_color", "label": "Mevcut Etiket", "type": "select", "options": ["Kırmızı", "Sarı", "Mavi", "Yeşil"] },
-              { "name": "oil_check", "label": "Ray Yağlama Yapıldı mı?", "type": "select", "options": ["Evet", "Hayır"] },
-              { "name": "brake_check", "label": "Fren Balata Durumu", "type": "text" }
+              { "name": "pit_check", "label": "Kuyu alt boşluğu (KUYU DİBİ)", "type": "select", "options": ["Uygun", "Değil"] },
+              { "name": "splash_guard", "label": "Sıçramaya karşı tertibat ve anahtar", "type": "select", "options": ["Uygun", "Değil", "Yok"] },
+              { "name": "motor_gen", "label": "Tahrik motoru / Jeneratör", "type": "select", "options": ["Uygun", "Değil"] },
+              { "name": "drive_sheave", "label": "Tahrik kasnağı", "type": "select", "options": ["Uygun", "Değil"] },
+              { "name": "brake_sys", "label": "Fren", "type": "select", "options": ["Uygun", "Değil"] },
+              { "name": "rope_pulleys", "label": "Ana halat saptırma makarası", "type": "select", "options": ["Uygun", "Değil"] },
+              { "name": "guide_rails", "label": "Kabin / Karşı ağırlık kılavuzları", "type": "select", "options": ["Uygun", "Değil"] },
+              { "name": "electrical_inst", "label": "Elektrik tesisatı", "type": "select", "options": ["Uygun", "Değil"] },
+              { "name": "safety_gear", "label": "Güvenlik tertibatları (Hız Reg.)", "type": "select", "options": ["Uygun", "Değil"] },
+              { "name": "suspension_ropes", "label": "Askı halatları / zincirleri", "type": "select", "options": ["Uygun", "Değil"] },
+              { "name": "rope_fixing", "label": "Halat / zincir tespit noktası", "type": "select", "options": ["Uygun", "Değil"] },
+              { "name": "cabin_door", "label": "Asansör kabin kapısı", "type": "select", "options": ["Uygun", "Değil"] },
+              { "name": "hoistway_light", "label": "Asansör boşluğu aydınlatması", "type": "select", "options": ["Uygun", "Değil"] },
+              { "name": "oil_check", "label": "Ray Yağlama Yapıldı mı?", "type": "select", "options": ["Evet", "Hayır"] }
             ]
           },
           "Arıza Giderme": {
