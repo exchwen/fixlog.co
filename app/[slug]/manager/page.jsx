@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, AlertTriangle, Filter, ShieldAlert, MapPin, Check, WifiOff, Download, Share } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, Filter, ShieldAlert, MapPin, Check, WifiOff, Download, Share, X } from 'lucide-react';
 
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
@@ -62,6 +62,9 @@ export default function ManagerDashboard() {
 
   // Filtreleme
   const [stockCategory, setStockCategory] = useState('Tümü');
+
+  // 🚀 ŞIK HATA MODALI İÇİN STATE
+  const [showErrorModal, setShowErrorModal] = useState({ show: false, message: '' });
 
   // =================================================================================
   // 1. MODAL VISIBILITY STATES
@@ -277,6 +280,7 @@ export default function ManagerDashboard() {
         setShowQRModal(false);
         setPreviewPdfJob(null);
         setFullScreenImage(null);
+        setShowErrorModal({show: false, message: ''}); // ESC basınca hata modalı da kapansın
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -284,8 +288,20 @@ export default function ManagerDashboard() {
   }, []);
 
   const handleAction = async (endpoint, body, closeFn, resetFn) => {
+    // 🚀 YÖNETİCİ KISITLAMALARI VE ŞIK UYARI MODALI
     if (endpoint.startsWith('delete-') || endpoint === 'update-settings') {
-        alert("Yetkisiz İşlem: Yöneticiler veri silemez veya firma ayarlarını değiştiremez. Lütfen Patron ile iletişime geçin.");
+        setShowErrorModal({
+            show: true, 
+            message: 'Yöneticilerin sistemden veri silme veya firma ayarlarını değiştirme yetkisi yoktur. Bu işlem için lütfen sistem yöneticisi (Patron) ile iletişime geçin.'
+        });
+        return false;
+    }
+
+    if (endpoint === 'add-staff') {
+        setShowErrorModal({
+            show: true,
+            message: 'Sisteme yeni personel ekleme ve personel yetkilendirme işlemleri sadece sistem yöneticisi (Patron) tarafından yapılabilir.'
+        });
         return false;
     }
 
@@ -313,10 +329,17 @@ export default function ManagerDashboard() {
         await fetchData(true); 
         return true; 
       } else { 
-        alert("İşlem reddedildi. Yetkiniz olmayabilir."); return false; 
+        // Backend'den 403 (Yetki Hatası) dönerse yakala ve şık göster
+        if (res.status === 403) {
+            setShowErrorModal({ show: true, message: 'Bu işlemi gerçekleştirmek için yeterli yetkiniz bulunmamaktadır.' });
+        } else {
+            setShowErrorModal({ show: true, message: 'İşlem reddedildi. Bir hata oluştu.' });
+        }
+        return false; 
       }
     } catch (err) { 
-      alert("Bağlantı hatası. İşlem kaydedilemedi."); return false; 
+        setShowErrorModal({ show: true, message: 'Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin.' });
+        return false; 
     } finally { setIsSaving(false); }
   };
 
@@ -331,7 +354,7 @@ export default function ManagerDashboard() {
   // Yönetici kısıtlaması (Ayarlar'a erişemez)
   useEffect(() => {
       if (activeTab === 'settings') {
-          alert("Yetkisiz Erişim: Sadece Patron firma ayarlarını görüntüleyebilir.");
+          setShowErrorModal({ show: true, message: 'Sadece yetkili Patron hesabı firma ayarlarına erişebilir.' });
           setActiveTab('home');
       }
   }, [activeTab]);
@@ -363,6 +386,7 @@ export default function ManagerDashboard() {
   return (
     <div className={`min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 manager-scope ${hasEmergency ? 'bg-rose-950' : 'bg-[#F8FAFC] text-slate-900'}`}>
       
+      {/* YÖNETİCİ KISITLAMALARI İÇİN CSS (SİLME VE AYAR BUTONLARINI GİZLER) */}
       <style dangerouslySetInnerHTML={{__html: `
         .manager-scope button:has(svg.lucide-trash-2),
         .manager-scope button:has(svg.lucide-trash2),
@@ -370,7 +394,43 @@ export default function ManagerDashboard() {
         .manager-scope nav button:has(svg.lucide-settings) { display: none !important; }
       `}} />
 
-      {/* 🟢 DÜZELTME: patron.jsx ile uyumlu PWA prompt yapısı */}
+      {/* 🚀 ŞIK YETKİ HATASI MODALI (ALERTS YERİNE) */}
+      <AnimatePresence>
+        {showErrorModal.show && (
+            <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm pointer-events-auto"
+            >
+                <motion.div 
+                    initial={{ scale: 0.9, y: 10 }}
+                    animate={{ scale: 1, y: 0 }}
+                    exit={{ scale: 0.9, y: 10 }}
+                    className="bg-white max-w-sm w-full rounded-2xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col"
+                >
+                    <div className="bg-rose-50 border-b border-rose-100 p-6 flex flex-col items-center justify-center text-center">
+                        <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-3 shadow-inner">
+                            <ShieldAlert size={32} />
+                        </div>
+                        <h3 className="text-xl font-black text-rose-900">Yetkisiz İşlem!</h3>
+                    </div>
+                    <div className="p-6 text-center text-slate-600 font-medium leading-relaxed">
+                        {showErrorModal.message}
+                    </div>
+                    <div className="p-4 bg-slate-50 border-t border-slate-100">
+                        <button 
+                            onClick={() => setShowErrorModal({ show: false, message: '' })}
+                            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 shadow-md"
+                        >
+                            Anladım
+                        </button>
+                    </div>
+                </motion.div>
+            </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {showPwaPrompt && !hasEmergency && activeTab === 'home' && (
            <motion.div 
@@ -437,7 +497,6 @@ export default function ManagerDashboard() {
              <ShieldCheck size={14} /> Yönetici Yetkisi
           </div>
 
-          {/* 🟢 DÜZELTME: patron.jsx ile uyumlu, eksik proplar eklendi */}
           {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} handleAction={handleAction} setJobModalType={setJobModalType} />}
           {activeTab === 'my-jobs' && <MyJobsTab data={data} setShowJobModal={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} handleAction={handleAction} setJobModalType={setJobModalType} />}
           {activeTab === 'jobs' && <JobsTab data={data} setShowJobModal={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} setJobModalType={setJobModalType} handleAction={handleAction} />}

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Briefcase, MapPin, CheckCircle, PlayCircle, 
     ArrowUpRight, User, Wrench, Loader2, 
-    UserPlus, Check, Calendar, Activity, AlertTriangle, CheckSquare, Clock, Eye, ShieldCheck, UserCheck // 🚀 ShieldCheck ve UserCheck eklendi
+    UserPlus, Check, Calendar, Activity, AlertTriangle, CheckSquare, Clock, Eye, ShieldCheck, UserCheck, Box
   } from 'lucide-react';
 
 interface Job {
@@ -155,7 +155,23 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
 
   const handleOpenModal = (job: Job) => {
     setSelectedJob(job);
-};
+  };
+
+  const formatDateTime = (dateString?: string) => {
+      if (!dateString) return 'Tarih Yok';
+      try {
+          const date = new Date(dateString);
+          return new Intl.DateTimeFormat('tr-TR', { 
+              day: '2-digit', 
+              month: 'short', 
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+          }).format(date);
+      } catch (e) {
+          return dateString.split('T')[0];
+      }
+  };
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 relative pb-20">
@@ -201,11 +217,10 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                  {incomingJobs.map((job: any) => (
                     <div key={job.id} onClick={() => handleOpenModal(job)} className="bg-amber-950/40 border border-amber-300/30 rounded-2xl p-4 cursor-pointer hover:bg-amber-950/60 transition-colors group">
                         <div className="flex justify-between items-start mb-2">
-                            <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-white/20 text-white">{job.work_type}</span>
-                            <span className="text-[10px] font-bold opacity-70">{job.created_at?.split('T')[0]}</span>
+                            <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-amber-400 text-amber-950">{job.work_type}</span>
+                            <span className="text-[10px] font-bold opacity-70 flex items-center gap-1"><Clock size={10} /> {formatDateTime(job.created_at || job.scheduled_date)}</span>
                         </div>
                         
-                        {/* 🚀 EKLENDİ: Müşteri, Apartman ve Cihaz Türü Birlikte */}
                         <div className="mb-3">
                             <h4 className="font-black text-white leading-tight mb-0.5 line-clamp-2">
                                 {(() => {
@@ -214,7 +229,8 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                                     return aptName ? <><span className="text-amber-200">{aptName}</span> - {job.customer_name}</> : job.customer_name;
                                 })()}
                             </h4>
-                            <div className="text-[10px] font-bold text-amber-200 truncate">
+                            <div className="text-[10px] font-bold text-amber-200 truncate flex items-center gap-1 mt-1">
+                                <Box size={10}/>
                                 {(() => {
                                     const asset = assets.find((a: any) => String(a.id) === String(job.asset_id));
                                     return asset ? asset.name : 'Genel Görev / Varlık Yok';
@@ -258,17 +274,18 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                     >
                         <div>
                              <div className="flex justify-between items-start mb-3">
-                                <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-600 border border-indigo-100">
-                                    Atama Bekliyor
+                                <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center gap-1">
+                                    <Briefcase size={12}/> {job.work_type}
                                 </span>
-                                <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded">
-                                    {job.details?.scheduledDate ? new Date(job.details.scheduledDate).toLocaleDateString('tr-TR') : 'Tarih Yok'}
+                                <span className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded flex items-center gap-1 border border-slate-100">
+                                   <Clock size={10}/> {formatDateTime(job.details?.scheduledDate || job.created_at)}
                                 </span>
                             </div>
                             <h4 className="text-lg font-black text-slate-800 leading-tight mb-2 line-clamp-2">
                                 {aptName ? <><span className="text-indigo-600">{aptName}</span> - {job.customer_name}</> : job.customer_name}
                             </h4>
-                            <div className="text-xs font-bold text-slate-500 mb-3 truncate">
+                            <div className="text-xs font-bold text-slate-500 mb-3 truncate flex items-center gap-1.5">
+                                <Box size={14} className="text-slate-400"/>
                                 {currentAsset ? currentAsset.name : 'Genel Görev / Cihaz Yok'}
                             </div>
                             
@@ -277,17 +294,6 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                                     <MapPin size={14} className="text-indigo-400 shrink-0 mt-0.5"/> 
                                     <span>{currentAsset ? currentAsset.location : 'Lokasyon bilgisi bulunmuyor'}</span>
                                 </p>
-                                {currentAsset?.location && (
-                                    <button 
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            window.open(`https://maps.google.com/?q=${encodeURIComponent(currentAsset.location)}`, '_blank');
-                                        }}
-                                        className="text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50/50 hover:bg-blue-100 border border-blue-100 px-2 py-1.5 rounded-lg w-fit transition-colors flex items-center gap-1 mt-1"
-                                    >
-                                        <MapPin size={12} /> Haritada Göster
-                                    </button>
-                                )}
                             </div>
                         </div>
                         
@@ -307,7 +313,7 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
       {/* 3. BÖLÜM: TABLOLAR (DEVAM EDEN & TAMAMLANAN) */}
       <div className="space-y-8 pt-2">
           
-          {/* TABLO 1: DEVAM EDEN & TAKİPTEKİ İŞLER (GÜNCELLENDİ) */}
+          {/* TABLO 1: DEVAM EDEN & TAKİPTEKİ İŞLER */}
           <div className="bg-white rounded-3xl border border-blue-100 shadow-sm overflow-hidden">
               <div className="p-5 bg-blue-50/50 border-b border-blue-100 flex items-center gap-2">
                   <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><Activity size={18} /></div>
@@ -322,8 +328,8 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                       <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
                           <tr>
                               <th className="px-6 py-4 border-b border-slate-100">Müşteri / İş Detayı</th>
+                              <th className="px-6 py-4 border-b border-slate-100">İş Türü & Tarih</th>
                               <th className="px-6 py-4 border-b border-slate-100">Saha Ustası</th>
-                              <th className="px-6 py-4 border-b border-slate-100">Planlanan Tarih</th>
                               <th className="px-6 py-4 border-b border-slate-100 text-right">Durum</th>
                               <th className="px-6 py-4 border-b border-slate-100"></th>
                           </tr>
@@ -331,12 +337,10 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                       <tbody className="divide-y divide-slate-50">
                           {ongoingJobs.length > 0 ? ongoingJobs.map((job: any) => {
                               
-                              // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA (Tertemiz)
                               const creator = job.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
                               const manager = job.manager_name || null;
                               let worker = job.worker_name || null;
 
-                              // Eğer D1'de worker_name yoksa (eski veri ihtimali)
                               if (!worker) {
                                   if (job.details?.worker_id) {
                                       const w = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
@@ -347,10 +351,8 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                                   }
                               }
 
-                              const isCreatorSameAsManager = manager && creator === manager;
                               const staffColor = 'text-amber-600 bg-amber-50 border-amber-200';
                               
-                              // AKILLI DURUM METNİ (Yönetici Gözüyle)
                               let displayStatus = job.status;
                               let statusClass = 'bg-blue-50 text-blue-700 border-blue-200';
                               let StatusIcon = Activity;
@@ -365,7 +367,7 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                                       statusClass = 'bg-indigo-50 text-indigo-700 border-indigo-200';
                                       StatusIcon = Wrench;
                                   } else {
-                                      displayStatus = 'Siz Çalışıyorsunuz'; // Yönetici kendi üzerine aldıysa
+                                      displayStatus = 'Siz Çalışıyorsunuz'; 
                                   }
                               } else if (job.status === 'Onay Bekliyor') {
                                   displayStatus = 'Onayınız Bekleniyor';
@@ -382,16 +384,28 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                                         <div className="font-bold text-slate-800 text-sm leading-tight max-w-[250px] truncate">
                                           {aptName ? <><span className="text-blue-600">{aptName}</span> - {job.customer_name}</> : job.customer_name}
                                         </div>
-                                        <div className="text-[11px] font-black text-slate-600 mt-1 mb-1.5 truncate max-w-[250px]">
+                                        <div className="text-[11px] font-black text-slate-600 mt-1 mb-1.5 flex items-center gap-1.5 truncate max-w-[250px]">
+                                          <Box size={12} className="text-blue-400" />
                                           {currentAsset ? currentAsset.name : 'Genel Görev / Varlık Yok'}
                                         </div>
-                                        <div className="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 mb-1.5 truncate max-w-[250px]">
+                                        <div className="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 truncate max-w-[250px]">
                                           <MapPin size={12} className="shrink-0" />
                                           <span className="truncate">{currentAsset ? currentAsset.location : 'Lokasyon Yok'}</span>
                                         </div>
-                                        <div className="text-[9px] text-slate-400 font-medium uppercase tracking-wide bg-slate-100 px-2 py-0.5 rounded w-fit">{job.work_type}</div>
                                     </td>
                                     
+                                    {/* YENİ EKLENEN TARİH VE İŞ TÜRÜ SÜTUNU */}
+                                    <td className="px-6 py-4">
+                                        <div className="flex flex-col gap-1.5">
+                                            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded-md border border-blue-100 w-fit flex items-center gap-1">
+                                                <Briefcase size={10} /> {job.work_type}
+                                            </span>
+                                            <span className="text-[10px] font-medium text-slate-600 flex items-center gap-1">
+                                                <Clock size={10} className="text-slate-400" /> {formatDateTime(job.created_at || job.scheduled_date)}
+                                            </span>
+                                        </div>
+                                    </td>
+
                                     <td className="px-6 py-4">
                                       <div className="flex flex-col gap-2 w-fit">
                                           {manager === creator ? (
@@ -447,12 +461,7 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                                           </div>
                                       </div>
                                     </td>
-                                      <td className="px-6 py-4 font-medium text-slate-600">
-                                          <div className="flex items-center gap-1.5">
-                                              <Calendar size={14} className="text-slate-400"/>
-                                              {job.scheduled_date || 'Anlık / Acil'}
-                                          </div>
-                                      </td>
+                                      
                                       <td className="px-6 py-4 text-right">
                                           <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase border inline-flex items-center gap-1.5 shadow-sm ${statusClass}`}>
                                               <StatusIcon size={12} />
@@ -475,7 +484,6 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
               <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50">
                   {ongoingJobs.length > 0 ? ongoingJobs.map((job: any) => {
                       
-                      // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA (Tertemiz)
                       const creator = job.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
                       const manager = job.manager_name || null;
                       let worker = job.worker_name || null;
@@ -490,7 +498,6 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                           }
                       }
 
-                      const isCreatorSameAsManager = manager && creator === manager;
                       const staffColor = 'text-amber-600 bg-amber-50 border-amber-200';
                       
                       let displayStatus = job.status;
@@ -513,24 +520,32 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                       return (
                         <div key={job.id} onClick={() => handleOpenModal(job)} className="bg-white rounded-xl border border-blue-100 p-4 shadow-sm flex flex-col gap-4 active:scale-95 transition-all cursor-pointer">
                            <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
-                              <div className="min-w-0 pr-2 flex flex-col gap-1 w-full">
+                              <div className="min-w-0 pr-2 flex flex-col gap-1.5 w-full">
                                 <div className="font-black text-slate-800 text-sm line-clamp-2">
                                   {aptName ? <><span className="text-blue-600">{aptName}</span> - {job.customer_name}</> : job.customer_name}
                                 </div>
-                                <div className="text-[11px] font-bold text-slate-600 truncate">
+                                <div className="text-[11px] font-bold text-slate-600 truncate flex items-center gap-1.5">
+                                  <Box size={12} className="text-blue-400" />
                                   {currentAsset ? currentAsset.name : 'Genel Görev / Varlık Yok'}
                                 </div>
-                                <div className="text-[10px] text-slate-500 font-medium flex items-start gap-1.5 line-clamp-2 mb-1">
+                                <div className="text-[10px] text-slate-500 font-medium flex items-start gap-1.5 line-clamp-2">
                                   <MapPin size={12} className="shrink-0 mt-0.5 text-slate-400" />
                                   <span>{currentAsset ? currentAsset.location : 'Lokasyon Yok'}</span>
-                                </div>
-                                <div className="text-[10px] font-bold text-slate-500 mt-0.5 uppercase tracking-wider truncate bg-slate-50 w-fit px-2 py-0.5 rounded border border-slate-100">
-                                  {job.work_type}
                                 </div>
                               </div>
                               <span className={`px-2 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider border shrink-0 shadow-sm ${statusClass}`}>
                                 {displayStatus}
                               </span>
+                           </div>
+
+                           {/* İŞ TÜRÜ VE TARİH MOBİL */}
+                           <div className="flex items-center gap-2">
+                               <div className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-100 w-fit flex items-center gap-1 uppercase tracking-wider">
+                                  {job.work_type}
+                               </div>
+                               <div className="text-[10px] font-medium text-slate-500 bg-slate-50 px-2 py-1 rounded border border-slate-100 flex items-center gap-1 w-fit">
+                                  <Clock size={10} className="text-slate-400"/> {formatDateTime(job.created_at || job.scheduled_date)}
+                               </div>
                            </div>
 
                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-2.5">
@@ -573,13 +588,6 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                                     </div>
                                 </div>
                              </div>
-
-                           <div className="flex items-center justify-between border-t border-slate-50 pt-2 mt-1">
-                              <div className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-md border border-slate-100 flex items-center gap-1.5 w-fit">
-                                 <Calendar size={12} className={displayStatus === 'Gecikti' ? 'text-rose-500' : 'text-slate-400'}/> {job.scheduled_date || 'Tarih Yok'}
-                              </div>
-                              <ArrowUpRight size={16} className="text-blue-500" />
-                           </div>
                         </div>
                       );
                   }) : <div className="text-center p-6 text-slate-400 text-sm font-medium">Kayıt yok.</div>}
@@ -599,8 +607,8 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                       <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
                           <tr>
                               <th className="px-6 py-4 border-b border-slate-100">Müşteri / İş</th>
+                              <th className="px-6 py-4 border-b border-slate-100">İş Türü & Bitiş Tarihi</th>
                               <th className="px-6 py-4 border-b border-slate-100">Tamamlayan Usta</th>
-                              <th className="px-6 py-4 border-b border-slate-100">Bitiş Tarihi</th>
                               <th className="px-6 py-4 border-b border-slate-100 text-right">Tutar</th>
                           </tr>
                       </thead>
@@ -613,7 +621,6 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                                   worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
                               }
 
-                              // 🚀 Varlık ve Apartman adını çekiyoruz
                               const currentAsset = assets.find((a: any) => String(a.id) === String(job.asset_id));
                               const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
 
@@ -623,21 +630,28 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                                           <div className="font-bold text-slate-800 text-sm leading-tight max-w-[250px] truncate">
                                             {aptName ? <><span className="text-emerald-600">{aptName}</span> - {job.customer_name}</> : job.customer_name}
                                           </div>
-                                          <div className="text-[10px] text-slate-500 font-bold mt-1 mb-1 truncate max-w-[250px]">
+                                          <div className="text-[10px] text-slate-500 font-bold mt-1.5 flex items-center gap-1.5 truncate max-w-[250px]">
+                                            <Box size={12} className="text-emerald-500"/>
                                             {currentAsset ? currentAsset.name : 'Genel Görev'}
                                           </div>
-                                          <div className="text-[9px] text-slate-400 font-medium mt-1 uppercase tracking-wide bg-slate-100 px-2 py-0.5 rounded w-fit">{job.work_type}</div>
+                                      </td>
+                                      <td className="px-6 py-4">
+                                          <div className="flex flex-col gap-1.5">
+                                              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 w-fit">
+                                                  {job.work_type}
+                                              </span>
+                                              <span className="font-medium text-slate-600 text-[10px] flex items-center gap-1">
+                                                  <Clock size={10} className="text-slate-400" /> {formatDateTime(job.updated_at || job.created_at)}
+                                              </span>
+                                          </div>
                                       </td>
                                       <td className="px-6 py-4">
                                           {worker ? (
-                                              <span className="font-bold text-slate-700 text-xs bg-slate-100 px-2 py-1 rounded border border-slate-200">{worker.name}</span>
+                                              <span className="font-bold text-slate-700 text-xs bg-slate-100 px-2 py-1 rounded border border-slate-200 flex items-center gap-1 w-fit"><User size={12} className="text-slate-400"/> {worker.name}</span>
                                           ) : <span className="text-slate-400 italic">-</span>}
                                       </td>
-                                      <td className="px-6 py-4 font-medium text-slate-600">
-                                          {job.updated_at ? new Date(job.updated_at).toLocaleDateString('tr-TR') : '-'}
-                                      </td>
                                       <td className="px-6 py-4 text-right">
-                                          <span className="font-black text-emerald-600 text-sm bg-emerald-50 px-2 py-1 rounded border border-emerald-100">
+                                          <span className="font-black text-emerald-600 text-sm bg-emerald-50 px-2 py-1 rounded border border-emerald-100 shadow-sm">
                                             {job.details?.price ? `${job.details.price}` : 'Ücretsiz'}
                                           </span>
                                       </td>
@@ -660,34 +674,38 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                           worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
                       }
 
-                      // 🚀 Varlık ve Apartman adını çekiyoruz
                       const currentAsset = assets.find((a: any) => String(a.id) === String(job.asset_id));
                       const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
 
                       return (
                         <div key={job.id} onClick={() => handleOpenModal(job)} className="bg-white rounded-xl border border-emerald-100 p-4 shadow-sm flex flex-col gap-3 active:scale-95 transition-all cursor-pointer">
-                           <div className="flex justify-between items-start gap-2">
+                           <div className="flex justify-between items-start gap-2 border-b border-slate-50 pb-2">
                               <div className="min-w-0 pr-2">
                                 <div className="font-bold text-slate-800 text-sm line-clamp-2">
                                   {aptName ? <><span className="text-emerald-600">{aptName}</span> - {job.customer_name}</> : job.customer_name}
                                 </div>
-                                <div className="text-[10px] text-slate-500 font-bold mt-1 mb-1 truncate">
+                                <div className="text-[10px] text-slate-500 font-bold mt-1.5 flex items-center gap-1.5 truncate">
+                                  <Box size={12} className="text-emerald-500"/>
                                   {currentAsset ? currentAsset.name : 'Genel Görev'}
                                 </div>
-                                <div className="text-[9px] text-slate-400 font-medium uppercase tracking-wide bg-slate-100 px-2 py-0.5 rounded w-fit">{job.work_type}</div>
                               </div>
-                              <span className="px-2 py-1.5 rounded text-[9px] font-black uppercase tracking-wider border bg-emerald-50 text-emerald-600 border-emerald-100 shrink-0">
+                              <span className="px-2 py-1.5 rounded text-[10px] font-black uppercase tracking-wider border bg-emerald-50 text-emerald-600 border-emerald-100 shrink-0 shadow-sm">
                                 {job.details?.price || 'Ücretsiz'}
                               </span>
                            </div>
-                           <div className="flex items-center justify-between border-t border-slate-50 pt-2">
-                              <div className="flex items-center gap-1.5">
-                                 <CheckCircle size={12} className="text-emerald-500"/>
-                                 <span className="text-xs font-bold text-slate-700">{worker ? worker.name : 'Usta Yok'}</span>
-                              </div>
-                              <div className="text-xs text-slate-400">
-                                 {job.updated_at ? new Date(job.updated_at).toLocaleDateString('tr-TR') : '-'}
-                              </div>
+                           
+                           <div className="flex items-center justify-between pt-1">
+                               <div className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-100 uppercase tracking-wider">
+                                  {job.work_type}
+                               </div>
+                               <div className="text-[10px] font-medium text-slate-500 flex items-center gap-1">
+                                  <Clock size={10} className="text-slate-400" /> {formatDateTime(job.updated_at || job.created_at)}
+                               </div>
+                           </div>
+
+                           <div className="flex items-center gap-1.5 mt-1">
+                               <User size={12} className="text-slate-400"/>
+                               <span className="text-[11px] font-bold text-slate-600">{worker ? worker.name : 'Usta Yok'}</span>
                            </div>
                         </div>
                       );

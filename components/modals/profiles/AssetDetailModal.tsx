@@ -215,7 +215,8 @@ export default function AssetDetailModal({
           className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[10]' : 'z-[130]'}`}
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
-          exit={{ opacity: 0 }} 
+          // 🚀 ÇÖZÜM: Kapanma animasyonu tetiklendiği an "pointer-events: none" uygulayarak ekrana tıklanmayı bloklamasını önlüyoruz.
+          exit={{ opacity: 0, pointerEvents: 'none' }} 
           transition={{ duration: 0.15 }}
         >
           {/* Arkaya itildiğinde transparan olan tıklanabilir arka plan */}
