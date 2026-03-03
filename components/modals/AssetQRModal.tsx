@@ -133,10 +133,11 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
         margin: 0; 
       }
 
-      /* 🚀 MOBİL İÇİN A4 SERBESTLİĞİ (PDF Motoru Çökmesin Diye) */
+      /* 🚀 MOBİL İÇİN A4 SERBESTLİĞİ */
       @media (pointer: coarse) {
         @page {
           size: auto !important;
+          margin: 0 !important;
         }
       }
 
@@ -191,11 +192,10 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           transform: none !important;
         }
 
-        /* 🚀 PDF YAZI TİPLERİ 80MM'YE UYGUN KÜÇÜLTÜLDÜ */
+        /* 🚀 MASAÜSTÜ PDF YAZI TİPLERİ 80MM'YE UYGUN KÜÇÜLTÜLDÜ */
         .print-title { font-size: 11pt !important; line-height: 1.1 !important; margin-bottom: 0 !important; color: #000 !important; }
         .print-subtitle { font-size: 10pt !important; line-height: 1.1 !important; margin-bottom: 0.5mm !important; color: #000 !important; }
         
-        /* 🚀 QR KOD SABİT BİR ALANA OTURTULDU Kİ TAŞMASIN */
         .print-qr-wrapper {
            width: 32mm !important;
            height: 32mm !important;
@@ -223,7 +223,6 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
             background: transparent !important;
         }
         
-        /* 🚀 İLETİŞİM BİLGİLERİ (ASLA TAŞMAZ, GEREKİRSE ALTA İNER) */
         .print-info-wrap { 
             display: flex !important; 
             flex-wrap: wrap !important; 
@@ -242,42 +241,87 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
         }
         .print-icon { width: 2.5mm !important; height: 2.5mm !important; fill: #000 !important; color: #000 !important; }
 
-        /* 🚀 POWERED BY YAZISI (DAİMA GRİ VE KÜÇÜK) */
         .print-footer { margin-top: 1mm !important; }
         .print-simple-footer { color: #64748b !important; font-size: 6pt !important; text-align: center !important; }
         
         ::-webkit-scrollbar { display: none; }
 
-        /* 🚀 SADECE DOKUNMATİK MOBİL CİHAZLAR İÇİN GÜVENLİ A4 ORTALAMASI VE BÜYÜTME */
+        /* 🚀 SADECE DOKUNMATİK MOBİL CİHAZLAR İÇİN: A4'E TAM OTURAN DEV BOYUTLAR */
         @media (pointer: coarse) {
           html, body {
-            width: 100% !important;
-            height: 100% !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
           .print-wrapper {
             position: relative !important;
             width: 100% !important;
             height: 100% !important;
-            align-items: flex-start !important;
-            padding-top: 15mm !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 !important;
+            overflow: visible !important;
           }
+          
+          /* 🚀 Etiketin kasasını A4 kağıdı büyüklüğüne (190mm) çıkarıyoruz */
           .print-container {
-            transform: scale(1.8) !important; /* Etiketi A4 içinde 1.8 kat güvenle büyütür */
-            transform-origin: top center !important;
+            width: 190mm !important; 
+            height: auto !important; 
+            min-height: 250mm !important;
+            max-width: none !important;
+            max-height: none !important;
+            transform: none !important; /* Scale hatasını iptal ettik */
             margin: 0 auto !important;
+            padding: 15mm 10mm !important;
+            border-radius: 6mm !important;
           }
+
+          /* 🚀 İçerikleri devasa kasaya uyumlu şekilde orantılı büyütüyoruz */
+          .print-container img { width: 25mm !important; height: 25mm !important; }
+          svg.lucide-building-2 { width: 20mm !important; height: 20mm !important; }
+          
+          .print-title { font-size: 26pt !important; margin-top: 2mm !important; }
+          .print-subtitle { font-size: 20pt !important; margin-bottom: 2mm !important; }
+          
+          .print-qr-wrapper {
+             width: 110mm !important; /* QR Kod neredeyse sayfanın yarısını kaplayacak */
+             height: 110mm !important;
+             margin: 8mm 0 !important;
+          }
+          
+          .print-id-box { 
+              font-size: 16pt !important; 
+              padding: 3mm 10mm !important; 
+              border-width: 2px !important;
+              border-radius: 4mm !important;
+              margin-top: 4mm !important;
+          }
+
+          .print-badge { 
+              font-size: 16pt !important; 
+              padding: 2mm 8mm !important; 
+              border-radius: 3mm !important; 
+              margin-bottom: 4mm !important; 
+              border-width: 2px !important;
+          }
+          
+          .print-info-wrap { gap: 5mm !important; margin-top: 6mm !important; }
+          .print-info-text { font-size: 13pt !important; gap: 2mm !important; }
+          .print-icon { width: 6mm !important; height: 6mm !important; }
+
+          .print-footer { margin-top: 6mm !important; }
+          .print-simple-footer { font-size: 11pt !important; }
         }
       }
     `
   });
 
   const executePrint = (mode: 'color' | 'bw') => {
-    // 🚀 Mobilde popup engelleyiciye takılmamak için flushSync kullanıyoruz!
     flushSync(() => {
       setPrintMode(mode);
       setShowPrintModeSelection(false);
     });
-    // 🚀 setTimeout olmadan hemen yazdırıyoruz ki tarayıcı engellemesin.
     handlePrint();
   };
 
@@ -439,7 +483,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                   )}
                 </div>
 
-                {/* 4. ALT BİLGİ (FOOTER) - PDF'TE GRİ OLMA GARANTİSİ 12 */}
+                {/* 4. ALT BİLGİ (FOOTER) - PDF'TE GRİ OLMA GARANTİSİ */}
                 <div className="flex flex-col items-center justify-center shrink-0 w-full pt-1 print-footer">
                   <span className="text-[9px] font-medium text-slate-400 print-simple-footer">
                      Powered by <span className="font-bold">Fixlog.co</span>
