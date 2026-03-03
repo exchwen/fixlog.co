@@ -87,7 +87,6 @@ export default function AddStaffModal({
                         {/* 🚀 Yönetici ekleme seçeneği SADECE Patron'a gösterilir */}
                         {userRole === 'Patron' && <option value="Yönetici">Yönetici</option>}
                         <option value="Usta">Usta</option>
-                        <option value="Çırak">Çırak</option>
                     </select>
                     </div>
 

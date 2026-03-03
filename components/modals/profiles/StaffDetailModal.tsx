@@ -12,7 +12,8 @@ export default function StaffDetailModal({
   setSelectedJob,
   isEditingStaff, setIsEditingStaff,
   editStaffForm, setEditStaffForm,
-  handleAction, isSaving
+  handleAction, isSaving,
+  userRole // 🚀 Yetkilendirme kontrolü için eklendi
 }: any) {
 
   const [activeTab, setActiveTab] = useState('info'); // 'info' | 'jobs'
@@ -164,7 +165,7 @@ export default function StaffDetailModal({
         <motion.div 
           key="modal-backdrop-staff-detail"
           // 🚀 EKRAN TIKLANAMAMA SORUNU İÇİN KESİN ÇÖZÜM:
-          // Hem pointerEvents: "none" yapıyoruz, hem de animasyon bitince DOM'dan silinmiş gibi display: "none" atıyoruz!
+          // Ana wrapper çıkış (exit) yaparken tüm tıklama olaylarına kapanır ve tamamen kaybolur (display: none).
           initial={{ opacity: 0, pointerEvents: "none" }} 
           animate={{ opacity: 1, pointerEvents: "auto" }} 
           exit={{ opacity: 0, pointerEvents: "none", transitionEnd: { display: "none" } }} 
@@ -290,7 +291,26 @@ export default function StaffDetailModal({
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Telefon</label>
                                         <input className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 transition-all bg-white" value={editStaffForm.phone} onChange={(e) => setEditStaffForm({...editStaffForm, phone: e.target.value})} placeholder="Telefon" />
                                     </div>
+                                    
+                                    {/* 🚀 YETKİ KONTROLÜ İLE GÖSTERİLEN SEÇİM KUTUSU EKLENDİ */}
                                     <div className="col-span-1">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Yetki / Rol</label>
+                                        <select 
+                                            className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none bg-white focus:border-blue-500 transition-all" 
+                                            value={editStaffForm.role || 'Usta'} 
+                                            onChange={(e) => setEditStaffForm({...editStaffForm, role: e.target.value})}
+                                        >
+                                            {/* Sadece Patron 'Yönetici' rolünü atayabilir veya düzeltebilir */}
+                                            {userRole === 'Patron' && <option value="Yönetici">Yönetici</option>}
+                                            {/* Eğer düzenlediğimiz kişi zaten Yöneticiyse ve biz Patronsak görürüz, değilsek adı görünür ama seçemeyiz (böyle bir case olmaz ama garanti olsun) */}
+                                            {userRole !== 'Patron' && selectedStaff?.role === 'Yönetici' && <option value="Yönetici" disabled>Yönetici (Değiştiremezsiniz)</option>}
+                                            
+                                            <option value="Usta">Usta</option>
+                                            <option value="Çırak">Çırak</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div className="col-span-1 sm:col-span-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Branş / Uzmanlık</label>
                                         <select className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none bg-white focus:border-blue-500 transition-all" value={editStaffForm.branch} onChange={(e) => setEditStaffForm({...editStaffForm, branch: e.target.value})}>
                                             <option value="">Seçiniz</option>
@@ -422,7 +442,11 @@ export default function StaffDetailModal({
                 {!isEditingStaff ? (
                     <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
                         <button onClick={() => setIsEditingStaff(true)} className="flex-[2] bg-slate-900 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"><Settings size={16} /> Profili Düzenle</button>
-                        <button onClick={async () => { if(confirm(`${selectedStaff.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-staff', { id: selectedStaff.id }, closeThisModal, () => {}); } }} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"><Trash2 size={16} /> Sil</button>
+                        
+                        {/* 🚀 YALNIZCA PATRON PERSONEL SİLEBİLİR */}
+                        {userRole === 'Patron' && (
+                            <button onClick={async () => { if(confirm(`${selectedStaff.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-staff', { id: selectedStaff.id }, closeThisModal, () => {}); } }} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"><Trash2 size={16} /> Sil</button>
+                        )}
                     </div>
                 ) : (
                     <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
