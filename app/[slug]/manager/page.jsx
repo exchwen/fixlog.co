@@ -612,7 +612,18 @@ export default function ManagerDashboard() {
         userRole="Yönetici"
       />
       
-      <AssetQRModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} asset={selectedQRAsset} companyName={data?.name} companyLogo={data?.logo} />
+      <AssetQRModal 
+  isOpen={showQRModal} 
+  onClose={() => setShowQRModal(false)} 
+  asset={selectedQRAsset} 
+  companyName={data?.name} 
+  companyLogo={data?.logo} 
+  
+  /* İletişim bilgilerini aktaran yeni satırlar */
+  landlinePhone={data?.landlinePhone}
+  whatsappPhone={data?.whatsappPhone}
+  companyWebsite={data?.website}
+/>
 
     </div>
   );
