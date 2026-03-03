@@ -163,10 +163,11 @@ export default function StaffDetailModal({
       {selectedStaff && (
         <motion.div 
           key="modal-backdrop-staff-detail"
-          // 🚀 BURASI KRİTİK: Çıkış yaparken pointerEvents 'none' yapılarak hayalet kalkan oluşturması engellendi!
+          // 🚀 EKRAN TIKLANAMAMA SORUNU İÇİN KESİN ÇÖZÜM:
+          // Hem pointerEvents: "none" yapıyoruz, hem de animasyon bitince DOM'dan silinmiş gibi display: "none" atıyoruz!
           initial={{ opacity: 0, pointerEvents: "none" }} 
           animate={{ opacity: 1, pointerEvents: "auto" }} 
-          exit={{ opacity: 0, pointerEvents: "none" }} 
+          exit={{ opacity: 0, pointerEvents: "none", transitionEnd: { display: "none" } }} 
           transition={{ duration: 0.15 }}
           className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[10]' : 'z-[120]'}`}
         >
