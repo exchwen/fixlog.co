@@ -132,8 +132,10 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
       }
       @media print { 
         html, body { 
-          width: 80mm !important; 
-          height: 80mm !important; 
+          width: 100% !important; 
+          height: 100% !important; 
+          min-width: 80mm !important;
+          min-height: 80mm !important;
           margin: 0 !important; 
           padding: 0 !important; 
           background-color: white !important;
@@ -146,22 +148,24 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           position: absolute;
           top: 0;
           left: 0;
-          width: 80mm !important;
-          height: 80mm !important;
+          width: 100% !important;
+          height: 100% !important;
           display: flex !important;
-          align-items: center !important;
+          align-items: flex-start !important;
           justify-content: center !important;
           background: white !important;
         }
 
         .print-container { 
-          width: 80mm !important; 
-          height: 80mm !important; 
+          width: 100% !important; 
+          height: 100% !important; 
+          max-width: 80mm !important;
+          max-height: 80mm !important;
           border: none !important; 
           box-shadow: none !important; 
           border-radius: 0 !important; 
           padding: 4mm 2mm !important; 
-          margin: 0 !important;
+          margin: 0 auto !important;
           display: flex !important;
           flex-direction: column !important;
           align-items: center !important;
@@ -171,6 +175,20 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           page-break-inside: avoid !important;
           overflow: hidden !important;
           background-color: white !important;
+        }
+
+        /* 🚀 SADECE MOBİL PDF ÇIKTILARI İÇİN BÜYÜTME (Masaüstü Termal Etkilenmez) */
+        @media (max-device-width: 768px) {
+          html, body {
+            zoom: 1.6 !important;
+          }
+          .print-wrapper {
+            padding-top: 5mm !important;
+          }
+          .print-container {
+            transform: scale(1.15) !important;
+            transform-origin: top center !important;
+          }
         }
 
         /* 🚀 PDF YAZI TİPLERİ 80MM'YE UYGUN KÜÇÜLTÜLDÜ */
