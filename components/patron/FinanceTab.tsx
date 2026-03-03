@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Loader2, ArrowDownRight, ArrowUpRight, Trash2, Download, Eye, Calendar, Clock, Filter, WifiOff, Wallet, User } from 'lucide-react';
+import { Plus, X, Loader2, ArrowDownRight, ArrowUpRight, Trash2, Download, Eye, Calendar, Clock, Filter, WifiOff, Wallet, User, AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import * as XLSX from 'xlsx';
 
 export default function FinanceTab({ data, userRole = 'Patron' }: any) {
@@ -32,6 +33,7 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
   });
 
   const [selectedJobDetail, setSelectedJobDetail] = useState<any>(null);
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '', type: 'info' }); // 🚀 Yeni Uyarı State'i
 
   const [localFinances, setLocalFinances] = useState(data?.finances || []);
   const [localJobs, setLocalJobs] = useState(data?.jobs || []);
@@ -68,7 +70,10 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
       .map((i: any) => `${i.qty}x ${i.name}`)
       .join('\n');
 
-    if(!description || !financeAmount) return alert("Lütfen kalemleri ve toplam tutarı eksiksiz giriniz.");
+    if(!description || !financeAmount) {
+        setAlertModal({ isOpen: true, message: "Lütfen kalemleri ve toplam tutarı eksiksiz giriniz.", type: 'warning' });
+        return;
+    }
     setIsSavingFinance(true);
     
     const endpoint = financeModal.type === 'Gelir' ? 'add-income' : 'add-expense';
@@ -112,11 +117,11 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
         setLocalFinances([newRecord, ...localFinances]);
         closeFinanceModal();
         if (!isPatronPath) {
-            alert('İşlem başarıyla kaydedildi. Patron hesabına aktarıldı.');
+            setAlertModal({ isOpen: true, message: 'İşlem başarıyla kaydedildi. Patron hesabına aktarıldı.', type: 'success' });
         }
         router.refresh(); 
       } else {
-        alert("Kayıt Başarısız! İşlem reddedildi veya bağlantınız koptu.");
+            setAlertModal({ isOpen: true, message: "Kayıt Başarısız! İşlem reddedildi veya bağlantınız koptu.", type: 'error' });
       }
     } catch (e) { 
       console.warn("İnternet bağlantısı yok veya sunucuya ulaşılamadı. Finans işlemi kuyruğa alındı.");
@@ -128,7 +133,7 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
       setLocalFinances([newRecord, ...localFinances]);
       closeFinanceModal();
       
-      alert("İnternet bağlantınız yok. İşlem cihazınıza kaydedildi, bağlantı geldiğinde otomatik olarak sisteme aktarılacaktır.");
+      setAlertModal({ isOpen: true, message: "İnternet bağlantınız yok. İşlem cihazınıza kaydedildi, bağlantı geldiğinde otomatik olarak sisteme aktarılacaktır.", type: 'info' });
     } finally {
       setIsSavingFinance(false); 
     }
@@ -544,10 +549,59 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
                     <div className="text-sm font-medium text-slate-600 italic border-l-2 border-blue-400 pl-3 leading-relaxed">"{selectedJobDetail.details.note}"</div>
                   </div>
                 )}
+                </div>
               </div>
-            </div>
-         </div>
-       )}
-    </div>
-  );
-}
+           </div>
+         )}
+  
+        {/* 🚀 DİNAMİK GENEL UYARI MODALI */}
+        <AnimatePresence>
+          {alertModal.isOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+              onClick={() => setAlertModal({ ...alertModal, isOpen: false })}
+            >
+              <motion.div 
+                initial={{ scale: 0.9, y: 10 }} 
+                animate={{ scale: 1, y: 0 }} 
+                exit={{ scale: 0.9, y: 10 }} 
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl flex flex-col items-center border border-slate-200"
+              >
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 shadow-inner ${
+                  alertModal.type === 'success' ? 'bg-emerald-50 text-emerald-500' : 
+                  alertModal.type === 'error' ? 'bg-rose-50 text-rose-500' : 
+                  alertModal.type === 'warning' ? 'bg-amber-50 text-amber-500' : 
+                  'bg-blue-50 text-blue-500'
+                }`}>
+                  {alertModal.type === 'success' && <CheckCircle size={32} />}
+                  {alertModal.type === 'error' && <AlertCircle size={32} />}
+                  {alertModal.type === 'warning' && <AlertCircle size={32} />}
+                  {alertModal.type === 'info' && <Info size={32} />}
+                </div>
+                <h3 className="text-xl font-black text-slate-800 tracking-tight mb-2">
+                  {alertModal.type === 'success' ? 'Başarılı!' : 
+                   alertModal.type === 'error' ? 'Hata!' : 
+                   alertModal.type === 'warning' ? 'Uyarı!' : 
+                   'Bilgi'}
+                </h3>
+                <p className="text-sm font-medium text-slate-500 mb-6 leading-relaxed">
+                  {alertModal.message}
+                </p>
+                <button 
+                  onClick={() => setAlertModal({ ...alertModal, isOpen: false })}
+                  className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition-all active:scale-95 shadow-md flex justify-center items-center"
+                >
+                  Tamam
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+  
+      </div>
+    );
+  }

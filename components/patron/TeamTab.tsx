@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { UserPlus, Activity, MapPin, CheckCircle, Plus, ChevronRight, KeyRound, X, MessageCircle, Send } from 'lucide-react';
+import { UserPlus, Activity, MapPin, CheckCircle, Plus, ChevronRight, KeyRound, X, MessageCircle, Send, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -82,11 +82,14 @@ export default function TeamTab({
   
   const { slug } = useParams(); 
 
-  // YENİ: WhatsApp Şifre Gönderim Modalı İçin State'ler
-  const [waModalStaff, setWaModalStaff] = useState<Staff | null>(null);
-  const [waPassword, setWaPassword] = useState('');
+// YENİ: WhatsApp Şifre Gönderim Modalı İçin State'ler
+const [waModalStaff, setWaModalStaff] = useState<Staff | null>(null);
+const [waPassword, setWaPassword] = useState('');
 
-  const getAutoStatus = (staffId: string | number): StatusResult => {
+// 🚀 Dinamik Uyarı Modalı State'i
+const [alertModal, setAlertModal] = useState({ isOpen: false, message: '', type: 'info' });
+
+const getAutoStatus = (staffId: string | number): StatusResult => {
     if (!data || !data.jobs) {
        return { 
         text: 'Müsait', 
@@ -144,15 +147,15 @@ export default function TeamTab({
     };
   };
 
-  // WhatsApp Butonuna Tıklayınca Modalı Aç
-  const openWhatsAppModal = (staff: Staff) => {
-    if (!staff.phone) {
-      alert("Bu personelin kayıtlı bir telefon numarası bulunmuyor.");
-      return;
-    }
-    setWaModalStaff(staff);
-    setWaPassword(''); 
-  };
+// WhatsApp Butonuna Tıklayınca Modalı Aç
+const openWhatsAppModal = (staff: Staff) => {
+  if (!staff.phone) {
+    setAlertModal({ isOpen: true, message: "Bu personelin kayıtlı bir telefon numarası bulunmuyor.", type: 'warning' });
+    return;
+  }
+  setWaModalStaff(staff);
+  setWaPassword(''); 
+};
 
   // Modaldan Gönder Butonuna Basılınca WhatsApp'ı Aç
   const executeWhatsAppSend = () => {
@@ -321,30 +324,37 @@ export default function TeamTab({
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-1.5 w-full pt-4 border-t border-slate-100 mt-auto">
+              {/* 🚀 DÜZENLENEN KART ALT BUTONLARI */}
+              <div className="flex flex-col gap-2 w-full pt-4 border-t border-slate-100 mt-auto">
+                 <div className="grid grid-cols-2 gap-2 w-full">
+                   {/* 🟢 DÜZELTME: Doğru fonksiyona bağlandı */}
+                   <button 
+                     onClick={() => { 
+                       setSelectedStaff(s); 
+                       setEditStaffForm({ ...s, password: '', is_active: s.is_active ?? 1 }); 
+                       setIsEditingStaff(false); 
+                     }} 
+                     className="flex items-center justify-center gap-1.5 bg-white border border-slate-200 text-slate-700 py-2.5 rounded-xl text-[11px] font-bold hover:bg-slate-50 hover:text-slate-900 transition-all active:scale-95 shadow-sm"
+                   >
+                     Dosya
+                   </button>
+                   <button 
+                     onClick={() => { setActiveChatId(s.id); setIsChatOpen(true); }} 
+                     className="flex items-center justify-center gap-1.5 bg-blue-50 border border-blue-100 text-blue-700 py-2.5 rounded-xl text-[11px] font-bold hover:bg-blue-100 hover:text-blue-800 transition-all active:scale-95 shadow-sm"
+                   >
+                     Sohbet
+                   </button>
+                 </div>
+                 
                  <button 
                    onClick={() => openWhatsAppModal(s)} 
                    title="Giriş Linkini ve Şifreyi WhatsApp'tan Gönder"
-                   className="flex items-center justify-center bg-emerald-50 border border-emerald-200 text-emerald-600 py-2.5 rounded-xl hover:bg-emerald-100 hover:text-emerald-700 transition-all active:scale-95 shadow-sm"
+                   className="flex items-center justify-center gap-2 bg-[#25D366]/10 border border-[#25D366]/30 text-[#075E54] py-2.5 rounded-xl text-[11px] font-black hover:bg-[#25D366]/20 transition-all active:scale-95 shadow-sm w-full"
                  >
-                   <MessageCircle size={16} />
-                 </button>
-                 {/* 🟢 DÜZELTME: Doğru fonksiyona bağlandı */}
-                 <button 
-                   onClick={() => { 
-                     setSelectedStaff(s); 
-                     setEditStaffForm({ ...s, password: '', is_active: s.is_active ?? 1 }); 
-                     setIsEditingStaff(false); 
-                   }} 
-                   className="flex items-center justify-center gap-1.5 bg-white border border-slate-200 text-slate-700 py-2.5 rounded-xl text-[11px] font-bold hover:bg-slate-50 hover:text-slate-900 transition-all active:scale-95 shadow-sm"
-                 >
-                   Dosya
-                 </button>
-                 <button 
-                   onClick={() => { setActiveChatId(s.id); setIsChatOpen(true); }} 
-                   className="flex items-center justify-center gap-1.5 bg-blue-50 border border-blue-100 text-blue-700 py-2.5 rounded-xl text-[11px] font-bold hover:bg-blue-100 hover:text-blue-800 transition-all active:scale-95 shadow-sm"
-                 >
-                   Sohbet
+                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                     <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/>
+                   </svg>
+                   Paneli Gönder
                  </button>
               </div>
             </div>
@@ -358,6 +368,55 @@ export default function TeamTab({
           </div>
         )}
       </div>
+
+      {/* 🚀 DİNAMİK GENEL UYARI MODALI */}
+      <AnimatePresence>
+        {alertModal.isOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setAlertModal({ ...alertModal, isOpen: false })}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 10 }} 
+              animate={{ scale: 1, y: 0 }} 
+              exit={{ scale: 0.9, y: 10 }} 
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl flex flex-col items-center border border-slate-200"
+            >
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 shadow-inner ${
+                alertModal.type === 'success' ? 'bg-emerald-50 text-emerald-500' : 
+                alertModal.type === 'error' ? 'bg-rose-50 text-rose-500' : 
+                alertModal.type === 'warning' ? 'bg-amber-50 text-amber-500' : 
+                'bg-blue-50 text-blue-500'
+              }`}>
+                {alertModal.type === 'success' && <CheckCircle size={32} />}
+                {alertModal.type === 'error' && <AlertCircle size={32} />}
+                {alertModal.type === 'warning' && <AlertTriangle size={32} />}
+                {alertModal.type === 'info' && <Info size={32} />}
+              </div>
+              <h3 className="text-xl font-black text-slate-800 tracking-tight mb-2">
+                {alertModal.type === 'success' ? 'Başarılı!' : 
+                 alertModal.type === 'error' ? 'Hata!' : 
+                 alertModal.type === 'warning' ? 'Uyarı!' : 
+                 'Bilgi'}
+              </h3>
+              <p className="text-sm font-medium text-slate-500 mb-6 leading-relaxed">
+                {alertModal.message}
+              </p>
+              <button 
+                onClick={() => setAlertModal({ ...alertModal, isOpen: false })}
+                className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition-all active:scale-95 shadow-md flex justify-center items-center"
+              >
+                Tamam
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

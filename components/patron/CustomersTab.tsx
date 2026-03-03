@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Box, Search, MessageCircle, Phone, MapPin, Users, Info, Building2 } from 'lucide-react';
+import { Plus, Box, Search, MessageCircle, Phone, MapPin, Users, Info, Building2, WifiOff } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CustomersTab({ data, setShowAddCustomer, setSelectedCustomer, handleAction }: any) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [showOfflineModal, setShowOfflineModal] = useState(false); // 🚀 İnternet bağlantısı uyarı modalı state'i
 
   // Arama filtresi mantığı
   const filteredCustomers = data?.customers?.filter((c: any) => {
@@ -22,7 +24,7 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
     e.stopPropagation();
     if (typeof window !== 'undefined' && !navigator.onLine) {
       e.preventDefault();
-      alert("WhatsApp'a bağlanmak için internet bağlantısına ihtiyacınız var.");
+      setShowOfflineModal(true); // 🚀 Alert yerine modalı aç
     }
   };
 
@@ -226,8 +228,43 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
             </p>
           </div>
         )}
+        </div>
+  
+        {/* 🚀 BAĞLANTI HATASI MODALI */}
+        <AnimatePresence>
+          {showOfflineModal && (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+              onClick={() => setShowOfflineModal(false)}
+            >
+              <motion.div 
+                initial={{ scale: 0.9, y: 10 }} 
+                animate={{ scale: 1, y: 0 }} 
+                exit={{ scale: 0.9, y: 10 }} 
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl flex flex-col items-center border border-slate-200"
+              >
+                <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                  <WifiOff size={32} />
+                </div>
+                <h3 className="text-xl font-black text-slate-800 tracking-tight mb-2">Bağlantı Yok!</h3>
+                <p className="text-sm font-medium text-slate-500 mb-6 leading-relaxed">
+                  WhatsApp'a yönlendirilebilmeniz için aktif bir internet bağlantısına ihtiyacınız var. Lütfen bağlantınızı kontrol edip tekrar deneyin.
+                </p>
+                <button 
+                  onClick={() => setShowOfflineModal(false)}
+                  className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition-all active:scale-95 shadow-md flex justify-center items-center"
+                >
+                  Anladım
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+  
       </div>
-
-    </div>
-  );
-}
+    );
+  }

@@ -7,7 +7,7 @@ import {
   ClipboardList, Users, Box, Wallet, Plus, ArrowUpRight, 
   CheckCircle, Clock, Calendar, TrendingUp, TrendingDown, 
   Package, AlertTriangle, ShieldCheck, Activity, User, Lock, 
-  Settings, X, Wrench, Link as LinkIcon, Check, Database, Image as ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2, Bell, CheckSquare, UserPlus, UserCheck, MapPin
+  Settings, X, Wrench, Link as LinkIcon, Check, Database, Image as ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2, Bell, CheckSquare, UserPlus, UserCheck, MapPin, AlertCircle, Info
 } from 'lucide-react';
 
 export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob, setActiveTab, userRole: propRole, handleAction, isMyJobsTab, setJobModalType }: any) {
@@ -22,6 +22,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   
   const [isApproving, setIsApproving] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false); 
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '', type: 'info' }); // 🚀 Yeni Uyarı State'i
 
   const [newJobNotification, setNewJobNotification] = useState<{show: boolean, jobName: string}>({show: false, jobName: ''});
   const prevJobIds = useRef<string[]>([]);
@@ -140,7 +141,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
 
   const handleApproveJob = async (job: any) => {
     if (!handleAction) {
-        alert("Sistem hatası: İşlem fonksiyonu bulunamadı.");
+        setAlertModal({ isOpen: true, message: "Sistem hatası: İşlem fonksiyonu bulunamadı.", type: 'error' });
         return;
     }
     
@@ -163,7 +164,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         }
     } catch (e) {
         console.error(e);
-        alert("Bir hata oluştu.");
+        setAlertModal({ isOpen: true, message: "Bir hata oluştu.", type: 'error' });
     } finally {
         setIsApproving(null);
     }
@@ -1107,7 +1108,55 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                     <h3 className="text-xl font-black text-slate-900 mb-1">İşlem Başarılı!</h3>
                     <p className="text-sm text-slate-500 font-medium">Görev onaylandı ve bir sonraki aşamaya (Usta Atama) başarıyla taşındı.</p>
                 </div>
+                </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 🚀 DİNAMİK GENEL UYARI MODALI */}
+      <AnimatePresence>
+        {alertModal.isOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setAlertModal({ ...alertModal, isOpen: false })}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 10 }} 
+              animate={{ scale: 1, y: 0 }} 
+              exit={{ scale: 0.9, y: 10 }} 
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl flex flex-col items-center border border-slate-200"
+            >
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 shadow-inner ${
+                alertModal.type === 'success' ? 'bg-emerald-50 text-emerald-500' : 
+                alertModal.type === 'error' ? 'bg-rose-50 text-rose-500' : 
+                alertModal.type === 'warning' ? 'bg-amber-50 text-amber-500' : 
+                'bg-blue-50 text-blue-500'
+              }`}>
+                {alertModal.type === 'success' && <CheckCircle size={32} />}
+                {alertModal.type === 'error' && <AlertCircle size={32} />}
+                {alertModal.type === 'warning' && <AlertCircle size={32} />}
+                {alertModal.type === 'info' && <Info size={32} />}
+              </div>
+              <h3 className="text-xl font-black text-slate-800 tracking-tight mb-2">
+                {alertModal.type === 'success' ? 'Başarılı!' : 
+                 alertModal.type === 'error' ? 'Hata!' : 
+                 alertModal.type === 'warning' ? 'Uyarı!' : 
+                 'Bilgi'}
+              </h3>
+              <p className="text-sm font-medium text-slate-500 mb-6 leading-relaxed">
+                {alertModal.message}
+              </p>
+              <button 
+                onClick={() => setAlertModal({ ...alertModal, isOpen: false })}
+                className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition-all active:scale-95 shadow-md flex justify-center items-center"
+              >
+                Tamam
+              </button>
             </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 

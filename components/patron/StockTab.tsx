@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Loader2, AlertTriangle, Package, Phone, Tag, Truck, Tags, ShoppingCart, Send, ArrowRight, CheckCircle2, ExternalLink, ArrowLeft, Filter } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Loader2, AlertTriangle, Package, Phone, Tag, Truck, Tags, ShoppingCart, Send, ArrowRight, CheckCircle2, ExternalLink, ArrowLeft, Filter, AlertCircle, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function StockTab({ data, handleAction, setShowStockModal, setShowSupplierModal, setShowSupplierListModal, setShowCategoryModal }: any) {
@@ -19,6 +19,10 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
   const [orderQuantities, setOrderQuantities] = useState<{[key: string]: string}>({});
   const [orderStep, setOrderStep] = useState<'INPUT' | 'SENDING'>('INPUT'); // INPUT: Adet Girişi, SENDING: Gönderim Ekranı
   const [sentSuppliers, setSentSuppliers] = useState<string[]>([]); // Hangi tedarikçilere gönderildiğini takip etmek için
+
+  // 🚀 Yeni Alert ve Confirm State'leri
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '', type: 'info' });
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; idToDelete: string | null; itemName: string }>({ isOpen: false, idToDelete: null, itemName: '' });
 
   const rawStock = data?.stock || [];
   const suppliers = data?.suppliers || [];
@@ -87,29 +91,34 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
     setIsSavingLocal(false);
   };
 
-  const handleDelete = async (id: string) => {
-    if(confirm('Bu stok kaydını silmek istediğinize emin misiniz?')) {
-      await handleAction('delete-stock', { id }, null, null);
-    }
-  };
+  const handleDelete = async (id: string, itemName: string) => {
+    setConfirmModal({ isOpen: true, idToDelete: id, itemName: itemName });
+ };
 
-  // TEKİL SİPARİŞ GÖNDERME (TEK BUTON)
-  const sendSingleOrder = () => {
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-       alert("WhatsApp üzerinden sipariş geçebilmek için internet bağlantısına ihtiyacınız var.");
+ const confirmDelete = async () => {
+   if (confirmModal.idToDelete) {
+     await handleAction('delete-stock', { id: confirmModal.idToDelete }, null, null);
+     setConfirmModal({ isOpen: false, idToDelete: null, itemName: '' });
+   }
+ };
+
+ // TEKİL SİPARİŞ GÖNDERME (TEK BUTON)
+ const sendSingleOrder = () => {
+   if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setAlertModal({ isOpen: true, message: "WhatsApp üzerinden sipariş geçebilmek için internet bağlantısına ihtiyacınız var.", type: 'warning' });
+      return;
+   }
+
+   if (!selectedSupplierForOrder) return;
+
+   const itemsToOrder = selectedSupplierForOrder.items.filter((item:any) => orderQuantities[item.id] && Number(orderQuantities[item.id]) > 0);
+
+   if (itemsToOrder.length === 0) {
+       setAlertModal({ isOpen: true, message: "Lütfen en az bir ürün için adet giriniz.", type: 'warning' });
        return;
-    }
+   }
 
-    if (!selectedSupplierForOrder) return;
-
-    const itemsToOrder = selectedSupplierForOrder.items.filter((item:any) => orderQuantities[item.id] && Number(orderQuantities[item.id]) > 0);
-
-    if (itemsToOrder.length === 0) {
-        alert("Lütfen en az bir ürün için adet giriniz.");
-        return;
-    }
-
-    let messageText = `Merhaba, ${companyName} firmasından sipariş geçmek istiyoruz.\n`;
+   let messageText = `Merhaba, ${companyName} firmasından sipariş geçmek istiyoruz.\n`;
     messageText += `Aşağıdaki ürünlerin temini rica olunur:\n\n`;
     
     itemsToOrder.forEach((item: any) => {
@@ -133,38 +142,38 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
     setSelectedSupplierForOrder(null);
   };
 
-  // TOPLU SİPARİŞ İÇİN WHATSAPP LİNKİ OLUŞTURMA VE AÇMA
-  const openWhatsappForSupplier = (supplier: any) => {
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-       alert("WhatsApp üzerinden sipariş geçebilmek için internet bağlantısına ihtiyacınız var.");
-       return;
-    }
+// TOPLU SİPARİŞ İÇİN WHATSAPP LİNKİ OLUŞTURMA VE AÇMA
+const openWhatsappForSupplier = (supplier: any) => {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+     setAlertModal({ isOpen: true, message: "WhatsApp üzerinden sipariş geçebilmek için internet bağlantısına ihtiyacınız var.", type: 'warning' });
+     return;
+  }
 
-    const itemsToOrder = supplier.items.filter((item:any) => orderQuantities[item.id] && Number(orderQuantities[item.id]) > 0);
-    if (itemsToOrder.length === 0) return;
+  const itemsToOrder = supplier.items.filter((item:any) => orderQuantities[item.id] && Number(orderQuantities[item.id]) > 0);
+  if (itemsToOrder.length === 0) return;
 
-    let messageText = `Merhaba, ${companyName} firmasından sipariş geçmek istiyoruz.\n`;
-    messageText += `Aşağıdaki ürünlerin temini rica olunur:\n\n`;
-    
-    itemsToOrder.forEach((item: any) => {
-        const qty = orderQuantities[item.id];
-        messageText += `- ${item.item_name}: *${qty} ${item.unit_name}*\n`;
-    });
+  let messageText = `Merhaba, ${companyName} firmasından sipariş geçmek istiyoruz.\n`;
+  messageText += `Aşağıdaki ürünlerin temini rica olunur:\n\n`;
+  
+  itemsToOrder.forEach((item: any) => {
+      const qty = orderQuantities[item.id];
+      messageText += `- ${item.item_name}: *${qty} ${item.unit_name}*\n`;
+  });
 
-    messageText += `\nİyi çalışmalar.`;
+  messageText += `\nİyi çalışmalar.`;
 
-    let phone = supplier.phone.replace(/[^0-9]/g, '');
-    if (phone.length === 10 && phone.startsWith('5')) {
-        phone = '90' + phone;
-    }
+  let phone = supplier.phone.replace(/[^0-9]/g, '');
+  if (phone.length === 10 && phone.startsWith('5')) {
+      phone = '90' + phone;
+  }
 
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(messageText)}`;
-    window.open(url, '_blank');
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(messageText)}`;
+  window.open(url, '_blank');
 
-    if (!sentSuppliers.includes(supplier.id)) {
-        setSentSuppliers(prev => [...prev, supplier.id]);
-    }
-  };
+  if (!sentSuppliers.includes(supplier.id)) {
+      setSentSuppliers(prev => [...prev, supplier.id]);
+  }
+};
 
   const handleCloseOrderModal = () => {
     setShowOrderModal(false); 
@@ -436,7 +445,7 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                            <Edit2 size={16} />
                          </button>
                          <button
-                            onClick={() => handleDelete(item.id)} 
+                            onClick={() => handleDelete(item.id, item.item_name)} 
                             className="p-2 text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-600 hover:text-white rounded-lg transition-all active:scale-95 shadow-sm"
                             title="Sil"
                          >
@@ -499,7 +508,7 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                        <Edit2 size={14} />
                      </button>
                      <button
-                        onClick={() => handleDelete(item.id)} 
+                        onClick={() => handleDelete(item.id, item.item_name)} 
                         className="p-2 text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-600 hover:text-white rounded-lg transition-all active:scale-95"
                      >
                        <Trash2 size={14} />
@@ -717,19 +726,19 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                     ) : (
                         // TOPLU MOD FOOTER
                         orderStep === 'INPUT' ? (
-                            <button 
-                                onClick={() => {
-                                    if(suppliersToProcess.length === 0) {
-                                        alert("Lütfen en az bir ürün için adet giriniz.");
-                                        return;
-                                    }
-                                    setOrderStep('SENDING');
-                                }}
-                                className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm shadow-xl flex items-center justify-center gap-2 transition-all active:scale-95"
-                            >
-                                Gönderimi Başlat <ArrowRight size={18} />
-                            </button>
-                        ) : (
+                          <button 
+                              onClick={() => {
+                                  if(suppliersToProcess.length === 0) {
+                                      setAlertModal({ isOpen: true, message: "Lütfen en az bir ürün için adet giriniz.", type: 'warning' });
+                                      return;
+                                  }
+                                  setOrderStep('SENDING');
+                              }}
+                              className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm shadow-xl flex items-center justify-center gap-2 transition-all active:scale-95"
+                          >
+                              Gönderimi Başlat <ArrowRight size={18} />
+                          </button>
+                      ) : (
                              <button 
                                 onClick={handleCloseOrderModal}
                                 className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
@@ -836,10 +845,101 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
                     İptal
                   </button>
                 </div>
-              </motion.div>
+                </motion.div>
            </div>
          )}
        </AnimatePresence>
+
+       {/* 🚀 SİLME ONAY MODALI */}
+       <AnimatePresence>
+            {confirmModal.isOpen && (
+                <motion.div 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    exit={{ opacity: 0 }} 
+                    className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+                >
+                    <motion.div 
+                        initial={{ scale: 0.9, y: 10 }} 
+                        animate={{ scale: 1, y: 0 }} 
+                        exit={{ scale: 0.9, y: 10 }} 
+                        className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full text-center border border-slate-200"
+                    >
+                        <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+                            <Trash2 size={32} />
+                        </div>
+                        <h3 className="text-xl font-black text-slate-800 tracking-tight mb-2">Stoğu Sil</h3>
+                        <p className="text-sm font-medium text-slate-500 mb-6 leading-relaxed">
+                            <strong className="text-slate-700 block mb-1">{confirmModal.itemName}</strong>
+                            Adlı stok kaydını silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+                        </p>
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => setConfirmModal({ isOpen: false, idToDelete: null, itemName: '' })}
+                                className="flex-1 bg-slate-100 text-slate-700 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-all active:scale-95 shadow-sm"
+                            >
+                                İptal
+                            </button>
+                            <button 
+                                onClick={confirmDelete}
+                                className="flex-1 bg-rose-600 text-white font-bold py-3.5 rounded-xl hover:bg-rose-700 transition-all active:scale-95 shadow-md shadow-rose-600/20"
+                            >
+                                Evet, Sil
+                            </button>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+
+        {/* 🚀 DİNAMİK GENEL UYARI MODALI */}
+        <AnimatePresence>
+            {alertModal.isOpen && (
+            <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }} 
+                className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+                onClick={() => setAlertModal({ ...alertModal, isOpen: false })}
+            >
+                <motion.div 
+                initial={{ scale: 0.9, y: 10 }} 
+                animate={{ scale: 1, y: 0 }} 
+                exit={{ scale: 0.9, y: 10 }} 
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl flex flex-col items-center border border-slate-200"
+                >
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 shadow-inner ${
+                    alertModal.type === 'success' ? 'bg-emerald-50 text-emerald-500' : 
+                    alertModal.type === 'error' ? 'bg-rose-50 text-rose-500' : 
+                    alertModal.type === 'warning' ? 'bg-amber-50 text-amber-500' : 
+                    'bg-blue-50 text-blue-500'
+                }`}>
+                    {alertModal.type === 'success' && <CheckCircle2 size={32} />}
+                    {alertModal.type === 'error' && <AlertCircle size={32} />}
+                    {alertModal.type === 'warning' && <AlertTriangle size={32} />}
+                    {alertModal.type === 'info' && <Info size={32} />}
+                </div>
+                <h3 className="text-xl font-black text-slate-800 tracking-tight mb-2">
+                    {alertModal.type === 'success' ? 'Başarılı!' : 
+                    alertModal.type === 'error' ? 'Hata!' : 
+                    alertModal.type === 'warning' ? 'Uyarı!' : 
+                    'Bilgi'}
+                </h3>
+                <p className="text-sm font-medium text-slate-500 mb-6 leading-relaxed">
+                    {alertModal.message}
+                </p>
+                <button 
+                    onClick={() => setAlertModal({ ...alertModal, isOpen: false })}
+                    className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition-all active:scale-95 shadow-md flex justify-center items-center"
+                >
+                    Tamam
+                </button>
+                </motion.div>
+            </motion.div>
+            )}
+        </AnimatePresence>
+
     </div>
   );
 }

@@ -16,11 +16,14 @@ export default function StaffDetailModal({
   userRole // 🚀 Yetkilendirme kontrolü için eklendi
 }: any) {
 
-  const [activeTab, setActiveTab] = useState('info'); // 'info' | 'jobs'
-  const [jobFilter, setJobFilter] = useState('Tümü'); // 'Tümü' | 'Tamamlandı' | 'Aktif' 
+    const [activeTab, setActiveTab] = useState('info'); // 'info' | 'jobs'
+    const [jobFilter, setJobFilter] = useState('Tümü'); // 'Tümü' | 'Tamamlandı' | 'Aktif' 
+    
+    // 🚀 Tıklanamama bug'ını çözen kritik state: Hangi alt modal açıldıysa takip eder
+    const [openedChild, setOpenedChild] = useState<'job' | null>(null);
   
-  // 🚀 Tıklanamama bug'ını çözen kritik state: Hangi alt modal açıldıysa takip eder
-  const [openedChild, setOpenedChild] = useState<'job' | null>(null);
+    // Silme onayı için state
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Eğer dışarıdan iş kapatılırsa, kendi state'imizi de temizliyoruz
   useEffect(() => {
@@ -109,6 +112,12 @@ export default function StaffDetailModal({
         }
       }
     };
+
+    if (showDeleteConfirm) {
+        stopEvent();
+        setShowDeleteConfirm(false);
+        return true;
+    }
 
     if (isEditingStaff) {
         stopEvent();
@@ -445,7 +454,7 @@ export default function StaffDetailModal({
                         
                         {/* 🚀 YALNIZCA PATRON PERSONEL SİLEBİLİR */}
                         {userRole === 'Patron' && (
-                            <button onClick={async () => { if(confirm(`${selectedStaff.name} silinecektir. Onaylıyor musunuz?`)) { await handleAction('delete-staff', { id: selectedStaff.id }, closeThisModal, () => {}); } }} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"><Trash2 size={16} /> Sil</button>
+                            <button onClick={() => setShowDeleteConfirm(true)} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"><Trash2 size={16} /> Sil</button>
                         )}
                     </div>
                 ) : (
@@ -454,9 +463,54 @@ export default function StaffDetailModal({
                             {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Değişiklikleri Kaydet'}
                         </button>
                         <button onClick={() => setIsEditingStaff(false)} className="w-full sm:flex-1 bg-white border-2 border-slate-200 text-slate-700 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95">İptal</button>
-                    </div>
+                        </div>
                 )}
             </div>
+
+            {/* SİLME ONAY MODALI */}
+            <AnimatePresence>
+                {showDeleteConfirm && (
+                    <motion.div 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }} 
+                        exit={{ opacity: 0 }} 
+                        className="absolute inset-0 z-[150] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 rounded-2xl"
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, y: 10 }} 
+                            animate={{ scale: 1, y: 0 }} 
+                            exit={{ scale: 0.9, y: 10 }} 
+                            className="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full text-center"
+                        >
+                            <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Trash2 size={32} />
+                            </div>
+                            <h3 className="text-xl font-black text-slate-800 mb-2">Personeli Sil</h3>
+                            <p className="text-sm text-slate-500 font-medium mb-6">
+                                <strong className="text-slate-700">{selectedStaff?.name}</strong> adlı personeli silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+                            </p>
+                            <div className="flex gap-3">
+                                <button 
+                                    onClick={() => setShowDeleteConfirm(false)} 
+                                    className="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition-all active:scale-95"
+                                >
+                                    İptal
+                                </button>
+                                <button 
+                                    onClick={async () => {
+                                        await handleAction('delete-staff', { id: selectedStaff.id }, closeThisModal, () => {});
+                                        setShowDeleteConfirm(false);
+                                    }} 
+                                    disabled={isSaving}
+                                    className="flex-1 bg-rose-600 text-white font-bold py-3 rounded-xl hover:bg-rose-700 transition-all active:scale-95 flex justify-center items-center disabled:opacity-50"
+                                >
+                                    {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Evet, Sil'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
           </motion.div>
         </motion.div>
