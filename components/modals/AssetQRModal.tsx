@@ -175,6 +175,22 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
           background-color: white !important;
         }
 
+        /* 🚀 MOBİL İÇİN KUSURSUZ ÖLÇEKLENDİRME (Masaüstü Etkilenmez) */
+        @media (max-width: 1024px), (max-device-width: 1024px) {
+          html, body, .print-wrapper {
+            width: 100% !important;
+            height: 100vh !important;
+          }
+          .print-wrapper {
+            align-items: flex-start !important; /* Etiketi yukarı sabitler */
+            padding-top: 15mm !important; /* Üstten nefes boşluğu bırakır */
+          }
+          .print-container {
+            transform: scale(2.4) !important; /* A4'ün genişliğini dolduracak kadar (80x2.4=192mm) büyütür */
+            transform-origin: top center !important;
+          }
+        }
+
         /* 🚀 PDF YAZI TİPLERİ 80MM'YE UYGUN KÜÇÜLTÜLDÜ */
         .print-title { font-size: 11pt !important; line-height: 1.1 !important; margin-bottom: 0 !important; color: #000 !important; }
         .print-subtitle { font-size: 10pt !important; line-height: 1.1 !important; margin-bottom: 0.5mm !important; color: #000 !important; }
