@@ -265,23 +265,40 @@ export default function PatronDashboard() {
   const handleAction = async (endpoint, body, closeFn, resetFn) => {
     setIsSaving(true);
     const token = localStorage.getItem('patron_authToken');
-    try {
-      const res = await fetch(`${API_URL}/${endpoint}`, { 
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-          body: JSON.stringify({ ...body, slug }) 
-      });
-      if (res.ok) { 
+    const attemptRequest = async (retries = 3) => {
+      try {
+        const res = await fetch(`${API_URL}/${endpoint}`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+            body: JSON.stringify({ ...body, slug }) 
+        });
+        
+        if (!res.ok) { 
+          if (retries > 0) {
+              await new Promise(r => setTimeout(r, 2000));
+              return attemptRequest(retries - 1);
+          }
+          alert("İşlem başarısız."); 
+          return false; 
+        }
+
         if(closeFn) closeFn(false); 
         if(resetFn) resetFn(); 
         await fetchData(true); 
         return true; 
-      } else { 
-        alert("İşlem başarısız."); return false; 
+      } catch (err) { 
+        if (retries > 0) {
+            await new Promise(r => setTimeout(r, 3000));
+            return attemptRequest(retries - 1);
+        }
+        alert("Bağlantı hatası. İşlem kaydedilemedi."); 
+        return false; 
       }
-    } catch (err) { 
-      alert("Bağlantı hatası. İşlem kaydedilemedi."); return false; 
-    } finally { setIsSaving(false); }
+    };
+
+    const result = await attemptRequest();
+    setIsSaving(false);
+    return result;
   };
 
   const activeEmergencies = data?.activeEmergencies || [];

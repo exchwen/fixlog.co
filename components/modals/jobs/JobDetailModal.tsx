@@ -1069,11 +1069,11 @@ export default function JobDetailModal({
                                                         {isUploadingPhoto ? <Loader2 size={16} className="animate-spin" /> : <ImageIcon size={16} />}
                                                         {isUploadingPhoto ? 'Yükleniyor...' : 'Fotoğraf Ekle'}
                                                         <input 
-                                                            type="file" 
-                                                            accept="image/*" 
-                                                            capture="environment"
-                                                            className="hidden" 
-                                                            disabled={isUploadingPhoto}
+                                                        type="file" 
+                                                        accept="image/*" 
+                                                        /* capture="environment" kaldırıldı ki Kamera veya Galeri diye sorsun */
+                                                        className="hidden" 
+                                                        disabled={isUploadingPhoto}
                                                             onChange={async (e) => {
                                                                 const file = e.target.files?.[0];
                                                                 if(!file) return;

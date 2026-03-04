@@ -40,13 +40,29 @@ export default function StaffLoginPage() {
   };
 
   useEffect(() => {
-    const patronToken = localStorage.getItem('patron_authToken');
-    const patronRole = localStorage.getItem('patron_userRole');
-    const patronSlug = localStorage.getItem('patron_userSlug');
+    const getCookie = (name) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    };
 
-    const staffToken = localStorage.getItem('staff_authToken');
-    const staffRole = localStorage.getItem('staff_userRole');
-    const staffSlug = localStorage.getItem('staff_userSlug');
+    const patronToken = localStorage.getItem('patron_authToken') || getCookie('patron_authToken');
+    const patronRole = localStorage.getItem('patron_userRole') || getCookie('patron_userRole');
+    const patronSlug = localStorage.getItem('patron_userSlug') || getCookie('patron_userSlug');
+
+    let staffToken = localStorage.getItem('staff_authToken') || getCookie('staff_authToken');
+    let staffRole = localStorage.getItem('staff_userRole') || getCookie('staff_userRole');
+    let staffSlug = localStorage.getItem('staff_userSlug') || getCookie('staff_userSlug');
+
+    // iOS PWA Bug Kurtarma: Cookie'de varsa LocalStorage'ı onar
+    if (staffToken && !localStorage.getItem('staff_authToken')) {
+        localStorage.setItem('staff_authToken', staffToken);
+        localStorage.setItem('staff_userRole', staffRole);
+        localStorage.setItem('staff_userSlug', staffSlug);
+        const cName = getCookie('staff_userName');
+        if (cName) localStorage.setItem('staff_userName', decodeURIComponent(cName));
+    }
 
     // 🚀 PWA OTO-GİRİŞ: Eğer cihazda zaten geçerli bir oturum varsa login formunu göstermeden anında içeri al.
     if (staffToken && staffSlug === actualSlug) {
@@ -193,6 +209,15 @@ export default function StaffLoginPage() {
         localStorage.setItem('staff_userRole', data.role);
         localStorage.setItem('staff_userSlug', actualSlug);
         localStorage.setItem('staff_userName', data.name);
+
+        // 🚀 KÖKTEN ÇÖZÜM: iOS Safari PWA LocalStorage silinme sorununa karşı Cookie Yedeklemesi
+        const expireDate = new Date();
+        expireDate.setTime(expireDate.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 Gün
+        const expires = "expires=" + expireDate.toUTCString();
+        document.cookie = `staff_authToken=${data.token};${expires};path=/`;
+        document.cookie = `staff_userRole=${data.role};${expires};path=/`;
+        document.cookie = `staff_userSlug=${actualSlug};${expires};path=/`;
+        document.cookie = `staff_userName=${encodeURIComponent(data.name)};${expires};path=/`;
 
         if (data.role === 'Yönetici') {
             router.push(`/${actualSlug}/manager`);

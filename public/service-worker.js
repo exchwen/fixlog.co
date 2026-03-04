@@ -31,9 +31,9 @@ self.addEventListener('fetch', (event) => {
   }
 
   // API ve Pusher isteklerine de dokunma, onlar dinamik.
-  if (event.request.url.includes('/api') || event.request.url.includes('pusher.com')) {
-     return;
-  }
+  if (event.request.url.includes('workers.dev') || event.request.url.includes('pusher.com')) {
+    return;
+ }
 
   // Diğer statik dosyalar (CSS, JS, yerel iconlar) için standart strateji
   event.respondWith(

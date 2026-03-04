@@ -190,8 +190,15 @@ export default function ManagerDashboard() {
   };
 
   const fetchData = async (isInitial = false) => {
-    let patronToken = localStorage.getItem('patron_authToken');
-    let patronRole = localStorage.getItem('patron_userRole');
+    const getCookie = (name) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    };
+
+    let patronToken = localStorage.getItem('patron_authToken') || getCookie('patron_authToken');
+    let patronRole = localStorage.getItem('patron_userRole') || getCookie('patron_userRole');
 
     // Patron yanlışlıkla yönetici linkine girdiyse veya yönlendirildiyse onu kendi evine gönder
     if (patronToken && patronRole === 'Patron') {
@@ -199,8 +206,17 @@ export default function ManagerDashboard() {
         return;
     }
 
-    let token = localStorage.getItem('staff_authToken');
-    let role = localStorage.getItem('staff_userRole');
+    let token = localStorage.getItem('staff_authToken') || getCookie('staff_authToken');
+    let role = localStorage.getItem('staff_userRole') || getCookie('staff_userRole');
+
+    // iOS PWA LocalStorage Wipe Bug Kurtarma
+    if (token && !localStorage.getItem('staff_authToken')) {
+        localStorage.setItem('staff_authToken', token);
+        localStorage.setItem('staff_userRole', role);
+        localStorage.setItem('staff_userSlug', getCookie('staff_userSlug'));
+        const cName = getCookie('staff_userName');
+        if (cName) localStorage.setItem('staff_userName', decodeURIComponent(cName));
+    }
 
     // Sadece Yönetici yetkisi olanlar bu sayfada kalabilir
     if (!token || role !== 'Yönetici') {
@@ -318,31 +334,44 @@ export default function ManagerDashboard() {
          body.details = details;
     }
     
-    try {
-      const res = await fetch(`${API_URL}/${endpoint}`, { 
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-          body: JSON.stringify({ ...body, slug }) 
-      });
+    const attemptRequest = async (retries = 3) => {
+      try {
+        const res = await fetch(`${API_URL}/${endpoint}`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+            body: JSON.stringify({ ...body, slug }) 
+        });
 
-      if (res.ok) { 
+        if (!res.ok) { 
+          if (retries > 0) {
+              await new Promise(r => setTimeout(r, 2000));
+              return attemptRequest(retries - 1);
+          }
+          if (res.status === 403) {
+              setShowErrorModal({ show: true, message: 'Bu işlemi gerçekleştirmek için yeterli yetkiniz bulunmamaktadır.' });
+          } else {
+              setShowErrorModal({ show: true, message: 'İşlem reddedildi. Bir hata oluştu.' });
+          }
+          return false; 
+        }
+
         if(closeFn) closeFn(false); 
         if(resetFn) resetFn(); 
         await fetchData(true); 
         return true; 
-      } else { 
-        // Backend'den 403 (Yetki Hatası) dönerse yakala ve şık göster
-        if (res.status === 403) {
-            setShowErrorModal({ show: true, message: 'Bu işlemi gerçekleştirmek için yeterli yetkiniz bulunmamaktadır.' });
-        } else {
-            setShowErrorModal({ show: true, message: 'İşlem reddedildi. Bir hata oluştu.' });
-        }
-        return false; 
+      } catch (err) { 
+          if (retries > 0) {
+              await new Promise(r => setTimeout(r, 3000));
+              return attemptRequest(retries - 1);
+          }
+          setShowErrorModal({ show: true, message: 'Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin.' });
+          return false; 
       }
-    } catch (err) { 
-        setShowErrorModal({ show: true, message: 'Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin.' });
-        return false; 
-    } finally { setIsSaving(false); }
+    };
+
+    const result = await attemptRequest();
+    setIsSaving(false);
+    return result;
   };
 
   const activeEmergencies = data?.activeEmergencies || [];

@@ -113,20 +113,38 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
     const endpoint = 'approve-job';
     const bodyData = { slug: activeSlug, jobId: job.id, amount: parseFloat(amount), customerName: job.customer_name };
 
-    try {
-      const res = await fetch(`https://backend.isdokumu.workers.dev/${endpoint}`, {
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bodyData)
-      });
-      
-      if (res.ok) {
+    const attemptRequest = async (retries: number = 3): Promise<boolean> => {
+      try {
+        const res = await fetch(`https://backend.isdokumu.workers.dev/${endpoint}`, {
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bodyData)
+        });
+        
+        if (!res.ok) {
+          if (retries > 0) {
+            await new Promise(r => setTimeout(r, 2000));
+            return attemptRequest(retries - 1);
+          }
+          setAlertModal({ isOpen: true, title: 'Hata Oluştu', message: 'Sunucu isteği reddetti. Lütfen yetkinizi veya bağlantınızı kontrol edin.', type: 'error' });
+          return false;
+        }
+        
         router.refresh(); 
         setAlertModal({ isOpen: true, title: 'Başarılı!', message: 'İş başarıyla onaylandı ve kasaya (gelirlere) işlendi!', type: 'success' });
         setJobPrices((prev: any) => { const newPrices = {...prev}; delete newPrices[job.id]; return newPrices; });
-      } else {
-        setAlertModal({ isOpen: true, title: 'Hata Oluştu', message: 'Sunucu isteği reddetti. Lütfen yetkinizi veya bağlantınızı kontrol edin.', type: 'error' });
+        return true;
+      } catch (e) {
+        if (retries > 0) {
+          await new Promise(r => setTimeout(r, 3000));
+          return attemptRequest(retries - 1);
+        }
+        throw e;
       }
+    };
+
+    try {
+      await attemptRequest();
     } catch (e) { 
       console.warn("İnternet bağlantısı yok veya sunucuya ulaşılamadı. Onay işlemi kuyruğa alındı.");
       

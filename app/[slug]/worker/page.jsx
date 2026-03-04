@@ -205,8 +205,24 @@ export default function WorkerDashboard() {
   }, [slug]);
 
   const fetchData = async (isInitial = false) => {
-    const token = localStorage.getItem('staff_authToken'); 
-    const role = localStorage.getItem('staff_userRole'); 
+    const getCookie = (name) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    };
+
+    let token = localStorage.getItem('staff_authToken') || getCookie('staff_authToken'); 
+    let role = localStorage.getItem('staff_userRole') || getCookie('staff_userRole'); 
+
+    // iOS PWA LocalStorage Wipe Bug Kurtarma
+    if (token && !localStorage.getItem('staff_authToken')) {
+        localStorage.setItem('staff_authToken', token);
+        localStorage.setItem('staff_userRole', role);
+        localStorage.setItem('staff_userSlug', getCookie('staff_userSlug'));
+        const cName = getCookie('staff_userName');
+        if (cName) localStorage.setItem('staff_userName', decodeURIComponent(cName));
+    }
 
     if (!token || role !== 'Usta') {
       localStorage.removeItem('staff_authToken');
@@ -301,6 +317,13 @@ export default function WorkerDashboard() {
     localStorage.removeItem('staff_userRole');
     localStorage.removeItem('staff_userName');
     localStorage.removeItem('staff_userSlug');
+    
+    // Cookie'leri de temizle ki tam çıkış yapılsın
+    document.cookie = "staff_authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie = "staff_userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie = "staff_userName=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie = "staff_userSlug=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    
     router.push(`/${slug}/login`);
   };
 
@@ -363,11 +386,64 @@ export default function WorkerDashboard() {
     return data.assets.find(a => String(a.id) === String(assetId)) || null;
   };
 
-// 🚀 İMZA STATE VE REF'LERİ (USTA.JSX EN ÜSTE EKLENECEK - photos state'inin altına)
-  // const [signatureName, setSignatureName] = useState('');
-  // const [signatureImage, setSignatureImage] = useState<string | null>(null);
+// 🚀 İMZA STATE VE REF'LERİ
+const [signatureName, setSignatureName] = useState('');
+const [signatureImage, setSignatureImage] = useState(null);
+const signatureCanvasRef = useRef(null);
+const [isDrawing, setIsDrawing] = useState(false);
 
-  const handleStatusUpdate = async (newStatus) => {
+// 🚀 İMZA ÇİZİM (CANVAS) FONKSİYONLARI
+const getCoordinates = (e) => {
+  const canvas = signatureCanvasRef.current;
+  if (!canvas) return { x: 0, y: 0 };
+  const rect = canvas.getBoundingClientRect();
+  if (e.touches && e.touches.length > 0) {
+      return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+  }
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+};
+
+const startDrawing = (e) => {
+  setIsDrawing(true);
+  const coords = getCoordinates(e);
+  const ctx = signatureCanvasRef.current?.getContext('2d');
+  if (ctx) {
+      ctx.beginPath();
+      ctx.moveTo(coords.x, coords.y);
+  }
+};
+
+const draw = (e) => {
+  if (!isDrawing) return;
+  e.preventDefault(); 
+  const coords = getCoordinates(e);
+  const ctx = signatureCanvasRef.current?.getContext('2d');
+  if (ctx) {
+      ctx.lineTo(coords.x, coords.y);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+  }
+};
+
+const endDrawing = () => {
+  setIsDrawing(false);
+  const canvas = signatureCanvasRef.current;
+  if (canvas) {
+      setSignatureImage(canvas.toDataURL('image/png'));
+  }
+};
+
+const clearSignature = () => {
+  const canvas = signatureCanvasRef.current;
+  if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if(ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setSignatureImage(null);
+  }
+};
+
+const handleStatusUpdate = async (newStatus) => {
     // 🚀 ANA EKRAN HIZLI TAMAMLAMA ENGELLENİYOR! Usta modalı açıp imza atmak ZORUNDA.
     if (newStatus === 'Tamamlandı' && selectedJob.work_type === 'Periyodik Bakım') {
         alert("Periyodik Bakım işlemini bitirmek için 'İş Detayı'na girip müşteriden imza almanız gerekmektedir.");
@@ -406,33 +482,65 @@ export default function WorkerDashboard() {
     ].filter(Boolean).join('\n\n').trim();
 
     const payload = {
-        id: selectedJob.id,
-        status: targetStatus,
-        taskNote: finalNote ? finalNote : undefined,
-        lastEditedBy: userData.name,
-        photos: photos 
-    };
+      id: selectedJob.id,
+      status: targetStatus,
+      taskNote: finalNote ? finalNote : undefined,
+      lastEditedBy: userData.name,
+      photos: photos,
+      signatureImage: signatureImage,
+      signatureName: signatureName
+  };
 
-    try {
-      const res = await fetch(`${API_URL}/update-job`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ ...payload, slug })
-      });
-      if (!res.ok) throw new Error("Ağ hatası");
+    const attemptRequest = async (retries = 3) => {
+      try {
+          const res = await fetch(`${API_URL}/update-job`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({ ...payload, slug })
+          });
 
+          if (!res.ok) {
+              if (retries > 0) {
+                  await new Promise(r => setTimeout(r, 2000));
+                  return await attemptRequest(retries - 1);
+              }
+              throw new Error("Sunucu yanıt vermedi.");
+          }
+
+          // Başarılı olduğunda true dön
+          return true;
+      } catch (e) {
+          if (retries > 0) {
+              await new Promise(r => setTimeout(r, 3000));
+              return await attemptRequest(retries - 1);
+          }
+          // Tüm denemeler bitti ve hala hata varsa fırlat
+          throw e;
+      }
+  };
+
+  try {
+      // İstek atılır
+      await attemptRequest();
+      
+      // EĞER BURAYA GELDİYSE İŞLEM KESİN BAŞARILIDIR (KUYRUĞA ALMAZ)
       setSelectedJob(null);
       setJobNote('');
       setDynamicForm({});
       setPhotos([]);
-      await fetchData(); 
-    } catch (e) {
+      clearSignature(); // İmzayı temizle
+      await fetchData(); // Verileri tazeleyerek arayüzü güncelle
+      
+  } catch (e) {
+      // EĞER BURAYA GELDİYSE GERÇEKTEN İNTERNET YOKTUR (KUYRUĞA ALIR)
+      console.warn("Bağlantı kurulamadı, işlem kuyruğa alındı.");
       const pending = JSON.parse(localStorage.getItem(`offline_actions_${slug}`) || '[]');
       pending.push({ endpoint: 'update-job', body: payload, timestamp: new Date().toISOString() });
       localStorage.setItem(`offline_actions_${slug}`, JSON.stringify(pending));
       setPendingSyncCount(pending.length);
       setIsOffline(true);
 
+      // Arayüzü sanki başarılı olmuş gibi optimistik (geçici) olarak güncelle
       const updatedJobs = jobs.map(j => {
           if (j.id === selectedJob.id) return { ...j, status: targetStatus, details: { ...j.details, note: finalNote } };
           return j;
@@ -442,9 +550,10 @@ export default function WorkerDashboard() {
       setJobNote('');
       setDynamicForm({});
       setPhotos([]);
-    } finally {
+      clearSignature(); // İmzayı temizle
+  } finally {
       setIsSaving(false);
-    }
+  }
   };
 
   if (loading) {
@@ -840,7 +949,7 @@ export default function WorkerDashboard() {
                             <input 
                                 type="file" 
                                 accept="image/*" 
-                                multiple 
+                                /* multiple özelliği kaldırıldı, bu sayede sistem Kamera seçeneğini gizlemeyecek */
                                 ref={fileInputRef}
                                 onChange={handlePhotoSelect} 
                                 className="hidden" 
@@ -867,7 +976,7 @@ export default function WorkerDashboard() {
                         </div>
                     )}
 
-                    {(selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') && (
+{(selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') && (
                         <div>
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Saha Notu (Opsiyonel)</label>
                             <textarea 
@@ -877,6 +986,38 @@ export default function WorkerDashboard() {
                                 placeholder="Kullanılan ekstra malzeme, değişen parçalar, karşılaşılan sürpriz durumlar vb." 
                                 className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-none shadow-sm" 
                             />
+                        </div>
+                    )}
+
+                    {/* 🚀 MÜŞTERİ İMZA ALANI */}
+                    {(selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') && selectedJob.work_type === 'Periyodik Bakım' && (
+                        <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-xl shadow-sm">
+                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center justify-between">
+                                <span>Müşteri / Yetkili İmzası</span>
+                                {signatureImage && <button onClick={clearSignature} className="text-rose-500 underline font-bold">Temizle</button>}
+                            </div>
+                            <input 
+                                type="text" 
+                                placeholder="İmzalayan Kişinin Adı Soyadı" 
+                                value={signatureName}
+                                onChange={(e) => setSignatureName(e.target.value)}
+                                className="w-full px-4 py-2.5 mb-3 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 bg-white"
+                            />
+                            <div className="border-2 border-dashed border-slate-300 rounded-lg overflow-hidden bg-white touch-none">
+                                <canvas 
+                                    ref={signatureCanvasRef}
+                                    width={300}
+                                    height={150}
+                                    className="w-full h-[150px] cursor-crosshair"
+                                    onMouseDown={startDrawing}
+                                    onMouseMove={draw}
+                                    onMouseUp={endDrawing}
+                                    onMouseLeave={endDrawing}
+                                    onTouchStart={startDrawing}
+                                    onTouchMove={draw}
+                                    onTouchEnd={endDrawing}
+                                ></canvas>
+                            </div>
                         </div>
                     )}
                 </div>
