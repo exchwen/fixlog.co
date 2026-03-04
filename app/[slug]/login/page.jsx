@@ -202,13 +202,13 @@ export default function StaffLoginPage() {
             <motion.button 
               initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
               onClick={() => {
-                  const patronRole = localStorage.getItem('patron_userRole');
-                  const staffRole = localStorage.getItem('staff_userRole');
-                  
-                  if(patronRole === 'Patron') router.push(`/${actualSlug}/manager`);
-                  else if(staffRole === 'Yönetici') router.push(`/${actualSlug}/manager`);
-                  else router.push(`/login`);
-              }}
+                const patronRole = localStorage.getItem('patron_userRole');
+                const staffRole = localStorage.getItem('staff_userRole');
+                
+                if(patronRole === 'Patron') router.push(`/${actualSlug}/dashboard`);
+                else if(staffRole === 'Yönetici') router.push(`/${actualSlug}/manager`);
+                else router.push(`/login`);
+            }}
               className="absolute top-6 right-6 flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-lg hover:bg-slate-800 transition-all active:scale-95 z-50"
             >
                <ArrowLeft size={16} /> Panele Dön

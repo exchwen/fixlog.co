@@ -190,17 +190,20 @@ export default function ManagerDashboard() {
   };
 
   const fetchData = async (isInitial = false) => {
-    let token = localStorage.getItem('patron_authToken');
-    let role = localStorage.getItem('patron_userRole');
+    let patronToken = localStorage.getItem('patron_authToken');
+    let patronRole = localStorage.getItem('patron_userRole');
 
-    if (!token) {
-        token = localStorage.getItem('staff_authToken');
-        role = localStorage.getItem('staff_userRole');
+    // Patron yanlışlıkla yönetici linkine girdiyse veya yönlendirildiyse onu kendi evine gönder
+    if (patronToken && patronRole === 'Patron') {
+        router.replace(`/${slug}/dashboard`);
+        return;
     }
 
-    if (!token || (role !== 'Patron' && role !== 'Yönetici')) {
-      localStorage.removeItem('patron_authToken');
-      localStorage.removeItem('patron_userRole');
+    let token = localStorage.getItem('staff_authToken');
+    let role = localStorage.getItem('staff_userRole');
+
+    // Sadece Yönetici yetkisi olanlar bu sayfada kalabilir
+    if (!token || role !== 'Yönetici') {
       localStorage.removeItem('staff_authToken');
       localStorage.removeItem('staff_userRole');
       router.push(`/${slug}/login`);
