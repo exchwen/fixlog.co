@@ -884,50 +884,72 @@ useEffect(() => {
                         {/* 🚀 TAB 2: FORM VE STOK */}
                         {activeTab === 'form' && (
                              <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="space-y-4">
-                                 {/* Form Kontrol Listesi */}
                                  {(() => {
                                      const excludeKeys = ['note', 'price', 'lastEditedBy', 'lastEditedAt', 'managerName', 'managerId', 'createdBy', 'worker_id', 'assetName', 'usedMaterials'];
                                      const formEntries = Object.entries(selectedJob.details || {}).filter(([k]) => !excludeKeys.includes(k));
-                                     if (formEntries.length === 0) return null;
-                                     return (
-                                         <div className="bg-blue-50/50 p-5 rounded-2xl border border-blue-100">
-                                             <div className="text-xs font-black text-blue-800 uppercase border-b border-blue-200/50 pb-2 mb-3">Kontrol Edilen Aksamlar</div>
-                                             <div className="space-y-2">
-                                                 {formEntries.map(([key, value], idx) => (
-                                                     <div key={idx} className="flex justify-between items-center py-2 border-b border-blue-100/50 last:border-0 text-sm">
-                                                         <span className="font-semibold text-slate-700">{key}</span>
-                                                         <span className="font-black text-slate-900">{String(value)}</span>
-                                                     </div>
-                                                 ))}
+                                     
+                                     const hasFormEntries = formEntries.length > 0;
+                                     const hasNote = !!selectedJob.details?.note;
+                                     const hasMaterials = selectedJob.details?.usedMaterials && selectedJob.details.usedMaterials.length > 0;
+
+                                     // Eğer hiçbir veri yoksa şık bir uyarı çıkarıyoruz
+                                     if (!hasFormEntries && !hasNote && !hasMaterials) {
+                                         return (
+                                             <div className="flex flex-col items-center justify-center py-10 px-4 text-center bg-slate-50 border border-slate-200 rounded-2xl border-dashed">
+                                                 <div className="w-16 h-16 bg-white border border-slate-100 shadow-sm text-slate-300 rounded-full flex items-center justify-center mb-4">
+                                                     <CheckSquare size={28} />
+                                                 </div>
+                                                 <div className="text-sm font-black text-slate-700 mb-1">Kayıt Bulunmuyor</div>
+                                                 <div className="text-xs font-medium text-slate-500 max-w-[250px]">Bu görev için henüz bir saha formu doldurulmamış veya stok düşülmemiş.</div>
                                              </div>
-                                         </div>
+                                         );
+                                     }
+
+                                     // Veri varsa ilgili blokları render et
+                                     return (
+                                         <>
+                                             {/* Form Kontrol Listesi */}
+                                             {hasFormEntries && (
+                                                 <div className="bg-blue-50/50 p-5 rounded-2xl border border-blue-100">
+                                                     <div className="text-xs font-black text-blue-800 uppercase border-b border-blue-200/50 pb-2 mb-3">Kontrol Edilen Aksamlar</div>
+                                                     <div className="space-y-2">
+                                                         {formEntries.map(([key, value], idx) => (
+                                                             <div key={idx} className="flex justify-between items-center py-2 border-b border-blue-100/50 last:border-0 text-sm">
+                                                                 <span className="font-semibold text-slate-700">{key}</span>
+                                                                 <span className="font-black text-slate-900">{String(value)}</span>
+                                                             </div>
+                                                         ))}
+                                                     </div>
+                                                 </div>
+                                             )}
+
+                                             {/* Usta Saha Notu */}
+                                             {hasNote && (
+                                                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                                                     <div className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Usta Saha Notu</div>
+                                                     <p className="text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-wrap italic border-l-2 border-slate-300 pl-3">
+                                                         "{selectedJob.details.note}"
+                                                     </p>
+                                                 </div>
+                                             )}
+
+                                             {/* Kullanılan Malzemeler (Stok) */}
+                                             {hasMaterials && (
+                                                 <div className="bg-amber-50/50 p-5 rounded-2xl border border-amber-100">
+                                                     <div className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-3 flex items-center gap-1.5"><Box size={14}/> Sistemden Düşülen Malzemeler</div>
+                                                     <div className="space-y-2">
+                                                         {selectedJob.details.usedMaterials.map((mat:any, i:number) => (
+                                                             <div key={i} className="flex justify-between items-center bg-white p-3 rounded-lg border border-amber-200 shadow-sm">
+                                                                 <span className="text-xs font-bold text-slate-800">{mat.name}</span>
+                                                                 <span className="text-xs font-black text-amber-600 bg-amber-100 px-2 py-1 rounded">{mat.quantity} {mat.unit}</span>
+                                                             </div>
+                                                         ))}
+                                                     </div>
+                                                 </div>
+                                             )}
+                                         </>
                                      );
                                  })()}
-
-                                 {/* Usta Saha Notu */}
-                                 {selectedJob.details?.note && (
-                                     <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                                         <div className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Usta Saha Notu</div>
-                                         <p className="text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-wrap italic border-l-2 border-slate-300 pl-3">
-                                             "{selectedJob.details.note}"
-                                         </p>
-                                     </div>
-                                 )}
-
-                                 {/* Kullanılan Malzemeler (Stok) */}
-                                 {selectedJob.details?.usedMaterials && selectedJob.details.usedMaterials.length > 0 && (
-                                     <div className="bg-amber-50/50 p-5 rounded-2xl border border-amber-100">
-                                         <div className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-3 flex items-center gap-1.5"><Box size={14}/> Sistemden Düşülen Malzemeler</div>
-                                         <div className="space-y-2">
-                                             {selectedJob.details.usedMaterials.map((mat:any, i:number) => (
-                                                 <div key={i} className="flex justify-between items-center bg-white p-3 rounded-lg border border-amber-200 shadow-sm">
-                                                     <span className="text-xs font-bold text-slate-800">{mat.name}</span>
-                                                     <span className="text-xs font-black text-amber-600 bg-amber-100 px-2 py-1 rounded">{mat.quantity} {mat.unit}</span>
-                                                 </div>
-                                             ))}
-                                         </div>
-                                     </div>
-                                 )}
                              </motion.div>
                         )}
 
