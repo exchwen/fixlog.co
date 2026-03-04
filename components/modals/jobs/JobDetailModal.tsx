@@ -126,14 +126,18 @@ const [activeTab, setActiveTab] = useState('ozet');
     img.src = safeLogoUrl + (safeLogoUrl.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
   }, [data?.logo]);
 
-  // Dışarıdan modal kapandığında local state'i temizle
-  useEffect(() => {
-    if (!selectedCustomer && openedChild === 'customer') setOpenedChild(null);
-  }, [selectedCustomer, openedChild]);
+// Dışarıdan modal kapandığında local state'i temizle (Eğer parent data'yı null yapmıyor sadece modalı kapatıyorsa isAnyProfileDetailOpen kontrolü hayat kurtarır)
+useEffect(() => {
+    if ((!selectedCustomer || !isAnyProfileDetailOpen) && openedChild === 'customer') {
+        setOpenedChild(null);
+    }
+  }, [selectedCustomer, isAnyProfileDetailOpen, openedChild]);
 
   useEffect(() => {
-    if (!selectedAsset && openedChild === 'asset') setOpenedChild(null);
-  }, [selectedAsset, openedChild]);
+    if ((!selectedAsset || !isAnyProfileDetailOpen) && openedChild === 'asset') {
+        setOpenedChild(null);
+    }
+  }, [selectedAsset, isAnyProfileDetailOpen, openedChild]);
 
   // 🚀 AKILLI VE KADEMELİ KAPATMA MANTIĞI
   const handleSmartClose = useCallback((e?: any) => {
@@ -837,7 +841,20 @@ const [activeTab, setActiveTab] = useState('ozet');
                                                 </div>
                                                 <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
                                                     <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Planlanan Tarih</div>
-                                                    <div className="text-sm font-bold text-slate-800">{selectedJob.scheduled_date || 'Anlık'}</div>
+                                                    <div className="text-sm font-bold text-slate-800">
+                                                        {selectedJob.scheduled_date ? (
+                                                            selectedJob.scheduled_date
+                                                        ) : (
+                                                            <div className="flex flex-col">
+                                                                <span>Anlık</span>
+                                                                {selectedJob.created_at && (
+                                                                    <span className="text-[10px] text-slate-400 font-bold mt-0.5">
+                                                                        {new Date(selectedJob.created_at).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm col-span-2 flex justify-between items-center">
                                                      <div>
