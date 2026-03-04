@@ -40,9 +40,31 @@ export default function StaffLoginPage() {
   };
 
   useEffect(() => {
+    const patronToken = localStorage.getItem('patron_authToken');
     const patronRole = localStorage.getItem('patron_userRole');
+    const patronSlug = localStorage.getItem('patron_userSlug');
+
+    const staffToken = localStorage.getItem('staff_authToken');
     const staffRole = localStorage.getItem('staff_userRole');
-    
+    const staffSlug = localStorage.getItem('staff_userSlug');
+
+    // 🚀 PWA OTO-GİRİŞ: Eğer cihazda zaten geçerli bir oturum varsa login formunu göstermeden anında içeri al.
+    if (staffToken && staffSlug === actualSlug) {
+        if (staffRole === 'Usta') {
+            router.replace(`/${actualSlug}/worker`);
+            return;
+        } else if (staffRole === 'Yönetici') {
+            router.replace(`/${actualSlug}/manager`);
+            return;
+        }
+    }
+
+    // Patron yanlışlıkla personel girişine düşerse onu da ana panele fırlat
+    if (patronToken && patronRole === 'Patron' && patronSlug === actualSlug) {
+        router.replace(`/${actualSlug}/dashboard`);
+        return;
+    }
+
     if (patronRole === 'Patron' || staffRole === 'Yönetici') {
         setHasPatronSession(true);
     }
