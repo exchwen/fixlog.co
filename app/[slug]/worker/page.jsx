@@ -169,24 +169,38 @@ export default function WorkerDashboard() {
       setPendingSyncCount(0);
       return;
     }
+    
     const remaining = [];
     const token = localStorage.getItem('staff_authToken'); 
+    let hasChanges = false;
 
     for (const item of pending) {
+      // Hatalı işlemlerin sonsuza kadar döngüye girmesini engellemek için deneme sayacı
+      item.retryCount = (item.retryCount || 0) + 1;
+
       try {
         const res = await fetch(`${API_URL}/${item.endpoint}`, { 
           method: 'POST', 
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
           body: JSON.stringify({ ...item.body, slug }) 
         });
-        if (!res.ok) remaining.push(item);
-      } catch (e) {
-        remaining.push(item);
-      }
-    }
+        
+        if (res.ok) {
+          hasChanges = true; // Başarılı, kuyruktan silinecek
+       } else {
+          // Sunucu hata verse bile EMEĞİ ASLA SİLME, kuyrukta tutmaya devam et!
+          console.warn(`Sunucu hatası (Kod: ${res.status}). İşlem silinmedi, kuyrukta bekliyor.`);
+          remaining.push(item); 
+       }
+     } catch (e) {
+       // İnternet yok. ASLA SİLME, kuyrukta tutmaya devam et!
+       remaining.push(item);
+     }
+   }
+    
     localStorage.setItem(`offline_actions_${slug}`, JSON.stringify(remaining));
     setPendingSyncCount(remaining.length);
-    if (remaining.length < pending.length) fetchData(true);
+    if (hasChanges) fetchData(true);
   };
 
   useEffect(() => {
@@ -627,7 +641,7 @@ const handleStatusUpdate = async (newStatus) => {
           </motion.div>
         )}
 
-        <AnimatePresence>
+<AnimatePresence>
           {(isOffline || pendingSyncCount > 0) && (
               <motion.div 
               initial={{ height: 0, opacity: 0 }} 
@@ -638,9 +652,21 @@ const handleStatusUpdate = async (newStatus) => {
               <WifiOff size={16} />
               <span className="text-center">{isOffline ? 'İnternet Yok. İşlemleriniz kaydediliyor.' : 'Bağlantı sağlandı. Veriler gönderiliyor...'}</span>
               {pendingSyncCount > 0 && (
-                  <span className="bg-amber-950 text-amber-400 px-2.5 py-1 rounded-full ml-0 sm:ml-2 animate-pulse flex items-center gap-1 w-full sm:w-auto justify-center mt-1 sm:mt-0">
-                      Kuyrukta {pendingSyncCount} işlem var
-                  </span>
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-center mt-1 sm:mt-0 ml-0 sm:ml-2">
+                      <span className="bg-amber-950 text-amber-400 px-2.5 py-1 rounded-full animate-pulse flex items-center gap-1">
+                          Kuyrukta {pendingSyncCount} işlem var
+                      </span>
+                      <button 
+                          onClick={() => {
+                              localStorage.removeItem(`offline_actions_${slug}`);
+                              setPendingSyncCount(0);
+                              fetchData(true);
+                          }} 
+                          className="bg-white/20 hover:bg-white/30 text-amber-950 px-2 py-1 rounded border border-amber-950/20 transition-colors active:scale-95 font-black"
+                      >
+                          İptal Et / Temizle
+                      </button>
+                  </div>
               )}
               </motion.div>
           )}
