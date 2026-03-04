@@ -338,8 +338,8 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                       <tbody className="divide-y divide-slate-50">
                           {ongoingJobs.length > 0 ? ongoingJobs.map((job: any) => {
                               
-                              const creator = job.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
-                              const manager = job.manager_name || null;
+                              const creator = job.creator_name || job.details?.createdBy || (data?.ownerName?.split(' ')[0] || 'Sistem');
+                              const manager = job.manager_name || job.details?.managerName || null;
                               let worker = job.worker_name || null;
 
                               if (!worker) {
@@ -485,8 +485,8 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
               <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50">
                   {ongoingJobs.length > 0 ? ongoingJobs.map((job: any) => {
                       
-                      const creator = job.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
-                      const manager = job.manager_name || null;
+                      const creator = job.creator_name || job.details?.createdBy || (data?.ownerName?.split(' ')[0] || 'Sistem');
+                      const manager = job.manager_name || job.details?.managerName || null;
                       let worker = job.worker_name || null;
 
                       if (!worker) {

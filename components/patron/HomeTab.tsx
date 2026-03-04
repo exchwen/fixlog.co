@@ -789,8 +789,8 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
             {jobs.slice(0, 10).map((j: any) => {
                 
                 // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA (Tertemiz)
-                const creator = j.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
-                const manager = j.manager_name || null;
+                const creator = j.creator_name || j.details?.createdBy || (data?.ownerName?.split(' ')[0] || 'Sistem');
+                const manager = j.manager_name || j.details?.managerName || null;
                 const worker = j.worker_name || null;
 
                 // 🚀 Atayan ve Sorumlu aynı kişi mi?
@@ -922,8 +922,8 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50/50 max-h-[500px] overflow-y-auto custom-scrollbar">
         {jobs.slice(0, 10).map((j: any) => {
              // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA (Tertemiz)
-             const creator = j.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
-             const manager = j.manager_name || null;
+             const creator = j.creator_name || j.details?.createdBy || (data?.ownerName?.split(' ')[0] || 'Sistem');
+             const manager = j.manager_name || j.details?.managerName || null;
              const worker = j.worker_name || null;
 
              const isCreatorSameAsManager = manager && creator === manager;
