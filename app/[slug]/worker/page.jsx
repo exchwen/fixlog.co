@@ -48,6 +48,45 @@ export default function WorkerDashboard() {
   const [dynamicForm, setDynamicForm] = useState({}); 
   const [isSaving, setIsSaving] = useState(false);
 
+  // 🚀 SAHA SİHİRBAZI VE STOK STATE'LERİ
+  const [wizardStep, setWizardStep] = useState(1);
+  const [usedMaterials, setUsedMaterials] = useState([]);
+
+  // 🚀 TASLAK (DRAFT) YÜKLEME
+  useEffect(() => {
+      if (selectedJob && (selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada')) {
+          const draft = localStorage.getItem(`draft_${slug}_${selectedJob.id}`);
+          if (draft) {
+              try {
+                  const parsed = JSON.parse(draft);
+                  setDynamicForm(parsed.dynamicForm || {});
+                  setJobNote(parsed.jobNote || '');
+                  setUsedMaterials(parsed.usedMaterials || []);
+              } catch(e) {}
+          }
+      } else if (!selectedJob) {
+          setWizardStep(1);
+          setUsedMaterials([]);
+          setJobNote('');
+          setDynamicForm({});
+      }
+  }, [selectedJob, slug]);
+
+  // 🚀 TASLAK (DRAFT) KAYDETME
+  useEffect(() => {
+      if (selectedJob && (selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada')) {
+          const draft = { dynamicForm, jobNote, usedMaterials };
+          localStorage.setItem(`draft_${slug}_${selectedJob.id}`, JSON.stringify(draft));
+      }
+  }, [dynamicForm, jobNote, usedMaterials, selectedJob, slug]);
+
+  // 🚀 ZORUNLU ALAN KONTROLÜ
+  const isStep2Valid = useCallback(() => {
+      const isFormFilled = currentFields.length === 0 || currentFields.every(f => dynamicForm[f.name] && String(dynamicForm[f.name]).trim() !== '');
+      const isNoteValid = jobNote && jobNote.trim().length >= 10;
+      return isFormFilled && isNoteValid;
+  }, [currentFields, dynamicForm, jobNote]);
+
   // 🚀 CHAT (MESAJLAŞMA) STATE'LERİ
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeChatId, setActiveChatId] = useState(null);
@@ -186,17 +225,17 @@ export default function WorkerDashboard() {
         });
         
         if (res.ok) {
-          hasChanges = true; // Başarılı, kuyruktan silinecek
-       } else {
-          // Sunucu hata verse bile EMEĞİ ASLA SİLME, kuyrukta tutmaya devam et!
-          console.warn(`Sunucu hatası (Kod: ${res.status}). İşlem silinmedi, kuyrukta bekliyor.`);
-          remaining.push(item); 
-       }
-     } catch (e) {
-       // İnternet yok. ASLA SİLME, kuyrukta tutmaya devam et!
-       remaining.push(item);
-     }
-   }
+           hasChanges = true; // Başarılı, kuyruktan silinecek
+        } else {
+           // Sunucu hata verse bile EMEĞİ ASLA SİLME, kuyrukta tutmaya devam et!
+           console.warn(`Sunucu hatası (Kod: ${res.status}). İşlem silinmedi, kuyrukta bekliyor.`);
+           remaining.push(item); 
+        }
+      } catch (e) {
+        // İnternet yok. ASLA SİLME, kuyrukta tutmaya devam et!
+        remaining.push(item);
+      }
+    }
     
     localStorage.setItem(`offline_actions_${slug}`, JSON.stringify(remaining));
     setPendingSyncCount(remaining.length);
@@ -502,7 +541,8 @@ const handleStatusUpdate = async (newStatus) => {
       lastEditedBy: userData.name,
       photos: photos,
       signatureImage: signatureImage,
-      signatureName: signatureName
+      signatureName: signatureName,
+      usedMaterials: usedMaterials || []
   };
 
     const attemptRequest = async (retries = 3) => {
@@ -534,18 +574,33 @@ const handleStatusUpdate = async (newStatus) => {
   };
 
   try {
-      // İstek atılır
-      await attemptRequest();
-      
-      // EĞER BURAYA GELDİYSE İŞLEM KESİN BAŞARILIDIR (KUYRUĞA ALMAZ)
-      setSelectedJob(null);
-      setJobNote('');
-      setDynamicForm({});
-      setPhotos([]);
-      clearSignature(); // İmzayı temizle
-      await fetchData(); // Verileri tazeleyerek arayüzü güncelle
-      
-  } catch (e) {
+    // İstek atılır
+    await attemptRequest();
+    
+    // EĞER BURAYA GELDİYSE İŞLEM KESİN BAŞARILIDIR
+    localStorage.removeItem(`draft_${slug}_${selectedJob.id}`);
+    
+    // Fiş Yazdırmayı Tetikle (Sadece Periyodik Bakımsa)
+    if (selectedJob.work_type === 'Periyodik Bakım') {
+        setSelectedThermalJob({
+            ...selectedJob, 
+            details: { ...selectedJob.details, note: finalNote, usedMaterials: usedMaterials }, 
+            signature_url: signatureImage, 
+            customer_signature_name: signatureName
+        });
+        setShowThermalPrintModal(true);
+    }
+
+    setSelectedJob(null);
+    setJobNote('');
+    setDynamicForm({});
+    setPhotos([]);
+    setUsedMaterials([]);
+    setWizardStep(1);
+    clearSignature(); 
+    await fetchData(); 
+    
+} catch (e) {
       // EĞER BURAYA GELDİYSE GERÇEKTEN İNTERNET YOKTUR (KUYRUĞA ALIR)
       console.warn("Bağlantı kurulamadı, işlem kuyruğa alındı.");
       const pending = JSON.parse(localStorage.getItem(`offline_actions_${slug}`) || '[]');
@@ -847,228 +902,199 @@ const handleStatusUpdate = async (newStatus) => {
                 
                 <div className="overflow-y-auto custom-scrollbar flex-1 pr-1 space-y-4">
                     
-                    <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100 shadow-sm">
-                            {(() => {
-                                const assigner = getAssignerInfo(selectedJob);
-                                return (
-                                    <>
-                                        {assigner.icon === 'ShieldCheck' ? <ShieldCheck size={14} className="text-blue-500"/> : <UserPlus size={14} className="text-slate-400"/>} 
-                                        {assigner.role}: <span className="text-slate-700">{assigner.name}</span>
-                                    </>
-                                );
-                            })()}
+                    <div className="flex justify-between items-center sticky top-0 bg-white z-20 pb-2 border-b border-slate-100 mb-2">
+                        <div className="flex items-center gap-2">
+                           {wizardStep > 1 && (
+                               <button onClick={() => setWizardStep(wizardStep - 1)} className="p-1.5 bg-slate-100 text-slate-600 rounded-lg active:scale-95"><ChevronRight size={18} className="rotate-180" /></button>
+                           )}
+                           <span className="text-xs font-black text-slate-800 uppercase tracking-widest">
+                               ADIM {wizardStep} / {selectedJob.work_type === 'Periyodik Bakım' && (selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') ? '3' : '2'}
+                           </span>
                         </div>
                         <button onClick={() => handleSmartClose()} className="hidden md:flex p-1.5 bg-slate-100 text-slate-500 rounded-lg hover:bg-rose-100 hover:text-rose-600 transition-colors"><X size={16}/></button>
                     </div>
 
-                    {(() => {
-                        const customerInfo = data?.customers?.find(c => c.name === selectedJob.customer_name);
-                        return (
-                            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-4">
-                                <div className="min-w-0">
-                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                                        <MapPin size={12}/> Müşteri
+                    {/* 🚀 ADIM 1: GÖREV ÖZETİ VE KEŞİF */}
+                    {wizardStep === 1 && (
+                        <motion.div initial={{opacity:0, x:-20}} animate={{opacity:1, x:0}} className="space-y-4">
+                            {(() => {
+                                const customerInfo = data?.customers?.find(c => c.name === selectedJob.customer_name);
+                                return (
+                                    <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-4">
+                                        <div className="min-w-0">
+                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1"><User size={12}/> Müşteri</div>
+                                            <h2 className="text-lg font-black text-slate-900 leading-tight mb-1 truncate">{selectedJob.customer_name}</h2>
+                                            {customerInfo?.contact ? <div className="text-xs font-bold text-slate-600">{customerInfo.contact}</div> : <div className="text-xs font-semibold text-slate-400 italic">Telefon bilgisi yok</div>}
+                                        </div>
+                                        {customerInfo?.contact && (
+                                            <a href={`tel:${customerInfo.contact.replace(/\s+/g, '')}`} className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm shrink-0 border border-emerald-100"><Phone size={20} /></a>
+                                        )}
                                     </div>
-                                    <h2 className="text-lg font-black text-slate-900 leading-tight mb-1 truncate">{selectedJob.customer_name}</h2>
-                                    {customerInfo?.contact ? (
-                                        <div className="text-xs font-bold text-slate-600">{customerInfo.contact}</div>
-                                    ) : (
-                                        <div className="text-xs font-semibold text-slate-400 italic">Telefon bilgisi yok</div>
-                                    )}
-                                </div>
-                                {customerInfo?.contact && (
-                                    <a 
-                                        href={`tel:${customerInfo.contact.replace(/\s+/g, '')}`} 
-                                        className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm shrink-0 border border-emerald-100"
-                                        title="Müşteriyi Ara"
-                                    >
-                                        <Phone size={20} />
-                                    </a>
-                                )}
-                            </div>
-                        );
-                    })()}
+                                );
+                            })()}
 
-                    {(() => {
-                        const asset = getAssetDetails(selectedJob.asset_id);
-                        if (!asset) return null;
-                        
-                        const mapQuery = encodeURIComponent(asset.location || asset.apartmentName || asset.name);
-                        // 🚀 DÜZELTİLDİ: Stabil Harita Linki
-                        const mapUrl = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
-
-                        return (
-                           <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
-                               <div className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                  <Box size={14} /> İlgili Varlık & Konum
-                               </div>
-                               <div className="text-sm font-black text-slate-800 mb-1">{asset.apartmentName || asset.name}</div>
-                               <div className="text-xs font-medium text-slate-600 mb-3">{asset.location || 'Konum belirtilmemiş.'}</div>
-                               
-                               <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="w-full bg-white border border-blue-200 text-blue-700 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 hover:bg-blue-600 hover:text-white transition-all shadow-sm">
-                                  <MapPin size={16} /> Haritada Yol Tarifi Al
-                               </a>
-                           </div>
-                        );
-                    })()}
-                    
-                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">GÖREV BİLGİSİ / TALİMAT</div>
-                        <div className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-1.5">
-                            <PenTool size={14} className="text-blue-500"/> {selectedJob.work_type}
-                        </div>
-                        {selectedJob.details?.note && (
-                            <div className="text-xs text-slate-600 italic border-l-2 border-slate-300 pl-3 whitespace-pre-wrap leading-relaxed">
-                                "{selectedJob.details.note}"
-                            </div>
-                        )}
-                    </div>
-
-                    {currentFields.length > 0 && (selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') && (
-                        <div className="bg-blue-50/50 p-4 sm:p-5 rounded-2xl border border-blue-100 space-y-4">
-                            <div className="text-[10px] font-black text-blue-700 uppercase tracking-widest flex items-center gap-1.5 border-b border-blue-200/50 pb-2 mb-3">
-                              <ClipboardList size={14} /> {staffBranch} KONTROL FORMU
-                            </div>
+                            {(() => {
+                                const asset = getAssetDetails(selectedJob.asset_id);
+                                if (!asset) return null;
+                                const mapUrl = `https://www.google.com/maps/search/?api=1&query=$${encodeURIComponent(asset.location || asset.apartmentName || asset.name)}`;
+                                return (
+                                   <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
+                                       <div className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Box size={14} /> İlgili Varlık & Konum</div>
+                                       <div className="text-sm font-black text-slate-800 mb-1">{asset.apartmentName || asset.name}</div>
+                                       <div className="text-xs font-medium text-slate-600 mb-3">{asset.location || 'Konum belirtilmemiş.'}</div>
+                                       <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="w-full bg-white border border-blue-200 text-blue-700 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm"><MapPin size={16} /> Haritada Yol Tarifi Al</a>
+                                   </div>
+                                );
+                            })()}
                             
-                            {currentFields.map(field => (
-                              <div key={field.name}>
-                                  <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest block mb-1.5">{field.label}</label>
-                                  {field.type === 'select' ? (
-                                    <select 
-                                        className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all appearance-none"
-                                        value={dynamicForm[field.name] || ''}
-                                        onChange={(e) => handleDynamicFormChange(field.name, e.target.value)}
-                                    >
-                                        <option value="">Seçiniz...</option>
-                                        {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                    </select>
-                                  ) : field.type === 'textarea' ? (
-                                    <textarea 
-                                        rows={2}
-                                        className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-none"
-                                        placeholder="Lütfen belirtin..."
-                                        value={dynamicForm[field.name] || ''}
-                                        onChange={(e) => handleDynamicFormChange(field.name, e.target.value)}
-                                    />
-                                  ) : (
-                                    <input 
-                                        type={field.type}
-                                        className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
-                                        placeholder="Değer girin"
-                                        value={dynamicForm[field.name] || ''}
-                                        onChange={(e) => handleDynamicFormChange(field.name, e.target.value)}
-                                    />
-                                  )}
-                              </div>
-                            ))}
-                        </div>
+                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">GÖREV BİLGİSİ / TALİMAT</div>
+                                <div className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-1.5"><PenTool size={14} className="text-blue-500"/> {selectedJob.work_type}</div>
+                                {selectedJob.details?.note && <div className="text-xs text-slate-600 italic border-l-2 border-slate-300 pl-3 whitespace-pre-wrap leading-relaxed">"{selectedJob.details.note}"</div>}
+                            </div>
+                        </motion.div>
                     )}
 
-                    {(selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') && (
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Saha Fotoğrafları (Opsiyonel)</label>
-                                <span className="text-[10px] font-bold text-slate-400">{photos.length} Seçildi</span>
+                    {/* 🚀 ADIM 2: SAHA KAYITLARI, STOK VE FORM */}
+                    {wizardStep === 2 && (
+                        <motion.div initial={{opacity:0, x:20}} animate={{opacity:1, x:0}} className="space-y-4 pb-2">
+                            {currentFields.length > 0 && (
+                                <div className="bg-blue-50/50 p-4 sm:p-5 rounded-2xl border border-blue-100 space-y-4">
+                                    <div className="text-[10px] font-black text-blue-700 uppercase tracking-widest flex items-center gap-1.5 border-b border-blue-200/50 pb-2 mb-3">
+                                      <ClipboardList size={14} /> {staffBranch} KONTROL FORMU <span className="text-rose-500 ml-auto">*Zorunlu</span>
+                                    </div>
+                                    {currentFields.map(field => (
+                                      <div key={field.name}>
+                                          <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest block mb-1.5">{field.label}</label>
+                                          {field.type === 'select' ? (
+                                            <select className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:border-blue-500" value={dynamicForm[field.name] || ''} onChange={(e) => handleDynamicFormChange(field.name, e.target.value)}>
+                                                <option value="">Seçiniz...</option>
+                                                {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                            </select>
+                                          ) : <input type={field.type} className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:border-blue-500" placeholder="Değer girin" value={dynamicForm[field.name] || ''} onChange={(e) => handleDynamicFormChange(field.name, e.target.value)} />}
+                                      </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest block mb-2">Yapılan İşlem / Saha Notu <span className="text-rose-500">*Zorunlu (Min. 10 Karakter)</span></label>
+                                <textarea rows={3} value={jobNote} onChange={(e) => setJobNote(e.target.value)} placeholder="Yapılan işlemleri detaylıca yazın..." className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm font-medium outline-none focus:border-blue-500 shadow-sm" />
                             </div>
-                            
-                            <input 
-                                type="file" 
-                                accept="image/*" 
-                                /* multiple özelliği kaldırıldı, bu sayede sistem Kamera seçeneğini gizlemeyecek */
-                                ref={fileInputRef}
-                                onChange={handlePhotoSelect} 
-                                className="hidden" 
-                            />
 
-                            <div className="flex flex-wrap gap-2">
-                                <button 
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="w-20 h-20 bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center text-slate-400 hover:bg-slate-100 hover:border-blue-400 hover:text-blue-500 transition-all active:scale-95"
+                            {/* 🚀 KULLANILAN MALZEMELER (STOK) */}
+                            <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-100">
+                                <div className="text-[10px] font-black text-amber-700 uppercase tracking-widest flex items-center justify-between mb-3">
+                                   <div className="flex items-center gap-1.5"><Box size={14}/> Kullanılan Malzemeler (Stok)</div>
+                                </div>
+                                <select 
+                                    className="w-full bg-white border border-amber-200 rounded-xl px-4 py-3 text-sm font-semibold mb-3 outline-none focus:border-amber-500"
+                                    onChange={(e) => {
+                                        const selectedStock = data?.stock?.find(s => String(s.id) === String(e.target.value));
+                                        if (selectedStock && !usedMaterials.find(m => m.id === selectedStock.id)) {
+                                            setUsedMaterials([...usedMaterials, { id: selectedStock.id, name: selectedStock.item_name, quantity: 1, unit: selectedStock.unit_name }]);
+                                        }
+                                        e.target.value = ""; 
+                                    }}
                                 >
-                                    <Camera size={24} className="mb-1" />
-                                    <span className="text-[10px] font-bold">Ekle</span>
-                                </button>
-
-                                {photos.map((photoStr, idx) => (
-                                    <div key={idx} className="w-20 h-20 relative rounded-2xl overflow-hidden border border-slate-200 shadow-sm group">
-                                        <img src={photoStr} alt="Önizleme" className="w-full h-full object-cover" />
-                                        <button onClick={() => removePhoto(idx)} className="absolute top-1 right-1 bg-white/90 p-1 rounded-full text-rose-500 shadow-sm active:scale-95">
-                                            <X size={12} strokeWidth={3} />
-                                        </button>
+                                    <option value="">+ Depodan Malzeme Ekle (İsteğe Bağlı)</option>
+                                    {(data?.stock || []).map(s => <option key={s.id} value={s.id}>{s.item_name} (Stok: {s.quantity})</option>)}
+                                </select>
+                                
+                                {usedMaterials.map((mat, index) => (
+                                    <div key={index} className="flex items-center justify-between bg-white p-2.5 rounded-lg border border-amber-200 mb-2 shadow-sm">
+                                        <span className="text-xs font-bold text-slate-800 truncate pr-2">{mat.name}</span>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <input type="number" min="1" value={mat.quantity} onChange={(e) => {
+                                                const newMats = [...usedMaterials];
+                                                newMats[index].quantity = e.target.value;
+                                                setUsedMaterials(newMats);
+                                            }} className="w-16 p-1 text-center border border-slate-200 rounded text-xs font-bold" />
+                                            <span className="text-[10px] font-medium text-slate-500">{mat.unit}</span>
+                                            <button onClick={() => setUsedMaterials(usedMaterials.filter((_, i) => i !== index))} className="text-rose-500 p-1"><X size={14}/></button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
-                        </div>
+
+                            {/* FOTOĞRAF ALANI */}
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Saha Fotoğrafları (Opsiyonel)</label>
+                                    <span className="text-[10px] font-bold text-slate-400">{photos.length} Seçildi</span>
+                                </div>
+                                <input type="file" accept="image/*" multiple ref={fileInputRef} onChange={handlePhotoSelect} className="hidden" />
+                                <div className="flex flex-wrap gap-2">
+                                    <button onClick={() => fileInputRef.current?.click()} className="w-20 h-20 bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all active:scale-95">
+                                        <Camera size={24} className="mb-1" /><span className="text-[10px] font-bold">Ekle</span>
+                                    </button>
+                                    {photos.map((photoStr, idx) => (
+                                        <div key={idx} className="w-20 h-20 relative rounded-2xl overflow-hidden border border-slate-200 shadow-sm group">
+                                            <img src={photoStr} alt="Önizleme" className="w-full h-full object-cover" />
+                                            <button onClick={() => removePhoto(idx)} className="absolute top-1 right-1 bg-white/90 p-1 rounded-full text-rose-500 shadow-sm"><X size={12} strokeWidth={3} /></button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </motion.div>
                     )}
 
-{(selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') && (
-                        <div>
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Saha Notu (Opsiyonel)</label>
-                            <textarea 
-                                rows={3} 
-                                value={jobNote}
-                                onChange={(e) => setJobNote(e.target.value)}
-                                placeholder="Kullanılan ekstra malzeme, değişen parçalar, karşılaşılan sürpriz durumlar vb." 
-                                className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-none shadow-sm" 
-                            />
-                        </div>
-                    )}
-
-                    {/* 🚀 MÜŞTERİ İMZA ALANI */}
-                    {(selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') && selectedJob.work_type === 'Periyodik Bakım' && (
-                        <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-xl shadow-sm">
+                    {/* 🚀 ADIM 3: MÜŞTERİ İMZASI (SADECE PERİYODİK BAKIM) */}
+                    {wizardStep === 3 && selectedJob.work_type === 'Periyodik Bakım' && (
+                        <motion.div initial={{opacity:0, x:20}} animate={{opacity:1, x:0}} className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200">
                             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center justify-between">
-                                <span>Müşteri / Yetkili İmzası</span>
+                                <span>Müşteri / Yetkili İmzası <span className="text-rose-500">*Zorunlu</span></span>
                                 {signatureImage && <button onClick={clearSignature} className="text-rose-500 underline font-bold">Temizle</button>}
                             </div>
                             <input 
-                                type="text" 
-                                placeholder="İmzalayan Kişinin Adı Soyadı" 
-                                value={signatureName}
-                                onChange={(e) => setSignatureName(e.target.value)}
-                                className="w-full px-4 py-2.5 mb-3 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 bg-white"
+                                type="text" placeholder="İmzalayan Kişinin Adı Soyadı" value={signatureName} onChange={(e) => setSignatureName(e.target.value)}
+                                className="w-full px-4 py-3 mb-3 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500 bg-white"
                             />
-                            <div className="border-2 border-dashed border-slate-300 rounded-lg overflow-hidden bg-white touch-none">
+                            <div className="border-2 border-dashed border-slate-300 rounded-xl overflow-hidden bg-white touch-none">
                                 <canvas 
-                                    ref={signatureCanvasRef}
-                                    width={300}
-                                    height={150}
-                                    className="w-full h-[150px] cursor-crosshair"
-                                    onMouseDown={startDrawing}
-                                    onMouseMove={draw}
-                                    onMouseUp={endDrawing}
-                                    onMouseLeave={endDrawing}
-                                    onTouchStart={startDrawing}
-                                    onTouchMove={draw}
-                                    onTouchEnd={endDrawing}
+                                    ref={signatureCanvasRef} width={300} height={180} className="w-full h-[180px] cursor-crosshair"
+                                    onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={endDrawing} onMouseLeave={endDrawing}
+                                    onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={endDrawing}
                                 ></canvas>
                             </div>
-                        </div>
+                        </motion.div>
                     )}
                 </div>
 
-                <div className="pt-5 shrink-0 space-y-3">
+                <div className="pt-5 shrink-0 space-y-3 border-t border-slate-100 mt-2">
+                    {/* 🚀 DİNAMİK BUTON YÖNETİMİ */}
                     {selectedJob.status === 'Beklemede' || selectedJob.status === 'Gelecek' || selectedJob.status === 'Usta Bekliyor' ? (
-                        <button 
-                            disabled={isSaving}
-                            onClick={() => handleStatusUpdate('Devam Ediyor')}
-                            className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-base shadow-lg shadow-blue-200 active:scale-95 transition-all flex items-center justify-center gap-2"
-                        >
-                            {isSaving ? <Loader2 className="animate-spin" /> : <><PlayCircle size={20} /> İşe Başla (Sahadayım)</>}
+                        <button onClick={() => handleStatusUpdate('Devam Ediyor')} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-base shadow-lg shadow-blue-200 active:scale-95 flex justify-center gap-2">
+                            {isSaving ? <Loader2 className="animate-spin" /> : <><PlayCircle size={20} /> İşe Başla / Keşfe Çıktım</>}
                         </button>
                     ) : (
-                        <button 
-                            disabled={isSaving}
-                            onClick={() => handleStatusUpdate('Tamamlandı')}
-                            className="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black text-base shadow-lg shadow-emerald-200 active:scale-95 transition-all flex items-center justify-center gap-2"
-                        >
-                            {isSaving ? <Loader2 className="animate-spin" /> : <><CheckCircle2 size={20} /> Formu Kaydet & İşi Tamamla</>}
-                        </button>
+                        <>
+                            {wizardStep === 1 && (
+                                <button onClick={() => setWizardStep(2)} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-base shadow-lg shadow-blue-200 active:scale-95 flex justify-center gap-2">
+                                    Formu Doldurmaya Başla <ChevronRight size={20} />
+                                </button>
+                            )}
+                            
+                            {wizardStep === 2 && selectedJob.work_type === 'Periyodik Bakım' && (
+                                <button onClick={() => setWizardStep(3)} disabled={!isStep2Valid()} className="w-full bg-indigo-600 disabled:bg-slate-300 disabled:text-slate-500 text-white py-4 rounded-2xl font-black text-base shadow-lg shadow-indigo-200 active:scale-95 flex justify-center gap-2 transition-all">
+                                    İleri: Müşteri İmzası Al <ChevronRight size={20} />
+                                </button>
+                            )}
+
+                            {wizardStep === 2 && selectedJob.work_type !== 'Periyodik Bakım' && (
+                                <button onClick={() => handleStatusUpdate('Tamamlandı')} disabled={!isStep2Valid() || isSaving} className="w-full bg-emerald-500 disabled:bg-slate-300 disabled:text-slate-500 text-white py-4 rounded-2xl font-black text-base shadow-lg shadow-emerald-200 active:scale-95 flex justify-center gap-2 transition-all">
+                                    {isSaving ? <Loader2 className="animate-spin" /> : <><CheckCircle2 size={20} /> İşi Tamamla</>}
+                                </button>
+                            )}
+
+                            {wizardStep === 3 && (
+                                <button onClick={() => handleStatusUpdate('Tamamlandı')} disabled={!signatureImage || !signatureName.trim() || isSaving} className="w-full bg-emerald-500 disabled:bg-slate-300 disabled:text-slate-500 text-white py-4 rounded-2xl font-black text-base shadow-lg shadow-emerald-200 active:scale-95 flex justify-center gap-2 transition-all">
+                                    {isSaving ? <Loader2 className="animate-spin" /> : <><CheckCircle2 size={20} /> İmzayı Onayla & Fiş Yazdır</>}
+                                </button>
+                            )}
+                        </>
                     )}
-                    <button onClick={() => handleSmartClose()} className="w-full bg-white text-slate-600 py-3 rounded-2xl font-bold text-sm border-2 border-slate-200 active:scale-95 transition-all md:hidden">
-                        Vazgeç / Kapat
-                    </button>
+                    <button onClick={() => handleSmartClose()} className="w-full bg-white text-slate-600 py-3 rounded-2xl font-bold text-sm border-2 border-slate-200 active:scale-95 transition-all md:hidden">Vazgeç / Kapat</button>
                 </div>
               </motion.div>
             </div>

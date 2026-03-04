@@ -18,8 +18,11 @@ export default function JobDetailModal({
   setShowThermalPrintModal, setSelectedThermalJob
 }: any) {
 
-  // 🚀 Hangi alt modalın BU modal tarafından açıldığını takip ediyoruz
-  const [openedChild, setOpenedChild] = useState<'customer' | 'asset' | null>(null);
+// 🚀 Hangi alt modalın BU modal tarafından açıldığını takip ediyoruz
+const [openedChild, setOpenedChild] = useState<'customer' | 'asset' | null>(null);
+  
+// 🚀 Yeni Tab State'i (Yönetici Sekmeli Görünüm İçin)
+const [activeTab, setActiveTab] = useState('ozet');
   
   // 🚀 Şık Hata/Bilgi Modalı
   const [notification, setNotification] = useState<{show: boolean, msg: string, type: 'error' | 'success'}>({show: false, msg: '', type: 'success'});
@@ -743,214 +746,197 @@ export default function JobDetailModal({
               </div>
 
               {!isEditingJobDetail ? (
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6 space-y-4 sm:space-y-5 relative">
+                <div className="flex-1 flex flex-col min-h-0">
                     
-                    {(() => {
-                        // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA (Tertemiz)
-                        const creator = selectedJob.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
-                        let managerName = selectedJob.manager_name || null;
-                        let finalWorkerName = selectedJob.worker_name || null;
-
-                        // Eski veriler (json içi) için fallback (geri dönük uyumluluk)
-                        if (!finalWorkerName) {
-                            if (selectedJob.details?.worker_id) {
-                                const w = (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.details?.worker_id));
-                                if (w) finalWorkerName = w.name;
-                            } else if (selectedJob.staff_id) {
-                                const w = (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.staff_id));
-                                if (w && w.role === 'Usta') finalWorkerName = w.name;
-                            }
-                        }
-
-                        const dynamicStatus = getDynamicStatus(selectedJob, hasWorker);
-
-                        return (
-                            <>
-                                <AnimatePresence>
-                                {showCancelConfirm && (
-                                    <motion.div 
-                                       initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-                                       className="absolute inset-0 z-20 bg-white/95 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 sm:p-8 text-center rounded-b-2xl"
-                                    >
-                                       <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-4 shadow-inner">
-                                          <AlertTriangle size={32} />
-                                       </div>
-                                       <h3 className="text-xl font-black text-slate-800 mb-2">İşi İptal Etmek İstiyor musun?</h3>
-                                       <p className="text-sm font-medium text-slate-500 mb-8 max-w-[250px] leading-relaxed">Bu işlem sonucunda iş emri 'İptal' durumuna geçecek ve listeden kaldırılmayacaktır.</p>
-                                       <div className="flex flex-col sm:flex-row gap-3 w-full max-w-[250px] sm:max-w-none">
-                                           <button 
-                                              onClick={async () => {
-                                                  await handleAction('update-job', { 
-                                                      id: selectedJob.id, 
-                                                      status: 'İptal',
-                                                      lastEditedBy: data?.ownerName || 'Yönetici' 
-                                                  }, () => setSelectedJob(null), () => {});
-                                              }}
-                                              className="flex-1 bg-rose-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-rose-700 shadow-md shadow-rose-200 transition-all active:scale-95"
-                                           >
-                                              {isSaving ? <Loader2 className="animate-spin mx-auto" size={18} /> : 'Evet, İptal Et'}
-                                           </button>
-                                           <button 
-                                              onClick={() => handleSmartClose()}
-                                              className="flex-1 bg-white border-2 border-slate-200 text-slate-700 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95"
-                                           >
-                                              Vazgeç
-                                           </button>
-                                       </div>
-                                    </motion.div>
-                                )}
-                                </AnimatePresence>
-
-                                <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200">
-                                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">GÜNCEL DURUM</span>
-                                    <span className={`px-3 py-1.5 rounded-lg text-xs font-black border uppercase tracking-wider ${dynamicStatus.colorClass}`}>
-                                        {dynamicStatus.label}
-                                    </span>
-                                </div>
-
-                                {/* 🚀 DÜZELTİLDİ: GRID YAPSISI KUSURSUZLAŞTIRILDI */}
-                                {!isGeneralTask && (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
-                                        <div 
-                                          onClick={() => {
-                                              const theCustomer = (data?.customers || []).find((c:any) => c.name === selectedJob.customer_name);
-                                              if(theCustomer && setSelectedCustomer) {
-                                                  setOpenedChild('customer');
-                                                  setSelectedCustomer(theCustomer);
-                                              }
-                                          }}
-                                          className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 transition-colors group cursor-pointer active:scale-95 relative"
-                                        >
-                                            <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Müşteri Profili</div>
-                                            <div className="text-sm font-black text-slate-800 pr-5">{selectedJob.customer_name}</div>
-                                            <button className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">
-                                                <ArrowUpRight size={16} />
-                                            </button>
-                                        </div>
-                                        
-                                        {(() => {
-                                            const theAsset = selectedJob.asset_id ? (data?.assets || []).find((a:any) => String(a.id) === String(selectedJob.asset_id)) : null;
-                                            return (
-                                                <div 
-                                                   onClick={() => {
-                                                      if(selectedJob.asset_id && setSelectedAsset && theAsset) {
-                                                          setOpenedChild('asset');
-                                                          setSelectedAsset(theAsset);
-                                                      }
-                                                   }}
-                                                   className={`bg-white p-4 border border-slate-200 rounded-xl shadow-sm transition-colors relative ${selectedJob.asset_id ? 'hover:border-blue-300 cursor-pointer group active:scale-95' : 'opacity-70'}`}
-                                                >
-                                                    <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">İlgili Varlık / Cihaz</div>
-                                                    
-                                                    {theAsset?.apartmentName && (
-                                                        <div className="inline-block bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-[11px] font-bold mb-2 border border-blue-100">
-                                                            🏢 {theAsset.apartmentName}
-                                                        </div>
-                                                    )}
-
-                                                    <div className={`text-sm font-bold flex items-center gap-1.5 pr-5 ${selectedJob.asset_id ? 'text-slate-800' : 'text-slate-400 italic'}`}>
-                                                        <Box size={16} className={selectedJob.asset_id ? 'text-blue-500' : 'text-slate-300'}/>
-                                                        {theAsset ? theAsset.name : 'Varlık Seçilmemiş'}
-                                                    </div>
-                                                    {selectedJob.asset_id && (
-                                                        <button className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">
-                                                            <ArrowUpRight size={16} />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            );
-                                        })()}
-                                    </div>
-                                )}
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                                    <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
-                                         <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Görev Tipi</div>
-                                         <div className="text-sm font-bold text-slate-800">{selectedJob.work_type}</div>
-                                    </div>
-                                    
-                                    <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
-                                         <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Planlanan Tarih</div>
-                                         <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                            <Calendar size={16} className={dynamicStatus.label === 'Gecikti' ? 'text-rose-500' : 'text-blue-500'}/>
-                                            {selectedJob.scheduled_date || 'Anlık / Acil'}
-                                         </div>
-                                    </div>
-
-                                    <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm flex flex-col justify-center">
-                                         <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Sorumlu Yönetici</div>
-                                         <div className="text-sm font-bold text-slate-800 flex flex-col gap-1">
-                                            {managerName === creator ? (
-                                                <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 w-fit px-2 py-0.5 rounded border border-blue-100">
-                                                    <ShieldCheck size={14} /> {managerName} <span className="text-[9px] opacity-70 ml-1">(Oluşturan)</span>
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <div className="flex items-center gap-1.5 text-slate-500 text-xs">
-                                                        <UserPlus size={12} /> {creator} <span className="text-[9px] opacity-70">(Oluşturan)</span>
-                                                    </div>
-                                                    {managerName && (
-                                                        <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 w-fit px-2 py-0.5 rounded border border-blue-100 mt-1">
-                                                            <UserCheck size={14} /> {managerName}
-                                                        </div>
-                                                    )}
-                                                </>
-                                            )}
-                                         </div>
-                                    </div>
-
-                                    <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm flex flex-col justify-center">
-                                         <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Atanan Usta</div>
-                                         <div className={`text-sm font-bold flex items-center gap-2 ${finalWorkerName ? 'text-emerald-700' : (isGeneralTask ? 'text-slate-500' : 'text-rose-600')}`}>
-                                            <Wrench size={16} className={finalWorkerName ? 'text-emerald-500' : (isGeneralTask ? 'text-slate-400' : 'text-rose-400')}/>
-                                            {finalWorkerName ? finalWorkerName : (isGeneralTask ? 'Gerek Yok (Genel Görev)' : 'Henüz Atanmadı')}
-                                         </div>
-                                    </div>
-                                </div>
-                            </>
-                        );
-                    })()}
-
-                    {selectedJob.photos && selectedJob.photos.length > 0 && (
-                        <div className="bg-slate-50 p-4 sm:p-5 rounded-xl border border-slate-200">
-                            <div className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest flex items-center gap-1.5">
-                                <ImageIcon size={14} /> SAHA FOTOĞRAFLARI ({selectedJob.photos.length})
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {selectedJob.photos.map((photoUrl: string, idx: number) => (
-                                    <div 
-                                      key={idx} 
-                                      onClick={() => setFullScreenImage(photoUrl)}
-                                      className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition-all hover:scale-105 active:scale-95"
-                                    >
-                                        <img src={photoUrl} alt={`Saha Fotoğrafı ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="bg-slate-50 p-4 sm:p-5 rounded-xl border border-slate-200">
-                        <div className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">GÖREV NOTLARI / AÇIKLAMA</div>
-                        <p className="text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-wrap italic border-l-2 border-slate-300 pl-3">
-                            "{selectedJob.details?.note || 'Herhangi bir not girilmemiş.'}"
-                        </p>
+                    {/* 🚀 YENİ SEKME (TAB) MENÜSÜ */}
+                    <div className="flex items-center px-4 sm:px-6 pt-2 border-b border-slate-200 shrink-0 gap-4 overflow-x-auto custom-scrollbar">
+                        <button onClick={() => setActiveTab('ozet')} className={`pb-3 text-xs font-black uppercase tracking-widest border-b-2 transition-colors whitespace-nowrap ${activeTab === 'ozet' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>Özet Bilgi</button>
+                        
+                        {(selectedJob.details?.note || selectedJob.details?.usedMaterials || Object.keys(selectedJob.details || {}).length > 2) && (
+                           <button onClick={() => setActiveTab('form')} className={`pb-3 text-xs font-black uppercase tracking-widest border-b-2 transition-colors whitespace-nowrap ${activeTab === 'form' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>Form & Stok</button>
+                        )}
+                        
+                        {(selectedJob.photos?.length > 0 || selectedJob.signature_url) && (
+                           <button onClick={() => setActiveTab('medya')} className={`pb-3 text-xs font-black uppercase tracking-widest border-b-2 transition-colors whitespace-nowrap ${activeTab === 'medya' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>Medya & İmza</button>
+                        )}
                     </div>
 
-                    {selectedJob.details?.lastEditedBy && (
-                        <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50/50 border border-emerald-100 rounded-xl">
-                            <ShieldCheck size={18} className="textemerald-600 shrink-0" />
-                            <div className="flex flex-col">
-                                <span className="text-[10px] text-emerald-600 font-black uppercase tracking-widest mb-0.5">Güvenlik Kaydı</span>
-                                <span className="text-xs font-medium text-slate-600">
-                                    Son işlem <strong className="text-slate-800">{selectedJob.details.lastEditedBy}</strong> tarafından yapıldı.
-                                </span>
-                            </div>
-                        </div>
-                    )}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6 relative">
+                        
+                        {/* 🚀 TAB 1: ÖZET */}
+                        {activeTab === 'ozet' && (
+                            <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="space-y-4 sm:space-y-5">
+                                {(() => {
+                                    const creator = selectedJob.creator_name || (data?.ownerName?.split(' ')[0] || 'Sistem');
+                                    let managerName = selectedJob.manager_name || null;
+                                    let finalWorkerName = selectedJob.worker_name || null;
 
-                    <div className="pt-4 border-t border-slate-100 space-y-3">
-                        {/* 🚀 ONAY BEKLİYOR DÜZELTMESİ: 2 Faktörlü Sistem ve Genel Görev Fiyat Ayrımı */}
+                                    if (!finalWorkerName) {
+                                        if (selectedJob.details?.worker_id) {
+                                            const w = (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.details?.worker_id));
+                                            if (w) finalWorkerName = w.name;
+                                        } else if (selectedJob.staff_id) {
+                                            const w = (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.staff_id));
+                                            if (w && w.role === 'Usta') finalWorkerName = w.name;
+                                        }
+                                    }
+
+                                    const dynamicStatus = getDynamicStatus(selectedJob, hasWorker);
+
+                                    return (
+                                        <>
+                                            <AnimatePresence>
+                                            {showCancelConfirm && (
+                                                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="absolute inset-0 z-20 bg-white/95 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 text-center rounded-b-2xl">
+                                                <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-4 shadow-inner"><AlertTriangle size={32} /></div>
+                                                <h3 className="text-xl font-black text-slate-800 mb-2">İşi İptal Etmek İstiyor musun?</h3>
+                                                <div className="flex gap-3 w-full max-w-[250px]">
+                                                    <button onClick={async () => { await handleAction('update-job', { id: selectedJob.id, status: 'İptal' }, () => setSelectedJob(null), () => {}); }} className="flex-1 bg-rose-600 text-white py-3 rounded-xl text-sm font-bold shadow-md active:scale-95">{isSaving ? <Loader2 className="animate-spin mx-auto" size={18} /> : 'Evet, İptal'}</button>
+                                                    <button onClick={() => setShowCancelConfirm(false)} className="flex-1 bg-white border-2 border-slate-200 text-slate-700 py-3 rounded-xl text-sm font-bold active:scale-95">Vazgeç</button>
+                                                </div>
+                                                </motion.div>
+                                            )}
+                                            </AnimatePresence>
+
+                                            <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                                <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">GÜNCEL DURUM</span>
+                                                <span className={`px-3 py-1.5 rounded-lg text-xs font-black border uppercase tracking-wider ${dynamicStatus.colorClass}`}>{dynamicStatus.label}</span>
+                                            </div>
+
+                                            {!isGeneralTask && (
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                                    <div onClick={() => {
+                                                        const theCustomer = (data?.customers || []).find((c:any) => c.name === selectedJob.customer_name);
+                                                        if(theCustomer && setSelectedCustomer) { setOpenedChild('customer'); setSelectedCustomer(theCustomer); }
+                                                    }} className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 transition-colors cursor-pointer group relative">
+                                                        <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Müşteri Profili</div>
+                                                        <div className="text-sm font-black text-slate-800 pr-5">{selectedJob.customer_name}</div>
+                                                        <ArrowUpRight size={16} className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500" />
+                                                    </div>
+                                                    
+                                                    {(() => {
+                                                        const theAsset = selectedJob.asset_id ? (data?.assets || []).find((a:any) => String(a.id) === String(selectedJob.asset_id)) : null;
+                                                        return (
+                                                            <div onClick={() => {
+                                                                if(selectedJob.asset_id && setSelectedAsset && theAsset) { setOpenedChild('asset'); setSelectedAsset(theAsset); }
+                                                            }} className={`bg-white p-4 border border-slate-200 rounded-xl shadow-sm relative ${selectedJob.asset_id ? 'hover:border-blue-300 cursor-pointer group' : 'opacity-70'}`}>
+                                                                <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">İlgili Varlık</div>
+                                                                {theAsset?.apartmentName && <div className="inline-block bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold mb-1">🏢 {theAsset.apartmentName}</div>}
+                                                                <div className="text-sm font-bold text-slate-800 pr-5 truncate">{theAsset ? theAsset.name : 'Seçilmemiş'}</div>
+                                                                {selectedJob.asset_id && <ArrowUpRight size={16} className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500" />}
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            )}
+
+                                            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                                                <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
+                                                    <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Görev Tipi</div>
+                                                    <div className="text-sm font-bold text-slate-800">{selectedJob.work_type}</div>
+                                                </div>
+                                                <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
+                                                    <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Planlanan Tarih</div>
+                                                    <div className="text-sm font-bold text-slate-800">{selectedJob.scheduled_date || 'Anlık'}</div>
+                                                </div>
+                                                <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm col-span-2 flex justify-between items-center">
+                                                     <div>
+                                                         <div className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Saha Ustası</div>
+                                                         <div className="text-sm font-bold text-emerald-700 flex items-center gap-1.5"><Wrench size={14}/> {finalWorkerName || 'Atanmadı'}</div>
+                                                     </div>
+                                                </div>
+                                            </div>
+                                        </>
+                                    );
+                                })()}
+                            </motion.div>
+                        )}
+
+                        {/* 🚀 TAB 2: FORM VE STOK */}
+                        {activeTab === 'form' && (
+                             <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="space-y-4">
+                                 {/* Form Kontrol Listesi */}
+                                 {(() => {
+                                     const excludeKeys = ['note', 'price', 'lastEditedBy', 'lastEditedAt', 'managerName', 'managerId', 'createdBy', 'worker_id', 'assetName', 'usedMaterials'];
+                                     const formEntries = Object.entries(selectedJob.details || {}).filter(([k]) => !excludeKeys.includes(k));
+                                     if (formEntries.length === 0) return null;
+                                     return (
+                                         <div className="bg-blue-50/50 p-5 rounded-2xl border border-blue-100">
+                                             <div className="text-xs font-black text-blue-800 uppercase border-b border-blue-200/50 pb-2 mb-3">Kontrol Edilen Aksamlar</div>
+                                             <div className="space-y-2">
+                                                 {formEntries.map(([key, value], idx) => (
+                                                     <div key={idx} className="flex justify-between items-center py-2 border-b border-blue-100/50 last:border-0 text-sm">
+                                                         <span className="font-semibold text-slate-700">{key}</span>
+                                                         <span className="font-black text-slate-900">{String(value)}</span>
+                                                     </div>
+                                                 ))}
+                                             </div>
+                                         </div>
+                                     );
+                                 })()}
+
+                                 {/* Usta Saha Notu */}
+                                 {selectedJob.details?.note && (
+                                     <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                                         <div className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Usta Saha Notu</div>
+                                         <p className="text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-wrap italic border-l-2 border-slate-300 pl-3">
+                                             "{selectedJob.details.note}"
+                                         </p>
+                                     </div>
+                                 )}
+
+                                 {/* Kullanılan Malzemeler (Stok) */}
+                                 {selectedJob.details?.usedMaterials && selectedJob.details.usedMaterials.length > 0 && (
+                                     <div className="bg-amber-50/50 p-5 rounded-2xl border border-amber-100">
+                                         <div className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-3 flex items-center gap-1.5"><Box size={14}/> Sistemden Düşülen Malzemeler</div>
+                                         <div className="space-y-2">
+                                             {selectedJob.details.usedMaterials.map((mat:any, i:number) => (
+                                                 <div key={i} className="flex justify-between items-center bg-white p-3 rounded-lg border border-amber-200 shadow-sm">
+                                                     <span className="text-xs font-bold text-slate-800">{mat.name}</span>
+                                                     <span className="text-xs font-black text-amber-600 bg-amber-100 px-2 py-1 rounded">{mat.quantity} {mat.unit}</span>
+                                                 </div>
+                                             ))}
+                                         </div>
+                                     </div>
+                                 )}
+                             </motion.div>
+                        )}
+
+                        {/* 🚀 TAB 3: MEDYA VE İMZA */}
+                        {activeTab === 'medya' && (
+                            <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="space-y-6">
+                                {selectedJob.photos && selectedJob.photos.length > 0 && (
+                                    <div>
+                                        <div className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest flex items-center gap-1.5">
+                                            <ImageIcon size={14} /> Saha Fotoğrafları
+                                        </div>
+                                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                            {selectedJob.photos.map((photoUrl: string, idx: number) => (
+                                                <div key={idx} onClick={() => setFullScreenImage(photoUrl)} className="aspect-square rounded-xl overflow-hidden border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition-all hover:scale-105 active:scale-95">
+                                                    <img src={photoUrl} alt="Saha" className="w-full h-full object-cover" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedJob.signature_url && (
+                                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 text-center">
+                                        <p className="text-xs text-slate-500 mb-4 italic">Bu form müşteri nezaretinde elektronik imza ile onaylanmıştır.</p>
+                                        <div className="inline-block bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">İmzalayan: <span className="text-slate-800">{selectedJob.customer_signature_name}</span></div>
+                                            <img src={selectedJob.signature_url} crossOrigin="anonymous" alt="Müşteri İmzası" className="h-24 mx-auto object-contain mix-blend-multiply" />
+                                        </div>
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
+
+                    </div>
+
+                    {/* 🚀 ALT AKSİYON BUTONLARI (Fiyat Onay vb.) */}
+                    <div className="p-4 border-t border-slate-100 bg-white shrink-0">
+                        {/* Onay ve Fiyat Bloğu */}
                         {selectedJob.status === 'Onay Bekliyor' && (
                                     <div className="bg-amber-50 border border-amber-200 p-4 sm:p-5 rounded-2xl flex flex-col gap-3 shadow-inner">
                                        <div className="text-amber-800 font-black text-sm flex items-center gap-2"><AlertTriangle size={18}/> Personel İşi Tamamladı. Onayınız Bekleniyor.</div>
@@ -1052,149 +1038,12 @@ export default function JobDetailModal({
                                         </button>
                                     ) : (
                                         <>
-                                            {/* DÜZENLE BUTONU */}
                                             <button 
                                                 onClick={handleEditClick}
                                                 className="flex-1 w-full bg-slate-900 text-white py-3.5 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"
                                             >
                                                 <Settings size={16} /> {isGeneralTask ? 'Detayları Düzenle' : 'Düzenle / Ata'}
                                             </button>
-                                            
-                                            {/* 🚀 EKLENDİ: DEVAM EDİYOR DURUMUNDAKİ AKSİYONLAR (Fotoğraf + Tamamlama/Onaya Gönderme) */}
-                                            {selectedJob.status === 'Devam Ediyor' && (
-                                                <div className="flex flex-col sm:flex-row w-full gap-2 w-full order-last sm:order-none mt-2 sm:mt-0">
-                                                    
-                                                    {/* 🚀 FOTOĞRAF YÜKLEME BUTONU VE BASE64 SIKIŞTIRMA SİSTEMİ */}
-                                                    <label className="flex-1 w-full bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-sm cursor-pointer">
-                                                        {isUploadingPhoto ? <Loader2 size={16} className="animate-spin" /> : <ImageIcon size={16} />}
-                                                        {isUploadingPhoto ? 'Yükleniyor...' : 'Fotoğraf Ekle'}
-                                                        <input 
-                                                        type="file" 
-                                                        accept="image/*" 
-                                                        /* capture="environment" kaldırıldı ki Kamera veya Galeri diye sorsun */
-                                                        className="hidden" 
-                                                        disabled={isUploadingPhoto}
-                                                            onChange={async (e) => {
-                                                                const file = e.target.files?.[0];
-                                                                if(!file) return;
-                                                                setIsUploadingPhoto(true);
-
-                                                                // 🚀 Usta Tarafındaki Base64 Sıkıştırma Algoritması
-                                                                const compressed = await new Promise((resolve) => {
-                                                                    const reader = new FileReader();
-                                                                    reader.onload = (event) => {
-                                                                        const img = new Image();
-                                                                        img.onload = () => {
-                                                                            const canvas = document.createElement('canvas');
-                                                                            const MAX_WIDTH = 1920; 
-                                                                            let scale = 1;
-                                                                            if (img.width > MAX_WIDTH) scale = MAX_WIDTH / img.width; 
-                                                                            canvas.width = img.width * scale;
-                                                                            canvas.height = img.height * scale;
-                                                                            const ctx = canvas.getContext('2d');
-                                                                            if (ctx) { // TypeScript ctx null hatası çözümü
-                                                                                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                                                                            }
-                                                                            resolve(canvas.toDataURL('image/jpeg', 0.90)); 
-                                                                        };
-                                                                        if (event.target && event.target.result) { // TypeScript event.target null hatası çözümü
-                                                                            img.src = event.target.result as string;
-                                                                        }
-                                                                    };
-                                                                    reader.readAsDataURL(file);
-                                                                });
-
-                                                                // Sıkıştırılmış veriyi direkt JSON ile endpoint'e gönderiyoruz
-                                                                await handleAction('update-job', { 
-                                                                    id: selectedJob.id, 
-                                                                    status: selectedJob.status, // Statü sabit kalıyor
-                                                                    lastEditedBy: data?.ownerName || 'Yönetici',
-                                                                    photos: [compressed], // Yalnızca yeni eklenen fotoğraf
-                                                                    taskNote: selectedJob.details?.note // Not silinmesin diye koruyoruz
-                                                                }, null, null);
-
-                                                                // Modalı kapatmadan UI'ı güncelle
-                                                                const updatedPhotos = [...(selectedJob.photos || []), compressed];
-                                                                setSelectedJob({ ...selectedJob, photos: updatedPhotos });
-
-                                                                setIsUploadingPhoto(false);
-                                                                e.target.value = ''; // Inputu sıfırla
-                                                            }} 
-                                                        />
-                                                    </label>
-                                                </div>
-                                            )}
-                                            
-                                            {/* 🚀 MÜŞTERİ İMZA ALANI (SADECE PERİYODİK BAKIMDA VE SAHADAYKEN ÇIKAR) */}
-                                            {selectedJob.status === 'Devam Ediyor' && selectedJob.work_type === 'Periyodik Bakım' && (
-                                                <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-xl shadow-sm">
-                                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center justify-between">
-                                                        <span>Müşteri / Yetkili İmzası</span>
-                                                        {signatureImage && <button onClick={clearSignature} className="text-rose-500 underline">Temizle</button>}
-                                                    </div>
-                                                    
-                                                    <input 
-                                                        type="text" 
-                                                        placeholder="İmzalayan Kişinin Adı Soyadı" 
-                                                        value={signatureName}
-                                                        onChange={(e) => setSignatureName(e.target.value)}
-                                                        className="w-full px-4 py-2.5 mb-3 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
-                                                    />
-
-                                                    <div className="border-2 border-dashed border-slate-300 rounded-lg overflow-hidden bg-white touch-none">
-                                                        <canvas 
-                                                            ref={signatureCanvasRef}
-                                                            width={300}
-                                                            height={150}
-                                                            className="w-full h-[150px] cursor-crosshair"
-                                                            onMouseDown={startDrawing}
-                                                            onMouseMove={draw}
-                                                            onMouseUp={endDrawing}
-                                                            onMouseLeave={endDrawing}
-                                                            onTouchStart={startDrawing}
-                                                            onTouchMove={draw}
-                                                            onTouchEnd={endDrawing}
-                                                        ></canvas>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Sadece iş ustaya atandıysa o usta görebilir, ya da yönetici kendine iş açtıysa kendi görebilir. Çakışma Düzeltildi. */}
-                                            {(userRole === 'Usta' || !hasWorker) && selectedJob.status === 'Devam Ediyor' && (
-                                                <div className="mt-4">
-                                                    <button
-                                                        onClick={async () => {
-                                                            // 🚀 İMZA ZORUNLULUĞU KONTROLÜ
-                                                            if (selectedJob.work_type === 'Periyodik Bakım') {
-                                                                if (!signatureImage) {
-                                                                    alert("Lütfen müşteriden imza alınız.");
-                                                                    return;
-                                                                }
-                                                                if (!signatureName.trim()) {
-                                                                    alert("Lütfen imzalayan kişinin adını giriniz.");
-                                                                    return;
-                                                                }
-                                                            }
-
-                                                            setIsApproving(true);
-                                                            const nextStatus = userRole === 'Usta' ? 'Onay Bekliyor' : 'Tamamlandı';
-                                                            await handleAction('update-job', {
-                                                                id: selectedJob.id,
-                                                                status: nextStatus,
-                                                                lastEditedBy: data?.ownerName || 'Yönetici',
-                                                                signatureImage: signatureImage, // 🚀 İmzayı Gönder
-                                                                signatureName: signatureName    // 🚀 İsmi Gönder
-                                                            }, () => setSelectedJob(null), null);
-                                                            setIsApproving(false);
-                                                        }}
-                                                        disabled={isApproving}
-                                                        className={`w-full text-white py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md disabled:opacity-50 ${userRole === 'Usta' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-500 hover:bg-emerald-600'}`}
-                                                    >
-                                                        {isApproving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
-                                                        {userRole === 'Usta' ? 'İşi Bitir & Onaya Gönder' : 'İşi Tamamla'}
-                                                    </button>
-                                                </div>
-                                            )}
                                         </>
                                     )}
                                 </>
