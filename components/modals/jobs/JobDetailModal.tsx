@@ -825,9 +825,21 @@ useEffect(() => {
                                                                 if(selectedJob.asset_id && setSelectedAsset && theAsset) { setOpenedChild('asset'); setSelectedAsset(theAsset); }
                                                             }} className={`bg-white p-4 border border-slate-200 rounded-xl shadow-sm relative ${selectedJob.asset_id ? 'hover:border-blue-300 cursor-pointer group' : 'opacity-70'}`}>
                                                                 <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">İlgili Varlık</div>
-                                                                {theAsset?.apartmentName && <div className="inline-block bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold mb-1">🏢 {theAsset.apartmentName}</div>}
-                                                                <div className="text-sm font-bold text-slate-800 pr-5 truncate">{theAsset ? theAsset.name : 'Seçilmemiş'}</div>
-                                                                {selectedJob.asset_id && <ArrowUpRight size={16} className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500" />}
+                                                                
+                                                                {theAsset?.apartmentName ? (
+                                                                    <>
+                                                                        <div className="text-sm font-bold text-slate-800 pr-5 truncate flex items-center gap-1.5">
+                                                                            🏢 {theAsset.apartmentName}
+                                                                        </div>
+                                                                        <div className="text-[11px] font-medium text-slate-500 mt-0.5 pr-5 truncate">
+                                                                            {theAsset.name}
+                                                                        </div>
+                                                                    </>
+                                                                ) : (
+                                                                    <div className="text-sm font-bold text-slate-800 pr-5 truncate">{theAsset ? theAsset.name : 'Seçilmemiş'}</div>
+                                                                )}
+
+                                                                {selectedJob.asset_id && <ArrowUpRight size={16} className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors" />}
                                                             </div>
                                                         );
                                                     })()}
