@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Clock, CheckCircle2, MessageSquareText, LogOut, ChevronRight, PenTool, Loader2, AlertCircle, PlayCircle, ClipboardList, WifiOff, Download, Share, Check, Camera, X, ShieldCheck, UserPlus, Box, Phone, User, Briefcase } from 'lucide-react';
+import { MapPin, Clock, CheckCircle2, MessageSquareText, LogOut, ChevronRight, PenTool, Loader2, AlertCircle, PlayCircle, ClipboardList, WifiOff, Download, Share, Check, Camera, X, ShieldCheck, UserPlus, Box, Phone, User, Briefcase, Map, AlertOctagon, Navigation, PlusCircle } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 import Header from '@/components/layout/Header';
 import WorkerSidebar from '@/components/layout/WorkerSidebar'; 
@@ -55,15 +55,100 @@ export default function WorkerDashboard() {
   const [wizardStep, setWizardStep] = useState(1);
   const [usedMaterials, setUsedMaterials] = useState([]);
 
-  // 🚀 ÇÖKME HATASINI ÖNLEMEK İÇİN YUKARI TAŞINAN STATE'LER (FOTO VE İMZA)
-  const [photos, setPhotos] = useState([]);
-  const fileInputRef = useRef(null);
-  const [signatureName, setSignatureName] = useState('');
-  const [signatureImage, setSignatureImage] = useState(null);
-  const signatureCanvasRef = useRef(null);
-  const [isDrawing, setIsDrawing] = useState(false);
+// 🚀 ÇÖKME HATASINI ÖNLEMEK İÇİN YUKARI TAŞINAN STATE'LER (FOTO VE İMZA)
+const [photos, setPhotos] = useState([]);
+const fileInputRef = useRef(null);
+const [signatureName, setSignatureName] = useState('');
+const [signatureImage, setSignatureImage] = useState(null);
+const signatureCanvasRef = useRef(null);
+const [isDrawing, setIsDrawing] = useState(false);
 
-  // 🚀 ÇÖZÜM: 'currentFields' değişkenini kullanıldığı yerlerden ÖNCE tanımlıyoruz!
+// 🚀 ŞIK STOK SEÇİM MODALI İÇİN YENİ STATE'LER (EKLENDİ)
+const [showStockSelectorModal, setShowStockSelectorModal] = useState(false);
+const [stockSearchTerm, setStockSearchTerm] = useState('');
+const [selectedStockCategory, setSelectedStockCategory] = useState('Tümü');
+
+// 🚀 YENİ ÖZELLİK: MALZEME TALEP VE SOS STATE'LERİ
+const [showMaterialModal, setShowMaterialModal] = useState(false);
+const [materialRequestItems, setMaterialRequestItems] = useState([]);
+const [materialNote, setMaterialNote] = useState('');
+const [materialSearch, setMaterialSearch] = useState('');
+
+const [showSOSModal, setShowSOSModal] = useState(false);
+const [sosType, setSosType] = useState('Araç Arızası');
+const [sosMessage, setSosMessage] = useState('');
+
+// 🚀 YENİ ÖZELLİK: GOOGLE MAPS ROTA OLUŞTURUCU
+const openGoogleMapsRoute = () => {
+    const addresses = pendingJobs.map(job => {
+        const asset = getAssetDetails(job.asset_id);
+        return asset ? (asset.location || asset.apartmentName || asset.name) : job.customer_name;
+    }).filter(Boolean);
+
+    if(addresses.length === 0) {
+        setNotification({ show: true, msg: 'Rotaya eklenecek bekleyen iş bulunamadı.', type: 'warning' });
+        setTimeout(() => setNotification({ show: false, msg: '', type: 'success' }), 3000);
+        return;
+    }
+    const url = `https://www.google.com/maps/dir//${addresses.map(a => encodeURIComponent(a)).join('/')}`;
+    window.open(url, '_blank');
+};
+
+// 🚀 YENİ ÖZELLİK: MALZEME TALEBİ GÖNDERİCİ
+const handleRequestMaterial = async () => {
+    if(materialRequestItems.length === 0) return;
+    setIsSaving(true);
+    const token = localStorage.getItem('staff_authToken');
+    try {
+        await fetch(`${API_URL}/request-material`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ slug, staffId: userData?.id, items: materialRequestItems, note: materialNote })
+        });
+        setNotification({ show: true, msg: 'Talebiniz yöneticiye başarıyla iletildi.', type: 'success' });
+        setShowMaterialModal(false);
+        setMaterialRequestItems([]);
+        setMaterialNote('');
+        setTimeout(() => setNotification({ show: false, msg: '', type: 'success' }), 3000);
+    } catch(e) {
+        setNotification({ show: true, msg: 'İletilemedi, internet bağlantınızı kontrol edin.', type: 'error' });
+        setTimeout(() => setNotification({ show: false, msg: '', type: 'success' }), 3000);
+    }
+    setIsSaving(false);
+};
+
+// 🚀 YENİ ÖZELLİK: SOS GÖNDERİCİ
+const handleSendSOS = async () => {
+    setIsSaving(true);
+    const token = localStorage.getItem('staff_authToken');
+    let location = null;
+    try {
+        const pos = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000 });
+        });
+        location = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    } catch (e) {
+        console.warn("Konum alınamadı.");
+    }
+
+    try {
+        await fetch(`${API_URL}/send-sos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ slug, staffId: userData?.id, type: sosType, message: sosMessage, location })
+        });
+        setNotification({ show: true, msg: 'Acil durum bildiriminiz merkeze ulaştı.', type: 'success' });
+        setShowSOSModal(false);
+        setSosMessage('');
+        setTimeout(() => setNotification({ show: false, msg: '', type: 'success' }), 4000);
+    } catch(e) {
+        setNotification({ show: true, msg: 'Hata oluştu. Lütfen çağrı merkezini arayın.', type: 'error' });
+        setTimeout(() => setNotification({ show: false, msg: '', type: 'success' }), 3000);
+    }
+    setIsSaving(false);
+};
+
+// 🚀 ÇÖZÜM: 'currentFields' değişkenini kullanıldığı yerlerden ÖNCE tanımlıyoruz!
   const currentFields = (companySector && staffBranch && sectorsData.sectors?.[companySector]?.subTypes?.[staffBranch]?.fields) || [];
 
   // 🚀 TASLAK (DRAFT) YÜKLEME (FOTOĞRAFLAR, İMZA VE ADIM NUMARASI EKLENDİ)
@@ -141,6 +226,11 @@ export default function WorkerDashboard() {
       setIsChatOpen(false);
       return true;
     }
+
+// Stok Seçim Modalı Açıksa ÖNCE ONU KAPAT
+if (showStockSelectorModal) { stopEvent(); setShowStockSelectorModal(false); return true; }
+if (showMaterialModal) { stopEvent(); setShowMaterialModal(false); return true; }
+if (showSOSModal) { stopEvent(); setShowSOSModal(false); return true; }
 
     if (selectedJob) {
       stopEvent();
@@ -816,10 +906,29 @@ const handleStatusUpdate = async (newStatus) => {
                 </div>
               )}
 
-              <div>
-                <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <AlertCircle size={14} /> SIRADAKİ GÖREVLER
-                </h2>
+<div className="pt-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <AlertCircle size={14} /> SIRADAKİ GÖREVLER
+                    </h2>
+                    
+                    {/* 🚀 YENİ HIZLI ERİŞİM BUTONLARI */}
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={openGoogleMapsRoute}
+                            className="flex-1 sm:flex-none bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-200 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm"
+                        >
+                            <Map size={14} /> Rotayı Çiz
+                        </button>
+                        <button 
+                            onClick={() => setShowMaterialModal(true)}
+                            className="flex-1 sm:flex-none bg-slate-900 text-white hover:bg-slate-800 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-md"
+                        >
+                            <PlusCircle size={14} /> Malzeme İste
+                        </button>
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {pendingJobs.length > 0 ? pendingJobs.map(job => {
                       const assigner = getAssignerInfo(job);
@@ -860,13 +969,26 @@ const handleStatusUpdate = async (newStatus) => {
             </div>
           )}
 
-          {activeTab === 'completed' && (
+{activeTab === 'completed' && (
              <div className="space-y-4">
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
-                   <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                      <CheckCircle2 className="text-emerald-500" /> Tamamladığınız İşler
-                   </h2>
-                   <p className="text-sm text-slate-500 mt-1 font-medium">Bugüne kadar bitirdiğiniz tüm görevlerin listesi.</p>
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                   <div>
+                       <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                          <CheckCircle2 className="text-emerald-500" /> Tamamlanan İş Geçmişi
+                       </h2>
+                       <p className="text-sm text-slate-500 mt-1 font-medium">Bugüne kadar başarıyla bitirdiğiniz tüm görevler.</p>
+                   </div>
+                   
+                   {/* 🚀 YENİ EKLENEN VERİ KUTUSU */}
+                   <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-center gap-3 shrink-0">
+                       <div className="w-12 h-12 bg-white rounded-lg shadow-sm border border-emerald-200 flex items-center justify-center">
+                           <span className="text-xl font-black text-emerald-600">{completedJobs.length}</span>
+                       </div>
+                       <div className="pr-3">
+                           <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">Toplam İşlem</div>
+                           <div className="text-sm font-bold text-emerald-900">Görev Bitirildi</div>
+                       </div>
+                   </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1007,37 +1129,14 @@ const handleStatusUpdate = async (newStatus) => {
                                 <div className="text-[10px] font-black text-amber-700 uppercase tracking-widest flex items-center justify-between mb-3">
                                    <div className="flex items-center gap-1.5"><Box size={14}/> Kullanılan Malzemeler (Stok)</div>
                                 </div>
-                                <select 
-                                    className="w-full bg-white border border-amber-200 rounded-xl px-4 py-3 text-sm font-semibold mb-3 outline-none focus:border-amber-500 custom-scrollbar"
-                                    onChange={(e) => {
-                                        const selectedStock = data?.stock?.find(s => String(s.id) === String(e.target.value));
-                                        if (selectedStock && !usedMaterials.find(m => m.id === selectedStock.id)) {
-                                            setUsedMaterials([...usedMaterials, { id: selectedStock.id, name: selectedStock.item_name, quantity: 1, unit: selectedStock.unit_name }]);
-                                        }
-                                        e.target.value = ""; 
-                                    }}
+                                
+                                {/* YENİ: ŞIK STOK EKLEME BUTONU */}
+                                <button 
+                                    onClick={() => setShowStockSelectorModal(true)}
+                                    className="w-full bg-white border border-amber-300 hover:border-amber-400 rounded-xl px-4 py-3.5 text-sm font-black text-amber-600 mb-3 shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2"
                                 >
-                                    <option value="" className="font-bold text-amber-600">+ Depodan Malzeme Ekle (İsteğe Bağlı)</option>
-                                    {(() => {
-                                        // 🚀 Stokları kategorilerine göre gruplama mantığı
-                                        const groupedStock = (data?.stock || []).reduce((acc, curr) => {
-                                            const cat = curr.category || 'Diğer';
-                                            if (!acc[cat]) acc[cat] = [];
-                                            acc[cat].push(curr);
-                                            return acc;
-                                        }, {});
-
-                                        return Object.entries(groupedStock).map(([category, items]) => (
-                                            <optgroup key={category} label={`--- ${category.toUpperCase()} ---`} className="font-black text-slate-400 bg-slate-50">
-                                                {items.map((s) => (
-                                                    <option key={s.id} value={s.id} className="font-bold text-slate-800 bg-white">
-                                                        {s.item_name} (Kalan Stok: {s.quantity})
-                                                    </option>
-                                                ))}
-                                            </optgroup>
-                                        ));
-                                    })()}
-                                </select>
+                                    <Package size={18} /> + Depodan Malzeme Seç
+                                </button>
                                 
                                 {usedMaterials.map((mat, index) => (
                                     <div key={index} className="flex items-center justify-between bg-white p-2.5 rounded-lg border border-amber-200 mb-2 shadow-sm">
@@ -1167,6 +1266,94 @@ const handleStatusUpdate = async (newStatus) => {
           companyName={data?.name || 'İşletme'} 
         />
 
+        {/* 🚀 YENİ STOK SEÇİM MODALI (Tam Ekran, Arama ve Kategorili) */}
+        <AnimatePresence>
+            {showStockSelectorModal && (
+                <div className="fixed inset-0 z-[600] flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    <motion.div 
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer" 
+                        onClick={() => setShowStockSelectorModal(false)}
+                    ></motion.div>
+                    
+                    <motion.div 
+                        initial={{ y: "100%", opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                        className="relative w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col h-[85vh] border border-slate-200 overflow-hidden"
+                    >
+                        <div className="p-5 sm:p-6 border-b border-slate-100 bg-slate-50 shrink-0">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-black text-slate-800 flex items-center gap-2"><Box size={22} className="text-amber-500"/> Depodan Seç</h2>
+                                <button onClick={() => setShowStockSelectorModal(false)} className="p-2 bg-white text-slate-400 hover:text-rose-500 rounded-xl transition-colors shadow-sm"><X size={20}/></button>
+                            </div>
+                            
+                            <div className="flex gap-2">
+                                {/* Arama Kutusu */}
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                    <input 
+                                        type="text" placeholder="Malzeme Ara..." 
+                                        className="w-full pl-9 pr-3 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 shadow-inner bg-white"
+                                        value={stockSearchTerm} onChange={e => setStockSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                                {/* Kategori Filtresi */}
+                                <select 
+                                    className="w-[130px] px-3 py-3 rounded-xl border border-slate-200 text-xs font-bold outline-none bg-white text-slate-600 focus:border-amber-400"
+                                    value={selectedStockCategory} onChange={e => setSelectedStockCategory(e.target.value)}
+                                >
+                                    <option value="Tümü">Tüm Kategoriler</option>
+                                    {Array.from(new Set((data?.stock || []).map((s) => s.category || 'Diğer'))).map((cat) => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-4 bg-slate-50/50">
+                            <div className="grid grid-cols-1 gap-2">
+                                {(() => {
+                                    const filtered = (data?.stock || []).filter((item) => {
+                                        const matchSearch = item.item_name.toLowerCase().includes(stockSearchTerm.toLowerCase());
+                                        const matchCategory = selectedStockCategory === 'Tümü' || (item.category || 'Diğer') === selectedStockCategory;
+                                        return matchSearch && matchCategory;
+                                    });
+
+                                    if (filtered.length === 0) return <div className="text-center text-slate-400 font-medium py-10 text-sm">Aradığınız malzeme bulunamadı.</div>;
+
+                                    return filtered.map((item) => {
+                                        const isAlreadyAdded = usedMaterials.some((m) => m.id === item.id);
+                                        return (
+                                            <div key={item.id} className="bg-white border border-slate-200 p-3 rounded-2xl flex items-center justify-between gap-3 shadow-sm hover:border-amber-300 transition-colors">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="font-bold text-slate-800 text-sm truncate">{item.item_name}</div>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md">{item.category || 'Diğer'}</span>
+                                                        <span className="text-[10px] font-bold text-amber-600">Stok: {item.quantity} {item.unit_name}</span>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    disabled={isAlreadyAdded}
+                                                    onClick={() => {
+                                                        setUsedMaterials([...usedMaterials, { id: item.id, name: item.item_name, quantity: 1, unit: item.unit_name }]);
+                                                        setShowStockSelectorModal(false);
+                                                        setStockSearchTerm(''); // Arama sıfırlanır
+                                                    }}
+                                                    className={`shrink-0 px-4 py-2.5 rounded-xl font-black text-xs transition-all active:scale-95 flex items-center gap-1.5 ${isAlreadyAdded ? 'bg-slate-100 text-slate-400 border border-slate-200' : 'bg-amber-100 hover:bg-amber-500 text-amber-700 hover:text-white border border-amber-200'}`}
+                                                >
+                                                    {isAlreadyAdded ? <CheckCircle2 size={16}/> : <Plus size={16}/>}
+                                                    {isAlreadyAdded ? 'Eklendi' : 'Ekle'}
+                                                </button>
+                                            </div>
+                                        );
+                                    });
+                                })()}
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+        </AnimatePresence>
+
         {/* 🚀 ŞIK BİLDİRİM / HATA MODALI */}
         <AnimatePresence>
           {notification.show && (
@@ -1185,6 +1372,128 @@ const handleStatusUpdate = async (newStatus) => {
                   </div>
               </motion.div>
           )}
+        </AnimatePresence>
+
+        {/* 🚀 SABİT YÜZEN SOS BUTONU (Floating Action Button) */}
+        {!showSOSModal && !selectedJob && (
+            <motion.button
+                initial={{ scale: 0 }} animate={{ scale: 1 }}
+                onClick={() => setShowSOSModal(true)}
+                className="fixed bottom-6 left-6 z-[350] w-14 h-14 bg-rose-600 hover:bg-rose-700 text-white rounded-full shadow-[0_0_20px_rgba(225,29,72,0.5)] flex items-center justify-center transition-transform active:scale-90"
+            >
+                <AlertOctagon size={28} className="animate-pulse" />
+            </motion.button>
+        )}
+
+        {/* 🚀 ACİL DURUM (SOS) MODALI */}
+        <AnimatePresence>
+            {showSOSModal && (
+                <div className="fixed inset-0 z-[600] flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-rose-950/80 backdrop-blur-sm cursor-pointer" onClick={() => setShowSOSModal(false)}></motion.div>
+                    <motion.div initial={{ y: "100%", opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }} transition={{ type: "spring", bounce: 0 }} className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl flex flex-col border border-rose-200">
+                        <div className="flex flex-col items-center text-center mb-6">
+                            <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-3 shadow-inner"><AlertOctagon size={32} /></div>
+                            <h2 className="text-xl font-black text-rose-600 uppercase tracking-widest">ACİL DURUM BİLDİRİMİ</h2>
+                            <p className="text-xs text-slate-500 font-medium mt-2">Merkeze acil durum çağrısı gönderin. Konumunuz otomatik olarak iletilecektir.</p>
+                        </div>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Durum Türü</label>
+                                <select value={sosType} onChange={e => setSosType(e.target.value)} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-rose-400 bg-slate-50">
+                                    <option value="Araç Arızası">Araç Arızası / Kaza</option>
+                                    <option value="İş Kazası">İş Kazası / Yaralanma</option>
+                                    <option value="Müşteri Sorunu">Müşteri ile Sorun</option>
+                                    <option value="Diğer Acil Durum">Diğer Acil Durum</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Açıklama (İsteğe Bağlı)</label>
+                                <textarea rows={2} value={sosMessage} onChange={e => setSosMessage(e.target.value)} placeholder="Kısaca durumu açıklayın..." className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-rose-400 bg-slate-50 resize-none"></textarea>
+                            </div>
+                        </div>
+                        <div className="mt-6 flex gap-3">
+                            <button disabled={isSaving} onClick={handleSendSOS} className="flex-[2] bg-rose-600 text-white font-black text-sm py-4 rounded-xl shadow-lg shadow-rose-200 active:scale-95 transition-all flex items-center justify-center gap-2">
+                                {isSaving ? <Loader2 className="animate-spin" size={18}/> : <><Navigation size={18}/> ACİL ÇAĞRI GÖNDER</>}
+                            </button>
+                            <button onClick={() => setShowSOSModal(false)} className="flex-1 bg-slate-100 text-slate-600 font-bold text-sm py-4 rounded-xl active:scale-95 transition-all">İptal</button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+        </AnimatePresence>
+
+        {/* 🚀 MALZEME TALEP MODALI */}
+        <AnimatePresence>
+            {showMaterialModal && (
+                <div className="fixed inset-0 z-[600] flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer" onClick={() => setShowMaterialModal(false)}></motion.div>
+                    <motion.div initial={{ y: "100%", opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }} transition={{ type: "spring", bounce: 0 }} className="relative w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col h-[85vh] border border-slate-200 overflow-hidden">
+                        <div className="p-5 sm:p-6 border-b border-slate-100 bg-slate-50 shrink-0">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-black text-slate-800 flex items-center gap-2"><Box size={22} className="text-blue-500"/> Malzeme Talep Et</h2>
+                                <button onClick={() => setShowMaterialModal(false)} className="p-2 bg-white text-slate-400 hover:text-rose-500 rounded-xl transition-colors shadow-sm"><X size={20}/></button>
+                            </div>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                <input type="text" placeholder="Malzeme Ara..." value={materialSearch} onChange={e => setMaterialSearch(e.target.value)} className="w-full pl-9 pr-3 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-400 shadow-inner bg-white" />
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 bg-slate-50/50 space-y-4">
+                            <div className="bg-white p-3 rounded-2xl border border-slate-200">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">Talep Edilenler Listesi ({materialRequestItems.length})</label>
+                                {materialRequestItems.length === 0 ? (
+                                    <div className="text-xs text-center text-slate-400 font-medium py-3">Henüz malzeme seçmediniz.</div>
+                                ) : (
+                                    materialRequestItems.map((mat, idx) => (
+                                        <div key={idx} className="flex items-center justify-between bg-blue-50 p-2.5 rounded-lg border border-blue-100 mb-2">
+                                            <span className="text-xs font-bold text-slate-800 truncate pr-2">{mat.name}</span>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <input type="number" min="1" value={mat.qty} onChange={(e) => {
+                                                    const newMats = [...materialRequestItems];
+                                                    newMats[idx].qty = e.target.value;
+                                                    setMaterialRequestItems(newMats);
+                                                }} className="w-12 p-1 text-center border border-white rounded text-xs font-bold" />
+                                                <span className="text-[10px] font-medium text-slate-500">{mat.unit}</span>
+                                                <button onClick={() => setMaterialRequestItems(materialRequestItems.filter((_, i) => i !== idx))} className="text-rose-500 p-1"><X size={14}/></button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-2">
+                                {(() => {
+                                    const filtered = (data?.stock || []).filter((item) => item.item_name.toLowerCase().includes(materialSearch.toLowerCase()));
+                                    if (filtered.length === 0) return <div className="text-center text-slate-400 font-medium py-5 text-sm">Bulunamadı.</div>;
+
+                                    return filtered.map((item) => {
+                                        const isAdded = materialRequestItems.some((m) => m.id === item.id);
+                                        return (
+                                            <div key={item.id} className="bg-white border border-slate-200 p-3 rounded-2xl flex items-center justify-between gap-3 shadow-sm hover:border-blue-300 transition-colors">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="font-bold text-slate-800 text-sm truncate">{item.item_name}</div>
+                                                    <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md mt-1 inline-block">{item.category || 'Diğer'}</span>
+                                                </div>
+                                                <button disabled={isAdded} onClick={() => setMaterialRequestItems([...materialRequestItems, { id: item.id, name: item.item_name, qty: 1, unit: item.unit_name }])} className={`shrink-0 px-4 py-2.5 rounded-xl font-black text-xs transition-all active:scale-95 flex items-center gap-1.5 ${isAdded ? 'bg-slate-100 text-slate-400' : 'bg-blue-100 hover:bg-blue-600 text-blue-700 hover:text-white'}`}>
+                                                    {isAdded ? <CheckCircle2 size={16}/> : <PlusCircle size={16}/>} {isAdded ? 'Eklendi' : 'Ekle'}
+                                                </button>
+                                            </div>
+                                        );
+                                    });
+                                })()}
+                            </div>
+                        </div>
+
+                        <div className="p-5 sm:p-6 border-t border-slate-100 bg-white shrink-0">
+                            <textarea rows={2} value={materialNote} onChange={e => setMaterialNote(e.target.value)} placeholder="Merkeze iletmek istediğiniz not (örn: Acil lazım, arabada bitti)..." className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-blue-400 bg-slate-50 resize-none mb-3"></textarea>
+                            <button disabled={isSaving || materialRequestItems.length === 0} onClick={handleRequestMaterial} className="w-full bg-slate-900 text-white font-black text-sm py-4 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                                {isSaving ? <Loader2 className="animate-spin" size={18}/> : <><Send size={18}/> Talebi Gönder</>}
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
         </AnimatePresence>
 
       </main>

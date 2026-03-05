@@ -93,7 +93,7 @@ export default function WorkerSidebar({ activeTab, setActiveTab, isMobileMenuOpe
             </div>
             <div className="flex-col opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex">
                <span className="font-black text-slate-800 text-lg leading-tight tracking-tight whitespace-nowrap">SAHA PANELİ</span>
-               <span className="text-[10px] text-blue-600 font-bold uppercase tracking-widest whitespace-nowrap">Personel Modu</span>
+               <span className="text-[10px] text-blue-600 font-bold uppercase tracking-widest whitespace-nowrap">Personel</span>
             </div>
           </div>
           <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden p-2 text-slate-400 hover:text-slate-700 bg-slate-50 rounded-xl transition-colors">
