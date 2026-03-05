@@ -51,14 +51,22 @@ export default function WorkerDashboard() {
   // 🚀 ŞIK UYARI STATE'İ (EKLENDİ)
   const [notification, setNotification] = useState({show: false, msg: '', type: 'success'});
 
-// 🚀 SAHA SİHİRBAZI VE STOK STATE'LERİ
-const [wizardStep, setWizardStep] = useState(1);
-const [usedMaterials, setUsedMaterials] = useState([]);
+  // 🚀 SAHA SİHİRBAZI VE STOK STATE'LERİ
+  const [wizardStep, setWizardStep] = useState(1);
+  const [usedMaterials, setUsedMaterials] = useState([]);
 
-// 🚀 ÇÖZÜM: 'currentFields' değişkenini kullanıldığı yerlerden ÖNCE tanımlıyoruz!
-const currentFields = (companySector && staffBranch && sectorsData.sectors?.[companySector]?.subTypes?.[staffBranch]?.fields) || [];
+  // 🚀 ÇÖKME HATASINI ÖNLEMEK İÇİN YUKARI TAŞINAN STATE'LER (FOTO VE İMZA)
+  const [photos, setPhotos] = useState([]);
+  const fileInputRef = useRef(null);
+  const [signatureName, setSignatureName] = useState('');
+  const [signatureImage, setSignatureImage] = useState(null);
+  const signatureCanvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
 
-// 🚀 TASLAK (DRAFT) YÜKLEME (FOTOĞRAFLAR VE ADIM NUMARASI DA EKLENDİ)
+  // 🚀 ÇÖZÜM: 'currentFields' değişkenini kullanıldığı yerlerden ÖNCE tanımlıyoruz!
+  const currentFields = (companySector && staffBranch && sectorsData.sectors?.[companySector]?.subTypes?.[staffBranch]?.fields) || [];
+
+  // 🚀 TASLAK (DRAFT) YÜKLEME (FOTOĞRAFLAR, İMZA VE ADIM NUMARASI EKLENDİ)
   useEffect(() => {
       if (selectedJob && (selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada')) {
           const draft = localStorage.getItem(`draft_${slug}_${selectedJob.id}`);
@@ -70,6 +78,8 @@ const currentFields = (companySector && staffBranch && sectorsData.sectors?.[com
                   setUsedMaterials(parsed.usedMaterials || []);
                   if (parsed.wizardStep) setWizardStep(parsed.wizardStep);
                   if (parsed.photos) setPhotos(parsed.photos);
+                  if (parsed.signatureImage) setSignatureImage(parsed.signatureImage);
+                  if (parsed.signatureName) setSignatureName(parsed.signatureName);
               } catch(e) {}
           }
       } else if (!selectedJob) {
@@ -78,33 +88,31 @@ const currentFields = (companySector && staffBranch && sectorsData.sectors?.[com
           setJobNote('');
           setDynamicForm({});
           setPhotos([]);
+          setSignatureImage(null);
+          setSignatureName('');
       }
   }, [selectedJob, slug]);
 
-  // 🚀 TASLAK (DRAFT) KAYDETME (FOTOĞRAFLAR VE ADIM NUMARASI DA EKLENDİ)
+  // 🚀 TASLAK (DRAFT) KAYDETME (FOTOĞRAFLAR, İMZA VE ADIM NUMARASI EKLENDİ)
   useEffect(() => {
       if (selectedJob && (selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada')) {
-          // Çok büyük fotoğraflar kotayı doldurmasın diye sadece ilk 3 fotoğrafı taslağa alıyoruz
           const draftPhotos = photos.slice(0, 3);
-          const draft = { dynamicForm, jobNote, usedMaterials, wizardStep, photos: draftPhotos };
+          const draft = { dynamicForm, jobNote, usedMaterials, wizardStep, photos: draftPhotos, signatureImage, signatureName };
           localStorage.setItem(`draft_${slug}_${selectedJob.id}`, JSON.stringify(draft));
       }
-  }, [dynamicForm, jobNote, usedMaterials, wizardStep, photos, selectedJob, slug]);
+  }, [dynamicForm, jobNote, usedMaterials, wizardStep, photos, signatureImage, signatureName, selectedJob, slug]);
 
-// 🚀 ZORUNLU ALAN KONTROLÜ (Not artık isteğe bağlı)
-const isStep2Valid = useCallback(() => {
-  const isFormFilled = currentFields.length === 0 || currentFields.every(f => dynamicForm[f.name] && String(dynamicForm[f.name]).trim() !== '');
-  return isFormFilled; // Sadece form dolu mu ona bakıyoruz
-}, [currentFields, dynamicForm]);
+  // 🚀 ZORUNLU ALAN KONTROLÜ (Not artık isteğe bağlı)
+  const isStep2Valid = useCallback(() => {
+      const isFormFilled = currentFields.length === 0 || currentFields.every(f => dynamicForm[f.name] && String(dynamicForm[f.name]).trim() !== '');
+      return isFormFilled; 
+  }, [currentFields, dynamicForm]);
 
   // 🚀 CHAT (MESAJLAŞMA) STATE'LERİ
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeChatId, setActiveChatId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
-
-  const [photos, setPhotos] = useState([]);
-  const fileInputRef = useRef(null);
 
   // 🚀 EKLENDİ: Fiş Yazdırma Modalı State'leri
   const [showThermalPrintModal, setShowThermalPrintModal] = useState(false);
@@ -447,11 +455,6 @@ const isStep2Valid = useCallback(() => {
     return data.assets.find(a => String(a.id) === String(assetId)) || null;
   };
 
-// 🚀 İMZA STATE VE REF'LERİ
-const [signatureName, setSignatureName] = useState('');
-const [signatureImage, setSignatureImage] = useState(null);
-const signatureCanvasRef = useRef(null);
-const [isDrawing, setIsDrawing] = useState(false);
 
 // 🚀 İMZA ÇİZİM (CANVAS) FONKSİYONLARI
 const getCoordinates = (e) => {
@@ -515,13 +518,18 @@ const handleStatusUpdate = async (newStatus) => {
       return;
   }
 
-    setIsSaving(true);
-    const token = localStorage.getItem('staff_authToken'); 
+  setIsSaving(true);
+  const token = localStorage.getItem('staff_authToken'); 
 
-    let formText = '';
-    const targetStatus = newStatus === 'Tamamlandı' ? 'Onay Bekliyor' : newStatus;
+  let formText = '';
+  
+  // 🚀 DÜZELTME: Eğer iş "Periyodik Bakım" ise onay beklemeden DİREKT Tamamlandı'ya gitsin. Değilse Onay Beklesin.
+  let targetStatus = newStatus;
+  if (newStatus === 'Tamamlandı') {
+       targetStatus = selectedJob.work_type === 'Periyodik Bakım' ? 'Tamamlandı' : 'Onay Bekliyor';
+  }
 
-    if (targetStatus === 'Onay Bekliyor' && currentFields.length > 0) {
+  if ((targetStatus === 'Onay Bekliyor' || targetStatus === 'Tamamlandı') && currentFields.length > 0) {
         const filledData = currentFields.map(f => `${f.label}: ${dynamicForm[f.name] || 'Belirtilmedi'}`).join('\n');
         formText = `\n--- ${staffBranch} Saha Formu ---\n${filledData}\n----------------------------------\n`;
     }
@@ -1000,7 +1008,7 @@ const handleStatusUpdate = async (newStatus) => {
                                    <div className="flex items-center gap-1.5"><Box size={14}/> Kullanılan Malzemeler (Stok)</div>
                                 </div>
                                 <select 
-                                    className="w-full bg-white border border-amber-200 rounded-xl px-4 py-3 text-sm font-semibold mb-3 outline-none focus:border-amber-500"
+                                    className="w-full bg-white border border-amber-200 rounded-xl px-4 py-3 text-sm font-semibold mb-3 outline-none focus:border-amber-500 custom-scrollbar"
                                     onChange={(e) => {
                                         const selectedStock = data?.stock?.find(s => String(s.id) === String(e.target.value));
                                         if (selectedStock && !usedMaterials.find(m => m.id === selectedStock.id)) {
@@ -1009,8 +1017,26 @@ const handleStatusUpdate = async (newStatus) => {
                                         e.target.value = ""; 
                                     }}
                                 >
-                                    <option value="">+ Depodan Malzeme Ekle (İsteğe Bağlı)</option>
-                                    {(data?.stock || []).map(s => <option key={s.id} value={s.id}>{s.item_name} (Stok: {s.quantity})</option>)}
+                                    <option value="" className="font-bold text-amber-600">+ Depodan Malzeme Ekle (İsteğe Bağlı)</option>
+                                    {(() => {
+                                        // 🚀 Stokları kategorilerine göre gruplama mantığı
+                                        const groupedStock = (data?.stock || []).reduce((acc, curr) => {
+                                            const cat = curr.category || 'Diğer';
+                                            if (!acc[cat]) acc[cat] = [];
+                                            acc[cat].push(curr);
+                                            return acc;
+                                        }, {});
+
+                                        return Object.entries(groupedStock).map(([category, items]) => (
+                                            <optgroup key={category} label={`--- ${category.toUpperCase()} ---`} className="font-black text-slate-400 bg-slate-50">
+                                                {items.map((s) => (
+                                                    <option key={s.id} value={s.id} className="font-bold text-slate-800 bg-white">
+                                                        {s.item_name} (Kalan Stok: {s.quantity})
+                                                    </option>
+                                                ))}
+                                            </optgroup>
+                                        ));
+                                    })()}
                                 </select>
                                 
                                 {usedMaterials.map((mat, index) => (
