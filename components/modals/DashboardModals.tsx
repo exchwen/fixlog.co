@@ -36,6 +36,8 @@ export default function DashboardModals(props: any) {
         onClose={() => props.setShowThermalPrintModal(false)} 
         job={props.selectedThermalJob} 
         companyName={props.data?.name || 'İşletme'} 
+        companyLogo={props.data?.logo}
+        assets={props.data?.assets}
       />
 
       {/* PROFİL VE DETAY MODALLARI */}

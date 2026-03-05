@@ -1092,7 +1092,65 @@ const handleStatusUpdate = async (newStatus) => {
                             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">GÖREV BİLGİSİ / TALİMAT</div>
                                 <div className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-1.5"><PenTool size={14} className="text-blue-500"/> {selectedJob.work_type}</div>
-                                {selectedJob.details?.note && <div className="text-xs text-slate-600 italic border-l-2 border-slate-300 pl-3 whitespace-pre-wrap leading-relaxed">"{selectedJob.details.note}"</div>}
+                                
+                                {(() => {
+                                    const rawNote = selectedJob.details?.note;
+                                    if (!rawNote) return null;
+                                    
+                                    if (!rawNote.includes('---') && !rawNote.includes('Saha Formu')) {
+                                        return <div className="text-xs text-slate-600 italic border-l-2 border-slate-300 pl-3 whitespace-pre-wrap leading-relaxed">"{rawNote}"</div>;
+                                    }
+
+                                    const lines = rawNote.split('\n');
+                                    let inForm = false;
+                                    let checklist = [];
+                                    let cleanNote = '';
+
+                                    for (const line of lines) {
+                                        if (line.includes('---') && line.includes('Saha Formu')) { inForm = true; continue; }
+                                        if (inForm && line.includes('----------------------------------')) { inForm = false; continue; }
+
+                                        if (inForm && line.includes(':')) {
+                                            const [key, ...valArr] = line.split(':');
+                                            checklist.push({ key: key.trim(), val: valArr.join(':').trim() });
+                                        } else if (!inForm && line.trim() !== '') {
+                                            cleanNote += line + '\n';
+                                        }
+                                    }
+                                    
+                                    cleanNote = cleanNote.replace(/\[Usta Notu\]:/g, '').replace(/\[📍 Konum Kaydı\].*/g, '').trim();
+
+                                    return (
+                                        <div className="space-y-3 mt-3">
+                                            {checklist.length > 0 && (
+                                                <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+                                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 border-b border-slate-100 pb-2 flex items-center gap-1.5"><ClipboardList size={12}/> Kontrol Formu Yanıtları</div>
+                                                    <div className="space-y-2">
+                                                        {checklist.map((item, idx) => {
+                                                            const valStr = item.val.toLowerCase();
+                                                            const isChecked = ['evet', 'var', 'true', 'ok', 'uygun', 'sorunsuz', 'mavi', 'yeşil'].some(v => valStr.includes(v));
+                                                            return (
+                                                                <div key={idx} className="flex justify-between items-center text-xs">
+                                                                    <span className="font-semibold text-slate-600">{item.key}</span>
+                                                                    {isChecked ? (
+                                                                        <div className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded flex items-center gap-1 font-bold text-[10px]"><CheckCircle2 size={12}/> {item.val}</div>
+                                                                    ) : (
+                                                                        <span className="font-bold text-slate-800">{item.val}</span>
+                                                                    )}
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {cleanNote && (
+                                                <div className="text-xs text-slate-600 italic border-l-2 border-blue-400 pl-3 py-1 whitespace-pre-wrap leading-relaxed bg-blue-50/50 rounded-r-xl">
+                                                    {cleanNote}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         </motion.div>
                     )}
@@ -1286,6 +1344,8 @@ const handleStatusUpdate = async (newStatus) => {
           onClose={() => setShowThermalPrintModal(false)} 
           job={selectedThermalJob} 
           companyName={data?.name || 'İşletme'} 
+          companyLogo={data?.logo}
+          assets={data?.assets}
         />
 
         {/* 🚀 YENİ STOK SEÇİM MODALI (Tam Ekran, Arama ve Kategorili) */}
