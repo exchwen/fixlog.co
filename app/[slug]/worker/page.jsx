@@ -48,6 +48,9 @@ export default function WorkerDashboard() {
   const [dynamicForm, setDynamicForm] = useState({}); 
   const [isSaving, setIsSaving] = useState(false);
 
+  // 🚀 ŞIK UYARI STATE'İ (EKLENDİ)
+  const [notification, setNotification] = useState({show: false, msg: '', type: 'success'});
+
 // 🚀 SAHA SİHİRBAZI VE STOK STATE'LERİ
 const [wizardStep, setWizardStep] = useState(1);
 const [usedMaterials, setUsedMaterials] = useState([]);
@@ -55,7 +58,7 @@ const [usedMaterials, setUsedMaterials] = useState([]);
 // 🚀 ÇÖZÜM: 'currentFields' değişkenini kullanıldığı yerlerden ÖNCE tanımlıyoruz!
 const currentFields = (companySector && staffBranch && sectorsData.sectors?.[companySector]?.subTypes?.[staffBranch]?.fields) || [];
 
-// 🚀 TASLAK (DRAFT) YÜKLEME
+// 🚀 TASLAK (DRAFT) YÜKLEME (FOTOĞRAFLAR VE ADIM NUMARASI DA EKLENDİ)
   useEffect(() => {
       if (selectedJob && (selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada')) {
           const draft = localStorage.getItem(`draft_${slug}_${selectedJob.id}`);
@@ -65,6 +68,8 @@ const currentFields = (companySector && staffBranch && sectorsData.sectors?.[com
                   setDynamicForm(parsed.dynamicForm || {});
                   setJobNote(parsed.jobNote || '');
                   setUsedMaterials(parsed.usedMaterials || []);
+                  if (parsed.wizardStep) setWizardStep(parsed.wizardStep);
+                  if (parsed.photos) setPhotos(parsed.photos);
               } catch(e) {}
           }
       } else if (!selectedJob) {
@@ -72,23 +77,25 @@ const currentFields = (companySector && staffBranch && sectorsData.sectors?.[com
           setUsedMaterials([]);
           setJobNote('');
           setDynamicForm({});
+          setPhotos([]);
       }
   }, [selectedJob, slug]);
 
-  // 🚀 TASLAK (DRAFT) KAYDETME
+  // 🚀 TASLAK (DRAFT) KAYDETME (FOTOĞRAFLAR VE ADIM NUMARASI DA EKLENDİ)
   useEffect(() => {
       if (selectedJob && (selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada')) {
-          const draft = { dynamicForm, jobNote, usedMaterials };
+          // Çok büyük fotoğraflar kotayı doldurmasın diye sadece ilk 3 fotoğrafı taslağa alıyoruz
+          const draftPhotos = photos.slice(0, 3);
+          const draft = { dynamicForm, jobNote, usedMaterials, wizardStep, photos: draftPhotos };
           localStorage.setItem(`draft_${slug}_${selectedJob.id}`, JSON.stringify(draft));
       }
-  }, [dynamicForm, jobNote, usedMaterials, selectedJob, slug]);
+  }, [dynamicForm, jobNote, usedMaterials, wizardStep, photos, selectedJob, slug]);
 
-  // 🚀 ZORUNLU ALAN KONTROLÜ
-  const isStep2Valid = useCallback(() => {
-      const isFormFilled = currentFields.length === 0 || currentFields.every(f => dynamicForm[f.name] && String(dynamicForm[f.name]).trim() !== '');
-      const isNoteValid = jobNote && jobNote.trim().length >= 10;
-      return isFormFilled && isNoteValid;
-  }, [currentFields, dynamicForm, jobNote]);
+// 🚀 ZORUNLU ALAN KONTROLÜ (Not artık isteğe bağlı)
+const isStep2Valid = useCallback(() => {
+  const isFormFilled = currentFields.length === 0 || currentFields.every(f => dynamicForm[f.name] && String(dynamicForm[f.name]).trim() !== '');
+  return isFormFilled; // Sadece form dolu mu ona bakıyoruz
+}, [currentFields, dynamicForm]);
 
   // 🚀 CHAT (MESAJLAŞMA) STATE'LERİ
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -484,7 +491,10 @@ const endDrawing = () => {
   setIsDrawing(false);
   const canvas = signatureCanvasRef.current;
   if (canvas) {
-      setSignatureImage(canvas.toDataURL('image/png'));
+      // 🚀 ÇÖZÜM: İmzanın tam çizilmesini bekleyip state'e öyle atıyoruz.
+      setTimeout(() => {
+          setSignatureImage(canvas.toDataURL('image/png'));
+      }, 50);
   }
 };
 
@@ -498,11 +508,12 @@ const clearSignature = () => {
 };
 
 const handleStatusUpdate = async (newStatus) => {
-    // 🚀 ANA EKRAN HIZLI TAMAMLAMA ENGELLENİYOR! Usta modalı açıp imza atmak ZORUNDA.
-    if (newStatus === 'Tamamlandı' && selectedJob.work_type === 'Periyodik Bakım') {
-        alert("Periyodik Bakım işlemini bitirmek için 'İş Detayı'na girip müşteriden imza almanız gerekmektedir.");
-        return;
-    }
+  // 🚀 ANA EKRAN HIZLI TAMAMLAMA ENGELLENİYOR! Usta modalı açıp imza atmak ZORUNDA.
+  if (newStatus === 'Tamamlandı' && selectedJob.work_type === 'Periyodik Bakım' && !signatureImage) {
+      setNotification({show: true, msg: "Periyodik Bakım işlemini bitirmek için müşteriden imza almanız gerekmektedir.", type: 'error'});
+      setTimeout(() => setNotification({show: false, msg: '', type: 'success'}), 4000);
+      return;
+  }
 
     setIsSaving(true);
     const token = localStorage.getItem('staff_authToken'); 
@@ -979,8 +990,8 @@ const handleStatusUpdate = async (newStatus) => {
                             )}
 
                             <div>
-                                <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest block mb-2">Yapılan İşlem / Saha Notu <span className="text-rose-500">*Zorunlu (Min. 10 Karakter)</span></label>
-                                <textarea rows={3} value={jobNote} onChange={(e) => setJobNote(e.target.value)} placeholder="Yapılan işlemleri detaylıca yazın..." className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm font-medium outline-none focus:border-blue-500 shadow-sm" />
+                                <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest block mb-2">Yapılan İşlem / Saha Notu <span className="text-slate-400 font-medium normal-case">(İsteğe Bağlı)</span></label>
+                                <textarea rows={3} value={jobNote} onChange={(e) => setJobNote(e.target.value)} placeholder="Yapılan işlemleri yazabilirsiniz..." className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm font-medium outline-none focus:border-blue-500 shadow-sm" />
                             </div>
 
                             {/* 🚀 KULLANILAN MALZEMELER (STOK) */}
@@ -1055,7 +1066,7 @@ const handleStatusUpdate = async (newStatus) => {
                                 <canvas 
                                     ref={signatureCanvasRef} width={300} height={180} className="w-full h-[180px] cursor-crosshair"
                                     onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={endDrawing} onMouseLeave={endDrawing}
-                                    onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={endDrawing}
+                                    onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={endDrawing} onTouchCancel={endDrawing}
                                 ></canvas>
                             </div>
                         </motion.div>
@@ -1129,6 +1140,26 @@ const handleStatusUpdate = async (newStatus) => {
           job={selectedThermalJob} 
           companyName={data?.name || 'İşletme'} 
         />
+
+        {/* 🚀 ŞIK BİLDİRİM / HATA MODALI */}
+        <AnimatePresence>
+          {notification.show && (
+              <motion.div 
+                  initial={{ opacity: 0, scale: 0.8 }} 
+                  animate={{ opacity: 1, scale: 1 }} 
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="fixed inset-0 z-[500] flex items-center justify-center p-4 pointer-events-none"
+              >
+                  <div className="bg-white/95 backdrop-blur-md border-2 border-slate-100 shadow-2xl rounded-3xl p-8 flex flex-col items-center text-center max-w-sm w-full pointer-events-auto">
+                      <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 shadow-inner animate-pulse ${notification.type === 'error' ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                          {notification.type === 'error' ? <AlertTriangle size={40} strokeWidth={3} /> : <CheckCircle2 size={40} strokeWidth={3} />}
+                      </div>
+                      <h3 className="text-xl font-black text-slate-900 mb-1">{notification.type === 'error' ? 'Hata!' : 'Başarılı!'}</h3>
+                      <p className="text-sm text-slate-500 font-medium leading-relaxed">{notification.msg}</p>
+                  </div>
+              </motion.div>
+          )}
+        </AnimatePresence>
 
       </main>
 
