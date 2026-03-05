@@ -1126,16 +1126,29 @@ const handleStatusUpdate = async (newStatus) => {
                                                 <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
                                                     <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 border-b border-slate-100 pb-2 flex items-center gap-1.5"><ClipboardList size={12}/> Kontrol Formu Yanıtları</div>
                                                     <div className="space-y-2">
-                                                        {checklist.map((item, idx) => {
-                                                            const valStr = item.val.toLowerCase();
-                                                            const isChecked = ['evet', 'var', 'true', 'ok', 'uygun', 'sorunsuz', 'mavi', 'yeşil'].some(v => valStr.includes(v));
-                                                            // 🚀 EKLENDİ: Olumsuz / Kırmızı etiket kontrolü
-                                                            const isNegative = ['hayır', 'hayir', 'yok', 'false', 'uygun değil', 'değil', 'sorunlu', 'kötü', 'kırmızı'].some(v => valStr.includes(v));
+                                                    {checklist.map((item, idx) => {
+                                                            const valStr = item.val.toLowerCase().trim();
+                                                            
+                                                            const isBlue = valStr.includes('mavi');
+                                                            const isGreen = valStr.includes('yeşil') || valStr.includes('yesil');
+                                                            const isRed = valStr.includes('kırmızı') || valStr.includes('kirmizi');
+                                                            const isYellow = valStr.includes('sarı') || valStr.includes('sari');
+                                                            
+                                                            const isChecked = ['evet', 'var', 'true', 'ok', 'uygun', 'sorunsuz'].some(v => valStr === v || valStr.includes(v));
+                                                            const isNegative = ['hayır', 'hayir', 'yok', 'false', 'uygun değil', 'değil', 'sorunlu', 'kötü'].some(v => valStr === v || valStr.includes(v));
                                                             
                                                             return (
                                                                 <div key={idx} className="flex justify-between items-center text-xs">
                                                                     <span className="font-semibold text-slate-600">{item.key}</span>
-                                                                    {isChecked ? (
+                                                                    {isBlue ? (
+                                                                        <div className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded flex items-center gap-1 font-bold text-[10px]"><CheckCircle2 size={12}/> {item.val}</div>
+                                                                    ) : isGreen ? (
+                                                                        <div className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded flex items-center gap-1 font-bold text-[10px]"><CheckCircle2 size={12}/> {item.val}</div>
+                                                                    ) : isRed ? (
+                                                                        <div className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded flex items-center gap-1 font-bold text-[10px]"><X size={12}/> {item.val}</div>
+                                                                    ) : isYellow ? (
+                                                                        <div className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded flex items-center gap-1 font-bold text-[10px]"><AlertCircle size={12}/> {item.val}</div>
+                                                                    ) : isChecked ? (
                                                                         <div className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded flex items-center gap-1 font-bold text-[10px]"><CheckCircle2 size={12}/> {item.val}</div>
                                                                     ) : isNegative ? (
                                                                         <div className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded flex items-center gap-1 font-bold text-[10px]"><X size={12}/> {item.val}</div>
@@ -1143,7 +1156,7 @@ const handleStatusUpdate = async (newStatus) => {
                                                                         <span className="font-bold text-slate-800">{item.val}</span>
                                                                     )}
                                                                 </div>
-                                                            )
+                                                            );
                                                         })}
                                                     </div>
                                                 </div>

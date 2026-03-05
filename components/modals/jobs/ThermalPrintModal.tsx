@@ -159,6 +159,8 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName, c
   
   const asset = assets?.find(a => String(a.id) === String(job.asset_id));
   const assetName = asset ? `${asset.apartmentName || ''} - ${asset.name || ''}`.replace(/^- |-$/g, '').trim() : (job.asset_name || job.details?.assetName || job.customer_name);
+  const assetLocation = asset?.location || 'Belirtilmedi';
+  const currentMonth = new Date().toLocaleString('tr-TR', { month: 'long' });
   
   let formattedDate = new Date().toLocaleDateString('tr-TR');
   let formattedTime = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute:'2-digit' });
@@ -186,19 +188,27 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName, c
     txt += 'Fis Numarasi : ' + job.id + '\n';
     txt += 'Tarih        : ' + formattedDate + ' ' + formattedTime + '\n';
     txt += 'Tesis Adi    : ' + sanitizeText(assetName) + '\n';
+    txt += 'Konum        : ' + sanitizeText(assetLocation) + '\n';
     
     txt += divider;
     
     if (extractedChecklist.length > 0) {
         extractedChecklist.forEach((item) => {
             let cleanKey = sanitizeText(item.key);
-            if (cleanKey.length > 25) cleanKey = cleanKey.substring(0, 25);
+            const valStr = item.val.toLowerCase().trim();
+            const isPositive = ['evet', 'var', 'true', 'ok', 'uygun', 'sorunsuz'].some(v => valStr === v || valStr.includes(v));
+            const isNegative = ['hayir', 'hayır', 'yok', 'false', 'uygun degil', 'değil', 'sorunlu', 'kotu', 'kötü'].some(v => valStr === v || valStr.includes(v));
             
-            const paddedKey = cleanKey.padEnd(26, ' ');
-            const valStr = item.val.toLowerCase();
-            const isChecked = ['evet', 'var', 'true', 'ok', 'uygun', 'sorunsuz', 'mavi', 'yeşil'].some(v => valStr.includes(v)) ? '[X]' : '[ ]';
-            
-            txt += paddedKey + isChecked + '\n';
+            if (isPositive || isNegative) {
+                if (cleanKey.length > 25) cleanKey = cleanKey.substring(0, 25);
+                const paddedKey = cleanKey.padEnd(26, ' ');
+                const isChecked = isPositive ? '[X]' : '[ ]';
+                txt += paddedKey + isChecked + '\n';
+            } else {
+                if (cleanKey.length > 15) cleanKey = cleanKey.substring(0, 15);
+                const paddedKey = cleanKey.padEnd(16, ' ');
+                txt += paddedKey + ': ' + sanitizeText(item.val).substring(0, 14) + '\n';
+            }
         });
         txt += divider;
     }
@@ -252,18 +262,21 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName, c
         pdf.addImage(imgData, 'JPEG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
         
         const pdfBlob = pdf.output('blob');
-        const file = new File([pdfBlob], `Bakim_Fisi_${job.id}.pdf`, { type: 'application/pdf' });
+        const safeFileName = `${sanitizeText(assetName).replace(/\s+/g, '_')}_${currentMonth}_ay_bakim_fisi.pdf`;
+        const file = new File([pdfBlob], safeFileName, { type: 'application/pdf' });
+        
+        const shareText = `${sanitizeText(assetName)} ${currentMonth} ay bakımı yapılmıştır. Fişinizi ekte bulabilirsiniz.`;
 
         if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
             setStatusMsg('Paylaşım ekranı açılıyor...');
             await navigator.share({
                 title: `Bakım Fişi #${job.id}`,
-                text: `${companyName} bakım işlemi tamamlanmıştır. Fişinizi ekte bulabilirsiniz.`,
+                text: shareText,
                 files: [file]
             });
             setStatusMsg('İşlem Başarılı!');
         } else {
-            const waText = `*${companyName}*\n*Bakım Fişi #${job.id}*\n\nBakım işleminiz tamamlanmıştır.\n\n_Detaylar için web uygulamamızı ziyaret edin._`;
+            const waText = `*${companyName}*\n*Bakım Fişi #${job.id}*\n\n${sanitizeText(assetName)} ${currentMonth} ay bakımı yapılmıştır.\n\n_Detaylar için web uygulamamızı ziyaret edin._`;
             window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, '_blank');
             setStatusMsg('Dosya desteği yok, metin iletildi.');
         }
@@ -414,30 +427,38 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName, c
                             <span className="w-4 shrink-0">:</span>
                             <span className="font-normal uppercase break-words flex-1">{assetName}</span>
                         </div>
+                        <div className="flex mt-1.5">
+                            <span className="font-bold w-[100px] shrink-0">Konum</span>
+                            <span className="w-4 shrink-0">:</span>
+                            <span className="font-normal uppercase break-words flex-1">{assetLocation}</span>
+                        </div>
                     </div>
 
                     {extractedChecklist.length > 0 && (
                         <div className="border-t border-black/20 pt-2 pb-2">
                             {extractedChecklist.map((item, idx) => {
-                                const valStr = item.val.toLowerCase();
-                                const isChecked = ['evet', 'var', 'true', 'ok', 'uygun', 'sorunsuz', 'mavi', 'yeşil'].some(v => valStr.includes(v));
-                                // 🚀 EKLENDİ: Fişte "Değil / Yok" yazanları kırmızı yapıyoruz.
-                                const isNegative = ['hayır', 'hayir', 'yok', 'false', 'uygun değil', 'değil', 'sorunlu', 'kötü', 'kırmızı'].some(v => valStr.includes(v));
-                                const valColor = isNegative ? 'text-rose-600' : 'text-slate-500';
+                                const valStr = item.val.toLowerCase().trim();
+                                const isPositive = ['evet', 'var', 'true', 'ok', 'uygun', 'sorunsuz'].some(v => valStr === v || valStr.includes(v));
+                                const isNegative = ['hayır', 'hayir', 'yok', 'false', 'uygun değil', 'değil', 'sorunlu', 'kötü'].some(v => valStr === v || valStr.includes(v));
+                                const isBooleanType = isPositive || isNegative;
                                 
                                 return (
                                     <div key={idx} className="flex justify-between items-end border-b border-black/10 py-2.5">
                                         <div className="flex flex-col pr-4">
-                                            <span className="font-semibold text-[11px] leading-tight text-slate-800">{item.key}</span>
-                                            <span className={`text-[9px] font-bold mt-0.5 uppercase ${valColor}`}>{item.val}</span>
+                                            <span className="font-semibold text-[11px] leading-tight text-black">{item.key}</span>
+                                            <span className="text-[10px] font-bold mt-0.5 uppercase text-black">{item.val}</span>
                                         </div>
                                         <div className="shrink-0 pb-0.5">
-                                            {isChecked ? (
-                                                <div className="w-4 h-4 bg-black flex items-center justify-center rounded-sm">
-                                                    <CheckSquare size={14} className="text-white" />
-                                                </div>
+                                            {isBooleanType ? (
+                                                isPositive ? (
+                                                    <div className="w-4 h-4 bg-black flex items-center justify-center rounded-sm">
+                                                        <CheckSquare size={14} className="text-white" />
+                                                    </div>
+                                                ) : (
+                                                    <div className="w-4 h-4 border-2 border-black rounded-sm"></div>
+                                                )
                                             ) : (
-                                                <div className="w-4 h-4 border-2 border-black rounded-sm"></div>
+                                                <span className="text-[10px] font-black uppercase text-black border-b border-black">{item.val}</span>
                                             )}
                                         </div>
                                     </div>
