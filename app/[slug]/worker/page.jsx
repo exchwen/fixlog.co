@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Clock, CheckCircle2, MessageSquareText, LogOut, ChevronRight, PenTool, Loader2, AlertCircle, PlayCircle, ClipboardList, WifiOff, Download, Share, Check, Camera, X, ShieldCheck, UserPlus, Box, Phone, User, Briefcase, Map, AlertOctagon, Navigation, PlusCircle } from 'lucide-react';
+import { MapPin, Clock, CheckCircle2, MessageSquareText, LogOut, ChevronRight, PenTool, Loader2, AlertCircle, PlayCircle, ClipboardList, WifiOff, Download, Share, Check, Camera, X, ShieldCheck, UserPlus, Box, Phone, User, Briefcase, Map, AlertOctagon, Navigation, PlusCircle, Search, Package, AlertTriangle, Send, Plus } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 import Header from '@/components/layout/Header';
 import WorkerSidebar from '@/components/layout/WorkerSidebar'; 
@@ -90,7 +90,7 @@ const openGoogleMapsRoute = () => {
         setTimeout(() => setNotification({ show: false, msg: '', type: 'success' }), 3000);
         return;
     }
-    const url = `https://www.google.com/maps/dir//${addresses.map(a => encodeURIComponent(a)).join('/')}`;
+    const url = `https://www.google.com/maps/dir//$${addresses.map(a => encodeURIComponent(a)).join('/')}`;
     window.open(url, '_blank');
 };
 
@@ -245,7 +245,7 @@ if (showSOSModal) { stopEvent(); setShowSOSModal(false); return true; }
     }
 
     return false;
-  }, [selectedJob, isChatOpen, isMobileMenuOpen]);
+  }, [selectedJob, isChatOpen, isMobileMenuOpen, showStockSelectorModal, showMaterialModal, showSOSModal]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -616,7 +616,7 @@ const handleStatusUpdate = async (newStatus) => {
   // 🚀 DÜZELTME: Eğer iş "Periyodik Bakım" ise onay beklemeden DİREKT Tamamlandı'ya gitsin. Değilse Onay Beklesin.
   let targetStatus = newStatus;
   if (newStatus === 'Tamamlandı') {
-       targetStatus = selectedJob.work_type === 'Periyodik Bakım' ? 'Tamamlandı' : 'Onay Bekliyor';
+        targetStatus = selectedJob.work_type === 'Periyodik Bakım' ? 'Tamamlandı' : 'Onay Bekliyor';
   }
 
   if ((targetStatus === 'Onay Bekliyor' || targetStatus === 'Tamamlandı') && currentFields.length > 0) {
@@ -631,7 +631,7 @@ const handleStatusUpdate = async (newStatus) => {
             navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000 });
          });
          // 🚀 DÜZELTİLDİ: Stabil Harita Linki
-         gpsNote = `\n[📍 Konum Kaydı]: https://www.google.com/maps/search/?api=1&query=${pos.coords.latitude},${pos.coords.longitude}`;
+         gpsNote = `\n[📍 Konum Kaydı]: https://www.google.com/maps/search/?api=1&query=$${pos.coords.latitude},${pos.coords.longitude}`;
        } catch (e) {
          console.warn("Konum alınamadı.");
        }
@@ -884,7 +884,7 @@ const handleStatusUpdate = async (newStatus) => {
                                 
                                 <h3 className="text-lg font-black leading-tight mb-1 truncate">
                                     {asset ? (asset.apartmentName || asset.name) : job.customer_name}
-                                </h3>
+                               </h3>
                                 
                                 <p className="text-blue-100 text-xs font-medium flex items-center gap-1.5 mb-1 truncate">
                                     <User size={12} className="shrink-0"/> {job.customer_name}
@@ -1078,7 +1078,7 @@ const handleStatusUpdate = async (newStatus) => {
                             {(() => {
                                 const asset = getAssetDetails(selectedJob.asset_id);
                                 if (!asset) return null;
-                                const mapUrl = `https://www.google.com/maps/search/?api=1&query=$${encodeURIComponent(asset.location || asset.apartmentName || asset.name)}`;
+                                const mapUrl = `https://www.google.com/maps/search/?api=1&query=$$${encodeURIComponent(asset.location || asset.apartmentName || asset.name)}`;
                                 return (
                                    <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
                                        <div className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Box size={14} /> İlgili Varlık & Konum</div>
