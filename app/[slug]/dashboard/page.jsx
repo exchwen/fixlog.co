@@ -377,10 +377,10 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
                        <div className="text-sm italic text-rose-100 mb-3 border-l-2 border-rose-400 pl-2">"{activeEmergencies[0].message}"</div>
                    )}
                    <div className="flex items-start md:items-center gap-2 text-rose-100 text-sm md:text-base">
-                       <MapPin size={18} className="mt-0.5 md:mt-0 flex-shrink-0" /> 
+                   <MapPin size={18} className="mt-0.5 md:mt-0 flex-shrink-0" /> 
                        <span>
                            {activeEmergencies[0]?.staff_id 
-                               ? (activeEmergencies[0].location ? <a href={`https://www.google.com/maps/search/?api=1&query=${JSON.parse(activeEmergencies[0].location).lat},${JSON.parse(activeEmergencies[0].location).lng}`} target="_blank" className="underline font-bold">Haritada Konumu Gör</a> : 'Konum alınamadı') 
+                               ? (activeEmergencies[0].location ? <a href={`https://maps.google.com/?q=${JSON.parse(activeEmergencies[0].location).lat},${JSON.parse(activeEmergencies[0].location).lng}`} target="_blank" className="underline font-bold">Haritada Konumu Gör</a> : 'Konum alınamadı') 
                                : (activeEmergencies[0]?.asset_location ? activeEmergencies[0].asset_location.replace(activeEmergencies[0].asset_apartment || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : 'Konum alınamadı')
                            }
                        </span>
