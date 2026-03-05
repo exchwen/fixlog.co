@@ -442,11 +442,22 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName, c
                                 const isNegative = ['hayır', 'hayir', 'yok', 'false', 'uygun değil', 'değil', 'sorunlu', 'kötü'].some(v => valStr === v || valStr.includes(v));
                                 const isBooleanType = isPositive || isNegative;
                                 
+                                // Önizleme modalı için dinamik renk tespiti
+                                let colorClass = 'text-black';
+                                if (valStr.includes('mavi')) colorClass = 'text-blue-600';
+                                else if (valStr.includes('yeşil') || valStr.includes('yesil')) colorClass = 'text-emerald-600';
+                                else if (valStr.includes('kırmızı') || valStr.includes('kirmizi')) colorClass = 'text-rose-600';
+                                else if (valStr.includes('sarı') || valStr.includes('sari')) colorClass = 'text-amber-500';
+                                else if (valStr.includes('turuncu')) colorClass = 'text-orange-500';
+                                else if (valStr.includes('mor')) colorClass = 'text-purple-600';
+                                
                                 return (
                                     <div key={idx} className="flex justify-between items-end border-b border-black/10 py-2.5">
                                         <div className="flex flex-col pr-4">
                                             <span className="font-semibold text-[11px] leading-tight text-black">{item.key}</span>
-                                            <span className="text-[10px] font-bold mt-0.5 uppercase text-black">{item.val}</span>
+                                            {isBooleanType && (
+                                                <span className={`text-[10px] font-bold mt-0.5 uppercase ${colorClass}`}>{item.val}</span>
+                                            )}
                                         </div>
                                         <div className="shrink-0 pb-0.5">
                                             {isBooleanType ? (
@@ -458,7 +469,7 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName, c
                                                     <div className="w-4 h-4 border-2 border-black rounded-sm"></div>
                                                 )
                                             ) : (
-                                                <span className="text-[10px] font-black uppercase text-black border-b border-black">{item.val}</span>
+                                                <span className={`text-[10px] font-black uppercase ${colorClass} border-b ${colorClass === 'text-black' ? 'border-black' : 'border-transparent'}`}>{item.val}</span>
                                             )}
                                         </div>
                                     </div>
