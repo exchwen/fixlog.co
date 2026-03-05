@@ -48,11 +48,14 @@ export default function WorkerDashboard() {
   const [dynamicForm, setDynamicForm] = useState({}); 
   const [isSaving, setIsSaving] = useState(false);
 
-  // 🚀 SAHA SİHİRBAZI VE STOK STATE'LERİ
-  const [wizardStep, setWizardStep] = useState(1);
-  const [usedMaterials, setUsedMaterials] = useState([]);
+// 🚀 SAHA SİHİRBAZI VE STOK STATE'LERİ
+const [wizardStep, setWizardStep] = useState(1);
+const [usedMaterials, setUsedMaterials] = useState([]);
 
-  // 🚀 TASLAK (DRAFT) YÜKLEME
+// 🚀 ÇÖZÜM: 'currentFields' değişkenini kullanıldığı yerlerden ÖNCE tanımlıyoruz!
+const currentFields = (companySector && staffBranch && sectorsData.sectors?.[companySector]?.subTypes?.[staffBranch]?.fields) || [];
+
+// 🚀 TASLAK (DRAFT) YÜKLEME
   useEffect(() => {
       if (selectedJob && (selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada')) {
           const draft = localStorage.getItem(`draft_${slug}_${selectedJob.id}`);
@@ -420,8 +423,6 @@ export default function WorkerDashboard() {
   };
 
   const removePhoto = (index) => setPhotos(prev => prev.filter((_, i) => i !== index));
-
-  const currentFields = (companySector && staffBranch && sectorsData.sectors?.[companySector]?.subTypes?.[staffBranch]?.fields) || [];
 
   const getAssignerInfo = (job) => {
     const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
