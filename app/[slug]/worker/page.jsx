@@ -1044,13 +1044,13 @@ const handleStatusUpdate = async (newStatus) => {
                 
                 <div className="overflow-y-auto custom-scrollbar flex-1 pr-1 space-y-4">
                     
-                    <div className="flex justify-between items-center sticky top-0 bg-white z-20 pb-2 border-b border-slate-100 mb-2">
+                <div className="flex justify-between items-center sticky top-0 bg-white z-20 pb-2 border-b border-slate-100 mb-2">
                         <div className="flex items-center gap-2">
-                           {wizardStep > 1 && (
+                           {wizardStep > 1 && selectedJob.status !== 'Tamamlandı' && (
                                <button onClick={() => setWizardStep(wizardStep - 1)} className="p-1.5 bg-slate-100 text-slate-600 rounded-lg active:scale-95"><ChevronRight size={18} className="rotate-180" /></button>
                            )}
                            <span className="text-xs font-black text-slate-800 uppercase tracking-widest">
-                               ADIM {wizardStep} / {selectedJob.work_type === 'Periyodik Bakım' && (selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') ? '3' : '2'}
+                               {selectedJob.status === 'Tamamlandı' ? 'GÖREV DETAYI' : `ADIM ${wizardStep} / ${selectedJob.work_type === 'Periyodik Bakım' && (selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada') ? '3' : '2'}`}
                            </span>
                         </div>
                         <button onClick={() => handleSmartClose()} className="hidden md:flex p-1.5 bg-slate-100 text-slate-500 rounded-lg hover:bg-rose-100 hover:text-rose-600 transition-colors"><X size={16}/></button>
@@ -1200,7 +1200,14 @@ const handleStatusUpdate = async (newStatus) => {
 
                 <div className="pt-5 shrink-0 space-y-3 border-t border-slate-100 mt-2">
                     {/* 🚀 DİNAMİK BUTON YÖNETİMİ */}
-                    {selectedJob.status === 'Beklemede' || selectedJob.status === 'Gelecek' || selectedJob.status === 'Usta Bekliyor' ? (
+                    {selectedJob.status === 'Tamamlandı' ? (
+                        <button onClick={() => {
+                            setSelectedThermalJob(selectedJob);
+                            setShowThermalPrintModal(true);
+                        }} className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black text-base shadow-lg shadow-emerald-200 active:scale-95 flex justify-center gap-2 transition-all">
+                            <ClipboardList size={20} /> Fişi Görüntüle / Yazdır
+                        </button>
+                    ) : selectedJob.status === 'Beklemede' || selectedJob.status === 'Gelecek' || selectedJob.status === 'Usta Bekliyor' ? (
                         <button onClick={() => handleStatusUpdate('Devam Ediyor')} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-base shadow-lg shadow-blue-200 active:scale-95 flex justify-center gap-2">
                             {isSaving ? <Loader2 className="animate-spin" /> : <><PlayCircle size={20} /> İşe Başla / Keşfe Çıktım</>}
                         </button>
@@ -1213,21 +1220,36 @@ const handleStatusUpdate = async (newStatus) => {
                             )}
                             
                             {wizardStep === 2 && selectedJob.work_type === 'Periyodik Bakım' && (
-                                <button onClick={() => setWizardStep(3)} disabled={!isStep2Valid()} className="w-full bg-indigo-600 disabled:bg-slate-300 disabled:text-slate-500 text-white py-4 rounded-2xl font-black text-base shadow-lg shadow-indigo-200 active:scale-95 flex justify-center gap-2 transition-all">
-                                    İleri: Müşteri İmzası Al <ChevronRight size={20} />
-                                </button>
+                                <div className="flex gap-3">
+                                    <button onClick={() => setWizardStep(1)} className="w-1/3 bg-slate-100 text-slate-600 py-4 rounded-2xl font-black text-base active:scale-95 transition-all border border-slate-200">
+                                        Geri
+                                    </button>
+                                    <button onClick={() => setWizardStep(3)} disabled={!isStep2Valid()} className="w-2/3 bg-indigo-600 disabled:bg-slate-300 disabled:text-slate-500 text-white py-4 rounded-2xl font-black text-base shadow-lg shadow-indigo-200 active:scale-95 flex justify-center gap-2 transition-all">
+                                        İleri <ChevronRight size={20} />
+                                    </button>
+                                </div>
                             )}
 
                             {wizardStep === 2 && selectedJob.work_type !== 'Periyodik Bakım' && (
-                                <button onClick={() => handleStatusUpdate('Tamamlandı')} disabled={!isStep2Valid() || isSaving} className="w-full bg-emerald-500 disabled:bg-slate-300 disabled:text-slate-500 text-white py-4 rounded-2xl font-black text-base shadow-lg shadow-emerald-200 active:scale-95 flex justify-center gap-2 transition-all">
-                                    {isSaving ? <Loader2 className="animate-spin" /> : <><CheckCircle2 size={20} /> İşi Tamamla</>}
-                                </button>
+                                <div className="flex gap-3">
+                                    <button onClick={() => setWizardStep(1)} className="w-1/3 bg-slate-100 text-slate-600 py-4 rounded-2xl font-black text-base active:scale-95 transition-all border border-slate-200">
+                                        Geri
+                                    </button>
+                                    <button onClick={() => handleStatusUpdate('Tamamlandı')} disabled={!isStep2Valid() || isSaving} className="w-2/3 bg-emerald-500 disabled:bg-slate-300 disabled:text-slate-500 text-white py-4 rounded-2xl font-black text-base shadow-lg shadow-emerald-200 active:scale-95 flex justify-center gap-2 transition-all">
+                                        {isSaving ? <Loader2 className="animate-spin" /> : <><CheckCircle2 size={20} /> İşi Tamamla</>}
+                                    </button>
+                                </div>
                             )}
 
                             {wizardStep === 3 && (
-                                <button onClick={() => handleStatusUpdate('Tamamlandı')} disabled={!signatureImage || !signatureName.trim() || isSaving} className="w-full bg-emerald-500 disabled:bg-slate-300 disabled:text-slate-500 text-white py-4 rounded-2xl font-black text-base shadow-lg shadow-emerald-200 active:scale-95 flex justify-center gap-2 transition-all">
-                                    {isSaving ? <Loader2 className="animate-spin" /> : <><CheckCircle2 size={20} /> İmzayı Onayla & Fiş Yazdır</>}
-                                </button>
+                                <div className="flex gap-3">
+                                    <button onClick={() => setWizardStep(2)} className="w-1/3 bg-slate-100 text-slate-600 py-4 rounded-2xl font-black text-base active:scale-95 transition-all border border-slate-200">
+                                        Geri
+                                    </button>
+                                    <button onClick={() => handleStatusUpdate('Tamamlandı')} disabled={!signatureImage || !signatureName.trim() || isSaving} className="w-2/3 bg-emerald-500 disabled:bg-slate-300 disabled:text-slate-500 text-white py-4 rounded-2xl font-black text-base shadow-lg shadow-emerald-200 active:scale-95 flex justify-center gap-2 transition-all">
+                                        {isSaving ? <Loader2 className="animate-spin" /> : <><CheckCircle2 size={20} /> Onayla & Yazdır</>}
+                                    </button>
+                                </div>
                             )}
                         </>
                     )}

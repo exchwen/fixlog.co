@@ -175,72 +175,125 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName }:
       
       <motion.div 
         initial={{ scale: 0.95, y: 10, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }}
-        className="bg-white w-full max-w-sm rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col"
+        className="bg-slate-100 w-full max-w-sm rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
       >
-        <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+        <div className="p-5 border-b border-slate-200 flex justify-between items-center bg-white shrink-0 shadow-sm z-20">
             <h3 className="font-black text-slate-800 flex items-center gap-2">
-                <Printer size={18} className="text-blue-600" /> Fiş Yazdır
+                <Printer size={18} className="text-blue-600" /> Fiş Önizleme
             </h3>
-            <button disabled={isConnecting} onClick={onClose} className="p-2 bg-white rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-100 transition-colors disabled:opacity-50"><X size={18} /></button>
+            <button disabled={isConnecting} onClick={onClose} className="p-2 bg-slate-50 rounded-xl border border-slate-200 text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-colors disabled:opacity-50"><X size={18} /></button>
         </div>
 
-        <div className="p-6">
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center mb-6 text-left">
-                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-center">Önizleme (ESC/POS)</div>
-                <div className="text-[11px] font-mono text-slate-700 leading-relaxed">
-                    <div className="text-center">{sanitizeText(companyName)}</div>
-                    <div className="text-center">--------------------------------</div>
-                    <div className="font-bold text-center">PERIYODIK BAKIM FISI</div>
-                    <div className="text-center">--------------------------------</div>
-                    <div className="mt-2 whitespace-pre-wrap">
-                        Tarih: {new Date().toLocaleDateString('tr-TR')} <br/>
-                        Musteri: {sanitizeText(job.customer_name || '')} <br/>
+        <div className="p-6 overflow-y-auto custom-scrollbar flex-1 relative flex flex-col items-center">
+            
+            {/* 🚀 ŞIK PDF / FİŞ GÖRÜNÜMÜ BAŞLANGICI */}
+            <div className="w-full max-w-[300px] bg-white text-slate-900 mx-auto shadow-md relative overflow-hidden flex flex-col" style={{
+                // Fişin altındaki yırtık kağıt (zikzak) efekti için CSS
+                maskImage: 'radial-gradient(circle at 4px bottom, transparent 4px, black 4.5px)',
+                maskSize: '12px 100%',
+                maskRepeat: 'repeat-x',
+                paddingBottom: '20px'
+            }}>
+                <div className="p-6 pt-8 flex flex-col gap-4 text-[13px] font-mono leading-relaxed relative z-10">
+                    
+                    {/* Başlık ve Şirket */}
+                    <div className="text-center space-y-1">
+                        <div className="font-black text-lg tracking-wider uppercase">{sanitizeText(companyName)}</div>
+                        <div className="text-[10px] text-slate-500 tracking-widest border-b border-dashed border-slate-300 pb-4 mb-4">
+                            PERİYODİK BAKIM FİŞİ
+                        </div>
+                    </div>
+
+                    {/* Müşteri ve Temel Bilgiler */}
+                    <div className="space-y-1.5 border-b border-dashed border-slate-300 pb-4">
+                        <div className="flex justify-between">
+                            <span className="text-slate-500 font-medium">İş Emri No:</span>
+                            <span className="font-bold">#{job.id}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-slate-500 font-medium">Tarih:</span>
+                            <span className="font-bold">{new Date().toLocaleDateString('tr-TR')}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-slate-500 font-medium">Müşteri:</span>
+                            <span className="font-bold text-right max-w-[150px] truncate">{sanitizeText(job.customer_name || 'Bilinmiyor')}</span>
+                        </div>
                         {(() => {
                             const assetName = job.asset_name || (job.details?.assetName) || 'Belirtilmedi';
-                            return assetName !== 'Belirtilmedi' ? `Varlik: ${sanitizeText(assetName)}\n` : '';
-                        })()}
-                        --------------------------------<br/>
-                        {(() => {
-                            if (!job.details) return '';
-                            const excludeKeys = ['note', 'price', 'lastEditedBy', 'lastEditedAt', 'managerName', 'managerId', 'createdBy', 'worker_id', 'assetName'];
-                            const formEntries = Object.entries(job.details).filter(([k]) => !excludeKeys.includes(k));
-                            
-                            if (formEntries.length === 0) return '';
-                            
-                            return formEntries.map(([key, value]) => {
-                                let cleanKey = sanitizeText(key);
-                                if (cleanKey.length > 14) cleanKey = cleanKey.substring(0, 14) + '.'; 
-                                return `${cleanKey}: ${sanitizeText(String(value))}`;
-                            }).join('\n');
+                            if (assetName !== 'Belirtilmedi') {
+                                return (
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500 font-medium">Varlık:</span>
+                                        <span className="font-bold text-right max-w-[150px] truncate">{sanitizeText(assetName)}</span>
+                                    </div>
+                                );
+                            }
+                            return null;
                         })()}
                     </div>
+
+                    {/* Form Detayları (Dinamik) */}
+                    {(() => {
+                        if (!job.details) return null;
+                        const excludeKeys = ['note', 'price', 'lastEditedBy', 'lastEditedAt', 'managerName', 'managerId', 'createdBy', 'worker_id', 'assetName'];
+                        const formEntries = Object.entries(job.details).filter(([k]) => !excludeKeys.includes(k));
+                        
+                        if (formEntries.length === 0) return null;
+                        
+                        return (
+                            <div className="space-y-1.5 border-b border-dashed border-slate-300 pb-4">
+                                {formEntries.map(([key, value]) => {
+                                    let cleanKey = sanitizeText(key);
+                                    if (cleanKey.length > 14) cleanKey = cleanKey.substring(0, 14) + '.'; 
+                                    return (
+                                        <div key={key} className="flex justify-between gap-4">
+                                            <span className="text-slate-500 font-medium whitespace-nowrap">{cleanKey}:</span>
+                                            <span className="font-bold text-right break-words">{sanitizeText(String(value))}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        );
+                    })()}
+
+                    {/* Alt Bilgi */}
+                    <div className="text-center mt-2 space-y-1">
+                        <div className="font-bold">Bakım tamamlanmıştır.</div>
+                        <div className="text-[10px] text-slate-500">Bizi tercih ettiğiniz için<br/>teşekkür ederiz.</div>
+                    </div>
                 </div>
+
+                {/* Fişin üst kısımdaki hafif gölgesi */}
+                <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-b from-black/5 to-transparent pointer-events-none"></div>
             </div>
+            {/* 🚀 ŞIK PDF / FİŞ GÖRÜNÜMÜ BİTİŞİ */}
 
-            {errorMsg && (
-                <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold rounded-xl flex items-start gap-2">
-                    <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-                    <span>{errorMsg}</span>
-                </div>
-            )}
+            <div className="w-full mt-6 space-y-4">
+                {errorMsg && (
+                    <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold rounded-xl flex items-start gap-2 shadow-sm">
+                        <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                        <span>{errorMsg}</span>
+                    </div>
+                )}
 
-            {statusMsg && !errorMsg && (
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold rounded-xl flex items-center justify-center gap-2">
-                    {statusMsg === 'Yazdırma Başarılı!' ? <CheckCircle size={16} className="text-emerald-500"/> : <Loader2 size={16} className="animate-spin" />}
-                    <span>{statusMsg}</span>
-                </div>
-            )}
+                {statusMsg && !errorMsg && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm">
+                        {statusMsg === 'Yazdırma Başarılı!' ? <CheckCircle size={16} className="text-emerald-500"/> : <Loader2 size={16} className="animate-spin" />}
+                        <span>{statusMsg}</span>
+                    </div>
+                )}
 
-            <button 
-                disabled={isConnecting}
-                onClick={handlePrint}
-                className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-black text-sm shadow-md hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                {isConnecting ? 'Bağlanıyor...' : <><Bluetooth size={18} /> Bluetooth ile Yazdır</>}
-            </button>
-            <p className="text-[10px] text-center text-slate-400 mt-3 font-medium px-2">
-                Bluetooth bağlantısı açık olduğundan emin olun. Tarayıcınız son yazıcıyı hatırlayacaktır.
-            </p>
+                <button 
+                    disabled={isConnecting}
+                    onClick={handlePrint}
+                    className="w-full bg-blue-600 text-white py-4 rounded-xl font-black text-sm shadow-lg hover:bg-blue-700 hover:shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {isConnecting ? 'Bağlanıyor...' : <><Bluetooth size={20} /> Yazıcıya Gönder</>}
+                </button>
+                <p className="text-[10px] text-center text-slate-400 font-medium px-4">
+                    Bluetooth bağlantısı açık olduğundan emin olun. Tarayıcınız son yazıcıyı hatırlayacaktır.
+                </p>
+            </div>
         </div>
       </motion.div>
     </div>
