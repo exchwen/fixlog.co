@@ -379,8 +379,15 @@ export default function ManagerDashboard() {
   const pendingFaults = data?.pendingFaults || [];
   const hasFault = pendingFaults.length > 0;
 
-  const handleResolveEmergency = async (id) => handleAction('resolve-emergency', { id }, null, null);
-  const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, null, null);
+// 🚀 AKILLI ÇÖZÜMLEYİCİ: Acil durum cihazdan mı yoksa personelden mi geliyor?
+const handleResolveEmergency = async (emg) => {
+  if (emg.staff_id) {
+      handleAction('resolve-sos', { id: emg.id }, null, null);
+  } else {
+      handleAction('resolve-emergency', { id: emg.id }, null, null);
+  }
+};
+const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, null, null);
 
   // Yönetici kısıtlaması (Ayarlar'a erişemez)
   useEffect(() => {
@@ -489,12 +496,34 @@ export default function ManagerDashboard() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[99999] bg-rose-600 flex flex-col items-center justify-center text-white p-6">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden"><div className="w-[800px] h-[800px] bg-rose-500/30 rounded-full animate-ping" style={{ animationDuration: '3s' }}></div></div>
             <div className="relative z-10 flex flex-col items-center max-w-lg text-center w-full">
-                <ShieldAlert size={80} className="text-white mb-6 animate-pulse md:w-[100px] md:h-[100px]" /><h1 className="text-4xl md:text-5xl font-black mb-2 tracking-tight uppercase">Acil Durum Bildirildi!</h1><p className="text-lg md:text-xl text-rose-100 mb-8 font-medium">Sahadan veya bir müşteriden acil durum butonu tetiklendi.</p>
+                <ShieldAlert size={80} className="text-white mb-6 animate-pulse md:w-[100px] md:h-[100px]" />
+                <h1 className="text-4xl md:text-5xl font-black mb-2 tracking-tight uppercase">
+                    {activeEmergencies[0]?.staff_id ? 'PERSONEL SOS ALARMI!' : 'Acil Durum Bildirildi!'}
+                </h1>
+                <p className="text-lg md:text-xl text-rose-100 mb-8 font-medium">
+                    {activeEmergencies[0]?.staff_id ? `${activeEmergencies[0].staff_name} sahadan SOS acil çağrısı gönderdi.` : 'Sahadan veya bir müşteriden cihaz acil durum butonu tetiklendi.'}
+                </p>
                 <div className="bg-white/10 p-5 md:p-6 rounded-3xl backdrop-blur-md border border-white/20 mb-8 w-full max-w-md text-left shadow-2xl">
-                   <div className="text-rose-200 text-xs font-bold uppercase tracking-wider mb-1">İlgili Varlık & Konum</div><div className="text-xl md:text-2xl font-black text-white mb-2">{activeEmergencies[0]?.asset_apartment || activeEmergencies[0]?.asset_name || 'Bilinmeyen Varlık'}</div>
-                   <div className="flex items-start md:items-center gap-2 text-rose-100 text-sm md:text-base"><MapPin size={18} className="mt-0.5 md:mt-0 flex-shrink-0" /> <span>{activeEmergencies[0]?.asset_location ? activeEmergencies[0].asset_location.replace(activeEmergencies[0].asset_apartment || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : 'Konum alınamadı'}</span></div>
+                   <div className="text-rose-200 text-xs font-bold uppercase tracking-wider mb-1">
+                       {activeEmergencies[0]?.staff_id ? 'Durum & Personel' : 'İlgili Varlık & Konum'}
+                   </div>
+                   <div className="text-xl md:text-2xl font-black text-white mb-2">
+                       {activeEmergencies[0]?.staff_id ? activeEmergencies[0].type : (activeEmergencies[0]?.asset_apartment || activeEmergencies[0]?.asset_name || 'Bilinmeyen Varlık')}
+                   </div>
+                   {activeEmergencies[0]?.staff_id && activeEmergencies[0]?.message && (
+                       <div className="text-sm italic text-rose-100 mb-3 border-l-2 border-rose-400 pl-2">"{activeEmergencies[0].message}"</div>
+                   )}
+                   <div className="flex items-start md:items-center gap-2 text-rose-100 text-sm md:text-base">
+                       <MapPin size={18} className="mt-0.5 md:mt-0 flex-shrink-0" /> 
+                       <span>
+                           {activeEmergencies[0]?.staff_id 
+                               ? (activeEmergencies[0].location ? <a href={`https://www.google.com/maps/search/?api=1&query=${JSON.parse(activeEmergencies[0].location).lat},${JSON.parse(activeEmergencies[0].location).lng}`} target="_blank" className="underline font-bold">Haritada Konumu Gör</a> : 'Konum alınamadı') 
+                               : (activeEmergencies[0]?.asset_location ? activeEmergencies[0].asset_location.replace(activeEmergencies[0].asset_apartment || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : 'Konum alınamadı')
+                           }
+                       </span>
+                   </div>
                 </div>
-                <button onClick={() => handleResolveEmergency(activeEmergencies[0]?.id)} disabled={isSaving} className="bg-white text-rose-600 px-6 py-4 md:px-10 md:py-5 w-full sm:w-auto rounded-2xl font-black text-base md:text-xl shadow-2xl hover:bg-rose-50 hover:scale-105 transition-all active:scale-95 flex flex-col sm:flex-row items-center justify-center gap-3 disabled:opacity-50"><ShieldCheck size={28} />{isSaving ? 'Kapatılıyor...' : 'KONTROL ETTİM, ALARMI KAPAT'}</button>
+                <button onClick={() => handleResolveEmergency(activeEmergencies[0])} disabled={isSaving} className="bg-white text-rose-600 px-6 py-4 md:px-10 md:py-5 w-full sm:w-auto rounded-2xl font-black text-base md:text-xl shadow-2xl hover:bg-rose-50 hover:scale-105 transition-all active:scale-95 flex flex-col sm:flex-row items-center justify-center gap-3 disabled:opacity-50"><ShieldCheck size={28} />{isSaving ? 'Kapatılıyor...' : 'KONTROL ETTİM, ALARMI KAPAT'}</button>
             </div>
           </motion.div>
         )}
