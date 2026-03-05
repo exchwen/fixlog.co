@@ -1129,11 +1129,16 @@ const handleStatusUpdate = async (newStatus) => {
                                                         {checklist.map((item, idx) => {
                                                             const valStr = item.val.toLowerCase();
                                                             const isChecked = ['evet', 'var', 'true', 'ok', 'uygun', 'sorunsuz', 'mavi', 'yeşil'].some(v => valStr.includes(v));
+                                                            // 🚀 EKLENDİ: Olumsuz / Kırmızı etiket kontrolü
+                                                            const isNegative = ['hayır', 'hayir', 'yok', 'false', 'uygun değil', 'değil', 'sorunlu', 'kötü', 'kırmızı'].some(v => valStr.includes(v));
+                                                            
                                                             return (
                                                                 <div key={idx} className="flex justify-between items-center text-xs">
                                                                     <span className="font-semibold text-slate-600">{item.key}</span>
                                                                     {isChecked ? (
                                                                         <div className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded flex items-center gap-1 font-bold text-[10px]"><CheckCircle2 size={12}/> {item.val}</div>
+                                                                    ) : isNegative ? (
+                                                                        <div className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded flex items-center gap-1 font-bold text-[10px]"><X size={12}/> {item.val}</div>
                                                                     ) : (
                                                                         <span className="font-bold text-slate-800">{item.val}</span>
                                                                     )}

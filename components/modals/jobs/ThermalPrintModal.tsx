@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Bluetooth, Loader2, AlertTriangle, Printer, CheckCircle, CheckSquare, Square, Share2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
@@ -13,16 +13,94 @@ interface ThermalPrintModalProps {
     companyName: string;
     companyLogo?: string;
     assets?: any[];
-  }
-  
-  export default function ThermalPrintModal({ isOpen, onClose, job, companyName, companyLogo, assets }: ThermalPrintModalProps) {
+}
+
+export default function ThermalPrintModal({ isOpen, onClose, job, companyName, companyLogo, assets }: ThermalPrintModalProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  
+  // 🚀 YENİ: Logo Arka Plan Rengi State'i
+  const [logoBgColor, setLogoBgColor] = useState<string>('#ffffff');
+
+  // 🚀 YENİ: CORS Bypass Fonksiyonu
+  const getSafeImageUrl = (url: string | undefined) => {
+    if (!url) return '';
+    if (url.includes('pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev')) {
+       return url.replace('https://pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev', '/dosya-deposu');
+    }
+    return url;
+  };
+
+  // 🚀 YENİ: Logo Baskın Renk Analizi
+  useEffect(() => {
+    if (!companyLogo) {
+      setLogoBgColor('#ffffff');
+      return;
+    }
+
+    const safeLogoUrl = getSafeImageUrl(companyLogo);
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    
+    img.onerror = () => {
+      setLogoBgColor('#ffffff');
+    };
+
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      
+      try {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        let r = 0, g = 0, b = 0, count = 0;
+        
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] < 128) continue; 
+          r += data[i];
+          g += data[i + 1];
+          b += data[i + 2];
+          count++;
+        }
+        
+        if (count > 0) {
+          r = Math.floor(r / count);
+          g = Math.floor(g / count);
+          b = Math.floor(b / count);
+
+          const palette = [
+            { name: 'white', rgb: [255, 255, 255], hex: '#ffffff' },
+            { name: 'black', rgb: [15, 23, 42], hex: '#0f172a' }, 
+            { name: 'blue', rgb: [37, 99, 235], hex: '#2563eb' }
+          ];
+
+          let maxDist = -1;
+          let selectedColor = '#ffffff';
+
+          for (const color of palette) {
+            const dist = Math.sqrt(Math.pow(r - color.rgb[0], 2) + Math.pow(g - color.rgb[1], 2) + Math.pow(b - color.rgb[2], 2));
+            if (dist > maxDist) {
+              maxDist = dist;
+              selectedColor = color.hex;
+            }
+          }
+          setLogoBgColor(selectedColor);
+        }
+      } catch (e) {
+        console.error("Renk analizi yapılamadı:", e);
+      }
+    };
+    img.src = safeLogoUrl + (safeLogoUrl.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
+  }, [companyLogo]);
 
   if (!isOpen || !job) return null;
 
-  // ESC/POS Termal yazıcılar Türkçe karakterleri bazen "?" olarak basar.
   const sanitizeText = (text: string) => {
     if (!text) return '';
     return text.replace(/ğ/g, 'g').replace(/Ğ/g, 'G')
@@ -33,13 +111,11 @@ interface ThermalPrintModalProps {
                .replace(/ç/g, 'c').replace(/Ç/g, 'C');
   };
 
-  // 🚀 HAYAT KURTARAN FONKSİYON: Çorba olan metni parçalayıp listeye çevirir
   const parseJobData = () => {
     let rawNote = job.details?.note || job.taskNote || '';
     let extractedChecklist: { key: string, val: string }[] = [];
     let cleanNote = '';
 
-    // Eğer veri daha önce birleştirilip "note" içine gömüldüyse onu ayıkla
     if (rawNote.includes('---') && rawNote.includes('Saha Formu')) {
         const lines = rawNote.split('\n');
         let inForm = false;
@@ -55,17 +131,14 @@ interface ThermalPrintModalProps {
             }
 
             if (inForm && line.includes(':')) {
-                // Form maddesi (Örn: "Kuyu Alt Boşluğu: Uygun")
                 const [key, ...valArr] = line.split(':');
                 extractedChecklist.push({ key: key.trim(), val: valArr.join(':').trim() });
             } else if (!inForm && line.trim() !== '') {
-                // Kalanlar gerçek bakım notudur
                 cleanNote += line + '\n';
             }
         }
     } else {
         cleanNote = rawNote;
-        // Eğer veritabanından form alanları ayrı ayrı geldiyse (details içinde objeyse)
         if (job.details) {
             const excludeKeys = ['note', 'price', 'lastEditedBy', 'lastEditedAt', 'managerName', 'managerId', 'createdBy', 'worker_id', 'assetName', 'usedMaterials'];
             Object.entries(job.details).forEach(([k, v]) => {
@@ -76,9 +149,7 @@ interface ThermalPrintModalProps {
         }
     }
 
-    // Gps notunu veya "Usta Notu:" etiketini temizleyelim
     cleanNote = cleanNote.replace(/\[Usta Notu\]:/g, '').replace(/\[📍 Konum Kaydı\].*/g, '').trim();
-
     return { extractedChecklist, cleanNote };
   };
 
@@ -86,11 +157,9 @@ interface ThermalPrintModalProps {
   const workerName = job.lastEditedBy || job.worker_name || 'Personel';
   const customerSignName = job.customer_signature_name || 'Müşteri / Yetkili';
   
-  // 🚀 Apartman Adı ve Varlık Türü Birleştirme (Örn: "Güneş Apt. - Asansör 1")
   const asset = assets?.find(a => String(a.id) === String(job.asset_id));
   const assetName = asset ? `${asset.apartmentName || ''} - ${asset.name || ''}`.replace(/^- |-$/g, '').trim() : (job.asset_name || job.details?.assetName || job.customer_name);
   
-  // Tarih Formatlama
   let formattedDate = new Date().toLocaleDateString('tr-TR');
   let formattedTime = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute:'2-digit' });
   if (job.created_at) {
@@ -99,7 +168,6 @@ interface ThermalPrintModalProps {
       formattedTime = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute:'2-digit' });
   }
 
-  // 🖨️ TERMAL YAZICI İÇİN ESC/POS OLUŞTURMA
   const buildReceipt = () => {
     const init = '\x1B\x40'; 
     const center = '\x1B\x61\x01'; 
@@ -121,7 +189,6 @@ interface ThermalPrintModalProps {
     
     txt += divider;
     
-    // Checkbox Listesini Termal Yazıcıya Basma
     if (extractedChecklist.length > 0) {
         extractedChecklist.forEach((item) => {
             let cleanKey = sanitizeText(item.key);
@@ -163,7 +230,6 @@ interface ThermalPrintModalProps {
     return new TextEncoder().encode(txt);
   };
 
-
   const handleSharePDF = async () => {
     setIsConnecting(true);
     setStatusMsg('PDF Hazırlanıyor...');
@@ -173,11 +239,15 @@ interface ThermalPrintModalProps {
         const receiptElement = document.getElementById('receipt-preview');
         if (!receiptElement) throw new Error("Fiş alanı bulunamadı.");
 
-        // Kaliteyi artırmak için scale: 3 yapıyoruz
-        const canvas = await html2canvas(receiptElement, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
+        // 🚀 DÜZELTME: Mobilde Resimlerin Gelmesi için allowTaint eklendi.
+        const canvas = await html2canvas(receiptElement, { 
+            scale: 3, 
+            useCORS: true, 
+            allowTaint: true,
+            backgroundColor: '#ffffff' 
+        });
         const imgData = canvas.toDataURL('image/jpeg', 0.95);
         
-        // Termal fiş boyutlarına (80mm genişlik) sadık kalarak dikey PDF oluştur
         const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [canvas.width * 0.264583, canvas.height * 0.264583] });
         pdf.addImage(imgData, 'JPEG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
         
@@ -193,7 +263,6 @@ interface ThermalPrintModalProps {
             });
             setStatusMsg('İşlem Başarılı!');
         } else {
-            // Cihaz dosya paylaşımını desteklemiyorsa düz metin olarak WhatsApp at
             const waText = `*${companyName}*\n*Bakım Fişi #${job.id}*\n\nBakım işleminiz tamamlanmıştır.\n\n_Detaylar için web uygulamamızı ziyaret edin._`;
             window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, '_blank');
             setStatusMsg('Dosya desteği yok, metin iletildi.');
@@ -303,27 +372,32 @@ interface ThermalPrintModalProps {
             <button disabled={isConnecting} onClick={onClose} className="p-2 bg-slate-100 rounded-xl text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-colors"><X size={20} /></button>
         </div>
 
-        {/* 🚀 EKRAN ÖNİZLEMESİ (ELF ASANSÖR TASARIMI) */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-2 sm:p-6 bg-slate-200">
             
-            <div id="receipt-preview" className="w-full max-w-[380px] bg-white text-black mx-auto shadow-md relative" style={{
-                paddingBottom: '24px',
-                minHeight: '400px'
-            }}>
+            <div id="receipt-preview" className="w-full max-w-[380px] bg-white text-black mx-auto shadow-md relative" style={{ paddingBottom: '24px', minHeight: '400px' }}>
                 <div className="p-5 sm:p-8 flex flex-col text-[12px] font-sans relative z-10">
                     
-                    {/* LOGO VE BAŞLIK */}
+                    {/* 🚀 EKLENDİ: Dinamik Logo Arka Planı (Termal Yazıcı Uyumlu) */}
                     <div className="flex flex-col items-center justify-center mb-6">
                         {companyLogo ? (
-                            <img src={companyLogo} alt="Logo" className="max-h-16 object-contain mb-1 grayscale" />
+                            <div 
+                                className="w-16 h-16 rounded-xl flex items-center justify-center mb-2 overflow-hidden border border-slate-100 shadow-sm"
+                                style={{ backgroundColor: logoBgColor }}
+                            >
+                                <img 
+                                    src={getSafeImageUrl(companyLogo)} 
+                                    crossOrigin="anonymous" 
+                                    alt="Logo" 
+                                    className="w-12 h-12 object-contain grayscale" 
+                                />
+                            </div>
                         ) : (
                             <div className="font-black text-3xl tracking-tighter mb-1 lowercase">{companyName.substring(0, 3)}<span className="text-slate-400">f</span></div>
                         )}
                         <div className="font-bold text-sm uppercase tracking-widest">{companyName}</div>
-                        <h2 className="text-base font-bold mt-3">Bakım fişi</h2>
+                        <h2 className="text-base font-bold mt-2">Bakım Fişi</h2>
                     </div>
 
-                    {/* FİŞ BİLGİLERİ (HİZALI) */}
                     <div className="space-y-1.5 mb-6">
                         <div className="flex">
                             <span className="font-bold w-[100px] shrink-0">Fiş Numarası</span>
@@ -342,19 +416,20 @@ interface ThermalPrintModalProps {
                         </div>
                     </div>
 
-                    {/* ONAY LİSTESİ (CHECKBOX'LI) */}
                     {extractedChecklist.length > 0 && (
                         <div className="border-t border-black/20 pt-2 pb-2">
                             {extractedChecklist.map((item, idx) => {
                                 const valStr = item.val.toLowerCase();
                                 const isChecked = ['evet', 'var', 'true', 'ok', 'uygun', 'sorunsuz', 'mavi', 'yeşil'].some(v => valStr.includes(v));
+                                // 🚀 EKLENDİ: Fişte "Değil / Yok" yazanları kırmızı yapıyoruz.
+                                const isNegative = ['hayır', 'hayir', 'yok', 'false', 'uygun değil', 'değil', 'sorunlu', 'kötü', 'kırmızı'].some(v => valStr.includes(v));
+                                const valColor = isNegative ? 'text-rose-600' : 'text-slate-500';
                                 
                                 return (
                                     <div key={idx} className="flex justify-between items-end border-b border-black/10 py-2.5">
                                         <div className="flex flex-col pr-4">
                                             <span className="font-semibold text-[11px] leading-tight text-slate-800">{item.key}</span>
-                                            {/* Altında sahte küçük ikonlar veya value metni */}
-                                            <span className="text-[9px] font-bold text-slate-500 mt-0.5 uppercase">{item.val}</span>
+                                            <span className={`text-[9px] font-bold mt-0.5 uppercase ${valColor}`}>{item.val}</span>
                                         </div>
                                         <div className="shrink-0 pb-0.5">
                                             {isChecked ? (
@@ -371,7 +446,6 @@ interface ThermalPrintModalProps {
                         </div>
                     )}
 
-                    {/* KULLANILAN MALZEMELER */}
                     {job.details?.usedMaterials && job.details.usedMaterials.length > 0 && (
                         <div className="py-4 border-b border-black/10">
                             <div className="font-bold mb-2">Kullanılan Malzemeler</div>
@@ -386,7 +460,6 @@ interface ThermalPrintModalProps {
                         </div>
                     )}
 
-                    {/* BAKIM NOTU */}
                     <div className="py-4 border-b border-black/10">
                         <div className="flex">
                             <span className="font-bold w-[100px] shrink-0">Bakım Notu</span>
@@ -395,7 +468,6 @@ interface ThermalPrintModalProps {
                         </div>
                     </div>
 
-                    {/* İMZA BÖLÜMÜ */}
                     <div className="mt-4 text-[10px] leading-relaxed text-black/80 text-justify">
                         Bu form {workerName} isimli personelimiz tarafından, {formattedDate}-{formattedTime} tarihinde elektronik imza ile imzalanmıştır.
                     </div>
@@ -408,8 +480,14 @@ interface ThermalPrintModalProps {
                         </div>
                         
                         <div className="w-full flex flex-col items-center mt-6">
+                            {/* 🚀 EKLENDİ: İmza görselinin mobilde patlamaması için Proxy ve crossOrigin */}
                             {job.signature_url ? (
-                                <img src={job.signature_url} alt="İmza" className="max-w-[150px] max-h-[80px] object-contain grayscale mix-blend-multiply" />
+                                <img 
+                                    src={getSafeImageUrl(job.signature_url)} 
+                                    crossOrigin="anonymous" 
+                                    alt="İmza" 
+                                    className="max-w-[150px] max-h-[80px] object-contain grayscale mix-blend-multiply" 
+                                />
                             ) : (
                                 <div className="h-16 w-full"></div>
                             )}
@@ -422,7 +500,6 @@ interface ThermalPrintModalProps {
             
         </div>
 
-        {/* 🚀 SABİT ALT BUTONLAR (Mavi tonlarda ve şık) */}
         <div className="bg-white p-4 sm:p-5 border-t border-slate-200 shrink-0">
             {errorMsg && (
                 <div className="mb-3 p-3 bg-rose-50 border border-rose-200 text-rose-600 text-[11px] font-bold rounded-xl flex items-start gap-2">
