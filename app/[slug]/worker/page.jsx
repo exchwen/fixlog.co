@@ -129,13 +129,13 @@ const handleSendSOS = async () => {
     const token = localStorage.getItem('staff_authToken');
     let location = null;
     try {
-        const pos = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000 });
-        });
-        location = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    } catch (e) {
-        console.warn("Konum alınamadı.");
-    }
+                const pos = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 });
+                });
+                location = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            } catch (e) {
+                console.warn("Konum alınamadı, detay: ", e);
+            }
 
     try {
         const res = await fetch(`${API_URL}/send-sos`, {

@@ -194,7 +194,19 @@ export default function AlertsTab({ data, handleAction }: AlertsTabProps) {
                           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-xs font-semibold text-slate-500 mt-2.5">
                             <span className="flex items-center gap-1.5 w-full sm:w-auto truncate"><MapPin size={14} className="text-slate-400 shrink-0" /> 
                             <span className="truncate">
-                                {isStaffSos ? (em.location ? 'Haritada Konum Kayıtlı' : 'Konum Yok') : (em.asset_location ? em.asset_location.replace(em.asset_apartment || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : 'Konum yok')}
+                                {isStaffSos ? (
+                                    em.location && em.location !== 'null' ? (
+                                        (() => {
+                                            let lat, lng;
+                                            try {
+                                                const parsed = typeof em.location === 'string' ? JSON.parse(em.location) : em.location;
+                                                lat = parsed.lat; lng = parsed.lng;
+                                            } catch(e) {}
+                                            if (lat && lng) return <a href={`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Haritada Yol Tarifi Al</a>;
+                                            return 'Konum Hatalı';
+                                        })()
+                                    ) : 'Konum Yok'
+                                ) : (em.asset_location ? em.asset_location.replace(em.asset_apartment || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : 'Konum yok')}
                             </span></span>
                           </div>
                         </div>

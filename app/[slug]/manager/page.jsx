@@ -504,24 +504,50 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
                     {activeEmergencies[0]?.staff_id ? `${activeEmergencies[0].staff_name} sahadan SOS acil çağrısı gönderdi.` : 'Sahadan veya bir müşteriden cihaz acil durum butonu tetiklendi.'}
                 </p>
                 <div className="bg-white/10 p-5 md:p-6 rounded-3xl backdrop-blur-md border border-white/20 mb-8 w-full max-w-md text-left shadow-2xl">
-                   <div className="text-rose-200 text-xs font-bold uppercase tracking-wider mb-1">
+                <div className="text-rose-200 text-xs font-bold uppercase tracking-wider mb-1">
                        {activeEmergencies[0]?.staff_id ? 'Durum & Personel' : 'İlgili Varlık & Konum'}
                    </div>
+                   {activeEmergencies[0]?.staff_id && (
+                       <div className="text-lg md:text-xl font-bold text-white mb-0.5">
+                           {activeEmergencies[0].staff_name}
+                       </div>
+                   )}
                    <div className="text-xl md:text-2xl font-black text-white mb-2">
                        {activeEmergencies[0]?.staff_id ? activeEmergencies[0].type : (activeEmergencies[0]?.asset_apartment || activeEmergencies[0]?.asset_name || 'Bilinmeyen Varlık')}
                    </div>
                    {activeEmergencies[0]?.staff_id && activeEmergencies[0]?.message && (
                        <div className="text-sm italic text-rose-100 mb-3 border-l-2 border-rose-400 pl-2">"{activeEmergencies[0].message}"</div>
                    )}
-                   <div className="flex items-start md:items-center gap-2 text-rose-100 text-sm md:text-base">
-                   <MapPin size={18} className="mt-0.5 md:mt-0 flex-shrink-0" /> 
-                       <span>
-                           {activeEmergencies[0]?.staff_id 
-                               ? (activeEmergencies[0].location ? <a href={`https://maps.google.com/?q=${JSON.parse(activeEmergencies[0].location).lat},${JSON.parse(activeEmergencies[0].location).lng}`} target="_blank" className="underline font-bold">Haritada Konumu Gör</a> : 'Konum alınamadı') 
-                               : (activeEmergencies[0]?.asset_location ? activeEmergencies[0].asset_location.replace(activeEmergencies[0].asset_apartment || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : 'Konum alınamadı')
-                           }
-                       </span>
-                   </div>
+                   
+                   {activeEmergencies[0]?.staff_id ? (
+                       <div className="mt-4">
+                           {activeEmergencies[0].location && activeEmergencies[0].location !== 'null' ? (
+                               (() => {
+                                   let lat, lng;
+                                   try {
+                                       const parsed = typeof activeEmergencies[0].location === 'string' ? JSON.parse(activeEmergencies[0].location) : activeEmergencies[0].location;
+                                       lat = parsed.lat; lng = parsed.lng;
+                                   } catch(e) {}
+                                   
+                                   if (lat && lng) {
+                                       return (
+                                           <a href={`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`} target="_blank" rel="noopener noreferrer" className="bg-white text-rose-600 px-4 py-3 rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md w-full">
+                                               <MapPin size={20} /> Haritada Aç ve Yol Tarifi Al
+                                           </a>
+                                       );
+                                   }
+                                   return <div className="flex items-center gap-2 text-rose-200 text-sm"><MapPin size={18} /> Konum verisi hatalı</div>;
+                               })()
+                           ) : (
+                               <div className="flex items-center gap-2 text-rose-200 text-sm"><MapPin size={18} /> Konum alınamadı (İzin verilmemiş veya sinyal zayıf)</div>
+                           )}
+                       </div>
+                   ) : (
+                       <div className="flex items-start md:items-center gap-2 text-rose-100 text-sm md:text-base">
+                           <MapPin size={18} className="mt-0.5 md:mt-0 flex-shrink-0" /> 
+                           <span>{activeEmergencies[0]?.asset_location ? activeEmergencies[0].asset_location.replace(activeEmergencies[0].asset_apartment || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : 'Konum alınamadı'}</span>
+                       </div>
+                   )}
                 </div>
                 <button onClick={() => handleResolveEmergency(activeEmergencies[0])} disabled={isSaving} className="bg-white text-rose-600 px-6 py-4 md:px-10 md:py-5 w-full sm:w-auto rounded-2xl font-black text-base md:text-xl shadow-2xl hover:bg-rose-50 hover:scale-105 transition-all active:scale-95 flex flex-col sm:flex-row items-center justify-center gap-3 disabled:opacity-50"><ShieldCheck size={28} />{isSaving ? 'Kapatılıyor...' : 'KONTROL ETTİM, ALARMI KAPAT'}</button>
             </div>
