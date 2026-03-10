@@ -100,19 +100,25 @@ const handleRequestMaterial = async () => {
     setIsSaving(true);
     const token = localStorage.getItem('staff_authToken');
     try {
-        await fetch(`${API_URL}/request-material`, {
+        const res = await fetch(`${API_URL}/request-material`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ slug, staffId: userData?.id, items: materialRequestItems, note: materialNote })
         });
+        
+        if(!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || 'İşlem reddedildi');
+        }
+
         setNotification({ show: true, msg: 'Talebiniz yöneticiye başarıyla iletildi.', type: 'success' });
         setShowMaterialModal(false);
         setMaterialRequestItems([]);
         setMaterialNote('');
         setTimeout(() => setNotification({ show: false, msg: '', type: 'success' }), 3000);
     } catch(e) {
-        setNotification({ show: true, msg: 'İletilemedi, internet bağlantınızı kontrol edin.', type: 'error' });
-        setTimeout(() => setNotification({ show: false, msg: '', type: 'success' }), 3000);
+        setNotification({ show: true, msg: `Hata: ${e.message}`, type: 'error' });
+        setTimeout(() => setNotification({ show: false, msg: '', type: 'success' }), 4000);
     }
     setIsSaving(false);
 };
@@ -132,18 +138,24 @@ const handleSendSOS = async () => {
     }
 
     try {
-        await fetch(`${API_URL}/send-sos`, {
+        const res = await fetch(`${API_URL}/send-sos`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ slug, staffId: userData?.id, type: sosType, message: sosMessage, location })
         });
+        
+        if(!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || 'İşlem reddedildi');
+        }
+
         setNotification({ show: true, msg: 'Acil durum bildiriminiz merkeze ulaştı.', type: 'success' });
         setShowSOSModal(false);
         setSosMessage('');
         setTimeout(() => setNotification({ show: false, msg: '', type: 'success' }), 4000);
     } catch(e) {
-        setNotification({ show: true, msg: 'Hata oluştu. Lütfen çağrı merkezini arayın.', type: 'error' });
-        setTimeout(() => setNotification({ show: false, msg: '', type: 'success' }), 3000);
+        setNotification({ show: true, msg: `Hata: ${e.message}`, type: 'error' });
+        setTimeout(() => setNotification({ show: false, msg: '', type: 'success' }), 4000);
     }
     setIsSaving(false);
 };
