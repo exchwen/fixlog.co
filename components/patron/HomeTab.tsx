@@ -1112,7 +1112,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         )}
       </AnimatePresence>
 
-      {/* 🚀 DİNAMİK GENEL UYARI MODALI */}
+      {/* 🚀 DİNAMİK GENEL UYARI VE ONAY MODALI */}
       <AnimatePresence>
         {alertModal.isOpen && (
           <motion.div 
@@ -1144,17 +1144,35 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                 {alertModal.type === 'success' ? 'Başarılı!' : 
                  alertModal.type === 'error' ? 'Hata!' : 
                  alertModal.type === 'warning' ? 'Uyarı!' : 
-                 'Bilgi'}
+                 'Bilgi / Onay'}
               </h3>
               <p className="text-sm font-medium text-slate-500 mb-6 leading-relaxed">
                 {alertModal.message}
               </p>
-              <button 
-                onClick={() => setAlertModal({ ...alertModal, isOpen: false })}
-                className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition-all active:scale-95 shadow-md flex justify-center items-center"
-              >
-                Tamam
-              </button>
+              
+              {(alertModal as any).isConfirm ? (
+                  <div className="flex gap-3 w-full">
+                      <button 
+                        onClick={() => setAlertModal({ ...alertModal, isOpen: false })}
+                        className="flex-1 bg-slate-100 text-slate-700 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-all active:scale-95"
+                      >
+                        İptal
+                      </button>
+                      <button 
+                        onClick={(alertModal as any).confirmAction}
+                        className="flex-[2] bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition-all active:scale-95 shadow-md"
+                      >
+                        Evet, Onayla
+                      </button>
+                  </div>
+              ) : (
+                  <button 
+                    onClick={() => setAlertModal({ ...alertModal, isOpen: false })}
+                    className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition-all active:scale-95 shadow-md flex justify-center items-center"
+                  >
+                    Tamam
+                  </button>
+              )}
             </motion.div>
           </motion.div>
         )}
