@@ -537,14 +537,72 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                     );
                  })}
               </div>
+           </div>
+        </motion.div>
+      )}
+
+      {/* 🚀 ANA EKRAN İÇİN MALZEME TALEPLERİ KUTUSU */}
+      {Array.isArray(data?.pendingMaterialRequests) && data.pendingMaterialRequests.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-sky-600 rounded-3xl p-5 shadow-xl shadow-sky-600/20 text-white relative overflow-hidden mt-6 mb-2">
+           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+           <div className="relative z-10">
+              <h2 className="text-xs font-black text-sky-100 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-sky-400/30 pb-2">
+                 <Package size={16} /> Bekleyen Malzeme Talepleri ({data.pendingMaterialRequests.length})
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                 {data.pendingMaterialRequests.map((req: any) => {
+                    const items = req.parsed_items || [];
+                    
+                    return (
+                        <div 
+                          key={req.id} 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAlertModal({
+                                isOpen: true,
+                                type: 'info',
+                                message: `Bu malzemelerin ustaya teslim edildiğini ve stoktan düşüleceğini onaylıyor musunuz?`,
+                                isConfirm: true, 
+                                confirmAction: async () => {
+                                    setAlertModal(prev => ({ ...prev, isOpen: false }));
+                                    if (handleAction) {
+                                        await handleAction('resolve-material', { id: req.id }, null, null);
+                                    }
+                                }
+                            } as any);
+                          }}
+                          className="bg-sky-950/40 border border-sky-400/30 rounded-2xl p-4 flex flex-col justify-between hover:bg-sky-950/60 transition-colors cursor-pointer group shadow-sm"
+                        >
+                            <div>
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-white/20 text-white">
+                                        YENİ TALEP
+                                    </span>
+                                    <span className="text-[10px] font-bold opacity-70 group-hover:opacity-100 transition-opacity">
+                                        {req.created_at ? new Date(req.created_at).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'}) : ''}
+                                    </span>
+                                </div>
+                                <h3 className="text-sm font-black leading-tight mb-1">{req.staff_name || 'Personel'}</h3>
+                                <div className="text-[10px] font-bold text-sky-200/80 mb-2 truncate">
+                                    {items.length} Kalem Ürün İsteniyor
+                                </div>
+                                {req.note && <p className="text-sky-100 text-[11px] font-medium italic border-l-2 border-sky-400/50 pl-2 mb-3 line-clamp-2">"{req.note}"</p>}
+                            </div>
+                            <button className="mt-2 w-full bg-white text-sky-700 hover:bg-sky-50 py-2.5 rounded-xl text-xs font-black transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 pointer-events-none">
+                                <CheckSquare size={14} /> VERİLDİ / KAPAT
+                            </button>
+                        </div>
+                    );
+                 })}
+              </div>
            </div>
         </motion.div>
       )}
 
-      {!isMyJobsTab && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-            <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-blue-300 transition-colors group cursor-pointer active:scale-95">
-              <div className="w-10 h-10 bg-blue-50/80 rounded-xl flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform shrink-0">
+      {!isMyJobsTab && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+            <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-blue-300 transition-colors group cursor-pointer active:scale-95">
+            <div className="w-10 h-10 bg-blue-50/80 rounded-xl flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform shrink-0">
                 <ClipboardList size={18} />
               </div>
               <div>

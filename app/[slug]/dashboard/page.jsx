@@ -382,8 +382,8 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
                        <div className="text-sm italic text-rose-100 mb-3 border-l-2 border-rose-400 pl-2">"{activeEmergencies[0].message}"</div>
                    )}
                    
-                   {/* 🚀 ÜCRETSİZ HARİTA ÖNİZLEMESİ VE YOL TARİFİ - SIKIŞTIRILMIŞ TASARIM */}
-                   <div className="mt-4 flex flex-col gap-2">
+                   {/* 🚀 ÜCRETSİZ HARİTA ÖNİZLEMESİ VE YOL TARİFİ - MOBİL UYUMLU SIKIŞTIRILMIŞ TASARIM */}
+                   <div className="mt-4 flex flex-col gap-2 w-full max-w-full">
                        {activeEmergencies[0]?.staff_id ? (
                            activeEmergencies[0].location && activeEmergencies[0].location !== 'null' ? (
                                (() => {
@@ -395,44 +395,46 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
                                    
                                    if (lat && lng) {
                                        return (
-                                           <>
-                                               <div className="w-full h-32 sm:h-40 rounded-xl overflow-hidden border border-white/20 shadow-inner relative bg-rose-900/50 pointer-events-none">
+                                           <div className="flex flex-col gap-2 w-full max-w-full">
+                                               <div className="w-full h-32 rounded-xl overflow-hidden border border-white/20 shadow-inner relative bg-rose-900/50 pointer-events-none isolate">
                                                    <iframe 
-                                                       width="100%" height="100%" style={{ border: 0 }} loading="lazy" allowFullScreen referrerPolicy="no-referrer-when-downgrade" 
+                                                       className="absolute inset-0 w-full h-full border-0" 
+                                                       loading="lazy" allowFullScreen referrerPolicy="no-referrer-when-downgrade" 
                                                        src={`https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`}
                                                    ></iframe>
                                                </div>
-                                               <a href={`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`} target="_blank" rel="noopener noreferrer" className="bg-white text-rose-600 px-4 py-3 rounded-xl font-black flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md hover:bg-rose-50 w-full text-xs sm:text-sm">
-                                                   <MapPin size={18} /> HARİTADA YOL TARİFİ AL
+                                               <a href={`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`} target="_blank" rel="noopener noreferrer" className="w-full bg-white text-rose-600 px-4 py-3 rounded-xl font-black flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md hover:bg-rose-50 text-xs sm:text-sm">
+                                                   <MapPin size={18} className="shrink-0" /> <span className="truncate">HARİTADA YOL TARİFİ AL</span>
                                                </a>
-                                           </>
+                                           </div>
                                        );
                                    }
-                                   return <div className="flex items-center gap-2 text-rose-200 text-xs"><MapPin size={16} /> Konum verisi hatalı</div>;
+                                   return <div className="flex items-center gap-2 text-rose-200 text-xs"><MapPin size={16} className="shrink-0" /> Konum verisi hatalı</div>;
                                })()
                            ) : (
-                               <div className="flex items-center gap-2 text-rose-200 text-xs"><MapPin size={16} /> Konum alınamadı (İzin verilmemiş veya sinyal zayıf)</div>
+                               <div className="flex items-center gap-2 text-rose-200 text-xs"><MapPin size={16} className="shrink-0" /> Konum alınamadı (İzin verilmemiş veya sinyal zayıf)</div>
                            )
                        ) : (
                            activeEmergencies[0]?.asset_location ? (
                                (() => {
                                    const cleanAddress = activeEmergencies[0].asset_location.replace(activeEmergencies[0].asset_apartment || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim();
                                    return (
-                                       <>
-                                           <div className="w-full h-32 sm:h-40 rounded-xl overflow-hidden border border-white/20 shadow-inner relative bg-rose-900/50 pointer-events-none">
+                                       <div className="flex flex-col gap-2 w-full max-w-full">
+                                           <div className="w-full h-32 rounded-xl overflow-hidden border border-white/20 shadow-inner relative bg-rose-900/50 pointer-events-none isolate">
                                                <iframe 
-                                                   width="100%" height="100%" style={{ border: 0 }} loading="lazy" allowFullScreen referrerPolicy="no-referrer-when-downgrade" 
+                                                   className="absolute inset-0 w-full h-full border-0" 
+                                                   loading="lazy" allowFullScreen referrerPolicy="no-referrer-when-downgrade" 
                                                    src={`https://maps.google.com/maps?q=${encodeURIComponent(cleanAddress)}&z=15&output=embed`}
                                                ></iframe>
                                            </div>
-                                           <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(cleanAddress)}`} target="_blank" rel="noopener noreferrer" className="bg-white text-rose-600 px-4 py-3 rounded-xl font-black flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md hover:bg-rose-50 w-full text-xs sm:text-sm">
-                                               <MapPin size={18} /> HARİTADA YOL TARİFİ AL
+                                           <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(cleanAddress)}`} target="_blank" rel="noopener noreferrer" className="w-full bg-white text-rose-600 px-4 py-3 rounded-xl font-black flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md hover:bg-rose-50 text-xs sm:text-sm">
+                                               <MapPin size={18} className="shrink-0" /> <span className="truncate">HARİTADA YOL TARİFİ AL</span>
                                            </a>
-                                       </>
+                                       </div>
                                    )
                                })()
                            ) : (
-                               <div className="flex items-center gap-2 text-rose-200 text-xs"><MapPin size={16} /> Konum belirtilmemiş</div>
+                               <div className="flex items-center gap-2 text-rose-200 text-xs"><MapPin size={16} className="shrink-0" /> Konum belirtilmemiş</div>
                            )
                        )}
                    </div>
