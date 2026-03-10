@@ -27,6 +27,10 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const [newJobNotification, setNewJobNotification] = useState<{show: boolean, jobName: string}>({show: false, jobName: ''});
   const prevJobIds = useRef<string[]>([]);
 
+  // 🚀 YENİ: Malzeme Talep Modal State'leri
+  const [selectedMaterialRequest, setSelectedMaterialRequest] = useState<any>(null);
+  const materialRequests = data?.pendingMaterialRequests || [];
+
   useEffect(() => {
     const prefix = isPatronPath ? 'patron_' : 'staff_';
     const savedName = localStorage.getItem(`${prefix}userName`);
@@ -174,6 +178,23 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
     if (setJobModalType) setJobModalType('ASSIGN');
     setSelectedJob(job);
 };
+
+  // 🚀 YENİ: Malzeme Talebini Onaylama İşlemi
+  const handleApproveMaterial = async () => {
+    if (!selectedMaterialRequest || !handleAction) return;
+    setIsApproving(selectedMaterialRequest.id);
+    try {
+        const success = await handleAction('resolve-material', { id: selectedMaterialRequest.id }, null, null);
+        if (success) {
+            setAlertModal({ isOpen: true, message: "Malzeme talebi onaylandı ve stoklardan düşüldü.", type: 'success' });
+            setSelectedMaterialRequest(null);
+        }
+    } catch (e) {
+        setAlertModal({ isOpen: true, message: "İşlem sırasında hata oluştu.", type: 'error' });
+    } finally {
+        setIsApproving(null);
+    }
+  };
 
   const { currentMonthJobs, lastMonthJobs, growthPercent, isGrowthPositive, monthlyPhotos } = useMemo(() => {
     const now = new Date();
@@ -533,85 +554,69 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                             >
                                 <UserPlus size={14} /> USTAYA ATA
                             </button>
+                        </div>
+                    );
+                 })}
+              </div>
+           </div>
+        </motion.div>
+      )}
+
+      {/* 🚀 YENİ: Malzeme Talepleri Kutusu */}
+      {materialRequests.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-teal-600 rounded-3xl p-5 shadow-xl shadow-teal-600/20 text-white relative overflow-hidden">
+           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+           <div className="relative z-10">
+              <h2 className="text-xs font-black text-teal-100 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-teal-400/30 pb-2">
+                 <Package size={16} /> Yeni Malzeme Talepleri ({materialRequests.length})
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                 {materialRequests.map((req: any) => {
+                    return (
+                        <div key={req.id} className="bg-teal-950/40 border border-teal-400/30 rounded-2xl p-4 flex flex-col justify-between hover:bg-teal-950/60 transition-colors">
+                            <div 
+                                className="cursor-pointer mb-2 group" 
+                                onClick={() => setSelectedMaterialRequest(req)}
+                                title="Talebi Görüntüle ve Onayla"
+                            >
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-white/20 text-white">
+                                        YENİ TALEP
+                                    </span>
+                                    <span className="text-[10px] font-bold opacity-70 flex items-center gap-1 group-hover:opacity-100 transition-opacity">
+                                        <ArrowUpRight size={14} className="text-teal-200"/> Detay
+                                    </span>
+                                </div>
+                                
+                                <h3 className="text-sm font-black leading-tight mb-0.5 line-clamp-2">
+                                    {req.staff_name || 'Bilinmeyen Personel'}
+                                </h3>
+                                <div className="text-[10px] font-bold text-teal-200/80 mb-2 truncate">
+                                    {req.parsed_items?.length || 0} Çeşit Malzeme İstiyor
+                                </div>
+
+                                <p className="text-teal-100 text-[11px] font-medium flex items-center gap-1.5 truncate">
+                                    <Clock size={12} className="shrink-0 opacity-70"/> {new Date(req.created_at).toLocaleDateString('tr-TR')}
+                                </p>
                             </div>
-                    );
-                 })}
-              </div>
-           </div>
-        </motion.div>
-      )}
+                            
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setSelectedMaterialRequest(req); }}
+                                className="mt-2 w-full bg-white text-teal-700 hover:bg-teal-50 py-2.5 rounded-xl text-xs font-black transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+                            >
+                                <Box size={14} /> İNCELE VE ONAYLA
+                            </button>
+                        </div>
+                    );
+                 })}
+              </div>
+           </div>
+        </motion.div>
+      )}
 
-      {/* 🚀 ANA EKRAN İÇİN MALZEME TALEPLERİ KUTUSU (ÜRÜN DETAYLI) */}
-      {Array.isArray(data?.pendingMaterialRequests) && data.pendingMaterialRequests.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-sky-600 rounded-3xl p-5 shadow-xl shadow-sky-600/20 text-white relative overflow-hidden mb-2">
-           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-           <div className="relative z-10">
-              <h2 className="text-xs font-black text-sky-100 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-sky-400/30 pb-2">
-                 <Package size={16} /> Bekleyen Malzeme Talepleri ({data.pendingMaterialRequests.length})
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                 {data.pendingMaterialRequests.map((req: any) => {
-                    let items: any[] = [];
-                    try { items = req.parsed_items || (typeof req.items === 'string' ? JSON.parse(req.items) : req.items) || []; } catch(e) { items = []; }
-                    
-                    return (
-                        <div 
-                          key={req.id} 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setAlertModal({
-                                isOpen: true,
-                                type: 'info',
-                                message: `Bu malzemelerin ustaya teslim edildiğini ve stoktan düşüleceğini onaylıyor musunuz?`,
-                                isConfirm: true, 
-                                confirmAction: async () => {
-                                    setAlertModal(prev => ({ ...prev, isOpen: false }));
-                                    if (handleAction) {
-                                        await handleAction('resolve-material', { id: req.id }, null, null);
-                                    }
-                                }
-                            } as any);
-                          }}
-                          className="bg-sky-950/40 border border-sky-400/30 rounded-2xl p-4 flex flex-col justify-between hover:bg-sky-950/60 transition-colors cursor-pointer group shadow-sm"
-                        >
-                            <div>
-                                <div className="flex justify-between items-start mb-3">
-                                    <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-white/20 text-white">
-                                        YENİ TALEP
-                                    </span>
-                                    <span className="text-[10px] font-bold opacity-70 group-hover:opacity-100 transition-opacity">
-                                        {req.created_at ? new Date(req.created_at).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'}) : ''}
-                                    </span>
-                                </div>
-                                <h3 className="text-sm font-black leading-tight mb-2">{req.staff_name || 'Personel'}</h3>
-                                
-                                <div className="bg-sky-900/50 p-2.5 rounded-xl border border-sky-500/30 mb-3 space-y-1.5">
-                                    {items.length > 0 ? items.map((it: any, idx: number) => (
-                                        <div key={idx} className="flex justify-between items-center text-[11px]">
-                                            <span className="text-sky-100 font-semibold truncate pr-2">{it.name}</span>
-                                            <span className="text-white font-black bg-sky-500/40 px-1.5 py-0.5 rounded shrink-0">{it.qty} {it.unit}</span>
-                                        </div>
-                                    )) : (
-                                        <div className="text-[10px] text-sky-200">İçerik okunamadı</div>
-                                    )}
-                                </div>
-
-                                {req.note && <p className="text-sky-100 text-[11px] font-medium italic border-l-2 border-sky-400/50 pl-2 mb-3 line-clamp-2">"{req.note}"</p>}
-                            </div>
-                            <button className="mt-auto w-full bg-white text-sky-700 hover:bg-sky-50 py-2.5 rounded-xl text-xs font-black transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 pointer-events-none">
-                                <CheckSquare size={14} /> VERİLDİ / KAPAT
-                            </button>
-                        </div>
-                    );
-                 })}
-              </div>
-           </div>
-        </motion.div>
-      )}
-
-      {!isMyJobsTab && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-            <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-blue-300 transition-colors group cursor-pointer active:scale-95">
+      {!isMyJobsTab && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+            <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-blue-300 transition-colors group cursor-pointer active:scale-95">
               <div className="w-10 h-10 bg-blue-50/80 rounded-xl flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform shrink-0">
                 <ClipboardList size={18} />
               </div>
@@ -1178,10 +1183,95 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                 </div>
                 </motion.div>
         )}
-      </AnimatePresence>
-
-      {/* 🚀 DİNAMİK GENEL UYARI VE ONAY MODALI */}
-      <AnimatePresence>
+        </AnimatePresence>
+  
+        {/* 🚀 YENİ: MALZEME TALEP DETAY MODALI */}
+        <AnimatePresence>
+          {selectedMaterialRequest && (
+              <motion.div 
+                  initial={{ opacity: 0 }} 
+                  animate={{ opacity: 1 }} 
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[9998] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+                  onClick={() => setSelectedMaterialRequest(null)}
+              >
+                  <motion.div 
+                      initial={{ scale: 0.95, y: 10 }} 
+                      animate={{ scale: 1, y: 0 }} 
+                      exit={{ scale: 0.95, y: 10 }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[85vh]"
+                  >
+                      <div className="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+                          <div className="flex items-center gap-2">
+                              <div className="w-10 h-10 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center">
+                                  <Package size={20} />
+                              </div>
+                              <div>
+                                  <h3 className="font-black text-slate-800 text-base leading-tight">Malzeme Talebi</h3>
+                                  <p className="text-[11px] font-bold text-slate-500">{selectedMaterialRequest.staff_name}</p>
+                              </div>
+                          </div>
+                          <button onClick={() => setSelectedMaterialRequest(null)} className="text-slate-400 hover:text-rose-500 bg-white p-2 rounded-xl shadow-sm border border-slate-200 transition-colors">
+                              <X size={18} />
+                          </button>
+                      </div>
+  
+                      <div className="p-5 overflow-y-auto custom-scrollbar flex-1 bg-slate-50/50 space-y-4">
+                          <div className="space-y-2">
+                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Talep Edilen Malzemeler</div>
+                              <div className="bg-white border border-slate-200 rounded-2xl p-2 space-y-2">
+                                  {(selectedMaterialRequest.parsed_items || []).map((item: any, idx: number) => {
+                                      // Stock'tan kategoriyi anlık bulma
+                                      const stockItem = stock.find((s: any) => String(s.id) === String(item.id));
+                                      const category = stockItem?.category || 'Kategori Yok';
+  
+                                      return (
+                                          <div key={idx} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                              <div className="min-w-0 pr-3">
+                                                  <div className="text-sm font-bold text-slate-800 truncate">{item.name}</div>
+                                                  <div className="text-[10px] font-black text-teal-600 uppercase tracking-widest mt-0.5">{category}</div>
+                                              </div>
+                                              <div className="shrink-0 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm text-center">
+                                                  <div className="text-sm font-black text-slate-800">{item.qty}</div>
+                                                  <div className="text-[9px] font-bold text-slate-400 uppercase">{item.unit}</div>
+                                              </div>
+                                          </div>
+                                      );
+                                  })}
+                              </div>
+                          </div>
+  
+                          {selectedMaterialRequest.note && (
+                              <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl relative">
+                                  <div className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">Usta Notu:</div>
+                                  <p className="text-xs font-medium text-amber-900 leading-relaxed italic relative z-10">"{selectedMaterialRequest.note}"</p>
+                              </div>
+                          )}
+                      </div>
+  
+                      <div className="p-5 border-t border-slate-100 bg-white shrink-0 flex gap-3">
+                          <button 
+                              onClick={() => setSelectedMaterialRequest(null)}
+                              className="flex-1 bg-slate-100 text-slate-600 font-bold text-sm py-3.5 rounded-xl hover:bg-slate-200 transition-all active:scale-95"
+                          >
+                              Kapat
+                          </button>
+                          <button 
+                              onClick={handleApproveMaterial}
+                              disabled={isApproving === selectedMaterialRequest.id}
+                              className="flex-[2] bg-teal-600 text-white font-black text-sm py-3.5 rounded-xl shadow-lg shadow-teal-200 hover:bg-teal-700 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                              {isApproving === selectedMaterialRequest.id ? <Loader2 size={18} className="animate-spin" /> : <><Check size={18} /> Onayla ve Stoktan Düş</>}
+                          </button>
+                      </div>
+                  </motion.div>
+              </motion.div>
+          )}
+        </AnimatePresence>
+  
+        {/* 🚀 DİNAMİK GENEL UYARI VE ONAY MODALI */}
+        <AnimatePresence>
         {alertModal.isOpen && (
           <motion.div 
             initial={{ opacity: 0 }} 
