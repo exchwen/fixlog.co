@@ -68,7 +68,12 @@ const [activeTab, setActiveTab] = useState('ozet');
                    .replace(/ö/g, 'o').replace(/Ö/g, 'O').replace(/ç/g, 'c').replace(/Ç/g, 'C');
       };
 
-      const safeFileName = `${sanitizeTextForFile(rawAssetName).replace(/\s+/g, '-')}-${sanitizeTextForFile(rawAssetType).replace(/\s+/g, '-')}-${sanitizeTextForFile(rawJobType).replace(/\s+/g, '-')}-${formattedDate}`;
+      // 🚀 İSİMLENDİRME SIRALAMASI: varlıkadı-varlıktürü-tarih-islemtürü olarak düzeltildi
+      const safeFileName = `${sanitizeTextForFile(rawAssetName).replace(/\s+/g, '-')}-${sanitizeTextForFile(rawAssetType).replace(/\s+/g, '-')}-${formattedDate}-${sanitizeTextForFile(rawJobType).replace(/\s+/g, '-')}`;
+
+      // 🚀 YAZDIRIRKEN İSİMLENDİRME ÇÖZÜMÜ: Tarayıcılar yazdırma ekranında iframe title'ını değil, ana sayfa title'ını baz alır. Geçici olarak ana sayfa adını değiştiriyoruz.
+      const originalTitle = document.title;
+      document.title = safeFileName;
 
       // 🚀 BOŞ SAYFA ÇÖZÜMÜ: Sadece formu içeren gizli bir Iframe oluşturup sadece onu yazdırıyoruz.
       const iframe = document.createElement('iframe');
@@ -92,8 +97,8 @@ const [activeTab, setActiveTab] = useState('ozet');
               <title>${safeFileName}</title>
               ${styles}
               <style>
-                @page { margin: 10mm; size: A4 portrait; }
-                body { zoom: 0.9; background: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0; padding: 0; height: auto !important; overflow: visible !important; }
+                @page { margin: 5mm; size: A4 portrait; }
+                body { zoom: 0.75; transform-origin: top left; background: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0; padding: 0; height: auto !important; overflow: visible !important; }
                 .no-print { display: none !important; }
                 
                 ${mode === 'bw' ? `
@@ -140,15 +145,16 @@ const [activeTab, setActiveTab] = useState('ozet');
         iframeDoc.close();
 
         iframe.onload = () => {
-          setTimeout(() => {
-            iframe.contentWindow?.focus();
-            iframe.contentWindow?.print();
             setTimeout(() => {
-              document.body.removeChild(iframe);
-              setPrintMode('color');
-            }, 1000);
-          }, 800); // İmajların yüklenmesi için kısa bir bekleme
-        };
+              iframe.contentWindow?.focus();
+              iframe.contentWindow?.print();
+              setTimeout(() => {
+                document.body.removeChild(iframe);
+                setPrintMode('color');
+                document.title = originalTitle; // İşlem bittikten sonra orijinal sayfa başlığına geri dön
+              }, 1000);
+            }, 800); // İmajların yüklenmesi için kısa bir bekleme
+          };
       }
     }, 150);
   };
@@ -457,10 +463,10 @@ useEffect(() => {
             
             const imgData = canvas.toDataURL('image/jpeg', 0.95);
             
-            // 🚀 SAYFA TAŞMASI ÇÖZÜMÜ: İçeriği biraz küçült ve A4'e sığdır. Taşıyorsa sayfa böl.
+            // 🚀 TEK SAYFAYA SIĞDIRMA ÇÖZÜMÜ: Ölçeği daha da küçülterek (0.72) her şeyin 1 sayfada kalmasını sağlıyoruz.
             const pdfWidth = 210; // A4 Genişliği (mm)
             const pageHeight = 297; // A4 Yüksekliği (mm)
-            const scaleFactor = 0.88; // İçeriği A4'e rahat sığdırmak için küçültüyoruz
+            const scaleFactor = 0.72; // İçeriği A4'e tek sayfa olarak sığdırmak için ekstra küçültüyoruz
             const imgWidth = pdfWidth * scaleFactor;
             const imgHeight = (canvas.height * pdfWidth) / canvas.width * scaleFactor;
             
@@ -481,7 +487,7 @@ useEffect(() => {
                 heightLeft -= (pageHeight - 20);
             }
             
-            // 🚀 İSİMLENDİRME KURALI ÇÖZÜMÜ: varlıkadı-varlıktürü-islemtürü-tarih
+            // 🚀 İSİMLENDİRME KURALI ÇÖZÜMÜ: varlıkadı-varlıktürü-tarih-islemtürü
             const today = new Date();
             const formattedDate = `${today.getDate().toString().padStart(2, '0')}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getFullYear()}`;
             const asset = jobData.asset_id ? (data?.assets || []).find((a:any) => String(a.id) === String(jobData.asset_id)) : null;
@@ -494,7 +500,7 @@ useEffect(() => {
             const safeAssetType = sanitizeTextForFile(rawAssetType).replace(/\s+/g, '-');
             const safeJobType = sanitizeTextForFile(rawJobType).replace(/\s+/g, '-');
     
-            const safeFileName = `${safeAssetName}-${safeAssetType}-${safeJobType}-${formattedDate}.pdf`;
+            const safeFileName = `${safeAssetName}-${safeAssetType}-${formattedDate}-${safeJobType}.pdf`;
             
             const pdfBlob = pdf.output('blob');
             const file = new File([pdfBlob], safeFileName, { type: 'application/pdf' });
@@ -772,8 +778,8 @@ useEffect(() => {
                                                         let borderColorClass = 'border-slate-900';
                                                         
                                                         if (printMode === 'bw') {
-                                                            colorClass = 'text-black';
-                                                            bgColorClass = 'bg-black';
+                                                            colorClass = 'text-black font-black';
+                                                            bgColorClass = 'bg-white border-2 border-black'; // Simsiyah kutu yerine siyah çerçeveli beyaz kutu
                                                             borderColorClass = 'border-black';
                                                         } else {
                                                             if (isPositive) {
@@ -803,16 +809,16 @@ useEffect(() => {
                                                                         <span className={`text-[12px] font-black uppercase tracking-widest ${colorClass}`}>{item.val}</span>
                                                                     )}
                                                                     {isBooleanType ? (
-                                                                        isPositive ? (
-                                                                            <div className={`w-6 h-6 flex items-center justify-center rounded shadow-sm print-color-exact ${bgColorClass}`}>
-                                                                                <CheckSquare size={16} className="text-white" strokeWidth={3} />
-                                                                            </div>
-                                                                        ) : (
-                                                                            <div className={`w-6 h-6 flex items-center justify-center rounded shadow-sm print-color-exact ${bgColorClass}`}>
-                                                                                <X size={16} className="text-white" strokeWidth={4} />
-                                                                            </div>
-                                                                        )
-                                                                    ) : (
+                                                        isPositive ? (
+                                                            <div className={`w-6 h-6 flex items-center justify-center rounded shadow-sm print-color-exact ${bgColorClass}`}>
+                                                                <CheckSquare size={16} className={printMode === 'bw' ? 'text-black' : 'text-white'} strokeWidth={3} />
+                                                            </div>
+                                                        ) : (
+                                                            <div className={`w-6 h-6 flex items-center justify-center rounded shadow-sm print-color-exact ${bgColorClass}`}>
+                                                                <X size={16} className={printMode === 'bw' ? 'text-black' : 'text-white'} strokeWidth={4} />
+                                                            </div>
+                                                        )
+                                                    ) : (
                                                                         <span className={`text-[13px] font-black uppercase ${colorClass} ${colorClass === 'text-slate-900' || colorClass === 'text-black' ? `border-b-2 ${borderColorClass}` : ''}`}>{item.val}</span>
                                                                     )}
                                                                 </div>
