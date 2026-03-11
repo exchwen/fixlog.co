@@ -2,14 +2,14 @@
 
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, UploadCloud, Loader2, CheckCircle2, FileSpreadsheet, Bot, ArrowRight, AlertCircle, Download } from 'lucide-react'; // 🚀 Download eklendi
-import * as XLSX from 'xlsx'; // 🚀 Müşterinin tarayıcısını sunucu gibi kullanacağız
+import { X, UploadCloud, Loader2, CheckCircle2, FileSpreadsheet, Bot, ArrowRight, AlertCircle, Download } from 'lucide-react'; 
+import * as XLSX from 'xlsx'; 
 
 export default function SmartExcelModal({
   showSmartExcelModal, setShowSmartExcelModal, handleAction
 }: any) {
   
-  const [step, setStep] = useState(1); // 1: Upload, 2: Fake AI Loading, 3: Mapping, 4: Success
+  const [step, setStep] = useState(1); 
   const [file, setFile] = useState<File | null>(null);
   const [rawExcelData, setRawExcelData] = useState<any[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -18,7 +18,10 @@ export default function SmartExcelModal({
   const [isSaving, setIsSaving] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  // 🚀 İBNELİK 1: Akıllı Sözlük (Müşterinin karmakarışık excel başlıklarını yakalayacak)
+  const [uploadMode, setUploadMode] = useState<string | null>(null);
+  const [isTemplateMatch, setIsTemplateMatch] = useState<boolean>(true);
+  const [importError, setImportError] = useState<string | null>(null); 
+
   const heuristicDictionary: any = {
       customerName: ['firma', 'müşteri', 'yönetici', 'ad', 'soyisim', 'bina yöneticisi', 'isim'],
       customerPhone: ['tel', 'telefon', 'cep', 'iletişim', 'numara', 'gsm'],
@@ -39,31 +42,28 @@ export default function SmartExcelModal({
     { id: 'assetDetails', label: 'Ekstra Notlar / Detaylar' }
 ];
 
-// 🚀 İBNELİK 4: Sunucuya bulaşmadan, adamın kendi RAM'inde Excel yaratıp indirtme
 const handleDownloadTemplate = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
     const templateHeaders = targetFields.map(f => f.label);
     
-    // Sektör verine uygun örnek satır (Adamlar nasıl dolduracağını anlasın)
     const exampleRow = [
         "Akdeniz Apartmanı Yönetimi",
         "0555 123 45 67",
         "Akdeniz Apartmanı A Blok",
         "Atatürk Mah. Cumhuriyet Cad. No:1 Kadıköy/İstanbul",
-        "Makine Daireli (MR) Yolcu Asansörü", // sector.json'dan çekildi
+        "Makine Daireli (MR) Yolcu Asansörü",
         "A Blok Sağ Kuyu",
         "Kapasite: 800kg, Etiket: Yeşil"
     ];
 
     const worksheet = XLSX.utils.aoa_to_sheet([templateHeaders, exampleRow]);
-    worksheet['!cols'] = templateHeaders.map(() => ({ wch: 28 })); // Sütunları geniş yap ki şık dursun
+    worksheet['!cols'] = templateHeaders.map(() => ({ wch: 28 }));
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sablon");
 
-    // Anında indir
     XLSX.writeFile(workbook, "IsDokumu_Musteri_ve_Varlik_Sablonu.xlsx");
 };
 
@@ -92,23 +92,32 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
           setHeaders(fileHeaders);
           setRawExcelData(jsonData);
 
-          // 🚀 KATAKULLİ 2: Sözlük Algoritmasıyla Otomatik Eşleştirme (Sıfır Maliyetli AI)
+          const templateHeaders = targetFields.map(f => f.label);
+          const isMatch = templateHeaders.every(th => fileHeaders.includes(th));
+          setIsTemplateMatch(isMatch);
+
           let autoMap: any = {};
-          fileHeaders.forEach(header => {
-              const lowerHeader = header.toLowerCase();
-              for (const [targetId, keywords] of Object.entries(heuristicDictionary)) {
-                  if ((keywords as string[]).some(kw => lowerHeader.includes(kw))) {
-                      if (!Object.values(autoMap).includes(header)) {
-                          autoMap[targetId] = header;
-                          break; // İlk eşleşeni al
+          
+          if (isMatch) {
+              targetFields.forEach(field => {
+                  autoMap[field.id] = field.label;
+              });
+          } else {
+              fileHeaders.forEach(header => {
+                  const lowerHeader = header.toLowerCase();
+                  for (const [targetId, keywords] of Object.entries(heuristicDictionary)) {
+                      if ((keywords as string[]).some(kw => lowerHeader.includes(kw))) {
+                          if (!Object.values(autoMap).includes(header)) {
+                              autoMap[targetId] = header;
+                              break;
+                          }
                       }
                   }
-              }
-          });
+              });
+          }
           
           setMappings(autoMap);
 
-          // 🚀 İBNELİK 3: Ego okşayıcı Fake Yükleme Ekranı (Adama vay anasını dedirtiyoruz)
           setStep(2);
           setProgress(0);
           const interval = setInterval(() => {
@@ -118,7 +127,7 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                       setTimeout(() => setStep(3), 500);
                       return 100;
                   }
-                  return prev + Math.floor(Math.random() * 15) + 5; // Rastgele zıplamalar
+                  return prev + Math.floor(Math.random() * 15) + 5;
               });
           }, 300);
       };
@@ -131,8 +140,8 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
 
   const handleImport = async () => {
       setIsSaving(true);
+      setImportError(null); 
       
-      // Müşterinin eşleştirdiği başlıklara göre JSON verisini bizim sistemin diline çeviriyoruz
       const formattedData = rawExcelData.map(row => {
           let cleanRow: any = {};
           targetFields.forEach(field => {
@@ -142,21 +151,21 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
           return cleanRow;
       });
 
-      // API'ye gönder
       const success = await handleAction('bulk-import', { items: formattedData });
       
       if (success !== false) {
-          setStep(4); // Başarı Ekranı
+          setStep(4);
       } else {
           setIsSaving(false);
+          setImportError("Sunucu bağlantısında veya veri formatında bir sorun oluştu. Lütfen dosyanızı şablona uygun hale getirip tekrar deneyin.");
       }
   };
 
   const handleClose = () => {
-      setShowSmartExcelModal(false);
-      setTimeout(() => {
-          setStep(1); setFile(null); setRawExcelData([]); setHeaders([]); setMappings({}); setIsSaving(false);
-      }, 300);
+    setShowSmartExcelModal(false);
+    setTimeout(() => {
+        setStep(1); setFile(null); setRawExcelData([]); setHeaders([]); setMappings({}); setIsSaving(false); setUploadMode(null); setIsTemplateMatch(true); setImportError(null);
+    }, 300);
   };
 
   const autoMappedCount = Object.keys(mappings).length;
@@ -177,7 +186,6 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
             className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden border border-slate-200"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* HEADER */}
             <div className="flex justify-between items-center p-5 border-b border-slate-100 bg-slate-50">
                <div className="flex items-center gap-3">
                    <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-inner">
@@ -195,44 +203,88 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                )}
             </div>
 
-            {/* BODY */}
             <div className="p-6">
                 
-                {/* STEP 1: UPLOAD */}
                 {step === 1 && (
-                    <div className="flex flex-col items-center justify-center text-center">
-                        <input type="file" accept=".xlsx, .xls, .csv" id="excel-upload" className="hidden" onChange={handleFileUpload} />
-                        <label htmlFor="excel-upload" className="w-full cursor-pointer group">
-                            <div className="border-2 border-dashed border-emerald-300 bg-emerald-50/50 hover:bg-emerald-50 rounded-2xl p-10 transition-all flex flex-col items-center gap-4">
-                                <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <FileSpreadsheet size={32} className="text-emerald-500" />
+                    <div className="flex flex-col items-center justify-center w-full">
+                        {!uploadMode ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                                <div 
+                                    onClick={() => setUploadMode('template')}
+                                    className="border-2 border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 rounded-2xl p-6 cursor-pointer transition-all flex flex-col items-center text-center gap-3 group shadow-sm"
+                                >
+                                    <div className="w-14 h-14 bg-white rounded-full shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <Download size={24} className="text-emerald-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black text-emerald-800">Şablonu İndir & Doldur</h3>
+                                        <p className="text-[11px] font-medium text-emerald-600 mt-1">En güvenli ve hatasız yöntem.</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="text-base font-black text-slate-700">Excel Dosyanızı Buraya Yükleyin</h3>
-                                    <p className="text-xs font-medium text-slate-500 mt-2 max-w-sm mx-auto">
-                                        Şablon kullanmanıza gerek yok. Kendi dağınık listenizi atın, akıllı asistanımız başlıkları otomatik anlasın ve düzenlesin.
-                                    </p>
-                                </div>
-                                <div className="px-5 py-2.5 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-md group-hover:bg-emerald-700 mt-2">
-                                    Dosya Seç
+
+                                <div 
+                                    onClick={() => setUploadMode('custom')}
+                                    className="border-2 border-blue-200 bg-blue-50/50 hover:bg-blue-50 rounded-2xl p-6 cursor-pointer transition-all flex flex-col items-center text-center gap-3 group shadow-sm"
+                                >
+                                    <div className="w-14 h-14 bg-white rounded-full shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <Bot size={24} className="text-blue-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black text-blue-800">Kendi Excel'imi Yükleyeceğim</h3>
+                                        <p className="text-[11px] font-medium text-blue-600 mt-1">Yapay zeka başlıkları tahmin eder.</p>
+                                    </div>
                                 </div>
                             </div>
-                        </label>
+                        ) : (
+                            <div className="w-full flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                <button onClick={() => setUploadMode(null)} className="self-start mb-4 text-xs font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1">
+                                    ← Geri Dön
+                                </button>
 
-                        {/* 🚀 EKLENDİ: Şablon İndirme Alanı */}
-                        <div className="mt-6 flex flex-col items-center gap-2">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">veya boş format kullanın</span>
-                            <button 
-                                onClick={handleDownloadTemplate}
-                                className="flex items-center gap-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-5 py-2.5 rounded-xl transition-all active:scale-95 border border-blue-200 shadow-sm"
-                            >
-                                <Download size={16} /> Örnek Şablonu İndir
-                            </button>
-                        </div>
+                                {uploadMode === 'template' && (
+                                    <div className="w-full mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                                        <div className="text-left">
+                                            <h4 className="text-sm font-black text-emerald-800">Adım 1: Şablonu İndirin</h4>
+                                            <p className="text-xs text-emerald-600 font-medium mt-1">Müşteri ve varlıklarınızı bu şablona göre doldurup yükleyin.</p>
+                                        </div>
+                                        <button onClick={handleDownloadTemplate} className="flex items-center gap-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-5 py-2.5 rounded-xl transition-all shadow-sm shrink-0 whitespace-nowrap">
+                                            <Download size={16} /> Örnek Şablonu İndir
+                                        </button>
+                                    </div>
+                                )}
+
+                                {uploadMode === 'custom' && (
+                                    <div className="w-full mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                                        <AlertCircle size={20} className="text-amber-600 shrink-0 mt-0.5" />
+                                        <div className="text-left">
+                                            <h4 className="text-sm font-black text-amber-800">Kendi Excel'inizi Yüklüyorsunuz</h4>
+                                            <p className="text-[11px] text-amber-700 font-medium mt-1 leading-relaxed">
+                                                Akıllı sistemimiz başlıkları analiz edip eşleştirecektir. Ancak yapay zeka karmaşık tablolarda <span className="font-bold underline">hata yapabilir</span>. Yükleme sonrası eşleşmeleri çok dikkatli kontrol etmeniz gerekmektedir. Şablon kullanmanız tavsiye edilir.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <input type="file" accept=".xlsx, .xls, .csv" id="excel-upload" className="hidden" onChange={handleFileUpload} />
+                                <label htmlFor="excel-upload" className="w-full cursor-pointer group">
+                                    <div className={`border-2 border-dashed rounded-2xl p-10 transition-all flex flex-col items-center gap-4 ${uploadMode === 'template' ? 'border-emerald-300 bg-emerald-50/30 hover:bg-emerald-50' : 'border-blue-300 bg-blue-50/30 hover:bg-blue-50'}`}>
+                                        <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                                            <FileSpreadsheet size={32} className={uploadMode === 'template' ? "text-emerald-500" : "text-blue-500"} />
+                                        </div>
+                                        <div className="text-center">
+                                            <h3 className="text-base font-black text-slate-700">Dosyanızı Buraya Yükleyin</h3>
+                                            <p className="text-xs font-medium text-slate-500 mt-2">Doldurduğunuz dosyayı seçin.</p>
+                                        </div>
+                                        <div className={`px-6 py-2.5 text-white text-xs font-bold rounded-xl shadow-md mt-2 ${uploadMode === 'template' ? 'bg-emerald-600 group-hover:bg-emerald-700' : 'bg-blue-600 group-hover:bg-blue-700'}`}>
+                                            Dosya Seç
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        )}
                     </div>
                 )}
 
-                {/* STEP 2: FAKE AI LOADING */}
                 {step === 2 && (
                     <div className="flex flex-col items-center justify-center py-10 text-center space-y-6">
                         <div className="relative">
@@ -250,26 +302,27 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                     </div>
                 )}
 
-                {/* STEP 3: MAPPING (EGO BOOST + SORUMLULUK REDDİ) */}
                 {step === 3 && (
                     <div className="space-y-5">
-                        <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl flex items-start gap-3">
-                            <AlertCircle size={20} className="text-blue-600 shrink-0 mt-0.5" />
+                        <div className={`p-4 rounded-xl flex items-start gap-3 border ${isTemplateMatch ? 'bg-emerald-50 border-emerald-200' : 'bg-blue-50 border-blue-200'}`}>
+                            {isTemplateMatch ? <CheckCircle2 size={20} className="text-emerald-600 shrink-0 mt-0.5" /> : <AlertCircle size={20} className="text-blue-600 shrink-0 mt-0.5" />}
                             <div>
-                                <h4 className="text-sm font-black text-blue-800">Analiz Tamamlandı!</h4>
-                                <p className="text-xs font-medium text-blue-600 mt-1">
-                                    Asistanımız <span className="font-black">{rawExcelData.length} adet</span> asansör kaydı buldu ve <span className="font-black">{autoMappedCount} sütunu</span> otomatik eşleştirdi.
+                                <h4 className={`text-sm font-black ${isTemplateMatch ? 'text-emerald-800' : 'text-blue-800'}`}>Analiz Tamamlandı!</h4>
+                                <p className={`text-xs font-medium mt-1 ${isTemplateMatch ? 'text-emerald-600' : 'text-blue-600'}`}>
+                                    Sistem <span className="font-black">{rawExcelData.length} adet</span> kayıt buldu. 
+                                    {isTemplateMatch ? ' Şablon formatı algılandı, eşleşmeler %100 kusursuz.' : ` ${autoMappedCount} sütun otomatik eşleştirildi.`}
                                 </p>
                             </div>
                         </div>
 
-                        {/* 🚀 KATAKULLİ: Sorumluluk Reddi (Disclaimer) Uyarı Kutusu */}
-                        <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-xl flex items-start gap-2.5">
-                            <Bot size={18} className="text-amber-600 shrink-0 mt-0.5" />
-                            <p className="text-[11px] font-semibold text-amber-700 leading-relaxed">
-                                <span className="font-black">DİKKAT:</span> Yapay zeka sistemimiz başlıkları en yüksek doğrulukla tahmin etse de <span className="underline decoration-amber-300">karmaşık Excel dosyalarında hata payı olabilir.</span> Verilerin sisteme yanlış geçmemesi için lütfen aşağıdaki eşleşmeleri son kez gözden geçirin. Sorumluluk kullanıcıya aittir.
-                            </p>
-                        </div>
+                        {!isTemplateMatch && (
+                            <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-xl flex items-start gap-2.5">
+                                <Bot size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                                <p className="text-[11px] font-semibold text-amber-700 leading-relaxed">
+                                    <span className="font-black">DİKKAT:</span> Kendi dosyanızı yüklediğiniz için yapay zeka devreye girdi. Karmaşık tablolarda <span className="underline decoration-amber-300">hata payı olabilir.</span> Verilerin sisteme hatalı işlenmemesi için aşağıdaki eşleşmeleri son kez gözden geçirin. Sorumluluk tamamen size aittir.
+                                </p>
+                            </div>
+                        )}
 
                         <div className="max-h-[50vh] overflow-y-auto custom-scrollbar pr-2 space-y-3">
                             {targetFields.map(field => {
@@ -296,8 +349,15 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                             })}
                         </div>
 
+                        {importError && (
+                            <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-xl text-xs font-bold flex items-start gap-2">
+                                <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                                <span>{importError}</span>
+                            </div>
+                        )}
+
                         <button 
-                            disabled={isSaving || !mappings['apartmentName']} // Apartman adı mecburi
+                            disabled={isSaving || !mappings['apartmentName']} 
                             onClick={handleImport}
                             className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm shadow-xl hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 flex justify-center items-center gap-2"
                         >
@@ -307,7 +367,6 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                     </div>
                 )}
 
-                {/* STEP 4: SUCCESS */}
                 {step === 4 && (
                     <div className="flex flex-col items-center justify-center py-10 text-center space-y-4">
                         <div className="w-20 h-20 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center">
