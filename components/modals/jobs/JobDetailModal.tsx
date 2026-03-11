@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Search, User, Box, Calendar, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle, Clock, Image as ImageIcon, Download, MessageSquareText, Settings, CheckSquare, Tag, Wrench, ArrowUpRight, UserPlus, UserCheck, Printer, Palette, Bluetooth } from 'lucide-react';
+import { X, Loader2, Search, User, Box, Calendar, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle, Clock, Image as ImageIcon, Download, MessageSquareText, Settings, CheckSquare, Tag, Wrench, ArrowUpRight, UserPlus, UserCheck, Printer, Palette, Bluetooth, Share2 } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 export default function JobDetailModal({
   selectedJob, setSelectedJob, previewPdfJob, setPreviewPdfJob,
@@ -306,12 +308,84 @@ useEffect(() => {
     let formattedPhone = custPhone.replace(/\s+/g, '');
     if (formattedPhone.startsWith('0')) formattedPhone = '90' + formattedPhone.substring(1);
      
-     const assetName = (data?.assets || []).find((a:any) => a.id === jobData.asset_id)?.name || 'Cihazınızda';
+     const assetName = (data?.assets || []).find((a:any) => a.id === jobData.asset_id)?.name || 'Cihazınız';
      const price = jobData.details?.price || 'Ücretsiz';
      
-     const message = `Merhaba ${jobData.customer_name},\n\n${assetName} işlem yapılmıştır, iş tamamlanmış olup detayları PDF olarak sunulmuştur.\n\nFiyat teklifimiz: ${price}\nÖdeme bilgilerimiz:\nTRXX XXXX XXXX XXXX XXXX XXXX (İş Bankası)\n\n(Servis formunu bu mesaja ek olarak iletebilirsiniz.)`;
+     // 🚀 YENİ: Dinamik ve Kurumsal WhatsApp Mesaj Formatı
+     const currentMonth = new Date().toLocaleString('tr-TR', { month: 'long' });
+     const workTypeDesc = jobData.work_type === 'Periyodik Bakım' ? `${currentMonth} ayı periyodik bakımı` : 'servis işlemi';
+     
+     const message = `Merhaba *${jobData.customer_name}*,\n\n*${assetName}* için ${workTypeDesc} başarıyla tamamlanmıştır.\n\nServis detaylarını ve kontrol formunu içeren PDF raporunu bu mesaja ek olarak iletiyoruz.\n\n*İşlem Tutarı:* ${price}\n\nİyi günler dileriz.`;
      
      window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  // 🚀 YENİ: PDF Oluşturma ve Native Paylaşma State/Fonksiyonları
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  const sanitizeTextForFile = (text: string) => {
+    if (!text) return '';
+    return text.replace(/ğ/g, 'g').replace(/Ğ/g, 'G')
+               .replace(/ü/g, 'u').replace(/Ü/g, 'U')
+               .replace(/ş/g, 's').replace(/Ş/g, 'S')
+               .replace(/ı/g, 'i').replace(/İ/g, 'I')
+               .replace(/ö/g, 'o').replace(/Ö/g, 'O')
+               .replace(/ç/g, 'c').replace(/Ç/g, 'C');
+  };
+
+  const handleSharePDF = async (jobData: any) => {
+    setIsGeneratingPdf(true);
+    try {
+        const receiptElement = document.getElementById('pdf-printable-area');
+        if (!receiptElement) throw new Error("PDF alanı bulunamadı.");
+
+        // A4 formatında net bir görüntü için scale ayarı
+        const canvas = await html2canvas(receiptElement, { 
+            scale: 2, 
+            useCORS: true, 
+            allowTaint: true,
+            backgroundColor: '#ffffff' 
+        });
+        
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        
+        // A4 Boyutlarında PDF Oluştur (Genişliğe oturt, yüksekliği orantıla)
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+        
+        const pdfBlob = pdf.output('blob');
+        
+        const currentMonth = new Date().toLocaleString('tr-TR', { month: 'long' });
+        const safeCustName = sanitizeTextForFile(jobData.customer_name || 'Musteri').replace(/\s+/g, '_');
+        const safeFileName = `${safeCustName}_${currentMonth}_Raporu.pdf`;
+        
+        const file = new File([pdfBlob], safeFileName, { type: 'application/pdf' });
+        
+        const assetName = (data?.assets || []).find((a:any) => a.id === jobData.asset_id)?.name || 'Cihazınız';
+        const shareText = `Merhaba ${jobData.customer_name},\n\n${assetName} işleminiz tamamlanmıştır. Servis raporunuzu bu mesaja eklenmiş dosyada bulabilirsiniz.`;
+
+        // Eğer cihaz dosya paylaşımını (WhatsApp, Mail vb.) destekliyorsa
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+                title: `Servis Raporu #${jobData.id}`,
+                text: shareText,
+                files: [file]
+            });
+        } else {
+            // Masaüstü veya desteklemeyen tarayıcı ise PDF'i indirip, düz metni WP'dan aç
+            pdf.save(safeFileName);
+            sendCustomerWhatsApp(jobData);
+        }
+    } catch (error) {
+        console.error("PDF oluşturma hatası:", error);
+        setNotification({show: true, msg: "PDF dosyası hazırlanırken bir hata oluştu.", type: 'error'});
+        setTimeout(() => setNotification({show: false, msg: '', type: 'success'}), 3000);
+    } finally {
+        setIsGeneratingPdf(false);
+    }
   };
 
   const statusColors: any = { 
@@ -571,19 +645,36 @@ useEffect(() => {
                                                         const isNegative = ['hayır', 'hayir', 'yok', 'false', 'uygun değil', 'değil', 'sorunlu', 'kötü'].some(v => valStr === v || valStr.includes(v));
                                                         const isBooleanType = isPositive || isNegative;
                                                         
-                                                        // Renk tespiti (Etiket vb.)
+                                                        // 🚀 YENİ: Akıllı Renk Tespiti (Siyah-Beyaz modunda otomatik sıfırlanır)
                                                         let colorClass = 'text-slate-900';
-                                                        if (valStr.includes('mavi')) colorClass = 'text-blue-600';
-                                                        else if (valStr.includes('yeşil') || valStr.includes('yesil')) colorClass = 'text-emerald-600';
-                                                        else if (valStr.includes('kırmızı') || valStr.includes('kirmizi')) colorClass = 'text-rose-600';
-                                                        else if (valStr.includes('sarı') || valStr.includes('sari')) colorClass = 'text-amber-500';
-                                                        else if (valStr.includes('turuncu')) colorClass = 'text-orange-500';
-                                                        else if (valStr.includes('mor')) colorClass = 'text-purple-600';
+                                                        let bgColorClass = 'bg-slate-900';
+                                                        let borderColorClass = 'border-slate-900';
+                                                        
+                                                        if (printMode === 'bw') {
+                                                            colorClass = 'text-black';
+                                                            bgColorClass = 'bg-black';
+                                                            borderColorClass = 'border-black';
+                                                        } else {
+                                                            if (isPositive) {
+                                                                colorClass = 'text-emerald-600';
+                                                                bgColorClass = 'bg-emerald-500';
+                                                                borderColorClass = 'border-emerald-500';
+                                                            } else if (isNegative) {
+                                                                colorClass = 'text-rose-600';
+                                                                bgColorClass = 'bg-rose-500';
+                                                                borderColorClass = 'border-rose-500';
+                                                            } else if (valStr.includes('mavi')) colorClass = 'text-blue-600';
+                                                            else if (valStr.includes('yeşil') || valStr.includes('yesil')) colorClass = 'text-emerald-600';
+                                                            else if (valStr.includes('kırmızı') || valStr.includes('kirmizi')) colorClass = 'text-rose-600';
+                                                            else if (valStr.includes('sarı') || valStr.includes('sari')) colorClass = 'text-amber-500';
+                                                            else if (valStr.includes('turuncu')) colorClass = 'text-orange-500';
+                                                            else if (valStr.includes('mor')) colorClass = 'text-purple-600';
+                                                        }
 
                                                         return (
                                                             <div key={idx} className="flex justify-between items-end p-4 border-b border-slate-100 last:border-b-0">
                                                                 <div className="flex flex-col gap-1 pr-4">
-                                                                    <span className="text-slate-900 text-[13px] font-bold leading-tight">{item.key}</span>
+                                                                    <span className={`text-[13px] font-bold leading-tight ${printMode === 'bw' ? 'text-black' : 'text-slate-900'}`}>{item.key}</span>
                                                                     {isBooleanType && (
                                                                         <span className={`text-[11px] font-black uppercase tracking-wider ${colorClass}`}>{item.val}</span>
                                                                     )}
@@ -592,14 +683,16 @@ useEffect(() => {
                                                                 <div className="shrink-0 pb-0.5">
                                                                     {isBooleanType ? (
                                                                         isPositive ? (
-                                                                            <div className="w-5 h-5 bg-slate-900 flex items-center justify-center rounded-[4px]">
+                                                                            <div className={`w-5 h-5 flex items-center justify-center rounded-[4px] print-color-exact ${bgColorClass}`}>
                                                                                 <CheckSquare size={16} className="text-white" strokeWidth={3} />
                                                                             </div>
                                                                         ) : (
-                                                                            <div className="w-5 h-5 border-2 border-slate-900 rounded-[4px]"></div>
+                                                                            <div className={`w-5 h-5 border-2 flex items-center justify-center rounded-[4px] print-color-exact ${borderColorClass}`}>
+                                                                                <X size={14} className={printMode === 'bw' ? 'text-black' : 'text-rose-500'} strokeWidth={3} />
+                                                                            </div>
                                                                         )
                                                                     ) : (
-                                                                        <span className={`text-[12px] font-black uppercase ${colorClass} ${colorClass === 'text-slate-900' ? 'border-b-2 border-slate-900' : ''}`}>{item.val}</span>
+                                                                        <span className={`text-[12px] font-black uppercase ${colorClass} ${colorClass === 'text-slate-900' || colorClass === 'text-black' ? `border-b-2 ${borderColorClass}` : ''}`}>{item.val}</span>
                                                                     )}
                                                                 </div>
                                                             </div>
@@ -687,8 +780,8 @@ useEffect(() => {
                 </div>
 
                 <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row gap-3 no-print z-10">
-                   <button onClick={() => setShowPrintModeSelection(true)} className="flex-[2] bg-slate-900 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-md active:scale-95">
-                      <Printer size={18} /> PDF Olarak Cihaza Kaydet
+                   <button onClick={() => setShowPrintModeSelection(true)} className="flex-1 bg-slate-900 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-md active:scale-95">
+                      <Printer size={18} /> Yazdır
                    </button>
                    {(() => {
                        const isPdfGeneral = previewPdfJob.work_type === 'Genel Görev' || previewPdfJob.work_type === 'Görev' || !previewPdfJob.customer_name || previewPdfJob.customer_name === 'Genel Görev';
@@ -697,9 +790,14 @@ useEffect(() => {
                        if (isPdfGeneral && (!previewPdfJob.customer_name || previewPdfJob.customer_name === 'Genel Görev' || !hasPhone)) return null;
                        
                        return (
-                           <button onClick={() => sendCustomerWhatsApp(previewPdfJob)} className="flex-1 bg-emerald-500 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all shadow-md active:scale-95">
-                              <MessageSquareText size={18} /> Müşteriye Gönder
-                           </button>
+                           <>
+                               <button disabled={isGeneratingPdf} onClick={() => handleSharePDF(previewPdfJob)} className="flex-1 bg-blue-600 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-md active:scale-95 disabled:opacity-50">
+                                  {isGeneratingPdf ? <Loader2 size={18} className="animate-spin" /> : <Share2 size={18} />} PDF İle Paylaş
+                               </button>
+                               <button onClick={() => sendCustomerWhatsApp(previewPdfJob)} className="flex-1 bg-emerald-500 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all shadow-md active:scale-95">
+                                  <MessageSquareText size={18} /> Mesaj Gönder
+                               </button>
+                           </>
                        );
                    })()}
                 </div>
@@ -748,6 +846,16 @@ useEffect(() => {
                  .bw-mode img:not(.print-logo) { 
                     filter: grayscale(100%) brightness(0) !important;
                  }
+
+                 /* 🚀 YENİ: Renkli Modda Background Renklerinin Yazıcıda Kesin Çıkması İçin Tailwind Sınıflarını Zorla */
+                 .bg-emerald-500 { background-color: #10b981 !important; }
+                 .bg-rose-500 { background-color: #f43f5e !important; }
+                 .text-emerald-600 { color: #059669 !important; }
+                 .text-rose-600 { color: #e11d48 !important; }
+                 .border-emerald-500 { border-color: #10b981 !important; }
+                 .border-rose-500 { border-color: #f43f5e !important; }
+                 .bg-black { background-color: #000000 !important; }
+                 .border-black { border-color: #000000 !important; }
 
                  /* 4. YAZDIRILACAK ALANI KAĞIDIN EN TEPESİNE YAPIŞTIR */
                  #pdf-printable-area {
