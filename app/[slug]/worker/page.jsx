@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Clock, CheckCircle2, MessageSquareText, LogOut, ChevronRight, PenTool, Loader2, AlertCircle, PlayCircle, ClipboardList, WifiOff, Download, Share, Check, Camera, X, ShieldCheck, UserPlus, Box, Phone, User, Briefcase, Map, AlertOctagon, Navigation, PlusCircle, Search, Package, AlertTriangle, Send, Plus } from 'lucide-react';
+import { MapPin, Clock, CheckCircle2, MessageSquareText, LogOut, ChevronRight, PenTool, Loader2, AlertCircle, PlayCircle, ClipboardList, WifiOff, Download, Share, Check, Camera, X, ShieldCheck, UserPlus, Box, Phone, User, Briefcase, Map, AlertOctagon, Navigation, PlusCircle, Search, Package, AlertTriangle, Send, Plus, Mic } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 import Header from '@/components/layout/Header';
 import WorkerSidebar from '@/components/layout/WorkerSidebar'; 
@@ -77,6 +77,59 @@ const [materialSearch, setMaterialSearch] = useState('');
 const [showSOSModal, setShowSOSModal] = useState(false);
 const [sosType, setSosType] = useState('Araç Arızası');
 const [sosMessage, setSosMessage] = useState('');
+
+// 🚀 YENİ ÖZELLİK: SESLİ YAZMA STATE VE FONKSİYONLARI (WEB SPEECH API)
+const [isListeningNote, setIsListeningNote] = useState(false);
+const [isListeningStock, setIsListeningStock] = useState(false);
+const [listeningField, setListeningField] = useState(null);
+
+const handleSpeechToText = (target, fieldName = null) => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+        setNotification({ show: true, msg: "Cihazınız veya tarayıcınız (Safari/Chrome önerilir) sesli yazmayı desteklemiyor.", type: 'error' });
+        setTimeout(() => setNotification({ show: false, msg: '', type: 'success' }), 4000);
+        return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'tr-TR';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+        if (target === 'note') setIsListeningNote(true);
+        else if (target === 'stock') setIsListeningStock(true);
+        else if (target === 'form') setListeningField(fieldName);
+    };
+
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        if (target === 'note') {
+            setJobNote(prev => prev ? prev + ' ' + transcript : transcript);
+        } else if (target === 'stock') {
+            setStockSearchTerm(transcript);
+        } else if (target === 'form') {
+            setDynamicForm(prev => ({ ...prev, [fieldName]: transcript }));
+        }
+    };
+
+    recognition.onerror = (event) => {
+        console.warn("Ses tanıma hatası:", event.error);
+        if(event.error === 'not-allowed') {
+             setNotification({ show: true, msg: "Mikrofon izni reddedildi. Lütfen tarayıcı ayarlarından mikrofon erişimine izin verin.", type: 'error' });
+             setTimeout(() => setNotification({ show: false, msg: '', type: 'success' }), 4000);
+        }
+    };
+
+    recognition.onend = () => {
+        setIsListeningNote(false);
+        setIsListeningStock(false);
+        setListeningField(null);
+    };
+
+    recognition.start();
+};
 
 // 🚀 YENİ ÖZELLİK: GOOGLE MAPS ROTA OLUŞTURUCU
 const openGoogleMapsRoute = () => {
@@ -1201,14 +1254,26 @@ const handleStatusUpdate = async (newStatus) => {
                                                 <option value="">Seçiniz...</option>
                                                 {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                                             </select>
-                                          ) : <input type={field.type} className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:border-blue-500" placeholder="Değer girin" value={dynamicForm[field.name] || ''} onChange={(e) => handleDynamicFormChange(field.name, e.target.value)} />}
+                                          ) : (
+                                            <div className="relative">
+                                                <input type={field.type} className="w-full bg-white border border-blue-200 rounded-xl pl-4 pr-10 py-3 text-sm font-semibold outline-none focus:border-blue-500" placeholder="Değer girin" value={dynamicForm[field.name] || ''} onChange={(e) => handleDynamicFormChange(field.name, e.target.value)} />
+                                                <button type="button" onClick={() => handleSpeechToText('form', field.name)} className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors ${listeningField === field.name ? 'bg-rose-100 text-rose-600 animate-pulse' : 'text-slate-400 hover:text-blue-500 hover:bg-blue-50'}`}>
+                                                    <Mic size={16} />
+                                                </button>
+                                            </div>
+                                          )}
                                       </div>
                                     ))}
                                 </div>
                             )}
 
                             <div>
-                                <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest block mb-2">Yapılan İşlem / Saha Notu <span className="text-slate-400 font-medium normal-case">(İsteğe Bağlı)</span></label>
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest block">Yapılan İşlem / Saha Notu <span className="text-slate-400 font-medium normal-case">(İsteğe Bağlı)</span></label>
+                                    <button onClick={() => handleSpeechToText('note')} className={`text-[10px] font-bold px-2 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shadow-sm border ${isListeningNote ? 'bg-rose-100 text-rose-700 border-rose-200 animate-pulse' : 'bg-white text-slate-600 border-slate-200 hover:text-blue-600 hover:border-blue-200 active:scale-95'}`}>
+                                        <Mic size={12} /> {isListeningNote ? 'Sizi Dinliyor...' : 'Sesle Yazdır'}
+                                    </button>
+                                </div>
                                 <textarea rows={3} value={jobNote} onChange={(e) => setJobNote(e.target.value)} placeholder="Yapılan işlemleri yazabilirsiniz..." className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm font-medium outline-none focus:border-blue-500 shadow-sm" />
                             </div>
 
@@ -1404,9 +1469,12 @@ const handleStatusUpdate = async (newStatus) => {
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                     <input 
                                         type="text" placeholder="Malzeme Ara..." 
-                                        className="w-full pl-9 pr-3 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 shadow-inner bg-white"
+                                        className="w-full pl-9 pr-10 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 shadow-inner bg-white"
                                         value={stockSearchTerm} onChange={e => setStockSearchTerm(e.target.value)}
                                     />
+                                    <button onClick={() => handleSpeechToText('stock')} className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors ${isListeningStock ? 'bg-rose-100 text-rose-600 animate-pulse' : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'}`}>
+                                        <Mic size={16} />
+                                    </button>
                                 </div>
                                 {/* Kategori Filtresi */}
                                 <select 
