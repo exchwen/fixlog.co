@@ -81,6 +81,7 @@ const [sosMessage, setSosMessage] = useState('');
 // 🚀 YENİ ÖZELLİK: SESLİ YAZMA STATE VE FONKSİYONLARI (WEB SPEECH API)
 const [isListeningNote, setIsListeningNote] = useState(false);
 const [isListeningStock, setIsListeningStock] = useState(false);
+const [isListeningMaterial, setIsListeningMaterial] = useState(false);
 const [listeningField, setListeningField] = useState(null);
 
 const handleSpeechToText = (target, fieldName = null) => {
@@ -100,6 +101,7 @@ const handleSpeechToText = (target, fieldName = null) => {
     recognition.onstart = () => {
         if (target === 'note') setIsListeningNote(true);
         else if (target === 'stock') setIsListeningStock(true);
+        else if (target === 'material') setIsListeningMaterial(true);
         else if (target === 'form') setListeningField(fieldName);
     };
 
@@ -109,6 +111,8 @@ const handleSpeechToText = (target, fieldName = null) => {
             setJobNote(prev => prev ? prev + ' ' + transcript : transcript);
         } else if (target === 'stock') {
             setStockSearchTerm(transcript);
+        } else if (target === 'material') {
+            setMaterialSearch(transcript);
         } else if (target === 'form') {
             setDynamicForm(prev => ({ ...prev, [fieldName]: transcript }));
         }
@@ -125,6 +129,7 @@ const handleSpeechToText = (target, fieldName = null) => {
     recognition.onend = () => {
         setIsListeningNote(false);
         setIsListeningStock(false);
+        setIsListeningMaterial(false);
         setListeningField(null);
     };
 
@@ -755,8 +760,8 @@ const handleStatusUpdate = async (newStatus) => {
     // EĞER BURAYA GELDİYSE İŞLEM KESİN BAŞARILIDIR
     localStorage.removeItem(`draft_${slug}_${selectedJob.id}`);
     
-    // Fiş Yazdırmayı Tetikle (Sadece Periyodik Bakımsa)
-    if (selectedJob.work_type === 'Periyodik Bakım') {
+    // Fiş Yazdırmayı Tetikle (Sadece Periyodik Bakımsa VE İŞ TAMAMLANDIYSA)
+    if (targetStatus === 'Tamamlandı' && selectedJob.work_type === 'Periyodik Bakım') {
         setSelectedThermalJob({
             ...selectedJob, 
             details: { ...selectedJob.details, note: finalNote, usedMaterials: usedMaterials }, 
@@ -1256,10 +1261,18 @@ const handleStatusUpdate = async (newStatus) => {
                                             </select>
                                           ) : (
                                             <div className="relative">
-                                                <input type={field.type} className="w-full bg-white border border-blue-200 rounded-xl pl-4 pr-10 py-3 text-sm font-semibold outline-none focus:border-blue-500" placeholder="Değer girin" value={dynamicForm[field.name] || ''} onChange={(e) => handleDynamicFormChange(field.name, e.target.value)} />
-                                                <button type="button" onClick={() => handleSpeechToText('form', field.name)} className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors ${listeningField === field.name ? 'bg-rose-100 text-rose-600 animate-pulse' : 'text-slate-400 hover:text-blue-500 hover:bg-blue-50'}`}>
-                                                    <Mic size={16} />
-                                                </button>
+                                                {field.type === 'textarea' ? (
+                                                    <textarea rows={3} className="w-full bg-white border border-blue-200 rounded-xl pl-4 pr-10 py-3 text-sm font-semibold outline-none focus:border-blue-500 resize-none" placeholder="Açıklama girin..." value={dynamicForm[field.name] || ''} onChange={(e) => handleDynamicFormChange(field.name, e.target.value)}></textarea>
+                                                ) : (
+                                                    <input type={field.type || 'text'} className={`w-full bg-white border border-blue-200 rounded-xl pl-4 py-3 text-sm font-semibold outline-none focus:border-blue-500 ${field.type !== 'date' && field.type !== 'number' ? 'pr-10' : 'pr-4'}`} placeholder="Değer girin" value={dynamicForm[field.name] || ''} onChange={(e) => handleDynamicFormChange(field.name, e.target.value)} />
+                                                )}
+                                                
+                                                {/* Sayı ve Tarih DEĞİLSE mikrofonu göster */}
+                                                {field.type !== 'date' && field.type !== 'number' && (
+                                                    <button type="button" onClick={() => handleSpeechToText('form', field.name)} className={`absolute right-2 ${field.type === 'textarea' ? 'top-3' : 'top-1/2 -translate-y-1/2'} p-1.5 rounded-lg transition-colors ${listeningField === field.name ? 'bg-rose-100 text-rose-600 animate-pulse' : 'text-slate-400 hover:text-blue-500 hover:bg-blue-50'}`}>
+                                                        <Mic size={16} />
+                                                    </button>
+                                                )}
                                             </div>
                                           )}
                                       </div>
@@ -1615,7 +1628,10 @@ const handleStatusUpdate = async (newStatus) => {
                             </div>
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                <input type="text" placeholder="Malzeme Ara..." value={materialSearch} onChange={e => setMaterialSearch(e.target.value)} className="w-full pl-9 pr-3 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-400 shadow-inner bg-white" />
+                                <input type="text" placeholder="Malzeme Ara..." value={materialSearch} onChange={e => setMaterialSearch(e.target.value)} className="w-full pl-9 pr-10 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-400 shadow-inner bg-white" />
+                                <button onClick={() => handleSpeechToText('material')} className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors ${isListeningMaterial ? 'bg-rose-100 text-rose-600 animate-pulse' : 'text-slate-400 hover:text-blue-500 hover:bg-blue-50'}`}>
+                                    <Mic size={16} />
+                                </button>
                             </div>
                         </div>
 
