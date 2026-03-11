@@ -219,10 +219,23 @@ const handleSendSOS = async () => {
 };
 
 // 🚀 ÇÖZÜM: 'currentFields' değişkenini kullanıldığı yerlerden ÖNCE tanımlıyoruz!
-  const currentFields = (companySector && staffBranch && sectorsData.sectors?.[companySector]?.subTypes?.[staffBranch]?.fields) || [];
+const rawFields = (companySector && staffBranch && sectorsData.sectors?.[companySector]?.subTypes?.[staffBranch]?.fields) || [];
+  
+// 🚀 YENİ: Seçili işin varlık türünü (MRL, Hidrolik, Yürüyen Merdiven vb.) buluyoruz
+const currentAssetForForm = (data?.assets && selectedJob?.asset_id) 
+    ? data.assets.find(a => String(a.id) === String(selectedJob.asset_id)) 
+    : null;
+const assetTypeName = currentAssetForForm?.name || '';
 
-  // 🚀 TASLAK (DRAFT) YÜKLEME (FOTOĞRAFLAR, İMZA VE ADIM NUMARASI EKLENDİ)
-  useEffect(() => {
+// 🚀 YENİ: Varlık türüne göre sadece o cihaza ait soruları (conditions) filtreliyoruz
+const currentFields = rawFields.filter(field => {
+    if (!field.conditions) return true; // Şart yoksa (Örn: Etiket rengi) herkese göster
+    // Varlık türü (assetTypeName), condition içindeki kelimelerden herhangi birini içeriyorsa göster
+    return field.conditions.some(cond => assetTypeName.includes(cond));
+});
+
+// 🚀 TASLAK (DRAFT) YÜKLEME (FOTOĞRAFLAR, İMZA VE ADIM NUMARASI EKLENDİ)
+useEffect(() => {
       if (selectedJob && (selectedJob.status === 'Devam Ediyor' || selectedJob.status === 'Sahada')) {
           const draft = localStorage.getItem(`draft_${slug}_${selectedJob.id}`);
           if (draft) {

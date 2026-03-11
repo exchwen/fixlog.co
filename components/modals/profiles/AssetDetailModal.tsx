@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MapPin, Box, Briefcase, Calendar, User, AlertCircle, ChevronRight, Edit, Trash2, Save, Loader2, Search, Wrench, Siren, FileText, Building2, Tag, RefreshCw } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
+import sectorsData from '@/lib/data/sectors.json'; // 🚀 EKLENDİ
 
 const CITY_DATA: any = trCitiesData;
 
@@ -354,7 +355,16 @@ export default function AssetDetailModal({
 
                        <div>
                           <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Cihaz / Varlık Türü</label>
-                          <input type="text" placeholder="Örn: Yük Asansörü" className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" value={editForm.name || ''} onChange={e => setEditForm({...editForm, name: e.target.value})} />
+                          <select 
+                              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all appearance-none cursor-pointer" 
+                              value={editForm.name || ''} 
+                              onChange={e => setEditForm({...editForm, name: e.target.value})} 
+                          >
+                              <option value="">Lütfen Varlık Türü Seçin...</option>
+                              {sectorsData.sectors["Asansör Bakım & Montaj"].assetTypes.map((type: string) => (
+                                  <option key={type} value={type}>{type}</option>
+                              ))}
+                          </select>
                        </div>
                        
                        <div>

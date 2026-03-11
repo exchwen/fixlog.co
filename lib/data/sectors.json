@@ -6,24 +6,53 @@
         "stats": "14 Aktif Arıza",
         "color": "text-blue-600",
         "bg": "bg-blue-50",
+        "assetTypes": [
+          "Makine Dairesiz (MRL) Yolcu Asansörü",
+          "Makine Daireli (MR) Yolcu Asansörü",
+          "Hidrolik Yolcu Asansörü",
+          "Makine Daireli (MR) Yük Asansörü",
+          "Hidrolik Yük Asansörü",
+          "Sedye (Hastane) Asansörü",
+          "Araç Asansörü",
+          "Servis (Monşarj) Asansörü",
+          "Yürüyen Merdiven",
+          "Yürüyen Bant",
+          "Engelli Platformu (Açık Tip)",
+          "Engelli Platformu (Kapalı Tip)"
+        ],
         "subTypes": {
           "Periyodik Bakım": {
             "fields": [
+
               { "name": "label_color", "label": "Mevcut Etiket", "type": "select", "options": ["Kırmızı", "Sarı", "Mavi", "Yeşil"] },
-              { "name": "pit_check", "label": "Kuyu alt boşluğu (KUYU DİBİ)", "type": "select", "options": ["Uygun", "Değil"] },
-              { "name": "splash_guard", "label": "Sıçramaya karşı tertibat ve anahtar", "type": "select", "options": ["Uygun", "Değil", "Yok"] },
-              { "name": "motor_gen", "label": "Tahrik motoru / Jeneratör", "type": "select", "options": ["Uygun", "Değil"] },
-              { "name": "drive_sheave", "label": "Tahrik kasnağı", "type": "select", "options": ["Uygun", "Değil"] },
-              { "name": "brake_sys", "label": "Fren", "type": "select", "options": ["Uygun", "Değil"] },
-              { "name": "rope_pulleys", "label": "Ana halat saptırma makarası", "type": "select", "options": ["Uygun", "Değil"] },
-              { "name": "guide_rails", "label": "Kabin / Karşı ağırlık kılavuzları", "type": "select", "options": ["Uygun", "Değil"] },
-              { "name": "electrical_inst", "label": "Elektrik tesisatı", "type": "select", "options": ["Uygun", "Değil"] },
-              { "name": "safety_gear", "label": "Güvenlik tertibatları (Hız Reg.)", "type": "select", "options": ["Uygun", "Değil"] },
-              { "name": "suspension_ropes", "label": "Askı halatları / zincirleri", "type": "select", "options": ["Uygun", "Değil"] },
-              { "name": "rope_fixing", "label": "Halat / zincir tespit noktası", "type": "select", "options": ["Uygun", "Değil"] },
-              { "name": "cabin_door", "label": "Asansör kabin kapısı", "type": "select", "options": ["Uygun", "Değil"] },
-              { "name": "hoistway_light", "label": "Asansör boşluğu aydınlatması", "type": "select", "options": ["Uygun", "Değil"] },
-              { "name": "oil_check", "label": "Ray Yağlama Yapıldı mı?", "type": "select", "options": ["Evet", "Hayır"] }
+
+
+              { "name": "pit_check", "label": "Kuyu alt boşluğu (KUYU DİBİ)", "type": "select", "options": ["Uygun", "Değil"], "conditions": ["Asansör", "Platform"] },
+              { "name": "splash_guard", "label": "Sıçramaya karşı tertibat ve anahtar", "type": "select", "options": ["Uygun", "Değil", "Yok"], "conditions": ["Asansör", "Platform"] },
+              { "name": "guide_rails", "label": "Kabin / Karşı ağırlık kılavuzları", "type": "select", "options": ["Uygun", "Değil"], "conditions": ["Asansör", "Platform"] },
+              { "name": "electrical_inst", "label": "Elektrik tesisatı", "type": "select", "options": ["Uygun", "Değil"], "conditions": ["Asansör", "Platform", "Merdiven", "Bant"] },
+              { "name": "cabin_door", "label": "Asansör kabin kapısı", "type": "select", "options": ["Uygun", "Değil"], "conditions": ["Asansör"] },
+              { "name": "hoistway_light", "label": "Asansör boşluğu aydınlatması", "type": "select", "options": ["Uygun", "Değil"], "conditions": ["Asansör"] },
+              { "name": "oil_check", "label": "Ray Yağlama Yapıldı mı?", "type": "select", "options": ["Evet", "Hayır"], "conditions": ["Asansör", "Platform"] },
+
+
+              { "name": "motor_gen", "label": "Tahrik motoru / Jeneratör", "type": "select", "options": ["Uygun", "Değil"], "conditions": ["MR", "MRL"] },
+              { "name": "drive_sheave", "label": "Tahrik kasnağı", "type": "select", "options": ["Uygun", "Değil"], "conditions": ["MR", "MRL"] },
+              { "name": "brake_sys", "label": "Fren", "type": "select", "options": ["Uygun", "Değil"], "conditions": ["MR", "MRL", "Merdiven", "Bant"] },
+              { "name": "rope_pulleys", "label": "Ana halat saptırma makarası", "type": "select", "options": ["Uygun", "Değil"], "conditions": ["MR", "MRL"] },
+              { "name": "safety_gear", "label": "Güvenlik tertibatları (Hız Reg.)", "type": "select", "options": ["Uygun", "Değil"], "conditions": ["MR", "MRL"] },
+              { "name": "suspension_ropes", "label": "Askı halatları / zincirleri", "type": "select", "options": ["Uygun", "Değil"], "conditions": ["MR", "MRL"] },
+              { "name": "rope_fixing", "label": "Halat / zincir tespit noktası", "type": "select", "options": ["Uygun", "Değil"], "conditions": ["MR", "MRL"] },
+
+
+              { "name": "hydraulic_unit", "label": "Hidrolik Ünite ve Valf Bloğu", "type": "select", "options": ["Uygun", "Değil"], "conditions": ["Hidrolik"] },
+              { "name": "oil_leak_check", "label": "Yağ Seviyesi ve Sızıntı Kontrolü", "type": "select", "options": ["Uygun", "Eksik", "Sızıntı Var"], "conditions": ["Hidrolik"] },
+              { "name": "piston_check", "label": "Piston ve Keçe Durumu", "type": "select", "options": ["Uygun", "Değil"], "conditions": ["Hidrolik"] },
+
+
+              { "name": "handrail_tension", "label": "El Bandı Gerginliği", "type": "select", "options": ["Uygun", "Değil"], "conditions": ["Merdiven", "Bant"] },
+              { "name": "steps_pallets", "label": "Basamak / Palet ve Tarak Plakası", "type": "select", "options": ["Uygun", "Kırık/Eksik Var"], "conditions": ["Merdiven", "Bant"] },
+              { "name": "emergency_stops", "label": "Acil Durum Durdurma Butonları", "type": "select", "options": ["Çalışıyor", "Arızalı"], "conditions": ["Merdiven", "Bant"] }
             ]
           },
           "Arıza Giderme": {

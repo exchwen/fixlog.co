@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, Box, User, MapPin, FileText, Building2, ChevronDown, Search } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
+import sectorsData from '@/lib/data/sectors.json'; // 🚀 EKLENDİ
 
 const CITY_DATA: any = trCitiesData;
 
@@ -123,13 +124,16 @@ return (
                   <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
                       <Box size={14} /> Cihaz / Varlık Türü
                   </label>
-                  <input 
-                      type="text" 
-                      placeholder="Örn: Yük Asansörü, Tıbbi Cihaz #12 vb." 
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400" 
+                  <select 
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all appearance-none cursor-pointer" 
                       value={newAsset.name || ''} 
                       onChange={e => setNewAsset({...newAsset, name: e.target.value})} 
-                  />
+                  >
+                      <option value="">Lütfen Varlık Türü Seçin...</option>
+                      {sectorsData.sectors["Asansör Bakım & Montaj"].assetTypes.map((type: string) => (
+                          <option key={type} value={type}>{type}</option>
+                      ))}
+                  </select>
                 </div>
 
                 {/* Ait Olduğu Müşteri ve Yeni Müşteri Ekle Kısayolu */}

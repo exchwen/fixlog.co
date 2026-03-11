@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MapPin, Box, Calendar, Clock, ArrowRight, Settings, Trash2, Loader2, Building2 } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
+import sectorsData from '@/lib/data/sectors.json'; // 🚀 EKLENDİ
 
 const CITY_DATA: any = trCitiesData;
 
@@ -510,13 +511,16 @@ export default function CustomerDetailModal({
                                                 value={newAssetForm.apartmentName}
                                                 onChange={e => setNewAssetForm({...newAssetForm, apartmentName: e.target.value})}
                                             />
-                                            <input 
-                                                type="text" 
-                                                placeholder="Cihaz / Varlık Türü (Örn: Asansör)" 
-                                                className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white"
+                                            <select 
+                                                className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white appearance-none cursor-pointer"
                                                 value={newAssetForm.name}
                                                 onChange={e => setNewAssetForm({...newAssetForm, name: e.target.value})}
-                                            />
+                                            >
+                                                <option value="">Varlık Türü Seçin...</option>
+                                                {sectorsData.sectors["Asansör Bakım & Montaj"].assetTypes.map((type: string) => (
+                                                    <option key={type} value={type}>{type}</option>
+                                                ))}
+                                            </select>
                                             <div className="flex gap-2 pt-1">
                                                 <button 
                                                     disabled={!newAssetForm.name || isSaving}
