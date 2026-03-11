@@ -128,7 +128,7 @@ const [activeTab, setActiveTab] = useState('ozet');
     img.src = safeLogoUrl + (safeLogoUrl.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
   }, [data?.logo]);
 
-// Dışarıdan modal kapandığında local state'i temizle (Eğer parent data'yı null yapmıyor sadece modalı kapatıyorsa isAnyProfileDetailOpen kontrolü hayat kurtarır)
+// Dışarıdan modal kapandığında local state'i temizle
 useEffect(() => {
     if ((!selectedCustomer || !isAnyProfileDetailOpen) && openedChild === 'customer') {
         setOpenedChild(null);
@@ -191,12 +191,10 @@ useEffect(() => {
     }
 
     if (selectedJob) {
-      // Başka dış modallar varsa dokunmuyoruz.
       if (isAnyProfileDetailOpen && !openedChild) return false;
       
       stopEvent();
       setSelectedJob(null);
-      // Modal kapanırken imza alanını sıfırla
       setSignatureImage(null);
       setSignatureName('');
       if (handleCloseDetail) handleCloseDetail('job');
@@ -237,7 +235,6 @@ useEffect(() => {
     if (!selectedJob) return;
 
     const handlePopState = (e: PopStateEvent) => {
-      // Dış modal açıksa biz popstate'e karışmıyoruz
       if (isAnyProfileDetailOpen && openedChild === null) return;
       handleSmartClose(e);
     };
@@ -246,7 +243,6 @@ useEffect(() => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [selectedJob, isAnyProfileDetailOpen, openedChild, handleSmartClose]);
 
-  // 🚀 İMZA ÇİZİM (CANVAS) FONKSİYONLARI
   const getCoordinates = (e: any) => {
     const canvas = signatureCanvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
@@ -269,7 +265,7 @@ useEffect(() => {
 
   const draw = (e: any) => {
     if (!isDrawing) return;
-    e.preventDefault(); // Ekranda kaymayı engelle
+    e.preventDefault(); 
     const coords = getCoordinates(e);
     const ctx = signatureCanvasRef.current?.getContext('2d');
     if (ctx) {
@@ -311,7 +307,6 @@ useEffect(() => {
      const assetName = (data?.assets || []).find((a:any) => a.id === jobData.asset_id)?.name || 'Cihazınız';
      const price = jobData.details?.price || 'Ücretsiz';
      
-     // 🚀 YENİ: Dinamik ve Kurumsal WhatsApp Mesaj Formatı
      const currentMonth = new Date().toLocaleString('tr-TR', { month: 'long' });
      const workTypeDesc = jobData.work_type === 'Periyodik Bakım' ? `${currentMonth} ayı periyodik bakımı` : 'servis işlemi';
      
@@ -339,7 +334,6 @@ useEffect(() => {
         const receiptElement = document.getElementById('pdf-printable-area');
         if (!receiptElement) throw new Error("PDF alanı bulunamadı.");
 
-        // A4 formatında net bir görüntü için scale ayarı
         const canvas = await html2canvas(receiptElement, { 
             scale: 2, 
             useCORS: true, 
@@ -349,25 +343,35 @@ useEffect(() => {
         
         const imgData = canvas.toDataURL('image/jpeg', 0.95);
         
-        // A4 Boyutlarında PDF Oluştur (Genişliğe oturt, yüksekliği orantıla)
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        const pdfWidth = pdf.internal.pageSize.getWidth();
+        // 🚀 BOŞ SAYFA ÇÖZÜMÜ: A4 Genişliğini sabitle, Yüksekliği esnek yap (Sıfır boşluk)
+        const pdfWidth = 210; // A4 Genişliği (mm)
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [pdfWidth, pdfHeight] });
         
         pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
         
-        const pdfBlob = pdf.output('blob');
-        
+        // 🚀 İSİMLENDİRME KURALI: varlıkadı-varlıktürü-ay-islemtürü.pdf
         const currentMonth = new Date().toLocaleString('tr-TR', { month: 'long' });
-        const safeCustName = sanitizeTextForFile(jobData.customer_name || 'Musteri').replace(/\s+/g, '_');
-        const safeFileName = `${safeCustName}_${currentMonth}_Raporu.pdf`;
+        const asset = (data?.assets || []).find((a:any) => a.id === jobData.asset_id);
         
+        const rawAssetName = asset?.name || 'Varlik';
+        const rawAssetType = asset?.type || asset?.category || 'Cihaz';
+        const rawJobType = jobData.work_type || 'Islem';
+        
+        const safeAssetName = sanitizeTextForFile(rawAssetName).replace(/\s+/g, '-');
+        const safeAssetType = sanitizeTextForFile(rawAssetType).replace(/\s+/g, '-');
+        const safeMonth = sanitizeTextForFile(currentMonth).replace(/\s+/g, '-');
+        const safeJobType = sanitizeTextForFile(rawJobType).replace(/\s+/g, '-');
+
+        const safeFileName = `${safeAssetName}-${safeAssetType}-${safeMonth}-${safeJobType}.pdf`;
+        
+        const pdfBlob = pdf.output('blob');
         const file = new File([pdfBlob], safeFileName, { type: 'application/pdf' });
         
-        const assetName = (data?.assets || []).find((a:any) => a.id === jobData.asset_id)?.name || 'Cihazınız';
+        const assetName = asset?.name || 'Cihazınız';
         const shareText = `Merhaba ${jobData.customer_name},\n\n${assetName} işleminiz tamamlanmıştır. Servis raporunuzu bu mesaja eklenmiş dosyada bulabilirsiniz.`;
 
-        // Eğer cihaz dosya paylaşımını (WhatsApp, Mail vb.) destekliyorsa
         if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
             await navigator.share({
                 title: `Servis Raporu #${jobData.id}`,
@@ -375,7 +379,6 @@ useEffect(() => {
                 files: [file]
             });
         } else {
-            // Masaüstü veya desteklemeyen tarayıcı ise PDF'i indirip, düz metni WP'dan aç
             pdf.save(safeFileName);
             sendCustomerWhatsApp(jobData);
         }
@@ -401,14 +404,12 @@ useEffect(() => {
     if (!job) return { label: '', colorClass: '' };
     let label = job.status || 'Beklemede';
 
-    // 🚀 DÜZELTİLDİ: İş bir "Genel Görev" ise, usta atanmasına gerek yoktur!
-    // Kabul edildiği an "Devam Ediyor" kalır, "Usta Bekliyor"a düşmez.
     const isGeneral = job.work_type === 'Genel Görev' || job.work_type === 'Görev' || !job.customer_name || job.customer_name === 'Genel Görev';
 
     if (!isGeneral && (label === 'Usta Bekliyor' || label === 'Devam Ediyor')) {
         label = hasWorker ? 'Devam Ediyor' : 'Usta Bekliyor';
     } else if (isGeneral && label === 'Usta Bekliyor') {
-        label = 'Devam Ediyor'; // Genel görev kabul edildiyse direkt devam ediyordur
+        label = 'Devam Ediyor';
     }
 
     let colorClass = statusColors[label] || 'bg-slate-100 text-slate-500 border-slate-200';
@@ -453,17 +454,14 @@ useEffect(() => {
     }
   };
 
-  // 🚀 iOS Stacking Kontrolü - SADECE benim açtıklarım veya PDF/Foto iç layerları
   const isStacked = Boolean(previewPdfJob || fullScreenImage || openedChild !== null);
 
-  // 🚀 TÜM EKRANIN ULAŞABİLECEĞİ ORTAK DEĞİŞKENLER (Scope Hatasını Çözer)
-  // 🚀 DÜZELTİLDİ: work_type'ı 'Görev' kalmış eski kayıtlar için veya müşteri adı boş olanları da Genel Görev say!
   const isGeneralTask = selectedJob?.work_type === 'Genel Görev' || selectedJob?.work_type === 'Görev' || !selectedJob?.customer_name || selectedJob?.customer_name === 'Genel Görev';
   const hasWorker = !!selectedJob?.worker_name || !!selectedJob?.details?.worker_id || !!(selectedJob?.staff_id && (data?.staff || []).find((s:any) => String(s.id) === String(selectedJob.staff_id) && s.role === 'Usta'));
 
   return (
     <>
-      {/* 0. PDF ÖNİZLEME MODALI (KESİN YAZDIRMA ÇÖZÜMÜ) */}
+      {/* 0. PDF ÖNİZLEME MODALI */}
       <AnimatePresence>
         {previewPdfJob && (
           <motion.div 
@@ -531,8 +529,7 @@ useEffect(() => {
                 </div>
                 
                 <div id="pdf-printable-area" className={`p-6 sm:p-10 overflow-y-auto custom-scrollbar bg-white text-black flex-1 relative ${printMode === 'bw' ? 'bw-mode' : ''}`}>
-                    
-                   {/* 🚀 PREMIUM LOGO & BAŞLIK (ORTALANMIŞ) */}
+                   
                    <div className="flex flex-col items-center justify-center mb-6 text-center">
                         {data?.logo && (
                             <div 
@@ -551,7 +548,6 @@ useEffect(() => {
                         <h2 className={`text-lg font-bold mt-1 ${printMode === 'bw' ? 'text-black' : 'text-slate-800'}`}>{previewPdfJob.work_type === 'Periyodik Bakım' ? 'Bakım Fişi' : 'Servis Raporu'}</h2>
                     </div>
 
-                    {/* 🚀 ÜST BİLGİLER (KAYIT NO, TARİH, PERSONEL, TESİS) */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm font-medium border-y-4 border-slate-900 py-5 mb-8 bg-slate-50/50 px-2 sm:px-4 rounded-xl print:bg-transparent print:px-0 print:rounded-none">
                         <div className="flex flex-col">
                             <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Fiş Numarası</div>
@@ -584,13 +580,11 @@ useEffect(() => {
                         </div>
                     </div>
 
-                    {/* 🚀 BİRLEŞTİRİLMİŞ FİŞ GÖRÜNÜMÜ (KUTULU KONTROL LİSTESİ + NOTLAR) */}
                     <div className="mb-8">
                         <div className="bg-slate-50/50 rounded-2xl border border-slate-200 shadow-sm print-no-bg overflow-hidden">
                             
                             <div className="flex flex-col">
                                 {(() => {
-                                    // 🚀 YENİ: Usta Notunu ve Detayları Ayıklama Mantığı
                                     let rawNote = previewPdfJob.details?.note || previewPdfJob.taskNote || '';
                                     let extractedChecklist: { key: string, val: string }[] = [];
                                     let cleanNote = '';
@@ -634,18 +628,15 @@ useEffect(() => {
                                     
                                     return (
                                         <>
-                                            {/* Saha Formu İçeriği (Termal Fiş Düzeni Birebir Aynısı) */}
                                             {extractedChecklist.length > 0 && (
                                                 <div className="flex flex-col bg-white">
                                                     {extractedChecklist.map((item, idx) => {
                                                         const valStr = item.val.toLowerCase().trim();
                                                         
-                                                        // Olumlu/Olumsuz kontrolü
                                                         const isPositive = ['evet', 'var', 'true', 'ok', 'uygun', 'sorunsuz', 'yapıldı'].some(v => valStr === v || valStr.includes(v));
                                                         const isNegative = ['hayır', 'hayir', 'yok', 'false', 'uygun değil', 'değil', 'sorunlu', 'kötü'].some(v => valStr === v || valStr.includes(v));
                                                         const isBooleanType = isPositive || isNegative;
                                                         
-                                                        // 🚀 YENİ: Akıllı Renk Tespiti (Siyah-Beyaz modunda otomatik sıfırlanır)
                                                         let colorClass = 'text-slate-900';
                                                         let bgColorClass = 'bg-slate-900';
                                                         let borderColorClass = 'border-slate-900';
@@ -701,7 +692,6 @@ useEffect(() => {
                                                 </div>
                                             )}
                                             
-                                            {/* Kullanılan Malzemeler (Varsa) */}
                                             {previewPdfJob.details?.usedMaterials && previewPdfJob.details.usedMaterials.length > 0 && (
                                                 <div className="p-5 border-t border-slate-200 bg-white">
                                                     <span className="block text-[11px] font-black text-slate-800 uppercase tracking-widest mb-3">KULLANILAN MALZEMELER:</span>
@@ -716,7 +706,6 @@ useEffect(() => {
                                                 </div>
                                             )}
 
-                                            {/* Manuel Usta Notu */}
                                             {cleanNote && (
                                                 <div className="p-5 border-t border-slate-200 bg-slate-50/50">
                                                     <span className="block text-[11px] font-black text-slate-800 uppercase tracking-widest mb-2">BAKIM / SERVİS NOTU:</span>
@@ -730,7 +719,6 @@ useEffect(() => {
                                 })()}
                             </div>
                             
-                            {/* Fiyat Alanı (Varsa) */}
                             {previewPdfJob.details?.price && (
                                 <div className="p-5 border-t border-slate-200 bg-slate-100/50 flex justify-between items-center">
                                     <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Toplam Tutar</span>
@@ -740,9 +728,8 @@ useEffect(() => {
                         </div>
                     </div>
 
-                    {/* 🚀 FOTOĞRAFLAR (Varsa) */}
                     {previewPdfJob.photos && previewPdfJob.photos.length > 0 && (
-                       <div className="mb-8 print-always-break">
+                       <div className="mb-8">
                           <div className="text-xs font-black text-slate-800 uppercase pb-4">Saha Kayıt Fotoğrafları</div>
                           <div className="grid grid-cols-2 gap-4 print-grid">
                              {previewPdfJob.photos.map((p: string, i: number) => (
@@ -754,7 +741,6 @@ useEffect(() => {
                        </div>
                     )}
 
-                    {/* 🚀 ELEKTRONİK İMZA ALANI (En Altta Mühür Gibi) */}
                     {previewPdfJob.signature_url && (
                         <div className="mt-8 pt-6 border-t-2 border-slate-800 text-center page-break-avoid flex flex-col items-center">
                             <p className="text-xs text-slate-500 mb-6 italic max-w-md">
@@ -803,12 +789,11 @@ useEffect(() => {
                 </div>
              </motion.div>
              
-             {/* 🚀 KUSURSUZ YAZDIRMA CSS'İ - "NUKE" METODU (Framer Motion'u Ezer) */}
+             {/* 🚀 KUSURSUZ YAZDIRMA CSS'İ */}
              <style dangerouslySetInnerHTML={{__html:`
                @media print {
                  @page { margin: 10mm; size: A4 portrait; }
                  
-                 /* YAZICI VE PDF İÇİN RENK KORUMA KİLİDİ */
                  html, body {
                    -webkit-print-color-adjust: exact !important;
                    print-color-adjust: exact !important;
@@ -819,14 +804,12 @@ useEffect(() => {
                    padding: 0 !important;
                  }
 
-                 /* 1. GİZLEME VE BOŞ SAYFA ENGELLEME */
                  body * { visibility: hidden !important; }
                  
                  #pdf-printable-area, #pdf-printable-area * {
                    visibility: visible !important;
                  }
 
-                 /* Modal dışındaki her şeyin yüksekliğini sıfırla ki sayfa uzamasın */
                  * {
                     position: static !important;
                     overflow: visible !important;
@@ -841,22 +824,20 @@ useEffect(() => {
                     padding: 0 !important;
                  }
                  
-                 /* 2. PRINT ALANINI SAYFAYA TAM OTURT (Çok küçük olma sorununun çözümü) */
                  #pdf-printable-area {
                     position: absolute !important;
                     left: 0 !important;
                     top: 0 !important;
-                    width: 100vw !important; /* A4 genişliğine tam oturur */
+                    width: 100vw !important;
                     max-width: 100vw !important;
                     margin: 0 !important;
                     padding: 0 !important;
                     background-color: white !important;
                     display: block !important;
-                    zoom: 1 !important; /* Küçülmeyi iptal ettik */
+                    zoom: 1 !important;
                     box-sizing: border-box !important;
                  }
 
-                 /* 3. RENKLERİ VE TASARIMI YAZICIYA ZORLA YANSIT */
                  .bw-mode, .bw-mode * { color: black !important; border-color: black !important; }
                  .bw-mode .print-no-bg, .bw-mode .bg-slate-50, .bw-mode .bg-blue-50 { background-color: transparent !important; }
                  .bw-mode img:not(.print-logo) { filter: grayscale(100%) brightness(0) !important; }
@@ -873,13 +854,11 @@ useEffect(() => {
                  .bg-slate-50\\/80 { background-color: #f8fafc !important; }
                  .bg-white { background-color: #ffffff !important; }
                  
-                 /* 4. İMAJ VE LOGO BOYUTLARI */
                  .print-grid img { max-width: 100% !important; height: auto !important; }
                  .print-logo-container { border: none !important; }
                  .print-logo { max-height: 80px !important; width: auto !important; object-fit: contain !important; }
                  .print-signature { max-height: 60px !important; width: auto !important; object-fit: contain !important; }
                  
-                 /* 5. PADDING VE MARGIN AYARLARI */
                  .mb-8 { margin-bottom: 6mm !important; }
                  .mb-6 { margin-bottom: 4mm !important; }
                  .mt-8 { margin-top: 6mm !important; }
@@ -888,7 +867,6 @@ useEffect(() => {
                  .py-5 { padding-top: 4mm !important; padding-bottom: 4mm !important; }
                  .px-5 { padding-left: 4mm !important; padding-right: 4mm !important; }
                  
-                 .print-always-break { break-before: page !important; page-break-before: always !important; }
                  .page-break-avoid { break-inside: avoid !important; page-break-inside: avoid !important; }
                }
              `}} />
@@ -951,7 +929,6 @@ useEffect(() => {
               {!isEditingJobDetail ? (
                 <div className="flex-1 flex flex-col min-h-0">
                     
-                    {/* 🚀 YENİ SEKME (TAB) MENÜSÜ */}
                     <div className="flex items-center px-4 sm:px-6 pt-2 border-b border-slate-200 shrink-0 gap-4 overflow-x-auto custom-scrollbar">
                         <button onClick={() => setActiveTab('ozet')} className={`pb-3 text-xs font-black uppercase tracking-widest border-b-2 transition-colors whitespace-nowrap ${activeTab === 'ozet' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>Özet Bilgi</button>
                         
@@ -966,7 +943,6 @@ useEffect(() => {
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6 relative">
                         
-                        {/* 🚀 TAB 1: ÖZET */}
                         {activeTab === 'ozet' && (
                             <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="space-y-4 sm:space-y-5">
                                 {(() => {
@@ -1080,7 +1056,6 @@ useEffect(() => {
                             </motion.div>
                         )}
 
-                        {/* 🚀 TAB 2: FORM VE STOK */}
                         {activeTab === 'form' && (
                              <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="space-y-4">
                                  {(() => {
@@ -1091,7 +1066,6 @@ useEffect(() => {
                                      const hasNote = !!selectedJob.details?.note;
                                      const hasMaterials = selectedJob.details?.usedMaterials && selectedJob.details.usedMaterials.length > 0;
 
-                                     // Eğer hiçbir veri yoksa şık bir uyarı çıkarıyoruz
                                      if (!hasFormEntries && !hasNote && !hasMaterials) {
                                          return (
                                              <div className="flex flex-col items-center justify-center py-10 px-4 text-center bg-slate-50 border border-slate-200 rounded-2xl border-dashed">
@@ -1104,10 +1078,8 @@ useEffect(() => {
                                          );
                                      }
 
-                                     // Veri varsa ilgili blokları render et
                                      return (
                                          <>
-                                             {/* Form Kontrol Listesi */}
                                              {hasFormEntries && (
                                                  <div className="bg-blue-50/50 p-5 rounded-2xl border border-blue-100">
                                                      <div className="text-xs font-black text-blue-800 uppercase border-b border-blue-200/50 pb-2 mb-3">Kontrol Edilen Aksamlar</div>
@@ -1122,7 +1094,6 @@ useEffect(() => {
                                                  </div>
                                              )}
 
-                                             {/* Usta Saha Notu */}
                                              {hasNote && (
                                                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
                                                      <div className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Usta Saha Notu</div>
@@ -1132,7 +1103,6 @@ useEffect(() => {
                                                  </div>
                                              )}
 
-                                             {/* Kullanılan Malzemeler (Stok) */}
                                              {hasMaterials && (
                                                  <div className="bg-amber-50/50 p-5 rounded-2xl border border-amber-100">
                                                      <div className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-3 flex items-center gap-1.5"><Box size={14}/> Sistemden Düşülen Malzemeler</div>
@@ -1152,7 +1122,6 @@ useEffect(() => {
                              </motion.div>
                         )}
 
-                        {/* 🚀 TAB 3: MEDYA VE İMZA */}
                         {activeTab === 'medya' && (
                             <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="space-y-6">
                                 {selectedJob.photos && selectedJob.photos.length > 0 && (
@@ -1184,9 +1153,7 @@ useEffect(() => {
 
                     </div>
 
-                    {/* 🚀 ALT AKSİYON BUTONLARI (Fiyat Onay vb.) */}
                     <div className="p-4 border-t border-slate-100 bg-white shrink-0">
-                        {/* Onay ve Fiyat Bloğu */}
                         {selectedJob.status === 'Onay Bekliyor' && (
                                     <div className="bg-amber-50 border border-amber-200 p-4 sm:p-5 rounded-2xl flex flex-col gap-3 shadow-inner">
                                        <div className="text-amber-800 font-black text-sm flex items-center gap-2"><AlertTriangle size={18}/> Personel İşi Tamamladı. Onayınız Bekleniyor.</div>
@@ -1238,7 +1205,6 @@ useEffect(() => {
 
                         {selectedJob.status !== 'Tamamlandı' && selectedJob.status !== 'İptal' && (
                         <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3 w-full pt-4 mt-2 border-t border-slate-100 flex-wrap">
-                            {/* 🚀 KABUL ET BUTONU */}
                             {(userRole !== 'Patron' && 
                               (selectedJob.status === 'Beklemede' || selectedJob.status === 'Gelecek') && 
                               !hasWorker && 
@@ -1312,7 +1278,6 @@ useEffect(() => {
               ) : (
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6 space-y-5">
                     
-                    {/* 🚀 DÜZELTİLDİ: Usta Bekliyor durumunda VEYA ASSIGN modunda, sadece branş, personel ve not görünür. */}
                     {jobModalType !== 'ASSIGN' && selectedJob?.status !== 'Usta Bekliyor' && !isGeneralTask && (
                         <>
                             <div>
@@ -1400,7 +1365,6 @@ useEffect(() => {
                         </>
                     )}
 
-                    {/* 🚀 EKLENDİ: Görev Tipi / Branş Seçimi */}
                     {editJobDetailForm.workCategory !== 'Genel İş Atama' && (
                                   <div>
                                     <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Görev Tipi / Branş</label>
@@ -1433,22 +1397,17 @@ useEffect(() => {
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3 w-full pt-4 mt-2 border-t border-slate-100">
-                        {/* 🚀 DÜZELTİLDİ: STATÜ GÜNCELLEMESİ BURAYA ENTEGRE EDİLDİ */}
                         <button 
                             disabled={!isEditJobValid || isSaving}
                             onClick={() => {
                                 let nextStatus = selectedJob.status;
                                 const isGeneral = editJobDetailForm.workCategory === 'Genel İş Atama' || editJobDetailForm.workType === 'Genel Görev';
 
-                                // Durum Otomatik Güncelleme Mantığı
                                 if (editJobDetailForm.staffId) {
-                                    // Usta atandıysa durum kesinlikle Devam Ediyor olmalı
                                     nextStatus = 'Devam Ediyor';
                                 } else if ((nextStatus === 'Beklemede' || nextStatus === 'Gelecek') && !editJobDetailForm.staffId) {
-                                    // Usta atanmamışsa ama iş düzenlenip kaydediliyorsa Usta Bekliyor'a geçmeli
                                     nextStatus = isGeneral ? 'Devam Ediyor' : 'Usta Bekliyor';
                                 } else if (nextStatus === 'Devam Ediyor' && !editJobDetailForm.staffId && !isGeneral) {
-                                    // Yanlışlıkla Devam Eden işten usta silindiyse tekrar Usta Bekliyor'a düşür
                                     nextStatus = 'Usta Bekliyor';
                                 }
 
