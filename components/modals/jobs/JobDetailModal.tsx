@@ -510,47 +510,65 @@ useEffect(() => {
                         </div>
                     </div>
 
-                    {/* 🚀 BİRLEŞTİRİLMİŞ FİŞ GÖRÜNÜMÜ (KONTROL LİSTESİ + NOTLAR) */}
+                    {/* 🚀 BİRLEŞTİRİLMİŞ FİŞ GÖRÜNÜMÜ (KUTULU KONTROL LİSTESİ + NOTLAR) */}
                     <div className="mb-8">
-                        <div className="bg-slate-50/50 p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm print-no-bg">
+                        <div className="bg-slate-50/50 rounded-2xl border border-slate-200 shadow-sm print-no-bg overflow-hidden">
                             
                             <div className="flex flex-col">
                                 {(() => {
-                                    if (!previewPdfJob.details) return <div className="text-slate-500 italic">Rapor girilmemiş.</div>;
+                                    if (!previewPdfJob.details) return <div className="p-5 text-slate-500 italic">Rapor girilmemiş.</div>;
                                     
                                     const excludeKeys = ['note', 'price', 'lastEditedBy', 'lastEditedAt', 'managerName', 'managerId', 'createdBy', 'worker_id', 'assetName', 'usedMaterials'];
                                     const formEntries = Object.entries(previewPdfJob.details).filter(([k]) => !excludeKeys.includes(k));
                                     
                                     return (
                                         <>
-                                            {/* Saha Formu İçeriği (Tam Fiş Düzeni) */}
+                                            {/* Saha Formu İçeriği (Mobil Fiş Uygulaması Düzeni) */}
                                             {formEntries.length > 0 && (
-                                                <div className="mb-4">
-                                                    <div className="text-center font-black text-[12px] text-slate-800 uppercase tracking-widest mb-3 pb-3 border-b-2 border-dashed border-slate-300">
-                                                        --- {previewPdfJob.work_type || 'Servis'} SAHA FORMU ---
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        {formEntries.map(([key, value], idx) => (
-                                                            <div key={idx} className="flex justify-between items-center py-2.5 border-b border-dashed border-slate-300 last:border-0">
-                                                                <span className="text-slate-600 text-[13px] font-semibold pr-4 leading-tight">{key}</span>
-                                                                <span className="text-slate-900 text-[13px] font-black text-right uppercase">{String(value)}</span>
+                                                <div className="flex flex-col bg-white">
+                                                    {formEntries.map(([key, value], idx) => {
+                                                        // "Mevcut Etiket" gibi özel satırlar için farklı tasarım kontrolü
+                                                        const isSpecialLabel = key.toLowerCase().includes('etiket');
+                                                        const valStr = String(value).toUpperCase();
+                                                        
+                                                        // Duruma göre "Tik" ikonu veya kare ikon gösterimi
+                                                        const isOk = valStr === 'UYGUN' || valStr === 'EVET' || valStr === 'YAPILDI' || valStr === 'VAR';
+                                                        
+                                                        return (
+                                                            <div key={idx} className="flex justify-between items-center p-4 border-b border-slate-100 last:border-b-0">
+                                                                <div className="flex flex-col gap-1 pr-4">
+                                                                    <span className="text-slate-900 text-[13px] font-bold leading-tight">{key}</span>
+                                                                    {!isSpecialLabel && (
+                                                                        <span className="text-slate-800 text-[13px] font-black uppercase tracking-wider">{valStr}</span>
+                                                                    )}
+                                                                </div>
+                                                                
+                                                                {isSpecialLabel ? (
+                                                                    <span className="text-blue-600 text-[14px] font-black uppercase tracking-widest">{valStr}</span>
+                                                                ) : (
+                                                                    <div className="shrink-0 text-slate-900">
+                                                                        {isOk ? <CheckSquare size={24} strokeWidth={2.5} /> : <div className="w-6 h-6 border-2 border-slate-900 rounded-[4px]"></div>}
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                        ))}
-                                                    </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             )}
                                             
                                             {/* Manuel Usta Notu */}
                                             {previewPdfJob.details.note && (
-                                                <div className="mt-4 pt-4 border-t-2 border-slate-800 text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                                <div className="p-5 border-t border-slate-200 bg-slate-50/50">
                                                     <span className="block text-[11px] font-black text-slate-800 uppercase tracking-widest mb-2">BAKIM / SERVİS NOTU:</span>
-                                                    {previewPdfJob.details.note.replace(/\[📍 Konum Kaydı\].*/g, '')}
+                                                    <div className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                                        {previewPdfJob.details.note.replace(/\[📍 Konum Kaydı\].*/g, '')}
+                                                    </div>
                                                 </div>
                                             )}
                                             
                                             {/* Hiçbiri yoksa */}
                                             {formEntries.length === 0 && !previewPdfJob.details.note && (
-                                                <div className="text-slate-500 italic">Kayıtlı veri bulunamadı.</div>
+                                                <div className="p-5 text-slate-500 italic">Kayıtlı veri bulunamadı.</div>
                                             )}
                                         </>
                                     );
@@ -559,8 +577,8 @@ useEffect(() => {
                             
                             {/* Fiyat Alanı (Varsa) */}
                             {previewPdfJob.details?.price && (
-                                <div className="mt-6 pt-4 border-t-2 border-dashed border-slate-800 text-right">
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Toplam Tutar</span>
+                                <div className="p-5 border-t border-slate-200 bg-slate-100/50 flex justify-between items-center">
+                                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Toplam Tutar</span>
                                     <span className="text-2xl font-black text-slate-900">{previewPdfJob.details.price}</span>
                                 </div>
                             )}
