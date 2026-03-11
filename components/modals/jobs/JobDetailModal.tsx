@@ -458,23 +458,23 @@ useEffect(() => {
                 
                 <div id="pdf-printable-area" className={`p-6 sm:p-10 overflow-y-auto custom-scrollbar bg-white text-black flex-1 relative ${printMode === 'bw' ? 'bw-mode' : ''}`}>
                     
-                    {/* 🚀 PREMIUM LOGO & BAŞLIK (ORTALANMIŞ) */}
-                    <div className="flex flex-col items-center justify-center mb-6 text-center">
+                   {/* 🚀 PREMIUM LOGO & BAŞLIK (ORTALANMIŞ) */}
+                   <div className="flex flex-col items-center justify-center mb-6 text-center">
                         {data?.logo && (
                             <div 
-                                className="w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center mb-4 shadow-sm border border-slate-100 print-logo-container p-2"
-                                style={{ backgroundColor: logoBgColor }}
+                                className={`w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center mb-4 overflow-hidden shadow-sm border-2 ${printMode === 'bw' ? 'border-black bg-white' : 'border-slate-100 print-logo-container p-2'}`}
+                                style={{ backgroundColor: printMode === 'bw' ? '#ffffff' : logoBgColor }}
                             >
                                 <img 
                                     src={getSafeImageUrl(data.logo)} 
                                     alt="Firma Logosu" 
                                     crossOrigin="anonymous"
-                                    className="w-full h-full object-contain print-logo" 
+                                    className={`w-full h-full object-contain print-logo ${printMode === 'bw' ? 'grayscale brightness-0' : ''}`} 
                                 />
                             </div>
                         )}
-                        <h1 className="text-2xl font-black uppercase tracking-widest">{data?.name || 'Firma Adı'}</h1>
-                        <h2 className="text-lg font-bold mt-1 text-slate-800">{previewPdfJob.work_type === 'Periyodik Bakım' ? 'Bakım Fişi' : 'Servis Raporu'}</h2>
+                        <h1 className={`text-2xl font-black uppercase tracking-widest ${printMode === 'bw' ? 'text-black' : ''}`}>{data?.name || 'Firma Adı'}</h1>
+                        <h2 className={`text-lg font-bold mt-1 ${printMode === 'bw' ? 'text-black' : 'text-slate-800'}`}>{previewPdfJob.work_type === 'Periyodik Bakım' ? 'Bakım Fişi' : 'Servis Raporu'}</h2>
                     </div>
 
                     {/* 🚀 ÜST BİLGİLER (KAYIT NO, TARİH, PERSONEL, TESİS) */}
@@ -708,13 +708,17 @@ useEffect(() => {
              {/* 🚀 KUSURSUZ YAZDIRMA CSS'İ - "NUKE" METODU (Framer Motion'u Ezer) */}
              <style dangerouslySetInnerHTML={{__html:`
                @media print {
-                 @page { margin: 10mm; size: A4 portrait; }
+                 /* Mümkün olduğunca tek sayfaya sığdırma ve A4'e yayma ayarları */
+                 @page { margin: 10mm; size: auto; }
                  
                  /* YAZICI VE PDF İÇİN RENK KORUMA KİLİDİ */
                  html, body {
                    -webkit-print-color-adjust: exact !important;
                    print-color-adjust: exact !important;
-                   height: 100vh !important; /* Sayfaya tam oturması için eklendi */
+                   width: 100% !important;
+                   height: auto !important; /* Otomatik yüksekliğe izin ver, sayfa taşmalarını önler */
+                   margin: 0 !important;
+                   padding: 0 !important;
                  }
                  
                  /* 1. BÜTÜN SAYFAYI GİZLE VE RESETLE */
@@ -734,33 +738,32 @@ useEffect(() => {
                     visibility: visible !important;
                  }
                  
-                 /* RENKSİZ (SİYAH BEYAZ) BASKI MODU */
+                 /* RENKSİZ (SİYAH BEYAZ) BASKI MODU DÜZELTMELERİ */
                  .bw-mode, .bw-mode * {
                     color: black !important;
                     border-color: black !important;
                  }
                  
-                 /* 🚀 DÜZELTİLDİ: Siyah/Beyaz modunda arka plan ve renklerin korunması sağlandı. */
                  .bw-mode .print-no-bg, .bw-mode .bg-slate-50, .bw-mode .bg-blue-50 {
                     background-color: transparent !important;
                  }
-                 .bw-mode img:not(.print-logo) { /* Logo hariç görselleri siyah/beyaz yap */
+                 
+                 /* 🚀 Siyah-beyaz modunda resimleri gri tona zorla, logo inline class'tan halledildi */
+                 .bw-mode img:not(.print-logo) { 
                     filter: grayscale(100%) !important;
                  }
 
-                 /* 4. YAZDIRILACAK ALANI KAĞIDIN EN TEPESİNE YAPIŞTIR */
+                 /* 4. YAZDIRILACAK ALANI KAĞIDIN EN TEPESİNE YAPIŞTIR VE TAM SAYFA KULLAN */
                  #pdf-printable-area {
                     position: absolute !important;
                     left: 0 !important;
                     top: 0 !important;
                     width: 100% !important;
-                    min-height: 100% !important; /* PDF'in A4 sayfasına yayılmasını sağlar */
+                    height: auto !important;
                     padding: 0 !important;
                     margin: 0 !important;
                     background-color: white !important;
-                    display: flex !important;
-                    flex-direction: column !important;
-                    justify-content: flex-start !important;
+                    display: block !important; /* Flex iptal edildi, sayfa kırılmaları (page-break) daha iyi çalışsın diye */
                  }
 
                  /* 5. MÜŞTERİ VE CİHAZ KUTULARINI YAN YANA GETİR VE MOBİL KISITLAMALARINI YAZICIDA EZ */
@@ -797,11 +800,10 @@ useEffect(() => {
                     break-inside: avoid !important; 
                  }
                  
-                 /* 🚀 DÜZELTİLDİ: Logo alanının PDF'te arka planının çıkması zorlandı */
                  .print-logo-container {
                     -webkit-print-color-adjust: exact !important;
                     print-color-adjust: exact !important;
-                    border: 1px solid #e2e8f0 !important; /* PDF'te hafif bir çerçeve verildi */
+                    border: none !important; /* Dış çerçeve kaldırıldı, referans tasarımdaki gibi temiz dursun */
                  }
                  
                  .print-logo {
@@ -813,12 +815,24 @@ useEffect(() => {
                     max-height: 80px !important;
                     width: auto !important;
                     object-fit: contain !important;
+                    page-break-inside: avoid !important;
                  }
+                 
+                 /* 8. TEK SAYFAYA SIĞDIRMA / SAYFA KIRILMALARINI ENGELLEME (ÖNEMLİ!) */
+                 .mb-8, .mb-6 { /* Fiş içerisindeki büyük boşlukları baskıda daraltıyoruz */
+                    margin-bottom: 3mm !important;
+                 }
+                 .p-5, .p-6, .sm\\:p-10 { /* Padding'leri baskı için idealize ettik */
+                    padding: 3mm !important;
+                 }
+                 
                  .print-always-break {
                     break-before: page !important;
                     page-break-before: always !important;
                  }
-                 .page-break-avoid {
+                 
+                 /* Kutulu içeriklerin ortadan yarılmasını engelle */
+                 .page-break-avoid, .bg-slate-50\\/50, .border-b {
                     break-inside: avoid !important;
                     page-break-inside: avoid !important;
                  }
