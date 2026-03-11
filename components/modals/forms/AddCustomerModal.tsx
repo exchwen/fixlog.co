@@ -76,8 +76,9 @@ return (
       className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isPushedBack ? 'z-[90]' : 'z-[110]'}`}
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
-      exit={{ opacity: 0, pointerEvents: "none" }}
+      exit={{ opacity: 0 }} // 🚀 DOM'dan hızlıca kopması için temizlendi
       transition={{ duration: 0.15 }}
+      style={{ pointerEvents: showAddCustomer ? 'auto' : 'none' }} // 🚀 State false olduğu an tıklama kilidini anında açar
     >
       <div 
          className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isPushedBack ? 'opacity-0' : 'opacity-100'} cursor-pointer`} 
@@ -94,9 +95,9 @@ return (
             filter: isPushedBack ? 'brightness(0.5)' : 'brightness(1)' 
         }} 
         exit={{ opacity: 0, scale: 0.95, y: 10 }} 
-        transition={{ duration: 0.25, ease: "easeInOut" }}
+        transition={{ duration: 0.20, ease: "easeInOut" }} // 🚀 0.25'ten 0.20'ye düşürülerek hızlandırıldı
         onClick={(e) => e.stopPropagation()}
-        style={{ pointerEvents: isPushedBack ? 'none' : 'auto' }}
+        style={{ pointerEvents: (isPushedBack || !showAddCustomer) ? 'none' : 'auto' }} // 🚀 Hayalet katmanı (1-2 sn tıklayamama) tamamen engeller
             className="bg-white w-full max-w-md rounded-2xl p-0 shadow-2xl relative z-10 overflow-hidden border border-slate-200 cursor-default flex flex-col max-h-[90vh]"
           >
             {/* HEADER */}
@@ -114,7 +115,8 @@ return (
             </div>
 
             {/* BODY */}
-            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
+            {/* 🚀 overscroll-contain eklenerek arkadaki sayfanın kayması (Scroll Chaining) kilitlenmesi engellendi */}
+            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto overscroll-contain custom-scrollbar flex-1">
                 
                 {/* Müşteri / Firma Adı */}
                 <div>

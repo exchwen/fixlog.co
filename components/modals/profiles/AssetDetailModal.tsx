@@ -234,24 +234,22 @@ export default function AssetDetailModal({
     <AnimatePresence>
       {selectedAsset && (
         <motion.div 
-          key="modal-backdrop-detail"
-          // 🚀 Katman arkaya gittiğinde z-index 10'a düşer ki yeni açılan modal sorunsuz üstte kalsın
-          className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[10]' : 'z-[130]'}`}
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }} 
-          // 🚀 ÇÖZÜM: Kapanma animasyonu tetiklendiği an "pointer-events: none" uygulayarak ekrana tıklanmayı bloklamasını önlüyoruz.
-          exit={{ opacity: 0, pointerEvents: 'none' }} 
-          transition={{ duration: 0.15 }}
-        >
+        key="modal-backdrop-detail"
+        className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[10]' : 'z-[130]'}`}
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        exit={{ opacity: 0 }} 
+        transition={{ duration: 0.15 }}
+        style={{ pointerEvents: selectedAsset ? 'auto' : 'none' }} // 🚀 State null olduğu an tıklama kilidi anında kalkar
+      >
           {/* Arkaya itildiğinde transparan olan tıklanabilir arka plan */}
           <div 
              className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isStacked ? 'opacity-0' : 'opacity-100'} cursor-pointer`} 
              onClick={() => !isStacked && handleClose()}
           ></div>
 
-          <motion.div 
+        <motion.div 
             key="modal-content-detail"
-            // 🚀 Arkaya gitme (scale ve brightness) animasyonu eklendi
             initial={{ opacity: 0, scale: 0.95, y: 10 }} 
             animate={{ 
                 opacity: 1, 
@@ -260,8 +258,8 @@ export default function AssetDetailModal({
                 filter: isStacked ? 'brightness(0.5)' : 'brightness(1)' 
             }} 
             exit={{ opacity: 0, scale: 0.95, y: 10 }} 
-            transition={{ duration: 0.25, ease: "easeInOut" }}
-            style={{ pointerEvents: isStacked ? 'none' : 'auto' }}
+            transition={{ duration: 0.20, ease: "easeInOut" }} // 🚀 Çıkış hızlandırıldı
+            style={{ pointerEvents: (isStacked || !selectedAsset) ? 'none' : 'auto' }} // 🚀 Kapanış anında hayalet tıklamayı bloklar
             onClick={(e) => e.stopPropagation()}
             className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative z-10 flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 cursor-default"
           >
