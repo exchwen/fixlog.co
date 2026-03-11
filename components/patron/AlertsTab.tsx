@@ -38,6 +38,7 @@ interface AlertsTabProps {
     allEmergencies?: Emergency[];
     allFaults?: Fault[];
     pendingMaterialRequests?: any[];
+    allMaterialRequests?: any[];
     [key: string]: any;
   } | null;
   handleAction: (endpoint: string, body: any, closeFn: any, resetFn: any) => Promise<boolean>;
@@ -61,7 +62,10 @@ export default function AlertsTab({ data, handleAction }: AlertsTabProps) {
 
   const emergencies = data?.allEmergencies || [];
   const faults = data?.allFaults || [];
-  const materialRequests = data?.pendingMaterialRequests || [];
+  
+  // Tümü varsa onu kullan, yoksa eskisi gibi bekleyenleri.
+  const materialRequests = data?.allMaterialRequests || data?.pendingMaterialRequests || [];
+  const pendingMaterialsCount = materialRequests.filter((m: any) => m.status === 'Bekliyor').length;
 
   const formatPhoneForWA = (phone: string) => {
     if (!phone) return '';
@@ -149,7 +153,7 @@ export default function AlertsTab({ data, handleAction }: AlertsTabProps) {
             onClick={() => setActiveSubTab('materials')}
             className={`flex-1 lg:flex-none px-4 py-2.5 rounded-lg text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap ${activeSubTab === 'materials' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
           >
-            <Package size={16} className="shrink-0" /> Malzeme İstekleri {materialRequests.length > 0 && <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[10px]">{materialRequests.length}</span>}
+            <Package size={16} className="shrink-0" /> Malzeme İstekleri {pendingMaterialsCount > 0 && <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[10px]">{pendingMaterialsCount}</span>}
           </button>
         </div>
       </div>
@@ -321,42 +325,52 @@ export default function AlertsTab({ data, handleAction }: AlertsTabProps) {
                 </div>
               ) : (
                 materialRequests.map((req: any, idx: number) => {
-                  let items = [];
-                  try { items = typeof req.items === 'string' ? JSON.parse(req.items) : req.items; } catch(e) { items = []; }
+                  let items = req.parsed_items || [];
+                  if (items.length === 0) {
+                      try { items = typeof req.items === 'string' ? JSON.parse(req.items) : req.items; } catch(e) { items = []; }
+                  }
+                  
+                  const isPending = req.status === 'Bekliyor';
+
                   return (
                     <div 
                       key={req.id || idx} 
-                      className="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm flex flex-col sm:flex-row gap-5 items-start justify-between cursor-pointer hover:shadow-md transition-all hover:border-blue-300"
+                      className={`p-5 rounded-2xl border flex flex-col lg:flex-row gap-5 items-start justify-between transition-all ${isPending ? 'bg-white border-blue-200 shadow-sm cursor-pointer hover:shadow-md hover:border-blue-300' : 'bg-slate-50 border-slate-200 opacity-80'}`}
                       onClick={() => {
-                          triggerConfirm('Talebi Kapat', 'Bu malzemelerin ustaya teslim edildiğini onaylıyor musunuz?', () => {
-                              handleAction('resolve-material', { id: req.id }, null, null);
-                          });
+                          if (isPending) {
+                              triggerConfirm('Talebi Kapat', 'Bu malzemelerin ustaya teslim edildiğini onaylıyor musunuz?', () => {
+                                  handleAction('resolve-material', { id: req.id }, null, null);
+                              });
+                          }
                       }}
                     >
                         <div className="flex gap-4 items-start w-full">
-                           <div className="p-3 bg-blue-50 text-blue-600 rounded-full shrink-0"><Package size={24} /></div>
+                           <div className={`p-3 rounded-full shrink-0 ${isPending ? 'bg-blue-50 text-blue-600' : 'bg-slate-200 text-slate-500'}`}><Package size={24} /></div>
                            <div className="w-full">
                                <div className="flex items-center gap-2 mb-1">
-                                   <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">Bekleyen Talep</span>
+                                   <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${isPending ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                       {isPending ? 'Bekleyen Talep' : 'Verildi / Tamamlandı'}
+                                   </span>
                                    <span className="text-[10px] text-slate-400 font-bold">{new Date(req.created_at).toLocaleString('tr-TR')}</span>
                                </div>
-                               <h3 className="font-black text-slate-800 text-lg">{req.staff_name || 'Personel'}</h3>
-                               {req.note && <div className="text-sm font-medium text-slate-600 mt-1 italic">"{req.note}"</div>}
-                               <div className="mt-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                               <h3 className={`font-black text-lg ${isPending ? 'text-slate-800' : 'text-slate-600'}`}>{req.staff_name || 'Personel'}</h3>
+                               {req.note && <div className="text-sm font-medium text-slate-500 mt-1 italic">"{req.note}"</div>}
+                               
+                               <div className={`mt-3 border rounded-xl p-3 ${isPending ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-100'}`}>
                                    <div className="text-[10px] font-black text-slate-400 uppercase mb-2">İstenen Malzemeler</div>
                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                        {items.map((it: any, i: number) => (
                                            <div key={i} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
-                                               <span className="text-xs font-bold text-slate-700 truncate">{it.name}</span>
-                                               <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-1 rounded">{it.qty} {it.unit}</span>
+                                               <span className={`text-xs font-bold truncate ${isPending ? 'text-slate-700' : 'text-slate-500'}`}>{it.name}</span>
+                                               <span className={`text-xs font-black px-2 py-1 rounded ${isPending ? 'text-blue-600 bg-blue-50' : 'text-slate-500 bg-slate-100'}`}>{it.qty} {it.unit}</span>
                                            </div>
                                        ))}
                                    </div>
                                </div>
                            </div>
                         </div>
-                        <div className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 shrink-0 pointer-events-none">
-                            <CheckCircle2 size={18} /> Verildi / Kapat
+                        <div className={`w-full lg:w-auto font-bold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2 shrink-0 pointer-events-none ${isPending ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-200 text-slate-500'}`}>
+                            <CheckCircle2 size={18} /> {isPending ? 'Verildi / Kapat' : 'Onaylandı'}
                         </div>
                     </div>
                   );
