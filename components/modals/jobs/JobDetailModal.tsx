@@ -552,29 +552,29 @@ useEffect(() => {
                     </div>
 
                     {/* 🚀 ÜST BİLGİLER (KAYIT NO, TARİH, PERSONEL, TESİS) */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm font-medium border-y-2 border-slate-900 py-4 mb-6 print-header-boxes">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm font-medium border-y-4 border-slate-900 py-5 mb-8 bg-slate-50/50 px-2 sm:px-4 rounded-xl print:bg-transparent print:px-0 print:rounded-none">
                         <div className="flex flex-col">
-                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-0.5">Fiş Numarası</div>
-                            <div className="font-black text-slate-900">#{previewPdfJob.id}</div>
+                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Fiş Numarası</div>
+                            <div className="font-black text-slate-900 text-base">#{previewPdfJob.id}</div>
                         </div>
                         <div className="flex flex-col">
-                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-0.5">Tarih</div>
-                            <div className="font-black text-slate-900">{new Date(previewPdfJob.created_at || Date.now()).toLocaleString('tr-TR')}</div>
+                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Tarih</div>
+                            <div className="font-black text-slate-900 text-base">{new Date(previewPdfJob.created_at || Date.now()).toLocaleString('tr-TR')}</div>
                         </div>
                         <div className="flex flex-col">
-                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-0.5">İlgili Personel</div>
-                            <div className="font-black text-slate-900 truncate">{previewPdfJob.worker_name || 'Belirtilmedi'}</div>
+                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">İlgili Personel</div>
+                            <div className="font-black text-slate-900 text-base truncate">{previewPdfJob.worker_name || 'Belirtilmedi'}</div>
                         </div>
                         <div className="flex flex-col">
-                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-0.5">Tesis Adı / Adres</div>
-                            <div className="font-black text-slate-900 leading-tight">
+                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Tesis Adı / Adres</div>
+                            <div className="font-black text-slate-900 leading-tight text-base">
                                 {(() => {
                                     const asset = (data?.assets || []).find((a:any) => a.id === previewPdfJob.asset_id);
                                     if (asset) {
                                         return (
                                             <>
                                                 <div>{asset.apartmentName || asset.name}</div>
-                                                {asset.location && <div className="text-[11px] font-semibold text-slate-500 mt-0.5 whitespace-normal">{asset.location}</div>}
+                                                {asset.location && <div className="text-[11px] font-semibold text-slate-500 mt-1 whitespace-normal">{asset.location}</div>}
                                             </>
                                         );
                                     }
@@ -672,27 +672,27 @@ useEffect(() => {
                                                         }
 
                                                         return (
-                                                            <div key={idx} className={`flex justify-between items-center py-2.5 px-4 border-b border-slate-200/60 last:border-b-0 ${idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}`}>
+                                                            <div key={idx} className={`flex justify-between items-center py-3.5 px-5 border-b border-slate-200/80 last:border-b-0 ${idx % 2 === 0 ? 'bg-slate-50/80' : 'bg-white'}`}>
                                                                 <div className="flex flex-col pr-4">
-                                                                    <span className={`text-[13px] font-bold leading-tight ${printMode === 'bw' ? 'text-black' : 'text-slate-900'}`}>{item.key}</span>
+                                                                    <span className={`text-[14px] font-bold leading-tight ${printMode === 'bw' ? 'text-black' : 'text-slate-900'}`}>{item.key}</span>
                                                                 </div>
                                                                 
                                                                 <div className="shrink-0 flex items-center gap-3">
                                                                     {isBooleanType && (
-                                                                        <span className={`text-[10px] font-black uppercase tracking-widest ${colorClass}`}>{item.val}</span>
+                                                                        <span className={`text-[12px] font-black uppercase tracking-widest ${colorClass}`}>{item.val}</span>
                                                                     )}
                                                                     {isBooleanType ? (
                                                                         isPositive ? (
-                                                                            <div className={`w-5 h-5 flex items-center justify-center rounded shadow-sm print-color-exact ${bgColorClass}`}>
-                                                                                <CheckSquare size={14} className="text-white" strokeWidth={3} />
+                                                                            <div className={`w-6 h-6 flex items-center justify-center rounded shadow-sm print-color-exact ${bgColorClass}`}>
+                                                                                <CheckSquare size={16} className="text-white" strokeWidth={3} />
                                                                             </div>
                                                                         ) : (
-                                                                            <div className={`w-5 h-5 flex items-center justify-center rounded shadow-sm print-color-exact ${bgColorClass}`}>
-                                                                                <X size={14} className="text-white" strokeWidth={4} />
+                                                                            <div className={`w-6 h-6 flex items-center justify-center rounded shadow-sm print-color-exact ${bgColorClass}`}>
+                                                                                <X size={16} className="text-white" strokeWidth={4} />
                                                                             </div>
                                                                         )
                                                                     ) : (
-                                                                        <span className={`text-[12px] font-black uppercase ${colorClass} ${colorClass === 'text-slate-900' || colorClass === 'text-black' ? `border-b-2 ${borderColorClass}` : ''}`}>{item.val}</span>
+                                                                        <span className={`text-[13px] font-black uppercase ${colorClass} ${colorClass === 'text-slate-900' || colorClass === 'text-black' ? `border-b-2 ${borderColorClass}` : ''}`}>{item.val}</span>
                                                                     )}
                                                                 </div>
                                                             </div>
@@ -806,63 +806,61 @@ useEffect(() => {
              {/* 🚀 KUSURSUZ YAZDIRMA CSS'İ - "NUKE" METODU (Framer Motion'u Ezer) */}
              <style dangerouslySetInnerHTML={{__html:`
                @media print {
-                 @page { margin: 5mm; size: A4 portrait; }
+                 @page { margin: 10mm; size: A4 portrait; }
                  
                  /* YAZICI VE PDF İÇİN RENK KORUMA KİLİDİ */
                  html, body {
                    -webkit-print-color-adjust: exact !important;
                    print-color-adjust: exact !important;
                    background-color: white !important;
-                   /* 🚀 BOŞ SAYFA (BLANK PAGE) OLUŞUMUNU ENGELLEME HACK'İ */
                    height: auto !important;
                    min-height: 0 !important;
-                   overflow: visible !important;
-                   padding: 0 !important;
                    margin: 0 !important;
+                   padding: 0 !important;
                  }
 
-                 /* Modal dışındaki her şeyin yüksekliğini sıfırla ki 2. ve 3. sayfalara taşmasın */
-                 body > * {
-                    height: 0 !important;
-                    min-height: 0 !important;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    overflow: visible !important;
-                 }
-                 
-                 /* 1. BÜTÜN SAYFAYI GİZLE VE RESETLE */
+                 /* 1. GİZLEME VE BOŞ SAYFA ENGELLEME */
                  body * { visibility: hidden !important; }
                  
-                 /* 2. FRAMER MOTION VE TAILWIND ENGELİNİ KALDIR (ÇOK ÖNEMLİ) */
-                 * { 
-                    position: static !important; 
-                    transform: none !important; 
-                    overflow: visible !important; 
-                    max-height: none !important; 
-                    box-shadow: none !important; 
-                 }
-
-                 /* 3. SADECE YAZDIRILACAK ALANI GÖSTER */
                  #pdf-printable-area, #pdf-printable-area * {
-                    visibility: visible !important;
-                 }
-                 
-                 /* RENKSİZ (SİYAH BEYAZ) BASKI MODU DÜZELTMELERİ */
-                 .bw-mode, .bw-mode * {
-                    color: black !important;
-                    border-color: black !important;
-                 }
-                 
-                 .bw-mode .print-no-bg, .bw-mode .bg-slate-50, .bw-mode .bg-blue-50 {
-                    background-color: transparent !important;
-                 }
-                 
-                 /* 🚀 Siyah-beyaz modunda logoyu zorla grilendir */
-                 .bw-mode img:not(.print-logo) { 
-                    filter: grayscale(100%) brightness(0) !important;
+                   visibility: visible !important;
                  }
 
-                 /* 🚀 YENİ: Renkli Modda Background Renklerinin Yazıcıda Kesin Çıkması İçin Tailwind Sınıflarını Zorla */
+                 /* Modal dışındaki her şeyin yüksekliğini sıfırla ki sayfa uzamasın */
+                 * {
+                    position: static !important;
+                    overflow: visible !important;
+                    box-shadow: none !important;
+                 }
+
+                 .no-print, .no-print * { 
+                    display: none !important; 
+                    height: 0 !important;
+                    width: 0 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                 }
+                 
+                 /* 2. PRINT ALANINI SAYFAYA TAM OTURT (Çok küçük olma sorununun çözümü) */
+                 #pdf-printable-area {
+                    position: absolute !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100vw !important; /* A4 genişliğine tam oturur */
+                    max-width: 100vw !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    background-color: white !important;
+                    display: block !important;
+                    zoom: 1 !important; /* Küçülmeyi iptal ettik */
+                    box-sizing: border-box !important;
+                 }
+
+                 /* 3. RENKLERİ VE TASARIMI YAZICIYA ZORLA YANSIT */
+                 .bw-mode, .bw-mode * { color: black !important; border-color: black !important; }
+                 .bw-mode .print-no-bg, .bw-mode .bg-slate-50, .bw-mode .bg-blue-50 { background-color: transparent !important; }
+                 .bw-mode img:not(.print-logo) { filter: grayscale(100%) brightness(0) !important; }
+
                  .bg-emerald-500 { background-color: #10b981 !important; }
                  .bg-rose-500 { background-color: #f43f5e !important; }
                  .text-emerald-600 { color: #059669 !important; }
@@ -871,93 +869,27 @@ useEffect(() => {
                  .border-rose-500 { border-color: #f43f5e !important; }
                  .bg-black { background-color: #000000 !important; }
                  .border-black { border-color: #000000 !important; }
-
-                 /* 4. YAZDIRILACAK ALANI KAĞIDIN EN TEPESİNE YAPIŞTIR */
-                 #pdf-printable-area {
-                    position: absolute !important;
-                    left: 0 !important;
-                    top: 0 !important;
-                    width: 100% !important;
-                    padding: 0 !important;
-                    margin: 0 !important;
-                    background-color: white !important;
-                    display: block !important;
-                    /* 🚀 TEK SAYFAYA SIĞDIRMAK İÇİN ÖLÇEKLENDİRME */
-                    zoom: 0.85 !important;
-                 }
-
-                 /* 5. MÜŞTERİ VE CİHAZ KUTULARINI YAN YANA GETİR VE MOBİL KISITLAMALARINI YAZICIDA EZ */
-                 .print-header { 
-                    flex-direction: row !important; 
-                    justify-content: space-between !important; 
-                    align-items: flex-start !important;
-                 }
-                 .print-header-right { 
-                    text-align: right !important; 
-                 }
-                 .print-grid {
-                    display: flex !important;
-                    flex-direction: row !important;
-                    flex-wrap: nowrap !important;
-                    gap: 10px !important;
-                 }
-                 .print-grid > div {
-                    flex: 1 !important;
-                    border: 1px solid #e2e8f0 !important;
-                    background: transparent !important;
-                 }
-
-                 /* 6. GEREKSİZLERİ YOK ET */
-                 .no-print, .no-print * { 
-                    display: none !important; 
-                    height: 0 !important;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                 }
+                 .bg-slate-50 { background-color: #f8fafc !important; }
+                 .bg-slate-50\\/80 { background-color: #f8fafc !important; }
+                 .bg-white { background-color: #ffffff !important; }
                  
-                 /* 7. FOTOĞRAFLARI KESİLMEDEN YAZDIR VE LOGO/İMZA BOYUTLARINI KORU */
-                 .print-grid img { 
-                    max-width: 100% !important; 
-                    height: auto !important; 
-                 }
+                 /* 4. İMAJ VE LOGO BOYUTLARI */
+                 .print-grid img { max-width: 100% !important; height: auto !important; }
+                 .print-logo-container { border: none !important; }
+                 .print-logo { max-height: 80px !important; width: auto !important; object-fit: contain !important; }
+                 .print-signature { max-height: 60px !important; width: auto !important; object-fit: contain !important; }
                  
-                 .print-logo-container {
-                    -webkit-print-color-adjust: exact !important;
-                    print-color-adjust: exact !important;
-                    border: none !important; 
-                 }
+                 /* 5. PADDING VE MARGIN AYARLARI */
+                 .mb-8 { margin-bottom: 6mm !important; }
+                 .mb-6 { margin-bottom: 4mm !important; }
+                 .mt-8 { margin-top: 6mm !important; }
+                 .pt-6 { padding-top: 4mm !important; }
+                 .py-3\\.5 { padding-top: 3mm !important; padding-bottom: 3mm !important; }
+                 .py-5 { padding-top: 4mm !important; padding-bottom: 4mm !important; }
+                 .px-5 { padding-left: 4mm !important; padding-right: 4mm !important; }
                  
-                 /* 🚀 Logoyu ve İmzayı Dikeyde Azıcık Tıraşladık */
-                 .print-logo {
-                    max-height: 60px !important;
-                    width: auto !important;
-                    object-fit: contain !important;
-                 }
-                 .print-signature {
-                    max-height: 50px !important;
-                    width: auto !important;
-                    object-fit: contain !important;
-                 }
-                 
-                 /* 8. ALAN TASARRUFU VE SAYFA YIRTILMALARINI (PAGE BREAK) ENGELLE */
-                 .mb-8 { margin-bottom: 2mm !important; }
-                 .mb-6 { margin-bottom: 2mm !important; }
-                 .mt-8 { margin-top: 2mm !important; }
-                 .pt-6 { padding-top: 2mm !important; }
-                 
-                 /* 🚀 EN BÜYÜK KURTARICI: Checklist satır aralıklarını (p-4) tıraşladık ve Zebra deseni koruduk */
-                 .p-4 { padding: 1mm 2mm !important; } 
-                 .p-6, .sm\\:p-10 { padding: 3mm !important; }
-                 .py-2\\.5 { padding-top: 1mm !important; padding-bottom: 1mm !important; }
-                 
-                 .print-always-break {
-                    break-before: page !important;
-                    page-break-before: always !important;
-                 }
-                 .page-break-avoid {
-                    break-inside: avoid !important;
-                    page-break-inside: avoid !important;
-                 }
+                 .print-always-break { break-before: page !important; page-break-before: always !important; }
+                 .page-break-avoid { break-inside: avoid !important; page-break-inside: avoid !important; }
                }
              `}} />
           </motion.div>
