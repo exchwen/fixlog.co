@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, UploadCloud, Loader2, CheckCircle2, FileSpreadsheet, Bot, ArrowRight, AlertCircle } from 'lucide-react';
+import { X, UploadCloud, Loader2, CheckCircle2, FileSpreadsheet, Bot, ArrowRight, AlertCircle, Download } from 'lucide-react'; // 🚀 Download eklendi
 import * as XLSX from 'xlsx'; // 🚀 Müşterinin tarayıcısını sunucu gibi kullanacağız
 
 export default function SmartExcelModal({
@@ -30,16 +30,44 @@ export default function SmartExcelModal({
   };
 
   const targetFields = [
-      { id: 'customerName', label: 'Müşteri / Yönetici Adı' },
-      { id: 'customerPhone', label: 'İletişim / Telefon' },
-      { id: 'apartmentName', label: 'Apartman / Tesis Adı (ÖNEMLİ)' },
-      { id: 'customerAddress', label: 'Açık Adres / Konum' },
-      { id: 'assetType', label: 'Cihaz / Asansör Türü' },
-      { id: 'assetLocation', label: 'Kuyu / Kat Konumu' },
-      { id: 'assetDetails', label: 'Ekstra Notlar / Detaylar' }
-  ];
+    { id: 'customerName', label: 'Müşteri / Yönetici Adı' },
+    { id: 'customerPhone', label: 'İletişim / Telefon' },
+    { id: 'apartmentName', label: 'Apartman / Tesis Adı (ÖNEMLİ)' },
+    { id: 'customerAddress', label: 'Açık Adres / Konum' },
+    { id: 'assetType', label: 'Cihaz / Asansör Türü' },
+    { id: 'assetLocation', label: 'Kuyu / Kat Konumu' },
+    { id: 'assetDetails', label: 'Ekstra Notlar / Detaylar' }
+];
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+// 🚀 İBNELİK 4: Sunucuya bulaşmadan, adamın kendi RAM'inde Excel yaratıp indirtme
+const handleDownloadTemplate = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const templateHeaders = targetFields.map(f => f.label);
+    
+    // Sektör verine uygun örnek satır (Adamlar nasıl dolduracağını anlasın)
+    const exampleRow = [
+        "Akdeniz Apartmanı Yönetimi",
+        "0555 123 45 67",
+        "Akdeniz Apartmanı A Blok",
+        "Atatürk Mah. Cumhuriyet Cad. No:1 Kadıköy/İstanbul",
+        "Makine Daireli (MR) Yolcu Asansörü", // sector.json'dan çekildi
+        "A Blok Sağ Kuyu",
+        "Kapasite: 800kg, Etiket: Yeşil"
+    ];
+
+    const worksheet = XLSX.utils.aoa_to_sheet([templateHeaders, exampleRow]);
+    worksheet['!cols'] = templateHeaders.map(() => ({ wch: 28 })); // Sütunları geniş yap ki şık dursun
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sablon");
+
+    // Anında indir
+    XLSX.writeFile(workbook, "IsDokumu_Musteri_ve_Varlik_Sablonu.xlsx");
+};
+
+const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const uploadedFile = e.target.files?.[0];
       if (!uploadedFile) return;
       setFile(uploadedFile);
@@ -190,6 +218,17 @@ export default function SmartExcelModal({
                                 </div>
                             </div>
                         </label>
+
+                        {/* 🚀 EKLENDİ: Şablon İndirme Alanı */}
+                        <div className="mt-6 flex flex-col items-center gap-2">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">veya boş format kullanın</span>
+                            <button 
+                                onClick={handleDownloadTemplate}
+                                className="flex items-center gap-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-5 py-2.5 rounded-xl transition-all active:scale-95 border border-blue-200 shadow-sm"
+                            >
+                                <Download size={16} /> Örnek Şablonu İndir
+                            </button>
+                        </div>
                     </div>
                 )}
 
