@@ -1,3 +1,4 @@
+// dashboardmodal.tsx
 'use client';
 
 import React from 'react';
@@ -5,7 +6,7 @@ import React from 'react';
 // 1. İş ve Görev Modalları
 import JobDetailModal from './jobs/JobDetailModal';
 import AddJobModal from './jobs/AddJobModal';
-import ThermalPrintModal from './jobs/ThermalPrintModal'; // 🚀 YENİ EKLENDİ
+import ThermalPrintModal from './jobs/ThermalPrintModal'; 
 
 // 2. Profil ve Detay Modalları
 import CustomerDetailModal from './profiles/CustomerDetailModal';
@@ -19,6 +20,7 @@ import AddAssetModal from './forms/AddAssetModal';
 
 // 4. Stok, Tedarikçi, Ayarlar ve SİPARİŞLER
 import StockModal from './inventory/StockModal';
+import StockEntryModal from './inventory/StockEntryModal'; // 🚀 YENİ EKLENDİ
 import SupplierModals from './inventory/SupplierModals';
 import CategoryModal from './inventory/CategoryModal';
 import OrderModals from './inventory/OrderModals';
@@ -30,7 +32,6 @@ export default function DashboardModals(props: any) {
       <JobDetailModal {...props} />
       <AddJobModal {...props} />
       
-      {/* 🚀 YENİ TERMAL YAZICI MODALI */}
       <ThermalPrintModal 
         isOpen={props.showThermalPrintModal} 
         onClose={() => props.setShowThermalPrintModal(false)} 
@@ -52,6 +53,7 @@ export default function DashboardModals(props: any) {
 
       {/* STOK, TEDARİKÇİ, KATEGORİ VE SİPARİŞ MODALLARI */}
       <StockModal {...props} />
+      <StockEntryModal {...props} /> {/* 🚀 YENİ EKLENDİ */}
       <SupplierModals {...props} />
       <CategoryModal {...props} />
       <OrderModals {...props} />

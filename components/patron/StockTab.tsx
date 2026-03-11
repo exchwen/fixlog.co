@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Loader2, AlertTriangle, Package, Phone, Tag, Truck, Tags, ShoppingCart, Send, ArrowRight, CheckCircle2, ExternalLink, ArrowLeft, Filter, AlertCircle, Info } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Loader2, AlertTriangle, Package, Phone, Tag, Truck, Tags, ShoppingCart, Send, ArrowRight, CheckCircle2, ExternalLink, ArrowLeft, AlertCircle, Info, Archive } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function StockTab({ data, handleAction, setShowStockModal, setShowSupplierModal, setShowSupplierListModal, setShowCategoryModal }: any) {
+export default function StockTab({ data, handleAction, setShowStockModal, setShowSupplierModal, setShowSupplierListModal, setShowCategoryModal, setShowStockEntryModal }: any) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [stockCategory, setStockCategory] = useState('Tümü'); // Kategori Filtresi için Local State
   
   // Satır içi düzenleme state'i
   const [editingStock, setEditingStock] = useState<any>(null);
@@ -29,26 +28,19 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
   const categories = data?.categories || [];
   const companyName = data?.name || 'Firmamız'; 
 
-  // Kategorileri çıkar (Dropdown için)
-  const uniqueCategories = Array.from(new Set(rawStock.map((s: any) => s.category).filter(Boolean)));
-
   // Kritik Stokları (Miktarı 5 ve altı olanları) bul (Tüm stoklar üzerinden hesaplanır)
   const criticalStocks = useMemo(() => {
     return rawStock.filter((item: any) => Number(item.quantity) <= 5);
   }, [rawStock]);
 
-  // Arama ve Kategori Filtresini Uygula
+  // Sadece Arama Filtresini Uygula (Kategori filtresi kaldırıldı)
   const filteredStock = rawStock.filter((item: any) => {
     const supplier = suppliers.find((s:any) => s.id === item.supplier_id);
     const supplierName = supplier ? supplier.name : (item.supplier_name || '');
     
-    const matchesSearch = item.item_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          supplierName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          item.category?.toLowerCase().includes(searchTerm.toLowerCase());
-                          
-    const matchesCategory = stockCategory === 'Tümü' || item.category === stockCategory;
-
-    return matchesSearch && matchesCategory;
+    return item.item_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           supplierName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           item.category?.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   // Kritik stoğu olan tedarikçileri grupla
@@ -333,53 +325,42 @@ const openWhatsappForSupplier = (supplier: any) => {
          )}
        </AnimatePresence>
 
-       {/* 2. ANA LİSTE BAŞLIĞI, ARAMA VE KATEGORİ FİLTRESİ KUTUSU */}
-       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
-         <div className="w-full sm:w-auto">
+       {/* 2. ANA LİSTE BAŞLIĞI, ARAMA VE BUTON KUTUSU */}
+       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
+         <div className="w-full xl:w-auto">
            <h3 className="text-lg font-black text-slate-900 tracking-tight">Tüm Envanter & Parçalar</h3>
-           <p className="text-xs text-slate-500 font-medium mt-0.5 hidden sm:block">Stoktaki tüm malzemelerinizi yönetin ve filtreleyin.</p>
+           <p className="text-xs text-slate-500 font-medium mt-0.5 hidden sm:block">Stoktaki tüm malzemelerinizi yönetin ve yeni stok girişi yapın.</p>
          </div>
-         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+         <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5 w-full xl:w-auto">
            
-           <div className="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto">
-             {/* Arama Kutusu */}
-             <div className="relative flex-1 min-w-[180px]">
-               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-               <input 
-                 type="text" 
-                 placeholder="Parça veya Tedarikçi Ara..." 
-                 className="w-full pl-9 pr-4 py-2.5 sm:py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-slate-50 hover:bg-white transition-all placeholder:text-slate-400"
-                 value={searchTerm}
-                 onChange={e => setSearchTerm(e.target.value)}
-               />
-             </div>
-             
-             {/* YENİ: Kategori Filtresi (Buraya Taşındı) */}
-             <div className="relative flex-1 sm:w-auto sm:min-w-[150px]">
-               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-               <select 
-                  value={stockCategory} 
-                  onChange={(e) => setStockCategory(e.target.value)}
-                  className="w-full pl-8 pr-8 py-2.5 sm:py-2 bg-slate-50 border border-slate-200 text-sm font-bold text-slate-700 rounded-xl outline-none cursor-pointer hover:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none"
-                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center' }}
-               >
-                  <option value="Tümü">Tüm Kategoriler</option>
-                  {uniqueCategories.map((cat: any) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-               </select>
-             </div>
+           {/* Arama Kutusu */}
+           <div className="relative flex-1 min-w-[200px]">
+             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+             <input 
+               type="text" 
+               placeholder="Parça, Kategori veya Tedarikçi Ara..." 
+               className="w-full pl-9 pr-4 py-2.5 sm:py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-slate-50 hover:bg-white transition-all placeholder:text-slate-400"
+               value={searchTerm}
+               onChange={e => setSearchTerm(e.target.value)}
+             />
            </div>
            
+           {/* Aksiyon Butonları */}
            <div className="grid grid-cols-2 sm:flex sm:flex-nowrap gap-2">
-             <button onClick={() => setShowCategoryModal(true)} className="bg-slate-100 text-slate-700 px-3 sm:px-4 py-2.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm hover:bg-slate-200 whitespace-nowrap transition-all active:scale-95 border border-slate-200">
+             <button onClick={() => setShowCategoryModal(true)} className="bg-slate-100 text-slate-700 px-3 sm:px-3 py-2.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm hover:bg-slate-200 whitespace-nowrap transition-all active:scale-95 border border-slate-200">
                <Tags size={14} /> Kategoriler
              </button>
-             <button onClick={() => setShowSupplierListModal(true)} className="bg-slate-100 text-slate-700 px-3 sm:px-4 py-2.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm hover:bg-slate-200 whitespace-nowrap transition-all active:scale-95 border border-slate-200">
+             <button onClick={() => setShowSupplierListModal(true)} className="bg-slate-100 text-slate-700 px-3 sm:px-3 py-2.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm hover:bg-slate-200 whitespace-nowrap transition-all active:scale-95 border border-slate-200">
                <Truck size={14} /> Tedarikçiler
              </button>
-             <button onClick={() => setShowStockModal(true)} className="col-span-2 bg-blue-600 text-white px-4 py-3 sm:py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm shadow-blue-200 hover:bg-blue-700 whitespace-nowrap transition-all active:scale-95 border border-blue-700">
-               <Plus size={16} /> Yeni Parça
+             
+             {/* 🚀 YENİ: Stok Girişi Yap Butonu */}
+             <button onClick={() => setShowStockEntryModal(true)} className="col-span-2 bg-emerald-600 text-white px-4 py-3 sm:py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm shadow-emerald-200 hover:bg-emerald-700 whitespace-nowrap transition-all active:scale-95 border border-emerald-700">
+               <Archive size={16} /> Stok Girişi
+             </button>
+
+             <button onClick={() => setShowStockModal(true)} className="col-span-2 sm:col-span-1 bg-slate-900 text-white px-4 py-3 sm:py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm shadow-slate-200 hover:bg-slate-800 whitespace-nowrap transition-all active:scale-95 border border-slate-900">
+               <Plus size={16} /> Yeni Tanım
              </button>
            </div>
          </div>
@@ -442,14 +423,14 @@ const openWhatsappForSupplier = (supplier: any) => {
                             className="p-2 text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-600 hover:text-white rounded-lg transition-all active:scale-95 shadow-sm"
                             title="Düzenle"
                          >
-                           <Edit2 size={16} />
+                            <Edit2 size={16} />
                          </button>
                          <button
                             onClick={() => handleDelete(item.id, item.item_name)} 
                             className="p-2 text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-600 hover:text-white rounded-lg transition-all active:scale-95 shadow-sm"
                             title="Sil"
                          >
-                           <Trash2 size={16} />
+                            <Trash2 size={16} />
                          </button>
                       </div>
                     </td>

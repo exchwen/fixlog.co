@@ -87,6 +87,7 @@ export default function ManagerDashboard() {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showBulkOrderModal, setShowBulkOrderModal] = useState(false);
+  const [showStockEntryModal, setShowStockEntryModal] = useState(false);
 
   const [showQRModal, setShowQRModal] = useState(false);
   const [selectedQRAsset, setSelectedQRAsset] = useState(null);
@@ -644,6 +645,7 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
                 setShowBulkOrderModal={setShowBulkOrderModal}
                 stockCategory={stockCategory}
                 setStockCategory={setStockCategory}
+                setShowStockEntryModal={setShowStockEntryModal}
               />
             </div>
           )}
@@ -689,6 +691,7 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
         newAsset={newAsset} setNewAsset={setNewAsset}
 
         showStockModal={showStockModal} setShowStockModal={setShowStockModal}
+        showStockEntryModal={showStockEntryModal} setShowStockEntryModal={setShowStockEntryModal}
         newStock={newStock} setNewStock={setNewStock}
 
         showSupplierModal={showSupplierModal} setShowSupplierModal={setShowSupplierModal}
