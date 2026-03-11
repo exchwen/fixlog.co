@@ -552,29 +552,29 @@ useEffect(() => {
                     </div>
 
                     {/* 🚀 ÜST BİLGİLER (KAYIT NO, TARİH, PERSONEL, TESİS) */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm font-medium border-b-2 border-dashed border-slate-800 pb-4 mb-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm font-medium border-y-2 border-slate-900 py-4 mb-6 print-header-boxes">
                         <div className="flex flex-col">
-                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Fiş Numarası</div>
-                            <div className="font-black">#{previewPdfJob.id}</div>
+                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-0.5">Fiş Numarası</div>
+                            <div className="font-black text-slate-900">#{previewPdfJob.id}</div>
                         </div>
                         <div className="flex flex-col">
-                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Tarih</div>
-                            <div className="font-black">{new Date(previewPdfJob.created_at || Date.now()).toLocaleString('tr-TR')}</div>
+                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-0.5">Tarih</div>
+                            <div className="font-black text-slate-900">{new Date(previewPdfJob.created_at || Date.now()).toLocaleString('tr-TR')}</div>
                         </div>
                         <div className="flex flex-col">
-                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">İlgili Personel</div>
-                            <div className="font-black truncate">{previewPdfJob.worker_name || 'Belirtilmedi'}</div>
+                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-0.5">İlgili Personel</div>
+                            <div className="font-black text-slate-900 truncate">{previewPdfJob.worker_name || 'Belirtilmedi'}</div>
                         </div>
                         <div className="flex flex-col">
-                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Tesis Adı / Adres</div>
-                            <div className="font-black leading-tight">
+                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-0.5">Tesis Adı / Adres</div>
+                            <div className="font-black text-slate-900 leading-tight">
                                 {(() => {
                                     const asset = (data?.assets || []).find((a:any) => a.id === previewPdfJob.asset_id);
                                     if (asset) {
                                         return (
                                             <>
                                                 <div>{asset.apartmentName || asset.name}</div>
-                                                {asset.location && <div className="text-[11px] font-semibold text-slate-600 mt-0.5 whitespace-normal">{asset.location}</div>}
+                                                {asset.location && <div className="text-[11px] font-semibold text-slate-500 mt-0.5 whitespace-normal">{asset.location}</div>}
                                             </>
                                         );
                                     }
@@ -672,23 +672,23 @@ useEffect(() => {
                                                         }
 
                                                         return (
-                                                            <div key={idx} className="flex justify-between items-end p-4 border-b border-slate-100 last:border-b-0">
-                                                                <div className="flex flex-col gap-1 pr-4">
+                                                            <div key={idx} className={`flex justify-between items-center py-2.5 px-4 border-b border-slate-200/60 last:border-b-0 ${idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}`}>
+                                                                <div className="flex flex-col pr-4">
                                                                     <span className={`text-[13px] font-bold leading-tight ${printMode === 'bw' ? 'text-black' : 'text-slate-900'}`}>{item.key}</span>
-                                                                    {isBooleanType && (
-                                                                        <span className={`text-[11px] font-black uppercase tracking-wider ${colorClass}`}>{item.val}</span>
-                                                                    )}
                                                                 </div>
                                                                 
-                                                                <div className="shrink-0 pb-0.5">
+                                                                <div className="shrink-0 flex items-center gap-3">
+                                                                    {isBooleanType && (
+                                                                        <span className={`text-[10px] font-black uppercase tracking-widest ${colorClass}`}>{item.val}</span>
+                                                                    )}
                                                                     {isBooleanType ? (
                                                                         isPositive ? (
-                                                                            <div className={`w-5 h-5 flex items-center justify-center rounded-[4px] print-color-exact ${bgColorClass}`}>
-                                                                                <CheckSquare size={16} className="text-white" strokeWidth={3} />
+                                                                            <div className={`w-5 h-5 flex items-center justify-center rounded shadow-sm print-color-exact ${bgColorClass}`}>
+                                                                                <CheckSquare size={14} className="text-white" strokeWidth={3} />
                                                                             </div>
                                                                         ) : (
-                                                                            <div className={`w-5 h-5 border-2 flex items-center justify-center rounded-[4px] print-color-exact ${borderColorClass}`}>
-                                                                                <X size={14} className={printMode === 'bw' ? 'text-black' : 'text-rose-500'} strokeWidth={3} />
+                                                                            <div className={`w-5 h-5 flex items-center justify-center rounded shadow-sm print-color-exact ${bgColorClass}`}>
+                                                                                <X size={14} className="text-white" strokeWidth={4} />
                                                                             </div>
                                                                         )
                                                                     ) : (
@@ -813,6 +813,21 @@ useEffect(() => {
                    -webkit-print-color-adjust: exact !important;
                    print-color-adjust: exact !important;
                    background-color: white !important;
+                   /* 🚀 BOŞ SAYFA (BLANK PAGE) OLUŞUMUNU ENGELLEME HACK'İ */
+                   height: auto !important;
+                   min-height: 0 !important;
+                   overflow: visible !important;
+                   padding: 0 !important;
+                   margin: 0 !important;
+                 }
+
+                 /* Modal dışındaki her şeyin yüksekliğini sıfırla ki 2. ve 3. sayfalara taşmasın */
+                 body > * {
+                    height: 0 !important;
+                    min-height: 0 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    overflow: visible !important;
                  }
                  
                  /* 1. BÜTÜN SAYFAYI GİZLE VE RESETLE */
@@ -867,8 +882,8 @@ useEffect(() => {
                     margin: 0 !important;
                     background-color: white !important;
                     display: block !important;
-                    /* 🚀 TEK SAYFAYA SIĞDIRMAK İÇİN ÖLÇEKLENDİRME (0.92'den 0.88'e düşürüldü) */
-                    zoom: 0.88 !important;
+                    /* 🚀 TEK SAYFAYA SIĞDIRMAK İÇİN ÖLÇEKLENDİRME */
+                    zoom: 0.85 !important;
                  }
 
                  /* 5. MÜŞTERİ VE CİHAZ KUTULARINI YAN YANA GETİR VE MOBİL KISITLAMALARINI YAZICIDA EZ */
@@ -895,6 +910,9 @@ useEffect(() => {
                  /* 6. GEREKSİZLERİ YOK ET */
                  .no-print, .no-print * { 
                     display: none !important; 
+                    height: 0 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
                  }
                  
                  /* 7. FOTOĞRAFLARI KESİLMEDEN YAZDIR VE LOGO/İMZA BOYUTLARINI KORU */
@@ -927,8 +945,8 @@ useEffect(() => {
                  .mt-8 { margin-top: 2mm !important; }
                  .pt-6 { padding-top: 2mm !important; }
                  
-                 /* 🚀 EN BÜYÜK KURTARICI: Checklist satır aralıklarını (p-4) tıraşladık */
-                 .p-4 { padding: 1.5mm 2mm !important; } 
+                 /* 🚀 EN BÜYÜK KURTARICI: Checklist satır aralıklarını (p-4) tıraşladık ve Zebra deseni koruduk */
+                 .p-4 { padding: 1mm 2mm !important; } 
                  .p-6, .sm\\:p-10 { padding: 3mm !important; }
                  .py-2\\.5 { padding-top: 1mm !important; padding-bottom: 1mm !important; }
                  
