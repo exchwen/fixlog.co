@@ -867,8 +867,8 @@ useEffect(() => {
                     margin: 0 !important;
                     background-color: white !important;
                     display: block !important;
-                    /* 🚀 TEK SAYFAYA SIĞDIRMAK İÇİN ÖLÇEKLENDİRME */
-                    zoom: 0.92;
+                    /* 🚀 TEK SAYFAYA SIĞDIRMAK İÇİN ÖLÇEKLENDİRME (0.92'den 0.88'e düşürüldü) */
+                    zoom: 0.88 !important;
                  }
 
                  /* 5. MÜŞTERİ VE CİHAZ KUTULARINI YAN YANA GETİR VE MOBİL KISITLAMALARINI YAZICIDA EZ */
@@ -909,22 +909,28 @@ useEffect(() => {
                     border: none !important; 
                  }
                  
+                 /* 🚀 Logoyu ve İmzayı Dikeyde Azıcık Tıraşladık */
                  .print-logo {
-                    max-height: 70px !important;
-                    width: auto !important;
-                    object-fit: contain !important;
-                 }
-                 .print-signature {
                     max-height: 60px !important;
                     width: auto !important;
                     object-fit: contain !important;
                  }
+                 .print-signature {
+                    max-height: 50px !important;
+                    width: auto !important;
+                    object-fit: contain !important;
+                 }
                  
-                 /* 8. SAYFA YIRTILMALARINI (PAGE BREAK) ENGELLE */
-                 .mb-8 { margin-bottom: 4mm !important; }
-                 .mb-6 { margin-bottom: 3mm !important; }
-                 .p-6, .sm\\:p-10 { padding: 4mm !important; }
-                 .py-2\\.5 { padding-top: 1.5mm !important; padding-bottom: 1.5mm !important; }
+                 /* 8. ALAN TASARRUFU VE SAYFA YIRTILMALARINI (PAGE BREAK) ENGELLE */
+                 .mb-8 { margin-bottom: 2mm !important; }
+                 .mb-6 { margin-bottom: 2mm !important; }
+                 .mt-8 { margin-top: 2mm !important; }
+                 .pt-6 { padding-top: 2mm !important; }
+                 
+                 /* 🚀 EN BÜYÜK KURTARICI: Checklist satır aralıklarını (p-4) tıraşladık */
+                 .p-4 { padding: 1.5mm 2mm !important; } 
+                 .p-6, .sm\\:p-10 { padding: 3mm !important; }
+                 .py-2\\.5 { padding-top: 1mm !important; padding-bottom: 1mm !important; }
                  
                  .print-always-break {
                     break-before: page !important;
