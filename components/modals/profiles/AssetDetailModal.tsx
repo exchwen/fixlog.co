@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MapPin, Box, Briefcase, Calendar, User, AlertCircle, ChevronRight, Edit, Trash2, Save, Loader2, Search, Wrench, Siren, FileText, Building2 } from 'lucide-react';
+import { X, MapPin, Box, Briefcase, Calendar, User, AlertCircle, ChevronRight, Edit, Trash2, Save, Loader2, Search, Wrench, Siren, FileText, Building2, Tag, RefreshCw } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
 
 const CITY_DATA: any = trCitiesData;
@@ -83,12 +83,35 @@ export default function AssetDetailModal({
       setIsEditing(!isEditing);
   };
 
-  const assetJobs = (data?.jobs || []).filter((j:any) => String(j.asset_id) === String(selectedAsset?.id));
+  const assetJobs = (data?.jobs || []).filter((j:any) => String(j.asset_id) === String(selectedAsset?.id) && j.work_type !== 'Periyodik Bakım');
+  const assetMaintenance = (data?.jobs || []).filter((j:any) => String(j.asset_id) === String(selectedAsset?.id) && j.work_type === 'Periyodik Bakım');
   const assetFaults = (data?.fault_reports || []).filter((f:any) => String(f.asset_id) === String(selectedAsset?.id));
   const assetEmergencies = (data?.emergencies || []).filter((e:any) => String(e.asset_id) === String(selectedAsset?.id));
   const assetOwner = (data?.customers || []).find((c:any) => String(c.id) === String(selectedAsset?.customer_id));
 
-  const filteredCustomers = (data?.customers || []).filter((c:any) => 
+  // 🚀 GEÇMİŞ İŞLERİ TARAYARAK EN GÜNCEL ETİKET RENGİNİ BULMA ALGORİTMASI
+  const latestColor = (() => {
+    if (!selectedAsset) return null;
+    const allAssetJobs = (data?.jobs || [])
+      .filter((j: any) => String(j.asset_id) === String(selectedAsset.id) && j.work_type === 'Periyodik Bakım' && j.details && (j.details.label_color || j.details['Mevcut Etiket']))
+      .sort((j1: any, j2: any) => new Date(j2.created_at || 0).getTime() - new Date(j1.created_at || 0).getTime());
+    
+    return allAssetJobs[0]?.details?.label_color || allAssetJobs[0]?.details?.['Mevcut Etiket'] || selectedAsset.label_color || selectedAsset.labelColor || null;
+  })();
+
+  const getBadgeClass = (color: string) => {
+    switch(color?.toLowerCase()) {
+      case 'kırmızı': return 'bg-rose-100 text-rose-700 border-rose-200';
+      case 'sarı': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'mavi': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'yeşil': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      default: return 'hidden';
+    }
+  };
+
+  const badgeClass = getBadgeClass(latestColor);
+
+  const filteredCustomers = (data?.customers || []).filter((c:any) =>
       c.name.toLowerCase().includes(customerSearch.toLowerCase())
   );
 
@@ -245,11 +268,19 @@ export default function AssetDetailModal({
             <div className="flex justify-between items-start p-5 sm:p-6 pb-0 border-b border-slate-100 bg-slate-50/50 z-10 flex-col sm:flex-row sm:items-center gap-4">
               <div className="flex-1 w-full min-w-0">
                   <div className="flex justify-between items-start w-full gap-2">
-                      <div className="min-w-0">
-                          <h2 className="text-xl font-black text-slate-800 tracking-tight truncate">
-                              {selectedAsset.apartmentName || selectedAsset.apartment_name || 'Apartman / Tesis Adı Yok'}
-                          </h2>
-                          <div className="text-xs font-medium text-slate-500 mt-1 flex items-center gap-2">
+                  <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                              <h2 className="text-xl font-black text-slate-800 tracking-tight truncate">
+                                  {selectedAsset.apartmentName || selectedAsset.apartment_name || 'Apartman / Tesis Adı Yok'}
+                              </h2>
+                              {/* 🚀 ETİKET ROZETİ EKLENDİ */}
+                              {latestColor && badgeClass !== 'hidden' && (
+                                <div className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border flex items-center gap-1 shadow-sm ${badgeClass}`}>
+                                  <Tag size={10} /> {latestColor}
+                                </div>
+                              )}
+                          </div>
+                          <div className="text-xs font-medium text-slate-500 flex items-center gap-2">
                              <span className="bg-slate-200 px-2 py-0.5 rounded text-slate-700 font-bold flex items-center gap-1">
                                  <Box size={12}/> {selectedAsset.name || 'Varlık Türü'}
                              </span>
@@ -267,17 +298,23 @@ export default function AssetDetailModal({
                   </div>
 
                   {!isEditing && (
-                    <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 border-b border-slate-200 w-full">
-                        <button onClick={() => setActiveTab('info')} className={`pb-3 text-sm font-bold transition-all relative ${activeTab === 'info' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                    <div className="flex flex-nowrap overflow-x-auto custom-scrollbar gap-x-4 gap-y-2 mt-4 border-b border-slate-200 w-full">
+                        <button onClick={() => setActiveTab('info')} className={`pb-3 text-sm font-bold transition-all relative whitespace-nowrap ${activeTab === 'info' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
                             Cihaz Bilgileri
                             {activeTab === 'info' && <motion.div layoutId="assetTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full" />}
                         </button>
-                        <button onClick={() => setActiveTab('history')} className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-1.5 ${activeTab === 'history' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
-                            Servis Geçmişi
+                        {/* 🚀 YENİ PERİYODİK BAKIM SEKMESİ */}
+                        <button onClick={() => setActiveTab('maintenance')} className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-1.5 whitespace-nowrap ${activeTab === 'maintenance' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                            Periyodik Bakım
+                            <span className="bg-slate-200 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-full">{assetMaintenance.length}</span>
+                            {activeTab === 'maintenance' && <motion.div layoutId="assetTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full" />}
+                        </button>
+                        <button onClick={() => setActiveTab('history')} className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-1.5 whitespace-nowrap ${activeTab === 'history' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                            Servis / Arıza
                             <span className="bg-slate-200 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-full">{assetJobs.length}</span>
                             {activeTab === 'history' && <motion.div layoutId="assetTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full" />}
                         </button>
-                        <button onClick={() => setActiveTab('faults')} className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-1.5 ${activeTab === 'faults' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                        <button onClick={() => setActiveTab('faults')} className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-1.5 whitespace-nowrap ${activeTab === 'faults' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
                             Arıza
                             <span className="bg-slate-200 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-full">{assetFaults.length}</span>
                             {activeTab === 'faults' && <motion.div layoutId="assetTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full" />}
@@ -431,6 +468,55 @@ export default function AssetDetailModal({
                                   <div className="p-2 bg-slate-100 text-slate-600 rounded-lg w-fit mb-3"><FileText size={16} /></div>
                                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Varlık / Cihaz Detayları</div>
                                   <div className="text-sm font-medium text-slate-700 whitespace-pre-wrap">{selectedAsset.asset_details}</div>
+                              </div>
+                          )}
+                      </motion.div>
+                    )}
+
+{activeTab === 'maintenance' && (
+                      <motion.div key="maintenance" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
+                          {assetMaintenance.length > 0 ? (
+                              <div className="space-y-3 relative before:absolute before:inset-y-0 before:left-[19px] before:w-0.5 before:bg-slate-100">
+                                  {assetMaintenance.map((job: any) => (
+                                      <div 
+                                        key={job.id} 
+                                        onClick={() => {
+                                            if (setSelectedJob) {
+                                                setOpenedChild('job');
+                                                setSelectedJob(job);
+                                            }
+                                        }} 
+                                        className="relative pl-12 cursor-pointer group"
+                                      >
+                                          <div className={`absolute left-[13px] top-4 w-3.5 h-3.5 rounded-full border-2 border-white z-10 transition-transform group-hover:scale-125 ${job.status === 'Tamamlandı' ? 'bg-emerald-500' : job.status === 'İptal' ? 'bg-rose-500' : 'bg-blue-500'}`}></div>
+                                          
+                                          <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm group-hover:shadow-md group-hover:border-blue-300 transition-all">
+                                              <div className="flex justify-between items-start mb-2">
+                                                  <div className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors flex items-center gap-1.5"><RefreshCw size={14}/> {job.work_type}</div>
+                                                  <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider border ${statusColors[job.status] || 'bg-slate-100 text-slate-600'}`}>
+                                                      {job.status}
+                                                  </span>
+                                              </div>
+                                              <div className="text-xs font-medium text-slate-500 flex items-center gap-1.5 mt-1">
+                                                  <Calendar size={12} className="opacity-70" /> {job.created_at?.split('T')[0] || job.scheduled_date || 'Tarih Yok'}
+                                                  {job.details?.price && (
+                                                      <>
+                                                          <span className="mx-1 text-slate-300">•</span>
+                                                          <span className="font-bold text-emerald-600">{job.details.price}</span>
+                                                      </>
+                                                  )}
+                                              </div>
+                                          </div>
+                                      </div>
+                                  ))}
+                              </div>
+                          ) : (
+                              <div className="flex flex-col items-center justify-center py-10 text-center px-4">
+                                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-3 border border-slate-100">
+                                      <RefreshCw size={24} />
+                                  </div>
+                                  <h3 className="text-sm font-bold text-slate-700">Bakım Kaydı Yok</h3>
+                                  <p className="text-xs font-medium text-slate-500 mt-1">Bu cihaza/varlığa ait geçmişte yapılmış herhangi bir periyodik bakım kaydı bulunmuyor.</p>
                               </div>
                           )}
                       </motion.div>

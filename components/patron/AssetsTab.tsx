@@ -137,7 +137,7 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
             // 🚀 GEÇMİŞ İŞLERİ TARAYARAK EN GÜNCEL ETİKET RENGİNİ BULMA ALGORİTMASI
             const latestColor = (() => {
               const assetJobs = (data?.jobs || [])
-                .filter((j: any) => String(j.asset_id) === String(a.id) && j.details && (j.details.label_color || j.details['Mevcut Etiket']))
+                .filter((j: any) => String(j.asset_id) === String(a.id) && j.work_type === 'Periyodik Bakım' && j.details && (j.details.label_color || j.details['Mevcut Etiket']))
                 .sort((j1: any, j2: any) => new Date(j2.created_at || 0).getTime() - new Date(j1.created_at || 0).getTime());
               
               return assetJobs[0]?.details?.label_color || assetJobs[0]?.details?.['Mevcut Etiket'] || a.label_color || a.labelColor || null;
