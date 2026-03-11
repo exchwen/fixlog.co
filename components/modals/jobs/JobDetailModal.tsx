@@ -49,8 +49,106 @@ const [activeTab, setActiveTab] = useState('ozet');
     setPrintMode(mode);
     setShowPrintModeSelection(false);
     setTimeout(() => {
-      window.print();
-      setTimeout(() => setPrintMode('color'), 1000); // Yazdırdıktan sonra normale dön
+      const printArea = document.getElementById('pdf-printable-area');
+      if (!printArea) return;
+
+      // 🚀 İSİMLENDİRME KURALI: Yazdırılırken PDF olarak kaydedilirse otomatik isim alsın
+      const currentMonth = new Date().toLocaleString('tr-TR', { month: 'long' });
+      const asset = previewPdfJob?.asset_id ? (data?.assets || []).find((a:any) => String(a.id) === String(previewPdfJob.asset_id)) : null;
+      
+      const rawAssetName = asset?.name || previewPdfJob?.customer_name || 'Varlik';
+      const rawAssetType = asset?.type || asset?.category || 'Islem';
+      const rawJobType = previewPdfJob?.work_type || 'Servis';
+      
+      const sanitizeTextForFile = (text: string) => {
+        if (!text) return '';
+        return text.replace(/ğ/g, 'g').replace(/Ğ/g, 'G').replace(/ü/g, 'u').replace(/Ü/g, 'U')
+                   .replace(/ş/g, 's').replace(/Ş/g, 'S').replace(/ı/g, 'i').replace(/İ/g, 'I')
+                   .replace(/ö/g, 'o').replace(/Ö/g, 'O').replace(/ç/g, 'c').replace(/Ç/g, 'C');
+      };
+
+      const safeFileName = `${sanitizeTextForFile(rawAssetName).replace(/\s+/g, '-')}-${sanitizeTextForFile(rawAssetType).replace(/\s+/g, '-')}-${sanitizeTextForFile(currentMonth).replace(/\s+/g, '-')}-${sanitizeTextForFile(rawJobType).replace(/\s+/g, '-')}`;
+
+      // 🚀 BOŞ SAYFA ÇÖZÜMÜ: Sadece formu içeren gizli bir Iframe oluşturup sadece onu yazdırıyoruz.
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
+
+      const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]')).map(s => s.outerHTML).join('');
+      const content = printArea.innerHTML;
+
+      const iframeDoc = iframe.contentWindow?.document;
+      if (iframeDoc) {
+        iframeDoc.open();
+        iframeDoc.write(`
+          <html>
+            <head>
+              <title>${safeFileName}</title>
+              ${styles}
+              <style>
+                @page { margin: 10mm; size: auto; }
+                body { background: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0; padding: 0; height: auto !important; overflow: visible !important; }
+                .no-print { display: none !important; }
+                
+                ${mode === 'bw' ? `
+                   *, body { color: black !important; border-color: black !important; }
+                   .print-no-bg, .bg-slate-50, .bg-blue-50 { background-color: transparent !important; }
+                   img:not(.print-logo) { filter: grayscale(100%) brightness(0) !important; }
+                ` : ''}
+
+                .bg-emerald-500 { background-color: #10b981 !important; }
+                .bg-rose-500 { background-color: #f43f5e !important; }
+                .text-emerald-600 { color: #059669 !important; }
+                .text-rose-600 { color: #e11d48 !important; }
+                .border-emerald-500 { border-color: #10b981 !important; }
+                .border-rose-500 { border-color: #f43f5e !important; }
+                .bg-black { background-color: #000000 !important; }
+                .border-black { border-color: #000000 !important; }
+                .bg-slate-50 { background-color: #f8fafc !important; }
+                .bg-slate-50\\/80 { background-color: #f8fafc !important; }
+                .bg-white { background-color: #ffffff !important; }
+                
+                .print-grid img { max-width: 100% !important; height: auto !important; }
+                .print-logo-container { border: none !important; }
+                .print-logo { max-height: 80px !important; width: auto !important; object-fit: contain !important; }
+                .print-signature { max-height: 60px !important; width: auto !important; object-fit: contain !important; }
+                
+                .mb-8 { margin-bottom: 6mm !important; }
+                .mb-6 { margin-bottom: 4mm !important; }
+                .mt-8 { margin-top: 6mm !important; }
+                .pt-6 { padding-top: 4mm !important; }
+                .py-3\\.5 { padding-top: 3mm !important; padding-bottom: 3mm !important; }
+                .py-5 { padding-top: 4mm !important; padding-bottom: 4mm !important; }
+                .px-5 { padding-left: 4mm !important; padding-right: 4mm !important; }
+                
+                .page-break-avoid { break-inside: avoid !important; page-break-inside: avoid !important; }
+              </style>
+            </head>
+            <body class="${mode === 'bw' ? 'bw-mode' : ''}">
+              <div style="padding: 20px;">
+                ${content}
+              </div>
+            </body>
+          </html>
+        `);
+        iframeDoc.close();
+
+        iframe.onload = () => {
+          setTimeout(() => {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+            setTimeout(() => {
+              document.body.removeChild(iframe);
+              setPrintMode('color');
+            }, 1000);
+          }, 800); // İmajların yüklenmesi için kısa bir bekleme
+        };
+      }
     }, 150);
   };
 
@@ -329,67 +427,82 @@ useEffect(() => {
   };
 
   const handleSharePDF = async (jobData: any) => {
-    setIsGeneratingPdf(true);
-    try {
-        const receiptElement = document.getElementById('pdf-printable-area');
-        if (!receiptElement) throw new Error("PDF alanı bulunamadı.");
-
-        const canvas = await html2canvas(receiptElement, { 
-            scale: 2, 
-            useCORS: true, 
-            allowTaint: true,
-            backgroundColor: '#ffffff' 
-        });
-        
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        
-        // 🚀 BOŞ SAYFA ÇÖZÜMÜ: A4 Genişliğini sabitle, Yüksekliği esnek yap (Sıfır boşluk)
-        const pdfWidth = 210; // A4 Genişliği (mm)
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [pdfWidth, pdfHeight] });
-        
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-        
-        // 🚀 İSİMLENDİRME KURALI: varlıkadı-varlıktürü-ay-islemtürü.pdf
-        const currentMonth = new Date().toLocaleString('tr-TR', { month: 'long' });
-        const asset = (data?.assets || []).find((a:any) => a.id === jobData.asset_id);
-        
-        const rawAssetName = asset?.name || 'Varlik';
-        const rawAssetType = asset?.type || asset?.category || 'Cihaz';
-        const rawJobType = jobData.work_type || 'Islem';
-        
-        const safeAssetName = sanitizeTextForFile(rawAssetName).replace(/\s+/g, '-');
-        const safeAssetType = sanitizeTextForFile(rawAssetType).replace(/\s+/g, '-');
-        const safeMonth = sanitizeTextForFile(currentMonth).replace(/\s+/g, '-');
-        const safeJobType = sanitizeTextForFile(rawJobType).replace(/\s+/g, '-');
-
-        const safeFileName = `${safeAssetName}-${safeAssetType}-${safeMonth}-${safeJobType}.pdf`;
-        
-        const pdfBlob = pdf.output('blob');
-        const file = new File([pdfBlob], safeFileName, { type: 'application/pdf' });
-        
-        const assetName = asset?.name || 'Cihazınız';
-        const shareText = `Merhaba ${jobData.customer_name},\n\n${assetName} işleminiz tamamlanmıştır. Servis raporunuzu bu mesaja eklenmiş dosyada bulabilirsiniz.`;
-
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({
-                title: `Servis Raporu #${jobData.id}`,
-                text: shareText,
-                files: [file]
-            });
-        } else {
-            pdf.save(safeFileName);
-            sendCustomerWhatsApp(jobData);
-        }
-    } catch (error) {
-        console.error("PDF oluşturma hatası:", error);
-        setNotification({show: true, msg: "PDF dosyası hazırlanırken bir hata oluştu.", type: 'error'});
-        setTimeout(() => setNotification({show: false, msg: '', type: 'success'}), 3000);
-    } finally {
-        setIsGeneratingPdf(false);
-    }
-  };
+        setIsGeneratingPdf(true);
+        try {
+            const receiptElement = document.getElementById('pdf-printable-area');
+            if (!receiptElement) throw new Error("PDF alanı bulunamadı.");
+    
+            // 🚀 BOŞ SAYFA VE KESİLME ÇÖZÜMÜ: html2canvas scroll'u algılayamadığı için geçici olarak tam boyuta açıyoruz.
+            const originalHeight = receiptElement.style.height;
+            const originalMaxHeight = receiptElement.style.maxHeight;
+            const originalOverflow = receiptElement.style.overflow;
+            
+            receiptElement.style.height = 'max-content';
+            receiptElement.style.maxHeight = 'none';
+            receiptElement.style.overflow = 'visible';
+    
+            const canvas = await html2canvas(receiptElement, { 
+                scale: 2, 
+                useCORS: true, 
+                allowTaint: true,
+                backgroundColor: '#ffffff',
+                windowHeight: receiptElement.scrollHeight // Tüm içeriğin yüksekliğini zorla
+            });
+            
+            // 🚀 Çizim biter bitmez eski stiline geri döndürüyoruz.
+            receiptElement.style.height = originalHeight;
+            receiptElement.style.maxHeight = originalMaxHeight;
+            receiptElement.style.overflow = originalOverflow;
+            
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            
+            // 🚀 JS PDF FORMAT HATASI ÇÖZÜMÜ: Yüksekliğin kesirli (float) gelmesi blank page yaratır. Math.ceil ile yuvarlıyoruz.
+            const pdfWidth = 210; // A4 Genişliği (mm)
+            const pdfHeight = Math.max(Math.ceil((canvas.height * pdfWidth) / canvas.width), 50); // Kesirli yükseklik bugını engeller
+            
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [pdfWidth, pdfHeight] });
+            
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+            
+            // 🚀 İSİMLENDİRME KURALI ÇÖZÜMÜ: Eşleşme hatasını engellemek için id'leri String'e çevirdik.
+            const currentMonth = new Date().toLocaleString('tr-TR', { month: 'long' });
+            const asset = jobData.asset_id ? (data?.assets || []).find((a:any) => String(a.id) === String(jobData.asset_id)) : null;
+            
+            const rawAssetName = asset?.name || jobData.customer_name || 'Varlik';
+            const rawAssetType = asset?.type || asset?.category || 'Islem';
+            const rawJobType = jobData.work_type || 'Servis';
+            
+            const safeAssetName = sanitizeTextForFile(rawAssetName).replace(/\s+/g, '-');
+            const safeAssetType = sanitizeTextForFile(rawAssetType).replace(/\s+/g, '-');
+            const safeMonth = sanitizeTextForFile(currentMonth).replace(/\s+/g, '-');
+            const safeJobType = sanitizeTextForFile(rawJobType).replace(/\s+/g, '-');
+    
+            const safeFileName = `${safeAssetName}-${safeAssetType}-${safeMonth}-${safeJobType}.pdf`;
+            
+            const pdfBlob = pdf.output('blob');
+            const file = new File([pdfBlob], safeFileName, { type: 'application/pdf' });
+            
+            const assetName = asset?.name || 'Cihazınız';
+            const shareText = `Merhaba ${jobData.customer_name},\n\n${rawAssetName} işleminiz tamamlanmıştır. Servis raporunuzu bu mesaja eklenmiş dosyada bulabilirsiniz.`;
+    
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: `Servis Raporu #${jobData.id}`,
+                    text: shareText,
+                    files: [file]
+                });
+            } else {
+                pdf.save(safeFileName);
+                sendCustomerWhatsApp(jobData);
+            }
+        } catch (error) {
+            console.error("PDF oluşturma hatası:", error);
+            setNotification({show: true, msg: "PDF dosyası hazırlanırken bir hata oluştu.", type: 'error'});
+            setTimeout(() => setNotification({show: false, msg: '', type: 'success'}), 3000);
+        } finally {
+            setIsGeneratingPdf(false);
+        }
+      };
 
   const statusColors: any = { 
     'Beklemede': 'bg-amber-100 text-amber-700 border-amber-200', 
@@ -789,87 +902,7 @@ useEffect(() => {
                 </div>
              </motion.div>
              
-             {/* 🚀 KUSURSUZ YAZDIRMA CSS'İ */}
-             <style dangerouslySetInnerHTML={{__html:`
-               @media print {
-                 @page { margin: 10mm; size: A4 portrait; }
-                 
-                 html, body {
-                   -webkit-print-color-adjust: exact !important;
-                   print-color-adjust: exact !important;
-                   background-color: white !important;
-                   height: auto !important;
-                   min-height: 0 !important;
-                   margin: 0 !important;
-                   padding: 0 !important;
-                 }
-
-                 body * { visibility: hidden !important; }
-                 
-                 #pdf-printable-area, #pdf-printable-area * {
-                   visibility: visible !important;
-                 }
-
-                 * {
-                    position: static !important;
-                    overflow: visible !important;
-                    box-shadow: none !important;
-                 }
-
-                 .no-print, .no-print * { 
-                    display: none !important; 
-                    height: 0 !important;
-                    width: 0 !important;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                 }
-                 
-                 #pdf-printable-area {
-                    position: absolute !important;
-                    left: 0 !important;
-                    top: 0 !important;
-                    width: 100vw !important;
-                    max-width: 100vw !important;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    background-color: white !important;
-                    display: block !important;
-                    zoom: 1 !important;
-                    box-sizing: border-box !important;
-                 }
-
-                 .bw-mode, .bw-mode * { color: black !important; border-color: black !important; }
-                 .bw-mode .print-no-bg, .bw-mode .bg-slate-50, .bw-mode .bg-blue-50 { background-color: transparent !important; }
-                 .bw-mode img:not(.print-logo) { filter: grayscale(100%) brightness(0) !important; }
-
-                 .bg-emerald-500 { background-color: #10b981 !important; }
-                 .bg-rose-500 { background-color: #f43f5e !important; }
-                 .text-emerald-600 { color: #059669 !important; }
-                 .text-rose-600 { color: #e11d48 !important; }
-                 .border-emerald-500 { border-color: #10b981 !important; }
-                 .border-rose-500 { border-color: #f43f5e !important; }
-                 .bg-black { background-color: #000000 !important; }
-                 .border-black { border-color: #000000 !important; }
-                 .bg-slate-50 { background-color: #f8fafc !important; }
-                 .bg-slate-50\\/80 { background-color: #f8fafc !important; }
-                 .bg-white { background-color: #ffffff !important; }
-                 
-                 .print-grid img { max-width: 100% !important; height: auto !important; }
-                 .print-logo-container { border: none !important; }
-                 .print-logo { max-height: 80px !important; width: auto !important; object-fit: contain !important; }
-                 .print-signature { max-height: 60px !important; width: auto !important; object-fit: contain !important; }
-                 
-                 .mb-8 { margin-bottom: 6mm !important; }
-                 .mb-6 { margin-bottom: 4mm !important; }
-                 .mt-8 { margin-top: 6mm !important; }
-                 .pt-6 { padding-top: 4mm !important; }
-                 .py-3\\.5 { padding-top: 3mm !important; padding-bottom: 3mm !important; }
-                 .py-5 { padding-top: 4mm !important; padding-bottom: 4mm !important; }
-                 .px-5 { padding-left: 4mm !important; padding-right: 4mm !important; }
-                 
-                 .page-break-avoid { break-inside: avoid !important; page-break-inside: avoid !important; }
-               }
-             `}} />
+             {/* 🚀 KUSURSUZ YAZDIRMA CSS'İ IFRAME İÇİNE TAŞINDI (Arka planın ghost sayfalar yaratmasını engeller) */}
           </motion.div>
         )}
       </AnimatePresence>
