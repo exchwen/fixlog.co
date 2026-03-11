@@ -299,31 +299,40 @@ export default function AssetDetailModal({
                   </div>
 
                   {!isEditing && (
-                    <div className="flex flex-nowrap overflow-x-auto custom-scrollbar gap-x-4 gap-y-2 mt-4 border-b border-slate-200 w-full">
-                        <button onClick={() => setActiveTab('info')} className={`pb-3 text-sm font-bold transition-all relative whitespace-nowrap ${activeTab === 'info' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
-                            Cihaz Bilgileri
-                            {activeTab === 'info' && <motion.div layoutId="assetTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full" />}
+                    <div className="flex flex-wrap gap-2 mt-4 w-full border-b border-slate-200 pb-4">
+                        <button 
+                            onClick={() => setActiveTab('info')} 
+                            className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 flex-grow sm:flex-grow-0 ${activeTab === 'info' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        >
+                            Cihaz Bilgisi
                         </button>
-                        {/* 🚀 YENİ PERİYODİK BAKIM SEKMESİ */}
-                        <button onClick={() => setActiveTab('maintenance')} className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-1.5 whitespace-nowrap ${activeTab === 'maintenance' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                        <button 
+                            onClick={() => setActiveTab('maintenance')} 
+                            className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 flex-grow sm:flex-grow-0 ${activeTab === 'maintenance' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        >
                             Periyodik Bakım
-                            <span className="bg-slate-200 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-full">{assetMaintenance.length}</span>
-                            {activeTab === 'maintenance' && <motion.div layoutId="assetTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full" />}
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${activeTab === 'maintenance' ? 'bg-white/20 text-white' : 'bg-white text-slate-500 shadow-sm'}`}>{assetMaintenance.length}</span>
                         </button>
-                        <button onClick={() => setActiveTab('history')} className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-1.5 whitespace-nowrap ${activeTab === 'history' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
-                            Servis / Arıza
-                            <span className="bg-slate-200 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-full">{assetJobs.length}</span>
-                            {activeTab === 'history' && <motion.div layoutId="assetTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full" />}
+                        <button 
+                            onClick={() => setActiveTab('history')} 
+                            className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 flex-grow sm:flex-grow-0 ${activeTab === 'history' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        >
+                            Servis Geçmişi
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${activeTab === 'history' ? 'bg-white/20 text-white' : 'bg-white text-slate-500 shadow-sm'}`}>{assetJobs.length}</span>
                         </button>
-                        <button onClick={() => setActiveTab('faults')} className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-1.5 whitespace-nowrap ${activeTab === 'faults' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                        <button 
+                            onClick={() => setActiveTab('faults')} 
+                            className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 flex-grow sm:flex-grow-0 ${activeTab === 'faults' ? 'bg-orange-500 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        >
                             Arıza
-                            <span className="bg-slate-200 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-full">{assetFaults.length}</span>
-                            {activeTab === 'faults' && <motion.div layoutId="assetTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full" />}
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${activeTab === 'faults' ? 'bg-white/20 text-white' : 'bg-white text-slate-500 shadow-sm'}`}>{assetFaults.length}</span>
                         </button>
-                        <button onClick={() => setActiveTab('emergencies')} className={`pb-3 text-sm font-bold transition-all relative flex items-center gap-1.5 ${activeTab === 'emergencies' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                        <button 
+                            onClick={() => setActiveTab('emergencies')} 
+                            className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 flex-grow sm:flex-grow-0 ${activeTab === 'emergencies' ? 'bg-rose-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        >
                             Acil Durum
-                            <span className="bg-slate-200 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-full">{assetEmergencies.length}</span>
-                            {activeTab === 'emergencies' && <motion.div layoutId="assetTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full" />}
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${activeTab === 'emergencies' ? 'bg-white/20 text-white' : 'bg-white text-slate-500 shadow-sm'}`}>{assetEmergencies.length}</span>
                         </button>
                     </div>
                   )}
@@ -340,7 +349,8 @@ export default function AssetDetailModal({
             </div>
 
             {/* BODY */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6 bg-white relative">
+            {/* 🚀 overscroll-contain eklenerek scroll'un dışa taşması (Scroll Chaining) kilitlenmesi engellendi */}
+            <div className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar p-5 sm:p-6 bg-white relative">
                 
                 {isEditing ? (
                    <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="space-y-4">

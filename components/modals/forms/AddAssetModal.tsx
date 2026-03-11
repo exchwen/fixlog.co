@@ -103,7 +103,8 @@ return (
             </div>
 
             {/* BODY */}
-            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
+            {/* 🚀 overscroll-contain eklenerek scroll kilitlenmesi önlendi */}
+            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto overscroll-contain custom-scrollbar flex-1">
                 
                 {/* Apartman / Tesis Adı */}
                 <div>
@@ -187,7 +188,8 @@ return (
                               onClick={(e) => e.stopPropagation()}
                             />
                           </div>
-                          <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 space-y-1 bg-white">
+                          {/* 🚀 overscroll-contain ile liste bittiğinde arka planın kaymasını önledik */}
+                          <div className="max-h-48 overflow-y-auto overscroll-contain custom-scrollbar p-1.5 space-y-1 bg-white">
                             <div 
                               onClick={() => { setNewAsset({...newAsset, customer_id: ''}); setIsCustomerDropdownOpen(false); }}
                               className={`px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-colors ${!newAsset.customer_id ? 'bg-blue-50 text-blue-700 font-bold' : 'hover:bg-slate-50 text-slate-700 font-medium'}`}
