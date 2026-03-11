@@ -513,9 +513,8 @@ useEffect(() => {
                     {/* 🚀 BİRLEŞTİRİLMİŞ FİŞ GÖRÜNÜMÜ (KONTROL LİSTESİ + NOTLAR) */}
                     <div className="mb-8">
                         <div className="bg-slate-50/50 p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm print-no-bg">
-                            <div className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4">BAKIM / SERVİS NOTU:</div>
                             
-                            <div className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap flex flex-col gap-1.5">
+                            <div className="flex flex-col">
                                 {(() => {
                                     if (!previewPdfJob.details) return <div className="text-slate-500 italic">Rapor girilmemiş.</div>;
                                     
@@ -524,25 +523,27 @@ useEffect(() => {
                                     
                                     return (
                                         <>
-                                            {/* Saha Formu İçeriği */}
+                                            {/* Saha Formu İçeriği (Tam Fiş Düzeni) */}
                                             {formEntries.length > 0 && (
-                                                <div className="mb-3">
-                                                    <div className="text-slate-500 mb-2">--- {previewPdfJob.work_type || 'Servis'} Saha Formu ---</div>
-                                                    <div className="flex flex-col gap-1.5">
+                                                <div className="mb-4">
+                                                    <div className="text-center font-black text-[12px] text-slate-800 uppercase tracking-widest mb-3 pb-3 border-b-2 border-dashed border-slate-300">
+                                                        --- {previewPdfJob.work_type || 'Servis'} SAHA FORMU ---
+                                                    </div>
+                                                    <div className="flex flex-col">
                                                         {formEntries.map(([key, value], idx) => (
-                                                            <div key={idx} className="flex gap-2">
-                                                                <span className="text-slate-600">{key}:</span>
-                                                                <span className="font-bold text-slate-900">{String(value)}</span>
+                                                            <div key={idx} className="flex justify-between items-center py-2.5 border-b border-dashed border-slate-300 last:border-0">
+                                                                <span className="text-slate-600 text-[13px] font-semibold pr-4 leading-tight">{key}</span>
+                                                                <span className="text-slate-900 text-[13px] font-black text-right uppercase">{String(value)}</span>
                                                             </div>
                                                         ))}
                                                     </div>
-                                                    <div className="text-slate-300 mt-3 border-b border-dashed border-slate-300"></div>
                                                 </div>
                                             )}
                                             
                                             {/* Manuel Usta Notu */}
                                             {previewPdfJob.details.note && (
-                                                <div className="mt-1 text-slate-800">
+                                                <div className="mt-4 pt-4 border-t-2 border-slate-800 text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                                    <span className="block text-[11px] font-black text-slate-800 uppercase tracking-widest mb-2">BAKIM / SERVİS NOTU:</span>
                                                     {previewPdfJob.details.note.replace(/\[📍 Konum Kaydı\].*/g, '')}
                                                 </div>
                                             )}
@@ -558,7 +559,7 @@ useEffect(() => {
                             
                             {/* Fiyat Alanı (Varsa) */}
                             {previewPdfJob.details?.price && (
-                                <div className="mt-6 pt-4 border-t border-dashed border-slate-300 text-right">
+                                <div className="mt-6 pt-4 border-t-2 border-dashed border-slate-800 text-right">
                                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Toplam Tutar</span>
                                     <span className="text-2xl font-black text-slate-900">{previewPdfJob.details.price}</span>
                                 </div>
