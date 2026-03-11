@@ -708,17 +708,13 @@ useEffect(() => {
              {/* 🚀 KUSURSUZ YAZDIRMA CSS'İ - "NUKE" METODU (Framer Motion'u Ezer) */}
              <style dangerouslySetInnerHTML={{__html:`
                @media print {
-                 /* Mümkün olduğunca tek sayfaya sığdırma ve A4'e yayma ayarları */
-                 @page { margin: 10mm; size: auto; }
+                 @page { margin: 10mm; size: A4 portrait; }
                  
                  /* YAZICI VE PDF İÇİN RENK KORUMA KİLİDİ */
                  html, body {
                    -webkit-print-color-adjust: exact !important;
                    print-color-adjust: exact !important;
-                   width: 100% !important;
-                   height: auto !important; /* Otomatik yüksekliğe izin ver, sayfa taşmalarını önler */
-                   margin: 0 !important;
-                   padding: 0 !important;
+                   height: 100vh !important; /* Sayfaya tam oturması için eklendi */
                  }
                  
                  /* 1. BÜTÜN SAYFAYI GİZLE VE RESETLE */
@@ -738,32 +734,33 @@ useEffect(() => {
                     visibility: visible !important;
                  }
                  
-                 /* RENKSİZ (SİYAH BEYAZ) BASKI MODU DÜZELTMELERİ */
+                 /* RENKSİZ (SİYAH BEYAZ) BASKI MODU */
                  .bw-mode, .bw-mode * {
                     color: black !important;
                     border-color: black !important;
                  }
                  
+                 /* 🚀 DÜZELTİLDİ: Siyah/Beyaz modunda arka plan ve renklerin korunması sağlandı. */
                  .bw-mode .print-no-bg, .bw-mode .bg-slate-50, .bw-mode .bg-blue-50 {
                     background-color: transparent !important;
                  }
-                 
-                 /* 🚀 Siyah-beyaz modunda resimleri gri tona zorla, logo inline class'tan halledildi */
-                 .bw-mode img:not(.print-logo) { 
+                 .bw-mode img:not(.print-logo) { /* Logo hariç görselleri siyah/beyaz yap */
                     filter: grayscale(100%) !important;
                  }
 
-                 /* 4. YAZDIRILACAK ALANI KAĞIDIN EN TEPESİNE YAPIŞTIR VE TAM SAYFA KULLAN */
+                 /* 4. YAZDIRILACAK ALANI KAĞIDIN EN TEPESİNE YAPIŞTIR */
                  #pdf-printable-area {
                     position: absolute !important;
                     left: 0 !important;
                     top: 0 !important;
                     width: 100% !important;
-                    height: auto !important;
+                    min-height: 100% !important; /* PDF'in A4 sayfasına yayılmasını sağlar */
                     padding: 0 !important;
                     margin: 0 !important;
                     background-color: white !important;
-                    display: block !important; /* Flex iptal edildi, sayfa kırılmaları (page-break) daha iyi çalışsın diye */
+                    display: flex !important;
+                    flex-direction: column !important;
+                    justify-content: flex-start !important;
                  }
 
                  /* 5. MÜŞTERİ VE CİHAZ KUTULARINI YAN YANA GETİR VE MOBİL KISITLAMALARINI YAZICIDA EZ */
@@ -800,10 +797,11 @@ useEffect(() => {
                     break-inside: avoid !important; 
                  }
                  
+                 /* 🚀 DÜZELTİLDİ: Logo alanının PDF'te arka planının çıkması zorlandı */
                  .print-logo-container {
                     -webkit-print-color-adjust: exact !important;
                     print-color-adjust: exact !important;
-                    border: none !important; /* Dış çerçeve kaldırıldı, referans tasarımdaki gibi temiz dursun */
+                    border: 1px solid #e2e8f0 !important; /* PDF'te hafif bir çerçeve verildi */
                  }
                  
                  .print-logo {
@@ -815,24 +813,12 @@ useEffect(() => {
                     max-height: 80px !important;
                     width: auto !important;
                     object-fit: contain !important;
-                    page-break-inside: avoid !important;
                  }
-                 
-                 /* 8. TEK SAYFAYA SIĞDIRMA / SAYFA KIRILMALARINI ENGELLEME (ÖNEMLİ!) */
-                 .mb-8, .mb-6 { /* Fiş içerisindeki büyük boşlukları baskıda daraltıyoruz */
-                    margin-bottom: 3mm !important;
-                 }
-                 .p-5, .p-6, .sm\\:p-10 { /* Padding'leri baskı için idealize ettik */
-                    padding: 3mm !important;
-                 }
-                 
                  .print-always-break {
                     break-before: page !important;
                     page-break-before: always !important;
                  }
-                 
-                 /* Kutulu içeriklerin ortadan yarılmasını engelle */
-                 .page-break-avoid, .bg-slate-50\\/50, .border-b {
+                 .page-break-avoid {
                     break-inside: avoid !important;
                     page-break-inside: avoid !important;
                  }
