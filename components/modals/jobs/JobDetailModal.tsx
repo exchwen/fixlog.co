@@ -465,15 +465,15 @@ useEffect(() => {
                                 src={getSafeImageUrl(data.logo)} 
                                 alt="Firma Logosu" 
                                 crossOrigin="anonymous"
-                                className="h-16 sm:h-20 object-contain mb-3" 
+                                className="h-20 sm:h-24 object-contain mb-3 print-logo" 
                             />
                         )}
-                        <h1 className="text-xl font-black uppercase tracking-widest">{data?.name || 'Firma Adı'}</h1>
+                        <h1 className="text-2xl font-black uppercase tracking-widest">{data?.name || 'Firma Adı'}</h1>
                         <h2 className="text-lg font-bold mt-1 text-slate-800">{previewPdfJob.work_type === 'Periyodik Bakım' ? 'Bakım Fişi' : 'Servis Raporu'}</h2>
                     </div>
 
                     {/* 🚀 ÜST BİLGİLER (KAYIT NO, TARİH, TESİS) */}
-                    <div className="grid grid-cols-3 gap-2 text-sm font-medium border-b-2 border-slate-800 pb-4 mb-6">
+                    <div className="grid grid-cols-3 gap-2 text-sm font-medium border-b-2 border-dashed border-slate-800 pb-4 mb-6">
                         <div className="col-span-3 sm:col-span-1 flex items-center justify-between sm:block">
                             <div className="text-xs text-slate-500 font-bold">Fiş Numarası</div>
                             <div className="font-black">#{previewPdfJob.id}</div>
@@ -505,27 +505,26 @@ useEffect(() => {
 
                         return (
                             <div className="mb-6">
-                                <div className="text-xs font-black text-slate-800 uppercase border-b border-slate-200 pb-2 mb-3">Kontrol Edilen Aksamlar</div>
                                 <div className="space-y-1">
                                     {formEntries.map(([key, value], idx) => (
-                                        <div key={idx} className="flex justify-between items-center py-2.5 border-b border-slate-100 last:border-0 text-sm">
+                                        <div key={idx} className="flex justify-between items-center py-1.5 border-b border-dashed border-slate-300 last:border-0 text-sm">
                                             <span className="font-semibold text-slate-700">{key}</span>
-                                            <span className="font-black flex items-center gap-3 text-slate-900">
+                                            <span className="font-black text-slate-900">
                                                 {String(value)}
-                                                <div className="text-slate-800"><CheckCircle size={18} strokeWidth={3} /></div>
                                             </span>
                                         </div>
                                     ))}
                                 </div>
+                                <div className="border-b border-dashed border-slate-400 mt-4 mb-2"></div>
                             </div>
                         );
                     })()}
 
                     {/* 🚀 BAKIM NOTU VE FİYAT (YAN YANA VEYA ALT ALTA) */}
-                    <div className="mb-8 mt-6">
-                        <div className="flex flex-col sm:flex-row sm:items-start gap-4 bg-slate-50 p-4 rounded-xl print-no-bg border border-slate-200">
+                    <div className="mb-8 mt-4">
+                        <div className="flex flex-col sm:flex-row sm:items-start gap-4 bg-slate-50 p-4 rounded-xl print-no-bg border-2 border-dashed border-slate-200">
                             <div className="flex-1">
-                                <span className="text-xs font-black text-slate-800 uppercase tracking-widest block mb-1">Bakım / Servis Notu:</span>
+                                <span className="text-xs font-black text-slate-800 uppercase tracking-widest block mb-2">Bakım / Servis Notu:</span>
                                 <span className="text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed">
                                     {previewPdfJob.details?.note?.replace(/\[📍 Konum Kaydı\].*/g, '') || 'Rapor girilmemiş.'}
                                 </span>
@@ -566,10 +565,9 @@ useEffect(() => {
                                     {previewPdfJob.customer_signature_name}
                                 </div>
                                 <img 
-                                    src={previewPdfJob.signature_url} 
+                                    src={getSafeImageUrl(previewPdfJob.signature_url)} 
                                     alt="Müşteri İmzası" 
-                                    className="h-24 object-contain mix-blend-multiply" 
-                                    crossOrigin="anonymous" 
+                                    className="h-24 object-contain mix-blend-multiply print-signature" 
                                 />
                                 <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-4">
                                     {data?.name || 'Firma Adı'}
@@ -676,12 +674,22 @@ useEffect(() => {
                     display: none !important; 
                  }
                  
-                 /* 7. FOTOĞRAFLARI KESİLMEDEN YAZDIR */
-                 img { 
+                 /* 7. FOTOĞRAFLARI KESİLMEDEN YAZDIR VE LOGO/İMZA BOYUTLARINI KORU */
+                 .print-grid img { 
                     max-width: 100% !important; 
                     height: auto !important; 
                     page-break-inside: avoid !important; 
                     break-inside: avoid !important; 
+                 }
+                 .print-logo {
+                    max-height: 100px !important;
+                    width: auto !important;
+                    object-fit: contain !important;
+                 }
+                 .print-signature {
+                    max-height: 80px !important;
+                    width: auto !important;
+                    object-fit: contain !important;
                  }
                  .print-always-break {
                     break-before: page !important;
@@ -976,7 +984,7 @@ useEffect(() => {
                                         <p className="text-xs text-slate-500 mb-4 italic">Bu form müşteri nezaretinde elektronik imza ile onaylanmıştır.</p>
                                         <div className="inline-block bg-white p-4 rounded-xl shadow-sm border border-slate-100">
                                             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">İmzalayan: <span className="text-slate-800">{selectedJob.customer_signature_name}</span></div>
-                                            <img src={selectedJob.signature_url} crossOrigin="anonymous" alt="Müşteri İmzası" className="h-24 mx-auto object-contain mix-blend-multiply" />
+                                            <img src={getSafeImageUrl(selectedJob.signature_url)} alt="Müşteri İmzası" className="h-24 mx-auto object-contain mix-blend-multiply" />
                                         </div>
                                     </div>
                                 )}
