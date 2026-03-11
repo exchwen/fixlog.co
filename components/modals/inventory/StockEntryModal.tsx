@@ -20,7 +20,8 @@ export default function StockEntryModal({
     selectedCategory === 'Kategorisiz' ? !item.category : item.category === selectedCategory
   );
 
-  const selectedItemData = (data?.stock || []).find((s: any) => s.id === selectedItemId);
+  // 🚀 ÇÖZÜM BURADA: Veritabanından Number dönen ID ile Select'ten String dönen ID'yi eşitlemek için String() kullanıyoruz
+  const selectedItemData = (data?.stock || []).find((s: any) => String(s.id) === String(selectedItemId));
 
   // Modal kapandığında state'leri temizle
   useEffect(() => {
@@ -35,7 +36,10 @@ export default function StockEntryModal({
   const isFormValid = selectedItemId !== '' && addedQuantity !== '' && Number(addedQuantity) > 0;
 
   const handleSave = async () => {
-    if (!selectedItemData) return;
+    if (!selectedItemData) {
+      console.error("Ürün verisi eşleşmedi!"); // Olası hataları konsola basması için eklendi
+      return;
+    }
 
     // Mevcut miktar ile yeni girilen miktarı topluyoruz.
     const newTotalQuantity = Number(selectedItemData.quantity) + Number(addedQuantity);
@@ -52,7 +56,8 @@ export default function StockEntryModal({
         minAlert: selectedItemData.min_alert || 5
     };
 
-    await handleAction('update-stock', payload, () => setShowStockEntryModal(false), null);
+    // 🚀 DÜZELTME: resetFn eklenerek işlem sonrası input içi temizlendi.
+    await handleAction('update-stock', payload, () => setShowStockEntryModal(false), () => setAddedQuantity(''));
   };
 
   return (
