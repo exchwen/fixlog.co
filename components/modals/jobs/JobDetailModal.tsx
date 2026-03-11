@@ -46,111 +46,120 @@ const [activeTab, setActiveTab] = useState('ozet');
   const [isDrawing, setIsDrawing] = useState(false);
 
   const executePrint = (mode: 'color' | 'bw') => {
-    setPrintMode(mode);
-    setShowPrintModeSelection(false);
-    setTimeout(() => {
-      const printArea = document.getElementById('pdf-printable-area');
-      if (!printArea) return;
-
-      // 🚀 İSİMLENDİRME KURALI: Yazdırılırken PDF olarak kaydedilirse otomatik isim alsın
-      const currentMonth = new Date().toLocaleString('tr-TR', { month: 'long' });
-      const asset = previewPdfJob?.asset_id ? (data?.assets || []).find((a:any) => String(a.id) === String(previewPdfJob.asset_id)) : null;
-      
-      const rawAssetName = asset?.name || previewPdfJob?.customer_name || 'Varlik';
-      const rawAssetType = asset?.type || asset?.category || 'Islem';
-      const rawJobType = previewPdfJob?.work_type || 'Servis';
-      
-      const sanitizeTextForFile = (text: string) => {
-        if (!text) return '';
-        return text.replace(/ğ/g, 'g').replace(/Ğ/g, 'G').replace(/ü/g, 'u').replace(/Ü/g, 'U')
-                   .replace(/ş/g, 's').replace(/Ş/g, 'S').replace(/ı/g, 'i').replace(/İ/g, 'I')
-                   .replace(/ö/g, 'o').replace(/Ö/g, 'O').replace(/ç/g, 'c').replace(/Ç/g, 'C');
-      };
-
-      const safeFileName = `${sanitizeTextForFile(rawAssetName).replace(/\s+/g, '-')}-${sanitizeTextForFile(rawAssetType).replace(/\s+/g, '-')}-${sanitizeTextForFile(currentMonth).replace(/\s+/g, '-')}-${sanitizeTextForFile(rawJobType).replace(/\s+/g, '-')}`;
-
-      // 🚀 BOŞ SAYFA ÇÖZÜMÜ: Sadece formu içeren gizli bir Iframe oluşturup sadece onu yazdırıyoruz.
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      document.body.appendChild(iframe);
-
-      const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]')).map(s => s.outerHTML).join('');
-      const content = printArea.innerHTML;
-
-      const iframeDoc = iframe.contentWindow?.document;
-      if (iframeDoc) {
-        iframeDoc.open();
-        iframeDoc.write(`
-          <html>
-            <head>
-              <title>${safeFileName}</title>
-              ${styles}
-              <style>
-                @page { margin: 10mm; size: auto; }
-                body { background: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0; padding: 0; height: auto !important; overflow: visible !important; }
-                .no-print { display: none !important; }
-                
-                ${mode === 'bw' ? `
-                   *, body { color: black !important; border-color: black !important; }
-                   .print-no-bg, .bg-slate-50, .bg-blue-50 { background-color: transparent !important; }
-                   img:not(.print-logo) { filter: grayscale(100%) brightness(0) !important; }
-                ` : ''}
-
-                .bg-emerald-500 { background-color: #10b981 !important; }
-                .bg-rose-500 { background-color: #f43f5e !important; }
-                .text-emerald-600 { color: #059669 !important; }
-                .text-rose-600 { color: #e11d48 !important; }
-                .border-emerald-500 { border-color: #10b981 !important; }
-                .border-rose-500 { border-color: #f43f5e !important; }
-                .bg-black { background-color: #000000 !important; }
-                .border-black { border-color: #000000 !important; }
-                .bg-slate-50 { background-color: #f8fafc !important; }
-                .bg-slate-50\\/80 { background-color: #f8fafc !important; }
-                .bg-white { background-color: #ffffff !important; }
-                
-                .print-grid img { max-width: 100% !important; height: auto !important; }
-                .print-logo-container { border: none !important; }
-                .print-logo { max-height: 80px !important; width: auto !important; object-fit: contain !important; }
-                .print-signature { max-height: 60px !important; width: auto !important; object-fit: contain !important; }
-                
-                .mb-8 { margin-bottom: 6mm !important; }
-                .mb-6 { margin-bottom: 4mm !important; }
-                .mt-8 { margin-top: 6mm !important; }
-                .pt-6 { padding-top: 4mm !important; }
-                .py-3\\.5 { padding-top: 3mm !important; padding-bottom: 3mm !important; }
-                .py-5 { padding-top: 4mm !important; padding-bottom: 4mm !important; }
-                .px-5 { padding-left: 4mm !important; padding-right: 4mm !important; }
-                
-                .page-break-avoid { break-inside: avoid !important; page-break-inside: avoid !important; }
-              </style>
-            </head>
-            <body class="${mode === 'bw' ? 'bw-mode' : ''}">
-              <div style="padding: 20px;">
-                ${content}
-              </div>
-            </body>
-          </html>
-        `);
-        iframeDoc.close();
-
-        iframe.onload = () => {
-          setTimeout(() => {
-            iframe.contentWindow?.focus();
-            iframe.contentWindow?.print();
-            setTimeout(() => {
-              document.body.removeChild(iframe);
-              setPrintMode('color');
-            }, 1000);
-          }, 800); // İmajların yüklenmesi için kısa bir bekleme
-        };
-      }
-    }, 150);
-  };
+        setPrintMode(mode);
+        setShowPrintModeSelection(false);
+        setTimeout(() => {
+          const printArea = document.getElementById('pdf-printable-area');
+          if (!printArea) return;
+    
+          // 🚀 İSİMLENDİRME KURALI: Yazdırılırken PDF olarak kaydedilirse otomatik isim alsın
+          const currentMonth = new Date().toLocaleString('tr-TR', { month: 'long' });
+          const asset = previewPdfJob?.asset_id ? (data?.assets || []).find((a:any) => String(a.id) === String(previewPdfJob.asset_id)) : null;
+          
+          const rawAssetName = asset?.name || previewPdfJob?.customer_name || 'Varlik';
+          const rawAssetType = asset?.type || asset?.category || 'Islem';
+          const rawJobType = previewPdfJob?.work_type || 'Servis';
+          
+          const sanitizeTextForFile = (text: string) => {
+            if (!text) return '';
+            return text.replace(/ğ/g, 'g').replace(/Ğ/g, 'G').replace(/ü/g, 'u').replace(/Ü/g, 'U')
+                       .replace(/ş/g, 's').replace(/Ş/g, 'S').replace(/ı/g, 'i').replace(/İ/g, 'I')
+                       .replace(/ö/g, 'o').replace(/Ö/g, 'O').replace(/ç/g, 'c').replace(/Ç/g, 'C');
+          };
+    
+          const safeFileName = `${sanitizeTextForFile(rawAssetName).replace(/\s+/g, '-')}-${sanitizeTextForFile(rawAssetType).replace(/\s+/g, '-')}-${sanitizeTextForFile(currentMonth).replace(/\s+/g, '-')}-${sanitizeTextForFile(rawJobType).replace(/\s+/g, '-')}.pdf`;
+    
+          // 🚀 BOŞ SAYFA ÇÖZÜMÜ: Sadece formu içeren gizli bir Iframe oluşturup sadece onu yazdırıyoruz.
+          const iframe = document.createElement('iframe');
+          iframe.style.position = 'fixed';
+          iframe.style.right = '0';
+          iframe.style.bottom = '0';
+          iframe.style.width = '0';
+          iframe.style.height = '0';
+          iframe.style.border = '0';
+          document.body.appendChild(iframe);
+    
+          const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]')).map(s => s.outerHTML).join('');
+          const content = printArea.innerHTML;
+    
+          const iframeDoc = iframe.contentWindow?.document;
+          if (iframeDoc) {
+            iframeDoc.open();
+            iframeDoc.write(`
+              <html>
+                <head>
+                  <title>${safeFileName}</title>
+                  ${styles}
+                  <style>
+                    @page { margin: 10mm; size: A4 portrait; }
+                    body { background: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0; padding: 0; width: 100%; }
+                    .no-print { display: none !important; }
+                    /* 🚀 TAŞMA ÇÖZÜMÜ: Grid ve Flex yapılarını yazdırırken A4 sınırına zorla sığdırır */
+                    * { max-width: 100% !important; overflow: visible !important; box-sizing: border-box !important; }
+                    
+                    ${mode === 'bw' ? `
+                       *, body { color: black !important; border-color: black !important; }
+                       .print-no-bg, .bg-slate-50, .bg-blue-50 { background-color: transparent !important; }
+                       img:not(.print-logo) { filter: grayscale(100%) brightness(0) !important; }
+                    ` : ''}
+    
+                    .bg-emerald-500 { background-color: #10b981 !important; }
+                    .bg-rose-500 { background-color: #f43f5e !important; }
+                    .text-emerald-600 { color: #059669 !important; }
+                    .text-rose-600 { color: #e11d48 !important; }
+                    .border-emerald-500 { border-color: #10b981 !important; }
+                    .border-rose-500 { border-color: #f43f5e !important; }
+                    .bg-black { background-color: #000000 !important; }
+                    .border-black { border-color: #000000 !important; }
+                    .bg-slate-50 { background-color: #f8fafc !important; }
+                    .bg-slate-50\\/80 { background-color: #f8fafc !important; }
+                    .bg-white { background-color: #ffffff !important; }
+                    
+                    .print-grid img { max-width: 100% !important; height: auto !important; }
+                    .print-logo-container { border: none !important; }
+                    .print-logo { max-height: 80px !important; width: auto !important; object-fit: contain !important; }
+                    .print-signature { max-height: 60px !important; width: auto !important; object-fit: contain !important; }
+                    
+                    .mb-8 { margin-bottom: 6mm !important; }
+                    .mb-6 { margin-bottom: 4mm !important; }
+                    .mt-8 { margin-top: 6mm !important; }
+                    .pt-6 { padding-top: 4mm !important; }
+                    .py-3\\.5 { padding-top: 3mm !important; padding-bottom: 3mm !important; }
+                    .py-5 { padding-top: 4mm !important; padding-bottom: 4mm !important; }
+                    .px-5 { padding-left: 4mm !important; padding-right: 4mm !important; }
+                    
+                    .page-break-avoid { break-inside: avoid !important; page-break-inside: avoid !important; display: block; }
+                  </style>
+                </head>
+                <body class="${mode === 'bw' ? 'bw-mode' : ''}">
+                  <div style="padding: 0px; max-width: 800px; margin: 0 auto;">
+                    ${content}
+                  </div>
+                </body>
+              </html>
+            `);
+            iframeDoc.close();
+    
+            iframe.onload = () => {
+              setTimeout(() => {
+                // 🚀 ADLANDIRMA ÇÖZÜMÜ: Tarayıcı document.title'ı baz alır. Yazdırma anında orijinal title'ı değiştiriyoruz.
+                const originalTitle = document.title;
+                document.title = safeFileName;
+    
+                iframe.contentWindow?.focus();
+                iframe.contentWindow?.print();
+    
+                setTimeout(() => {
+                  // İşlem bitince site adını eski haline döndürüyoruz.
+                  document.title = originalTitle;
+                  document.body.removeChild(iframe);
+                  setPrintMode('color');
+                }, 1000);
+              }, 800); // İmajların yüklenmesi için kısa bir bekleme
+            };
+          }
+        }, 150);
+      };
 
   const getSafeImageUrl = (url: string | undefined) => {
     if (!url) return '';
