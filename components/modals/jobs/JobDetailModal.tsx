@@ -461,78 +461,105 @@ useEffect(() => {
                     {/* 🚀 PREMIUM LOGO & BAŞLIK (ORTALANMIŞ) */}
                     <div className="flex flex-col items-center justify-center mb-6 text-center">
                         {data?.logo && (
-                            <img 
-                                src={getSafeImageUrl(data.logo)} 
-                                alt="Firma Logosu" 
-                                crossOrigin="anonymous"
-                                className="h-20 sm:h-24 object-contain mb-3 print-logo" 
-                            />
+                            <div 
+                                className="w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center mb-4 shadow-sm border border-slate-100 print-logo-container p-2"
+                                style={{ backgroundColor: logoBgColor }}
+                            >
+                                <img 
+                                    src={getSafeImageUrl(data.logo)} 
+                                    alt="Firma Logosu" 
+                                    crossOrigin="anonymous"
+                                    className="w-full h-full object-contain print-logo" 
+                                />
+                            </div>
                         )}
                         <h1 className="text-2xl font-black uppercase tracking-widest">{data?.name || 'Firma Adı'}</h1>
                         <h2 className="text-lg font-bold mt-1 text-slate-800">{previewPdfJob.work_type === 'Periyodik Bakım' ? 'Bakım Fişi' : 'Servis Raporu'}</h2>
                     </div>
 
-                    {/* 🚀 ÜST BİLGİLER (KAYIT NO, TARİH, TESİS) */}
-                    <div className="grid grid-cols-3 gap-2 text-sm font-medium border-b-2 border-dashed border-slate-800 pb-4 mb-6">
-                        <div className="col-span-3 sm:col-span-1 flex items-center justify-between sm:block">
-                            <div className="text-xs text-slate-500 font-bold">Fiş Numarası</div>
+                    {/* 🚀 ÜST BİLGİLER (KAYIT NO, TARİH, PERSONEL, TESİS) */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm font-medium border-b-2 border-dashed border-slate-800 pb-4 mb-6">
+                        <div className="flex flex-col">
+                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Fiş Numarası</div>
                             <div className="font-black">#{previewPdfJob.id}</div>
                         </div>
-                        <div className="col-span-3 sm:col-span-1 flex items-center justify-between sm:block">
-                            <div className="text-xs text-slate-500 font-bold">Tarih</div>
+                        <div className="flex flex-col">
+                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Tarih</div>
                             <div className="font-black">{new Date(previewPdfJob.created_at || Date.now()).toLocaleString('tr-TR')}</div>
                         </div>
-                        <div className="col-span-3 sm:col-span-1 flex items-center justify-between sm:block">
-                            <div className="text-xs text-slate-500 font-bold">Tesis Adı</div>
-                            <div className="font-black leading-tight text-right sm:text-left">
+                        <div className="flex flex-col">
+                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">İlgili Personel</div>
+                            <div className="font-black truncate">{previewPdfJob.worker_name || 'Belirtilmedi'}</div>
+                        </div>
+                        <div className="flex flex-col">
+                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Tesis Adı / Adres</div>
+                            <div className="font-black leading-tight">
                                 {(() => {
                                     const asset = (data?.assets || []).find((a:any) => a.id === previewPdfJob.asset_id);
-                                    return asset ? `${asset.apartmentName || asset.name}` : (previewPdfJob.customer_name || 'Bilinmiyor');
+                                    if (asset) {
+                                        return (
+                                            <>
+                                                <div>{asset.apartmentName || asset.name}</div>
+                                                {asset.location && <div className="text-[11px] font-semibold text-slate-600 mt-0.5 whitespace-normal">{asset.location}</div>}
+                                            </>
+                                        );
+                                    }
+                                    return previewPdfJob.customer_name || 'Bilinmiyor';
                                 })()}
                             </div>
                         </div>
                     </div>
 
-                    {/* 🚀 DİNAMİK KONTROL LİSTESİ (CHECKLIST GÖRÜNÜMÜ) */}
-                    {(() => {
-                        if (!previewPdfJob.details) return null;
-                        
-                        // Sisteme ait özel fieldları filtreliyoruz (Sadece ustanın doldurduğu form alanları kalsın)
-                        const excludeKeys = ['note', 'price', 'lastEditedBy', 'lastEditedAt', 'managerName', 'managerId', 'createdBy', 'worker_id', 'assetName'];
-                        const formEntries = Object.entries(previewPdfJob.details).filter(([k]) => !excludeKeys.includes(k));
-                        
-                        if (formEntries.length === 0) return null;
-
-                        return (
-                            <div className="mb-6">
-                                <div className="space-y-1">
-                                    {formEntries.map(([key, value], idx) => (
-                                        <div key={idx} className="flex justify-between items-center py-1.5 border-b border-dashed border-slate-300 last:border-0 text-sm">
-                                            <span className="font-semibold text-slate-700">{key}</span>
-                                            <span className="font-black text-slate-900">
-                                                {String(value)}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="border-b border-dashed border-slate-400 mt-4 mb-2"></div>
-                            </div>
-                        );
-                    })()}
-
-                    {/* 🚀 BAKIM NOTU VE FİYAT (YAN YANA VEYA ALT ALTA) */}
-                    <div className="mb-8 mt-4">
-                        <div className="flex flex-col sm:flex-row sm:items-start gap-4 bg-slate-50 p-4 rounded-xl print-no-bg border-2 border-dashed border-slate-200">
-                            <div className="flex-1">
-                                <span className="text-xs font-black text-slate-800 uppercase tracking-widest block mb-2">Bakım / Servis Notu:</span>
-                                <span className="text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed">
-                                    {previewPdfJob.details?.note?.replace(/\[📍 Konum Kaydı\].*/g, '') || 'Rapor girilmemiş.'}
-                                </span>
+                    {/* 🚀 BİRLEŞTİRİLMİŞ FİŞ GÖRÜNÜMÜ (KONTROL LİSTESİ + NOTLAR) */}
+                    <div className="mb-8">
+                        <div className="bg-slate-50/50 p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm print-no-bg">
+                            <div className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4">BAKIM / SERVİS NOTU:</div>
+                            
+                            <div className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap flex flex-col gap-1.5">
+                                {(() => {
+                                    if (!previewPdfJob.details) return <div className="text-slate-500 italic">Rapor girilmemiş.</div>;
+                                    
+                                    const excludeKeys = ['note', 'price', 'lastEditedBy', 'lastEditedAt', 'managerName', 'managerId', 'createdBy', 'worker_id', 'assetName', 'usedMaterials'];
+                                    const formEntries = Object.entries(previewPdfJob.details).filter(([k]) => !excludeKeys.includes(k));
+                                    
+                                    return (
+                                        <>
+                                            {/* Saha Formu İçeriği */}
+                                            {formEntries.length > 0 && (
+                                                <div className="mb-3">
+                                                    <div className="text-slate-500 mb-2">--- {previewPdfJob.work_type || 'Servis'} Saha Formu ---</div>
+                                                    <div className="flex flex-col gap-1.5">
+                                                        {formEntries.map(([key, value], idx) => (
+                                                            <div key={idx} className="flex gap-2">
+                                                                <span className="text-slate-600">{key}:</span>
+                                                                <span className="font-bold text-slate-900">{String(value)}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <div className="text-slate-300 mt-3 border-b border-dashed border-slate-300"></div>
+                                                </div>
+                                            )}
+                                            
+                                            {/* Manuel Usta Notu */}
+                                            {previewPdfJob.details.note && (
+                                                <div className="mt-1 text-slate-800">
+                                                    {previewPdfJob.details.note.replace(/\[📍 Konum Kaydı\].*/g, '')}
+                                                </div>
+                                            )}
+                                            
+                                            {/* Hiçbiri yoksa */}
+                                            {formEntries.length === 0 && !previewPdfJob.details.note && (
+                                                <div className="text-slate-500 italic">Kayıtlı veri bulunamadı.</div>
+                                            )}
+                                        </>
+                                    );
+                                })()}
                             </div>
                             
+                            {/* Fiyat Alanı (Varsa) */}
                             {previewPdfJob.details?.price && (
-                                <div className="shrink-0 text-left sm:text-right mt-4 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-slate-200">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Toplam Tutar</span>
+                                <div className="mt-6 pt-4 border-t border-dashed border-slate-300 text-right">
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Toplam Tutar</span>
                                     <span className="text-2xl font-black text-slate-900">{previewPdfJob.details.price}</span>
                                 </div>
                             )}
@@ -681,8 +708,14 @@ useEffect(() => {
                     page-break-inside: avoid !important; 
                     break-inside: avoid !important; 
                  }
+                 .print-logo-container {
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                 }
                  .print-logo {
-                    max-height: 100px !important;
+                    max-height: 80px !important;
                     width: auto !important;
                     object-fit: contain !important;
                  }
