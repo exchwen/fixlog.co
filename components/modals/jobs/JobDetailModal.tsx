@@ -708,13 +708,13 @@ useEffect(() => {
              {/* 🚀 KUSURSUZ YAZDIRMA CSS'İ - "NUKE" METODU (Framer Motion'u Ezer) */}
              <style dangerouslySetInnerHTML={{__html:`
                @media print {
-                 @page { margin: 10mm; size: A4 portrait; }
+                 @page { margin: 5mm; size: A4 portrait; }
                  
                  /* YAZICI VE PDF İÇİN RENK KORUMA KİLİDİ */
                  html, body {
                    -webkit-print-color-adjust: exact !important;
                    print-color-adjust: exact !important;
-                   height: 100vh !important; /* Sayfaya tam oturması için eklendi */
+                   background-color: white !important;
                  }
                  
                  /* 1. BÜTÜN SAYFAYI GİZLE VE RESETLE */
@@ -734,18 +734,19 @@ useEffect(() => {
                     visibility: visible !important;
                  }
                  
-                 /* RENKSİZ (SİYAH BEYAZ) BASKI MODU */
+                 /* RENKSİZ (SİYAH BEYAZ) BASKI MODU DÜZELTMELERİ */
                  .bw-mode, .bw-mode * {
                     color: black !important;
                     border-color: black !important;
                  }
                  
-                 /* 🚀 DÜZELTİLDİ: Siyah/Beyaz modunda arka plan ve renklerin korunması sağlandı. */
                  .bw-mode .print-no-bg, .bw-mode .bg-slate-50, .bw-mode .bg-blue-50 {
                     background-color: transparent !important;
                  }
-                 .bw-mode img:not(.print-logo) { /* Logo hariç görselleri siyah/beyaz yap */
-                    filter: grayscale(100%) !important;
+                 
+                 /* 🚀 Siyah-beyaz modunda logoyu zorla grilendir */
+                 .bw-mode img:not(.print-logo) { 
+                    filter: grayscale(100%) brightness(0) !important;
                  }
 
                  /* 4. YAZDIRILACAK ALANI KAĞIDIN EN TEPESİNE YAPIŞTIR */
@@ -754,13 +755,12 @@ useEffect(() => {
                     left: 0 !important;
                     top: 0 !important;
                     width: 100% !important;
-                    min-height: 100% !important; /* PDF'in A4 sayfasına yayılmasını sağlar */
                     padding: 0 !important;
                     margin: 0 !important;
                     background-color: white !important;
-                    display: flex !important;
-                    flex-direction: column !important;
-                    justify-content: flex-start !important;
+                    display: block !important;
+                    /* 🚀 TEK SAYFAYA SIĞDIRMAK İÇİN ÖLÇEKLENDİRME */
+                    zoom: 0.92;
                  }
 
                  /* 5. MÜŞTERİ VE CİHAZ KUTULARINI YAN YANA GETİR VE MOBİL KISITLAMALARINI YAZICIDA EZ */
@@ -776,7 +776,7 @@ useEffect(() => {
                     display: flex !important;
                     flex-direction: row !important;
                     flex-wrap: nowrap !important;
-                    gap: 20px !important;
+                    gap: 10px !important;
                  }
                  .print-grid > div {
                     flex: 1 !important;
@@ -793,27 +793,31 @@ useEffect(() => {
                  .print-grid img { 
                     max-width: 100% !important; 
                     height: auto !important; 
-                    page-break-inside: avoid !important; 
-                    break-inside: avoid !important; 
                  }
                  
-                 /* 🚀 DÜZELTİLDİ: Logo alanının PDF'te arka planının çıkması zorlandı */
                  .print-logo-container {
                     -webkit-print-color-adjust: exact !important;
                     print-color-adjust: exact !important;
-                    border: 1px solid #e2e8f0 !important; /* PDF'te hafif bir çerçeve verildi */
+                    border: none !important; 
                  }
                  
                  .print-logo {
-                    max-height: 80px !important;
+                    max-height: 70px !important;
                     width: auto !important;
                     object-fit: contain !important;
                  }
                  .print-signature {
-                    max-height: 80px !important;
+                    max-height: 60px !important;
                     width: auto !important;
                     object-fit: contain !important;
                  }
+                 
+                 /* 8. SAYFA YIRTILMALARINI (PAGE BREAK) ENGELLE */
+                 .mb-8 { margin-bottom: 4mm !important; }
+                 .mb-6 { margin-bottom: 3mm !important; }
+                 .p-6, .sm\\:p-10 { padding: 4mm !important; }
+                 .py-2\\.5 { padding-top: 1.5mm !important; padding-bottom: 1.5mm !important; }
+                 
                  .print-always-break {
                     break-before: page !important;
                     page-break-before: always !important;
