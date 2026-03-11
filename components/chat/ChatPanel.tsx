@@ -106,8 +106,6 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
 
                 await beamsClient.addDeviceInterest('test-kanal');
 
-                console.log("✅ [BEAMS] Service Worker ile Kayıt Başarılı.");
-
             } catch (err) {
                 console.error("❌ [BEAMS] Kayıt Hatası:", err);
             }
@@ -691,7 +689,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                             )}
                          </div>
                          <div className="text-[11px] text-blue-700 font-bold truncate mt-1">
-                             {onlineUsers.has('PATRON') ? <span className="text-emerald-600">Çevrimiçi</span> : 'YÖNETİM KADEMESİ'}
+                             {onlineUsers.has('PATRON') ? <span className="text-emerald-600">Çevrimiçi</span> : 'PATRON'}
                          </div>
                        </div>
                      </div>

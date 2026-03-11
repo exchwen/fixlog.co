@@ -92,6 +92,9 @@ export default function ManagerDashboard() {
   const [showQRModal, setShowQRModal] = useState(false);
   const [selectedQRAsset, setSelectedQRAsset] = useState(null);
 
+  // 🚀 AKILLI EXCEL STATE'İ EKLENDİ
+  const [showSmartExcelModal, setShowSmartExcelModal] = useState(false);
+
   // 🚀 EKLENDİ: Fiş Yazdırma Modalı State'leri
   const [showThermalPrintModal, setShowThermalPrintModal] = useState(false);
   const [selectedThermalJob, setSelectedThermalJob] = useState(null);
@@ -650,7 +653,7 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
             </div>
           )}
           
-          {activeTab === 'assets' && <AssetsTab data={data} setShowAddAsset={setShowAddAsset} setSelectedAsset={setSelectedAsset} setShowQRModal={setShowQRModal} setSelectedQRAsset={setSelectedQRAsset} />}
+          {activeTab === 'assets' && <AssetsTab data={data} setShowAddAsset={setShowAddAsset} setSelectedAsset={setSelectedAsset} setShowQRModal={setShowQRModal} setSelectedQRAsset={setSelectedQRAsset} setShowSmartExcelModal={setShowSmartExcelModal} />}
           
           {activeTab === 'finance' && <FinanceTab data={data} userRole="Yönetici" />}
 
@@ -722,6 +725,9 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
 
         showQRModal={showQRModal} setShowQRModal={setShowQRModal}
         selectedQRAsset={selectedQRAsset} setSelectedQRAsset={setSelectedQRAsset}
+        
+        // 🚀 Akıllı Excel Props Aktarımı
+        showSmartExcelModal={showSmartExcelModal} setShowSmartExcelModal={setShowSmartExcelModal}
 
         // 🚀 EKLENDİ: Propsların Modallara geçirilmesi
         showThermalPrintModal={showThermalPrintModal} setShowThermalPrintModal={setShowThermalPrintModal}

@@ -17,6 +17,7 @@ import StaffDetailModal from './profiles/StaffDetailModal';
 import AddStaffModal from './forms/AddStaffModal';
 import AddCustomerModal from './forms/AddCustomerModal';
 import AddAssetModal from './forms/AddAssetModal';
+import SmartExcelModal from './forms/SmartExcelModal';
 
 // 4. Stok, Tedarikçi, Ayarlar ve SİPARİŞLER
 import StockModal from './inventory/StockModal';
@@ -50,6 +51,7 @@ export default function DashboardModals(props: any) {
       <AddStaffModal {...props} />
       <AddCustomerModal {...props} />
       <AddAssetModal {...props} />
+      <SmartExcelModal {...props} /> {/* 🚀 AKILLI EXCEL RENDER EDİLİYOR */}
 
       {/* STOK, TEDARİKÇİ, KATEGORİ VE SİPARİŞ MODALLARI */}
       <StockModal {...props} />

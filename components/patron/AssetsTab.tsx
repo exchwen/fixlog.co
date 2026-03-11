@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Box, MapPin, Users, Search, QrCode, ExternalLink, Tag } from 'lucide-react';
 
-export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, setShowQRModal, setSelectedQRAsset }: any) {
+export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, setShowQRModal, setSelectedQRAsset, setShowSmartExcelModal }: any) {
   const [searchTerm, setSearchTerm] = useState('');
   const [logoBgColor, setLogoBgColor] = useState<string>('#f8fafc');
 
@@ -123,6 +123,11 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+
+          {/* 🚀 1: Akıllı Excel Butonu Eklendi */}
+          <button onClick={() => setShowSmartExcelModal && setShowSmartExcelModal(true)} className="bg-emerald-600 text-white w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm shadow-emerald-200 hover:bg-emerald-700 active:scale-95 transition-all whitespace-nowrap">
+            <Box size={16} /> Akıllı Excel Yükle
+          </button>
 
           <button onClick={() => setShowAddAsset(true)} className="bg-blue-600 text-white w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all whitespace-nowrap">
             <Plus size={16} /> Yeni Varlık Ekle
