@@ -57,7 +57,8 @@ const [activeTab, setActiveTab] = useState('ozet');
       const formattedDate = `${today.getDate().toString().padStart(2, '0')}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getFullYear()}`;
       const asset = previewPdfJob?.asset_id ? (data?.assets || []).find((a:any) => String(a.id) === String(previewPdfJob.asset_id)) : null;
       
-      const rawAssetName = asset?.name || previewPdfJob?.customer_name || 'Varlik';
+      // 🚀 APARTMAN ADI ÇÖZÜMÜ: Varlığın apartman adı varsa öncelikli olarak onu, yoksa varlık adını alıyoruz
+      const rawAssetName = asset?.apartmentName || asset?.name || previewPdfJob?.customer_name || 'Varlik';
       const rawAssetType = asset?.type || asset?.category || 'Genel';
       const rawJobType = previewPdfJob?.work_type || 'Servis';
       
@@ -492,7 +493,8 @@ useEffect(() => {
             const formattedDate = `${today.getDate().toString().padStart(2, '0')}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getFullYear()}`;
             const asset = jobData.asset_id ? (data?.assets || []).find((a:any) => String(a.id) === String(jobData.asset_id)) : null;
             
-            const rawAssetName = asset?.name || jobData.customer_name || 'Varlik';
+            // 🚀 APARTMAN ADI ÇÖZÜMÜ: Varlığın apartman adı varsa öncelikli olarak onu, yoksa varlık adını alıyoruz
+            const rawAssetName = asset?.apartmentName || asset?.name || jobData.customer_name || 'Varlik';
             const rawAssetType = asset?.type || asset?.category || 'Genel';
             const rawJobType = jobData.work_type || 'Servis';
             
