@@ -277,15 +277,20 @@ export default function CustomerDetailModal({
                                   {(data?.assets || []).filter((a: any) => a.customer_id === selectedCustomer?.id).length > 0 ? (data?.assets || []).filter((a: any) => a.customer_id === selectedCustomer?.id).map((a: any) => {
                                       const aptName = a.apartmentName || a.apartment_name;
                                       return (
-                                          <div 
-                                              key={a.id} 
-                                              onClick={() => { 
-                                                  // 🚀 KİMİ AÇTIĞIMIZI BİLDİRİYORUZ
-                                                  setOpenedChild('asset');
-                                                  if(setSelectedAsset) setSelectedAsset(a); 
-                                              }} 
-                                              className="p-4 border border-blue-200 rounded-xl bg-blue-50/50 cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all active:scale-95 group flex flex-col justify-center gap-1.5"
-                                          >
+                                        <div 
+                                            key={a.id} 
+                                            onClick={() => { 
+                                                // 🚀 BUG FIX: Müşteri modalı içerisinden yeni bir Varlık açılmak istendiğinde
+                                                // Önce Müşteri Modalını kapattığımızı simüle edip arkadaki Varlık Modalını güncelliyoruz
+                                                if(setSelectedCustomer) setSelectedCustomer(null);
+                                                if(setSelectedAsset) {
+                                                    setTimeout(() => {
+                                                        setSelectedAsset(a);
+                                                    }, 50); // React'ın state batching karmaşasını önlemek için ufak bir gecikme
+                                                }
+                                            }} 
+                                            className="p-4 border border-blue-200 rounded-xl bg-blue-50/50 cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all active:scale-95 group flex flex-col justify-center gap-1.5"
+                                        >
                                               <div className="flex items-center gap-2 text-blue-700 font-black text-sm">
                                                   <Building2 size={16} className="shrink-0" />
                                                   <span className="truncate">{aptName || 'Bağımsız Adres'}</span>
