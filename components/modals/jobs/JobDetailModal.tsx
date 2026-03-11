@@ -714,6 +714,7 @@ useEffect(() => {
                  html, body {
                    -webkit-print-color-adjust: exact !important;
                    print-color-adjust: exact !important;
+                   height: 100vh !important; /* Sayfaya tam oturması için eklendi */
                  }
                  
                  /* 1. BÜTÜN SAYFAYI GİZLE VE RESETLE */
@@ -738,11 +739,13 @@ useEffect(() => {
                     color: black !important;
                     border-color: black !important;
                  }
+                 
+                 /* 🚀 DÜZELTİLDİ: Siyah/Beyaz modunda arka plan ve renklerin korunması sağlandı. */
                  .bw-mode .print-no-bg, .bw-mode .bg-slate-50, .bw-mode .bg-blue-50 {
                     background-color: transparent !important;
                  }
-                 .bw-mode img {
-                    filter: grayscale(100%) brightness(0) !important;
+                 .bw-mode img:not(.print-logo) { /* Logo hariç görselleri siyah/beyaz yap */
+                    filter: grayscale(100%) !important;
                  }
 
                  /* 4. YAZDIRILACAK ALANI KAĞIDIN EN TEPESİNE YAPIŞTIR */
@@ -751,9 +754,13 @@ useEffect(() => {
                     left: 0 !important;
                     top: 0 !important;
                     width: 100% !important;
+                    min-height: 100% !important; /* PDF'in A4 sayfasına yayılmasını sağlar */
                     padding: 0 !important;
                     margin: 0 !important;
                     background-color: white !important;
+                    display: flex !important;
+                    flex-direction: column !important;
+                    justify-content: flex-start !important;
                  }
 
                  /* 5. MÜŞTERİ VE CİHAZ KUTULARINI YAN YANA GETİR VE MOBİL KISITLAMALARINI YAZICIDA EZ */
@@ -789,12 +796,14 @@ useEffect(() => {
                     page-break-inside: avoid !important; 
                     break-inside: avoid !important; 
                  }
+                 
+                 /* 🚀 DÜZELTİLDİ: Logo alanının PDF'te arka planının çıkması zorlandı */
                  .print-logo-container {
                     -webkit-print-color-adjust: exact !important;
                     print-color-adjust: exact !important;
-                    border: none !important;
-                    box-shadow: none !important;
+                    border: 1px solid #e2e8f0 !important; /* PDF'te hafif bir çerçeve verildi */
                  }
+                 
                  .print-logo {
                     max-height: 80px !important;
                     width: auto !important;
