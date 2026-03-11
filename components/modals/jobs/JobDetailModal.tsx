@@ -1114,17 +1114,49 @@ useEffect(() => {
                             </motion.div>
                         )}
 
-                        {activeTab === 'form' && (
+{activeTab === 'form' && (
                              <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="space-y-4">
                                  {(() => {
                                      const excludeKeys = ['note', 'price', 'lastEditedBy', 'lastEditedAt', 'managerName', 'managerId', 'createdBy', 'worker_id', 'assetName', 'usedMaterials'];
                                      const formEntries = Object.entries(selectedJob.details || {}).filter(([k]) => !excludeKeys.includes(k));
                                      
+                                     let rawNote = selectedJob.details?.note || selectedJob.taskNote || '';
+                                     let extractedChecklist: { key: string, val: string }[] = [];
+                                     let cleanNote = '';
+
+                                     if (rawNote.includes('---') && rawNote.includes('Saha Formu')) {
+                                         const lines = rawNote.split('\n');
+                                         let inForm = false;
+                                         
+                                         for (const line of lines) {
+                                             if (line.includes('---') && line.includes('Saha Formu')) {
+                                                 inForm = true;
+                                                 continue;
+                                             }
+                                             if (inForm && line.includes('----------------------------------')) {
+                                                 inForm = false;
+                                                 continue;
+                                             }
+
+                                             if (inForm && line.includes(':')) {
+                                                 const [key, ...valArr] = line.split(':');
+                                                 extractedChecklist.push({ key: key.trim(), val: valArr.join(':').trim() });
+                                             } else if (!inForm && line.trim() !== '') {
+                                                 cleanNote += line + '\n';
+                                             }
+                                         }
+                                     } else {
+                                         cleanNote = rawNote;
+                                     }
+
+                                     cleanNote = cleanNote.replace(/\[Usta Notu\]:/g, '').replace(/\[📍 Konum Kaydı\].*/g, '').trim();
+
                                      const hasFormEntries = formEntries.length > 0;
-                                     const hasNote = !!selectedJob.details?.note;
+                                     const hasChecklist = extractedChecklist.length > 0;
+                                     const hasCleanNote = !!cleanNote;
                                      const hasMaterials = selectedJob.details?.usedMaterials && selectedJob.details.usedMaterials.length > 0;
 
-                                     if (!hasFormEntries && !hasNote && !hasMaterials) {
+                                     if (!hasFormEntries && !hasChecklist && !hasCleanNote && !hasMaterials) {
                                          return (
                                              <div className="flex flex-col items-center justify-center py-10 px-4 text-center bg-slate-50 border border-slate-200 rounded-2xl border-dashed">
                                                  <div className="w-16 h-16 bg-white border border-slate-100 shadow-sm text-slate-300 rounded-full flex items-center justify-center mb-4">
@@ -1152,11 +1184,65 @@ useEffect(() => {
                                                  </div>
                                              )}
 
-                                             {hasNote && (
+                                             {hasChecklist && (
+                                                 <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                                     <div className="bg-slate-50/80 px-5 py-3.5 border-b border-slate-200">
+                                                         <div className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><ShieldCheck size={14}/> Doldurulan Saha Formu</div>
+                                                     </div>
+                                                     <div className="flex flex-col">
+                                                         {extractedChecklist.map((item, idx) => {
+                                                             const valStr = item.val.toLowerCase().trim();
+                                                             const isPositive = ['evet', 'var', 'true', 'ok', 'uygun', 'sorunsuz', 'yapıldı'].some(v => valStr === v || valStr.includes(v));
+                                                             const isNegative = ['hayır', 'hayir', 'yok', 'false', 'uygun değil', 'değil', 'sorunlu', 'kötü'].some(v => valStr === v || valStr.includes(v));
+                                                             const isBooleanType = isPositive || isNegative;
+
+                                                             let colorClass = 'text-slate-900';
+                                                             let bgColorClass = 'bg-slate-900';
+
+                                                             if (isPositive) {
+                                                                 colorClass = 'text-emerald-600';
+                                                                 bgColorClass = 'bg-emerald-500';
+                                                             } else if (isNegative) {
+                                                                 colorClass = 'text-rose-600';
+                                                                 bgColorClass = 'bg-rose-500';
+                                                             } else if (valStr.includes('mavi')) colorClass = 'text-blue-600';
+                                                             else if (valStr.includes('yeşil') || valStr.includes('yesil')) colorClass = 'text-emerald-600';
+                                                             else if (valStr.includes('kırmızı') || valStr.includes('kirmizi')) colorClass = 'text-rose-600';
+                                                             else if (valStr.includes('sarı') || valStr.includes('sari')) colorClass = 'text-amber-500';
+                                                             else if (valStr.includes('turuncu')) colorClass = 'text-orange-500';
+                                                             else if (valStr.includes('mor')) colorClass = 'text-purple-600';
+
+                                                             return (
+                                                                 <div key={idx} className={`flex justify-between items-center py-3.5 px-5 border-b border-slate-100 last:border-0 ${idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}`}>
+                                                                     <span className="text-[13px] font-bold text-slate-700">{item.key}</span>
+                                                                     <div className="shrink-0 flex items-center gap-3">
+                                                                         {isBooleanType && <span className={`text-[11px] font-black uppercase tracking-widest ${colorClass}`}>{item.val}</span>}
+                                                                         {isBooleanType ? (
+                                                                             isPositive ? (
+                                                                                 <div className={`w-5 h-5 flex items-center justify-center rounded shadow-sm ${bgColorClass}`}>
+                                                                                     <CheckSquare size={14} className="text-white" strokeWidth={3} />
+                                                                                 </div>
+                                                                             ) : (
+                                                                                 <div className={`w-5 h-5 flex items-center justify-center rounded shadow-sm ${bgColorClass}`}>
+                                                                                     <X size={14} className="text-white" strokeWidth={4} />
+                                                                                 </div>
+                                                                             )
+                                                                         ) : (
+                                                                             <span className={`text-[12px] font-black uppercase ${colorClass}`}>{item.val}</span>
+                                                                         )}
+                                                                     </div>
+                                                                 </div>
+                                                             );
+                                                         })}
+                                                     </div>
+                                                 </div>
+                                             )}
+
+                                             {hasCleanNote && (
                                                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                                                     <div className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Usta Saha Notu</div>
+                                                     <div className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest flex items-center gap-1.5">Usta Saha Notu</div>
                                                      <p className="text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-wrap italic border-l-2 border-slate-300 pl-3">
-                                                         "{selectedJob.details.note}"
+                                                         {cleanNote}
                                                      </p>
                                                  </div>
                                              )}
