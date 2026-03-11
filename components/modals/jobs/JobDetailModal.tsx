@@ -516,59 +516,121 @@ useEffect(() => {
                             
                             <div className="flex flex-col">
                                 {(() => {
-                                    if (!previewPdfJob.details) return <div className="p-5 text-slate-500 italic">Rapor girilmemiş.</div>;
+                                    // 🚀 YENİ: Usta Notunu ve Detayları Ayıklama Mantığı
+                                    let rawNote = previewPdfJob.details?.note || previewPdfJob.taskNote || '';
+                                    let extractedChecklist: { key: string, val: string }[] = [];
+                                    let cleanNote = '';
+
+                                    if (rawNote.includes('---') && rawNote.includes('Saha Formu')) {
+                                        const lines = rawNote.split('\n');
+                                        let inForm = false;
+                                        
+                                        for (const line of lines) {
+                                            if (line.includes('---') && line.includes('Saha Formu')) {
+                                                inForm = true;
+                                                continue;
+                                            }
+                                            if (inForm && line.includes('----------------------------------')) {
+                                                inForm = false;
+                                                continue;
+                                            }
+
+                                            if (inForm && line.includes(':')) {
+                                                const [key, ...valArr] = line.split(':');
+                                                extractedChecklist.push({ key: key.trim(), val: valArr.join(':').trim() });
+                                            } else if (!inForm && line.trim() !== '') {
+                                                cleanNote += line + '\n';
+                                            }
+                                        }
+                                    } else {
+                                        cleanNote = rawNote;
+                                        if (previewPdfJob.details) {
+                                            const excludeKeys = ['note', 'price', 'lastEditedBy', 'lastEditedAt', 'managerName', 'managerId', 'createdBy', 'worker_id', 'assetName', 'usedMaterials'];
+                                            Object.entries(previewPdfJob.details).forEach(([k, v]) => {
+                                                if (!excludeKeys.includes(k) && typeof v === 'string') {
+                                                    extractedChecklist.push({ key: k, val: v });
+                                                }
+                                            });
+                                        }
+                                    }
+
+                                    cleanNote = cleanNote.replace(/\[Usta Notu\]:/g, '').replace(/\[📍 Konum Kaydı\].*/g, '').trim();
                                     
-                                    const excludeKeys = ['note', 'price', 'lastEditedBy', 'lastEditedAt', 'managerName', 'managerId', 'createdBy', 'worker_id', 'assetName', 'usedMaterials'];
-                                    const formEntries = Object.entries(previewPdfJob.details).filter(([k]) => !excludeKeys.includes(k));
+                                    if (extractedChecklist.length === 0 && !cleanNote) return <div className="p-5 text-slate-500 italic">Rapor girilmemiş.</div>;
                                     
                                     return (
                                         <>
-                                            {/* Saha Formu İçeriği (Mobil Fiş Uygulaması Düzeni) */}
-                                            {formEntries.length > 0 && (
+                                            {/* Saha Formu İçeriği (Termal Fiş Düzeni Birebir Aynısı) */}
+                                            {extractedChecklist.length > 0 && (
                                                 <div className="flex flex-col bg-white">
-                                                    {formEntries.map(([key, value], idx) => {
-                                                        // "Mevcut Etiket" gibi özel satırlar için farklı tasarım kontrolü
-                                                        const isSpecialLabel = key.toLowerCase().includes('etiket');
-                                                        const valStr = String(value).toUpperCase();
+                                                    {extractedChecklist.map((item, idx) => {
+                                                        const valStr = item.val.toLowerCase().trim();
                                                         
-                                                        // Duruma göre "Tik" ikonu veya kare ikon gösterimi
-                                                        const isOk = valStr === 'UYGUN' || valStr === 'EVET' || valStr === 'YAPILDI' || valStr === 'VAR';
+                                                        // Olumlu/Olumsuz kontrolü
+                                                        const isPositive = ['evet', 'var', 'true', 'ok', 'uygun', 'sorunsuz', 'yapıldı'].some(v => valStr === v || valStr.includes(v));
+                                                        const isNegative = ['hayır', 'hayir', 'yok', 'false', 'uygun değil', 'değil', 'sorunlu', 'kötü'].some(v => valStr === v || valStr.includes(v));
+                                                        const isBooleanType = isPositive || isNegative;
                                                         
+                                                        // Renk tespiti (Etiket vb.)
+                                                        let colorClass = 'text-slate-900';
+                                                        if (valStr.includes('mavi')) colorClass = 'text-blue-600';
+                                                        else if (valStr.includes('yeşil') || valStr.includes('yesil')) colorClass = 'text-emerald-600';
+                                                        else if (valStr.includes('kırmızı') || valStr.includes('kirmizi')) colorClass = 'text-rose-600';
+                                                        else if (valStr.includes('sarı') || valStr.includes('sari')) colorClass = 'text-amber-500';
+                                                        else if (valStr.includes('turuncu')) colorClass = 'text-orange-500';
+                                                        else if (valStr.includes('mor')) colorClass = 'text-purple-600';
+
                                                         return (
-                                                            <div key={idx} className="flex justify-between items-center p-4 border-b border-slate-100 last:border-b-0">
+                                                            <div key={idx} className="flex justify-between items-end p-4 border-b border-slate-100 last:border-b-0">
                                                                 <div className="flex flex-col gap-1 pr-4">
-                                                                    <span className="text-slate-900 text-[13px] font-bold leading-tight">{key}</span>
-                                                                    {!isSpecialLabel && (
-                                                                        <span className="text-slate-800 text-[13px] font-black uppercase tracking-wider">{valStr}</span>
+                                                                    <span className="text-slate-900 text-[13px] font-bold leading-tight">{item.key}</span>
+                                                                    {isBooleanType && (
+                                                                        <span className={`text-[11px] font-black uppercase tracking-wider ${colorClass}`}>{item.val}</span>
                                                                     )}
                                                                 </div>
                                                                 
-                                                                {isSpecialLabel ? (
-                                                                    <span className="text-blue-600 text-[14px] font-black uppercase tracking-widest">{valStr}</span>
-                                                                ) : (
-                                                                    <div className="shrink-0 text-slate-900">
-                                                                        {isOk ? <CheckSquare size={24} strokeWidth={2.5} /> : <div className="w-6 h-6 border-2 border-slate-900 rounded-[4px]"></div>}
-                                                                    </div>
-                                                                )}
+                                                                <div className="shrink-0 pb-0.5">
+                                                                    {isBooleanType ? (
+                                                                        isPositive ? (
+                                                                            <div className="w-5 h-5 bg-slate-900 flex items-center justify-center rounded-[4px]">
+                                                                                <CheckSquare size={16} className="text-white" strokeWidth={3} />
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className="w-5 h-5 border-2 border-slate-900 rounded-[4px]"></div>
+                                                                        )
+                                                                    ) : (
+                                                                        <span className={`text-[12px] font-black uppercase ${colorClass} ${colorClass === 'text-slate-900' ? 'border-b-2 border-slate-900' : ''}`}>{item.val}</span>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         );
                                                     })}
                                                 </div>
                                             )}
                                             
-                                            {/* Manuel Usta Notu */}
-                                            {previewPdfJob.details.note && (
-                                                <div className="p-5 border-t border-slate-200 bg-slate-50/50">
-                                                    <span className="block text-[11px] font-black text-slate-800 uppercase tracking-widest mb-2">BAKIM / SERVİS NOTU:</span>
-                                                    <div className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">
-                                                        {previewPdfJob.details.note.replace(/\[📍 Konum Kaydı\].*/g, '')}
+                                            {/* Kullanılan Malzemeler (Varsa) */}
+                                            {previewPdfJob.details?.usedMaterials && previewPdfJob.details.usedMaterials.length > 0 && (
+                                                <div className="p-5 border-t border-slate-200 bg-white">
+                                                    <span className="block text-[11px] font-black text-slate-800 uppercase tracking-widest mb-3">KULLANILAN MALZEMELER:</span>
+                                                    <div className="space-y-1.5 text-sm font-semibold text-slate-700">
+                                                        {previewPdfJob.details.usedMaterials.map((m: any, idx: number) => (
+                                                            <div key={idx} className="flex justify-between items-center">
+                                                                <span>• {m.name}</span>
+                                                                <span className="font-black text-slate-900">{m.quantity} {m.unit}</span>
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 </div>
                                             )}
-                                            
-                                            {/* Hiçbiri yoksa */}
-                                            {formEntries.length === 0 && !previewPdfJob.details.note && (
-                                                <div className="p-5 text-slate-500 italic">Kayıtlı veri bulunamadı.</div>
+
+                                            {/* Manuel Usta Notu */}
+                                            {cleanNote && (
+                                                <div className="p-5 border-t border-slate-200 bg-slate-50/50">
+                                                    <span className="block text-[11px] font-black text-slate-800 uppercase tracking-widest mb-2">BAKIM / SERVİS NOTU:</span>
+                                                    <div className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                                        {cleanNote}
+                                                    </div>
+                                                </div>
                                             )}
                                         </>
                                     );
