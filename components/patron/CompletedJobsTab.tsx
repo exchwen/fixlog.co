@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, CheckCircle, MapPin, ClipboardList, Calendar, Clock, ArrowRight, ShieldCheck, UserPlus, UserCheck, Wrench, Building2, FileCheck } from 'lucide-react';
+import { Search, CheckCircle, MapPin, ClipboardList, Calendar, Clock, ArrowRight, ShieldCheck, UserPlus, UserCheck, Wrench, Building2, FileCheck, Database } from 'lucide-react';
 
 export default function CompletedJobsTab({ data, setSelectedJob, statusColors }: any) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -252,9 +252,33 @@ export default function CompletedJobsTab({ data, setSelectedJob, statusColors }:
                  </td>
                </tr>
              )}
-           </tbody>
-         </table>
-      </div>
+             </tbody>
+           </table>
+  
+           {/* 🚀 GENEL ARŞİV MOTORU (4. SEÇENEK) */}
+           <div className="p-6 bg-slate-50 border-t border-slate-100 flex flex-col items-center">
+              <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mb-3">Sistem 2 aydan eski kayıtları otomatik arşivler</p>
+              <button 
+                  onClick={async () => {
+                      const token = localStorage.getItem('patron_authToken');
+                      const res = await fetch(`https://backend.isdokumu.workers.dev/get-archived-jobs?slug=${data.slug}`, {
+                          headers: { 'Authorization': `Bearer ${token}` }
+                      });
+                      const archived = await res.json();
+                      if(archived.length > 0) {
+                          data.jobs = [...archived, ...data.jobs];
+                          setSearchTerm(searchTerm + ' '); 
+                          alert(`Toplam ${archived.length} adet eski iş kaydı arşivden çıkarıldı ve listeye eklendi.`);
+                      } else {
+                          alert("Arşivde kayıtlı eski iş bulunamadı.");
+                      }
+                  }}
+                  className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-slate-200 text-slate-600 rounded-2xl font-black text-xs hover:bg-slate-100 transition-all active:scale-95 shadow-sm"
+              >
+                  <Database size={16} className="text-blue-500" /> TÜM YILLARIN ARŞİVİNİ GETİR
+              </button>
+           </div>
+        </div>
 
       {/* MOBİL GÖRÜNÜM: DİKEY İŞ KARTLARI */}
       <div className="md:hidden flex flex-col gap-3">

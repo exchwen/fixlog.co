@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Box, MapPin, Users, Search, QrCode, ExternalLink, Tag } from 'lucide-react';
+import { Plus, Box, MapPin, Users, Search, QrCode, ExternalLink, Tag, Archive } from 'lucide-react';
 
 export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, setShowQRModal, setSelectedQRAsset, setShowSmartExcelModal }: any) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -129,6 +129,25 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
             <Box size={16} /> Akıllı Excel Yükle
           </button>
 
+          {/* 🚀 2: Tüm Varlıkların Arşiv Geçmişini Getir */}
+          <button 
+            onClick={async () => {
+               const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
+               const res = await fetch(`https://backend.isdokumu.workers.dev/get-archived-jobs?slug=${data.slug}`, {
+                   headers: { 'Authorization': `Bearer ${token}` }
+               });
+               const archived = await res.json();
+               if(archived.length > 0) {
+                   data.jobs = [...archived, ...data.jobs];
+                   setSearchTerm(searchTerm + ' ');
+                   alert("Cihazların tüm arşiv dökümleri yüklendi. Etiket renkleri ve geçmiş veriler güncellendi.");
+               }
+            }}
+            className="bg-slate-100 text-slate-700 w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border border-slate-200 hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap"
+          >
+            <Archive size={16} className="text-blue-500" /> Arşivi Taramaya Başla
+          </button>
+
           <button onClick={() => setShowAddAsset(true)} className="bg-blue-600 text-white w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all whitespace-nowrap">
             <Plus size={16} /> Yeni Varlık Ekle
           </button>
@@ -139,7 +158,7 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
         {filteredAssets.length > 0 ? filteredAssets.map((a: any) => {
             const aptName = a.apartmentName || a.apartment_name;
             
-            // 🚀 GEÇMİŞ İŞLERİ TARAYARAK EN GÜNCEL ETİKET RENGİNİ BULMA ALGORİTMASI
+            // 🚀 HİBRİT ETİKET SİSTEMİ: Arşivlenmiş veya Sıcak işleri tarar
             const latestColor = (() => {
               const assetJobs = (data?.jobs || [])
                 .filter((j: any) => String(j.asset_id) === String(a.id) && j.work_type === 'Periyodik Bakım' && j.details && (j.details.label_color || j.details['Mevcut Etiket']))
@@ -147,6 +166,19 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
               
               return assetJobs[0]?.details?.label_color || assetJobs[0]?.details?.['Mevcut Etiket'] || a.label_color || a.labelColor || null;
             })();
+
+            // 🚀 ARŞİV DENETLEYİCİ: Eğer asansör çok eskiyse arşivden güncel rengi getirmek için tetikleyici
+            const checkArchiveForColor = async (assetId: string) => {
+               const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
+               const res = await fetch(`https://backend.isdokumu.workers.dev/get-archived-jobs?slug=${data.slug}&assetId=${assetId}`, {
+                   headers: { 'Authorization': `Bearer ${token}` }
+               });
+               const archived = await res.json();
+               if (archived.length > 0) {
+                   data.jobs = [...archived, ...data.jobs];
+                   setSearchTerm(searchTerm + ' '); // Arayüzü tazele
+               }
+            };
 
             // 🚀 RENGE GÖRE KARTIN ÇERÇEVE VE GÖLGE STİLLERİ
             const getBorderClass = (color: string) => {

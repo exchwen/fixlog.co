@@ -577,6 +577,26 @@ export default function AssetDetailModal({
                                           </div>
                                       </div>
                                   ))}
+
+                                  {/* 🚀 ARŞİV TETİKLEYİCİ */}
+                                  <button 
+                                    onClick={async () => {
+                                        const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
+                                        const res = await fetch(`https://backend.isdokumu.workers.dev/get-archived-jobs?slug=${data.slug}&assetId=${selectedAsset.id}`, {
+                                            headers: { 'Authorization': `Bearer ${token}` }
+                                        });
+                                        const archived = await res.json();
+                                        if(archived.length > 0) {
+                                            data.jobs = [...archived, ...data.jobs];
+                                            alert(`${archived.length} adet eski kayıt arşivden getirildi.`);
+                                        } else {
+                                            alert("Arşivde bu cihaza ait eski kayıt bulunamadı.");
+                                        }
+                                    }}
+                                    className="w-full mt-4 py-3 bg-slate-900 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md"
+                                  >
+                                    <RefreshCw size={14} /> Tüm Geçmiş Arşivini Yükle
+                                  </button>
                               </div>
                           ) : (
                               <div className="flex flex-col items-center justify-center py-10 text-center px-4">

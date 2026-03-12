@@ -748,6 +748,26 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
                     </span>
                   </div>
 
+                  {/* 🚀 ARŞİV TETİKLEYİCİ */}
+                  {displayMessages.length > 0 && (
+                    <button 
+                      onClick={async () => {
+                        const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
+                        const res = await fetch(`https://backend.isdokumu.workers.dev/get-archived-messages?slug=${actualSlug}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        const archived = await res.json();
+                        setAllMessages(prev => {
+                            const combined = [...archived, ...prev];
+                            return Array.from(new Map(combined.map(item => [item.id || item._tempId, item])).values());
+                        });
+                      }}
+                      className="w-full py-2 mb-4 text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 transition-all active:scale-95 uppercase tracking-widest"
+                    >
+                      Eski Arşiv Mesajlarını Yükle
+                    </button>
+                  )}
+
                   {displayMessages?.map((m: any, i: number) => {
                     const fromMe = isMessageFromMe(m);
                     
