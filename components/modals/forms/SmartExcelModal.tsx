@@ -41,15 +41,18 @@ export default function SmartExcelModal({
       taxInfo: ['vergi', 'tc', 't.c.', 'v.d.', 'vd']
   };
 
+  // 🚀 YENİ MİMARİ: İL/İLÇE/BİNA NO AYRIMLI
   const targetFields = [
-    { id: 'apartmentName', label: 'Bina / Tesis Adı (ZORUNLU)' },
-    { id: 'assetType', label: 'Asansör / Cihaz Türü (ZORUNLU)' },
-    { id: 'assetLocation', label: 'Asansör Konumu / Kuyu (Örn: A Blok Sağ)' },
-    { id: 'assetDetails', label: 'Cihaz Detayları (Kapasite, Etiket, Marka vb.)' },
-    { id: 'customerName', label: 'Müşteri / Yönetici Adı' },
+    { id: 'apartmentName', label: 'Bina / Apartman Adı (ZORUNLU)' },
+    { id: 'assetType', label: 'Varlık (Cihaz) Türü (LİSTEDEN SEÇİN)' },
+    { id: 'streetDetail', label: 'Mahalle / Cadde / Sokak (ZORUNLU)' },
+    { id: 'city', label: 'İl' },
+    { id: 'district', label: 'İlçe' },
+    { id: 'buildingNo', label: 'Bina No' },
+    { id: 'assetDetails', label: 'Cihaz Detayları (Kapasite, Durak, Konum vb.)' },
+    { id: 'customerName', label: 'Müşteri / Yönetici Adı (AYIRICI)' },
     { id: 'customerPhone', label: 'İletişim / Telefon' },
-    { id: 'customerAddress', label: 'Fatura Adresi / Tam Konum' },
-    { id: 'taxInfo', label: 'Vergi Dairesi ve No / T.C. Kimlik' }
+    { id: 'taxInfo', label: 'Vergi No / T.C. Kimlik' }
   ];
 
   const handleDownloadTemplate = (e: React.MouseEvent) => {
@@ -59,27 +62,41 @@ export default function SmartExcelModal({
     const templateHeaders = targetFields.map(f => f.label);
     
     const exampleRow = [
-        "Güneş Apartmanı Yönetimi",
-        "Makine Daireli (MR) Yolcu Asansörü",
-        "A Blok Ana Kuyu",
-        "Kapasite: 800kg (10 Kişi), Etiket: Yeşil, Durak: 8",
+        "Güneş Apartmanı",
+        assetTypesList[0], 
+        "Atatürk Mah. Lale Sok.",
+        "İstanbul",
+        "Kadıköy",
+        "12",
+        "A Blok Sağ Kuyu, 8 Durak, 800kg",
         "Ahmet Yılmaz",
         "0555 123 45 67",
-        "Atatürk Mah. Cumhuriyet Cad. No:1 Kadıköy/İstanbul",
-        "Kadıköy VD. - 1234567890"
+        "12345678901"
     ];
 
     const worksheet = XLSX.utils.aoa_to_sheet([templateHeaders, exampleRow]);
     
+    // 🚀 DROPDOWN LİSTESİ: B Sütununa (AssetType) Sektör Listesini Gömme
+    const dropdownList = assetTypesList.join(',');
+    if (!worksheet['!dataValidation']) worksheet['!dataValidation'] = [];
+    worksheet['!dataValidation'].push({
+      sqref: 'B2:B1000', 
+      type: 'list',
+      formula1: `"${dropdownList}"`,
+      showErrorMessage: true,
+      errorTitle: 'Hatalı Tür Seçimi',
+      error: 'Lütfen listedeki tanımlı asansör türlerinden birini seçiniz.'
+    });
+
     worksheet['!cols'] = [
-        { wch: 30 }, { wch: 35 }, { wch: 25 }, { wch: 45 }, 
-        { wch: 25 }, { wch: 18 }, { wch: 45 }, { wch: 25 }
+        { wch: 25 }, { wch: 35 }, { wch: 30 }, { wch: 12 }, 
+        { wch: 12 }, { wch: 10 }, { wch: 40 }, { wch: 25 }, { wch: 18 }, { wch: 20 }
     ];
 
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Sistem_Sablonu");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Şablon");
 
-    XLSX.writeFile(workbook, "IsDokumu_Musteri_ve_Asansor_Sablonu.xlsx");
+    XLSX.writeFile(workbook, "IsDokumu_Akilli_Excel_Sablonu.xlsx");
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -155,41 +172,54 @@ export default function SmartExcelModal({
 
   // 🚀 Adım 4'e Geçiş: Taslakları Hazırla ve Doğrula
   const handlePrepareDrafts = () => {
-      const formattedData = rawExcelData.map((row, index) => {
-          let cleanRow: any = { _id: index }; // Silme ve düzenleme için geçici ID
-          targetFields.forEach(field => {
-              const excelHeaderName = mappings[field.id];
-              cleanRow[field.id] = excelHeaderName ? row[excelHeaderName] : "";
-          });
+    const formattedData = rawExcelData.map((row, index) => {
+        let cleanRow: any = { _id: index }; // Silme ve düzenleme için geçici ID
+        targetFields.forEach(field => {
+            const excelHeaderName = mappings[field.id];
+            cleanRow[field.id] = excelHeaderName ? row[excelHeaderName] : "";
+        });
 
-          // Telefon numarasındaki boşlukları vs. temizle (Gümrük kuralı)
-          if (cleanRow.customerPhone) {
-              cleanRow.customerPhone = cleanRow.customerPhone.toString().trim();
-          }
+        // Telefon numarasındaki boşlukları vs. temizle (Gümrük kuralı)
+        if (cleanRow.customerPhone) {
+            cleanRow.customerPhone = cleanRow.customerPhone.toString().trim();
+        }
 
-          // Cihaz türü sektör json listemizde var mı?
-          const isValidType = assetTypesList.includes(cleanRow.assetType?.toString().trim());
-          const isValidApartment = cleanRow.apartmentName && cleanRow.apartmentName.toString().trim() !== "";
+        // 🚀 ADRES BİRLEŞTİRME (AddAssetModal formatına uydurma)
+        const street = cleanRow.streetDetail?.trim() || "";
+        const bNo = cleanRow.buildingNo?.toString().trim() || "";
+        const dist = cleanRow.district?.trim() || "";
+        const city = cleanRow.city?.trim() || "";
 
-          // Eğer tür listede yoksa veya apartman boşsa bu satır "Geçersiz/Hatalı" kabul edilir
-          cleanRow._isValid = isValidType && isValidApartment;
-          
-          return cleanRow;
-      });
-      
-      // Tamamen boş satırları (Hem adı hem türü olmayanları) komple çöpe at
-      const nonEmpties = formattedData.filter(d => 
-          (d.apartmentName && d.apartmentName.toString().trim() !== "") || 
-          (d.assetType && d.assetType.toString().trim() !== "")
-      );
-      
-      setDraftData(nonEmpties);
+        let combinedLocation = street;
+        if (bNo) combinedLocation += ` No:${bNo}`;
+        if (dist) combinedLocation += ` / ${dist}`;
+        if (city) combinedLocation += ` / ${city}`;
+        
+        cleanRow.location = combinedLocation;
 
-      // Eğer geçersiz veri varsa direkt "Hatalılar" sekmesini aç, yoksa "Geçerliler"i aç.
-      const hasInvalid = nonEmpties.some(d => !d._isValid);
-      setDraftTab(hasInvalid ? 'invalid' : 'valid');
-      setStep(4);
-  };
+        // Cihaz türü sektör json listemizde var mı?
+        const isValidType = assetTypesList.includes(cleanRow.assetType?.toString().trim());
+        const isValidApartment = cleanRow.apartmentName && cleanRow.apartmentName.toString().trim() !== "";
+
+        // Eğer tür listede yoksa veya apartman boşsa bu satır "Geçersiz/Hatalı" kabul edilir
+        cleanRow._isValid = isValidType && isValidApartment;
+        
+        return cleanRow;
+    });
+    
+    // Tamamen boş satırları (Hem adı hem türü olmayanları) komple çöpe at
+    const nonEmpties = formattedData.filter(d => 
+        (d.apartmentName && d.apartmentName.toString().trim() !== "") || 
+        (d.assetType && d.assetType.toString().trim() !== "")
+    );
+    
+    setDraftData(nonEmpties);
+
+    // Eğer geçersiz veri varsa direkt "Hatalılar" sekmesini aç, yoksa "Geçerliler"i aç.
+    const hasInvalid = nonEmpties.some(d => !d._isValid);
+    setDraftTab(hasInvalid ? 'invalid' : 'valid');
+    setStep(4);
+};
 
   // 🚀 Taslak Tablosunda Müşterinin Elle Düzeltme Yaptığı Fonksiyon
   const handleDraftTypeChange = (id: number, newType: string) => {
