@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Phone, Mail, Briefcase, Calendar, User, ShieldCheck, CheckCircle, Clock, Settings, Trash2, Loader2, Filter, MapPin } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
+import trCitiesData from '@/lib/data/tr-cities.json';
 
 export default function StaffDetailModal({
   selectedStaff, setSelectedStaff,
@@ -18,6 +19,22 @@ export default function StaffDetailModal({
 
     const [activeTab, setActiveTab] = useState('info'); // 'info' | 'jobs'
     const [jobFilter, setJobFilter] = useState('Tümü'); // 'Tümü' | 'Tamamlandı' | 'Aktif' 
+    const [showRegionModal, setShowRegionModal] = useState(false);
+    const [selectedCity, setSelectedCity] = useState('İstanbul');
+    
+    const trCities: any = trCitiesData;
+    const citiesList = Object.keys(trCities);
+    const currentDistricts = trCities[selectedCity] || [];
+
+    const toggleEditRegion = (region: string) => {
+        let currentRegions = editStaffForm.assigned_regions ? editStaffForm.assigned_regions.split(',').map((r:string)=>r.trim()).filter(Boolean) : [];
+        if (currentRegions.includes(region)) {
+            currentRegions = currentRegions.filter((r:string) => r !== region);
+        } else {
+            currentRegions.push(region);
+        }
+        setEditStaffForm({...editStaffForm, assigned_regions: currentRegions.join(', ')});
+    };
     
     // 🚀 Tıklanamama bug'ını çözen kritik state: Hangi alt modal açıldıysa takip eder
     const [openedChild, setOpenedChild] = useState<'job' | null>(null);
@@ -172,15 +189,15 @@ export default function StaffDetailModal({
     <AnimatePresence>
       {selectedStaff && (
         <motion.div 
-          key="modal-backdrop-staff-detail"
-          // 🚀 EKRAN TIKLANAMAMA SORUNU İÇİN KESİN ÇÖZÜM:
-          // Ana wrapper çıkış (exit) yaparken tüm tıklama olaylarına kapanır ve tamamen kaybolur (display: none).
-          initial={{ opacity: 0, pointerEvents: "none" }} 
-          animate={{ opacity: 1, pointerEvents: "auto" }} 
-          exit={{ opacity: 0, pointerEvents: "none", transitionEnd: { display: "none" } }} 
-          transition={{ duration: 0.15 }}
-          className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[10]' : 'z-[120]'}`}
-        >
+        key="modal-backdrop-staff-detail"
+        // 🚀 EKRAN TIKLANAMAMA SORUNU İÇİN KESİN ÇÖZÜM:
+        // Ana wrapper çıkış (exit) yaparken tüm tıklama olaylarına kapanır ve tamamen kaybolur (display: none).
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        exit={{ opacity: 0 }} 
+        transition={{ duration: 0.15 }}
+        className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 pointer-events-auto ${isStacked ? 'z-[10]' : 'z-[120]'}`}
+      >
           {/* Arka plan tıklaması ile kapatma */}
           <div 
              className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isStacked ? 'opacity-0' : 'opacity-100'} cursor-pointer`} 
@@ -298,30 +315,30 @@ export default function StaffDetailModal({
                             </>
                         ) : (
                             /* -- DÜZENLEME MODU -- */
-                            <div className="space-y-4 bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200">
+                            <div className="space-y-4 bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 relative">
+                                {userRole === 'Yönetici' && selectedStaff?.role === 'Yönetici' && (
+                                    <div className="absolute top-0 right-0 bg-blue-100 text-blue-700 text-[10px] font-black px-3 py-1 rounded-bl-xl rounded-tr-2xl">Sadece Telefon Düzenlenebilir</div>
+                                )}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                     <div className="col-span-1 sm:col-span-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Ad Soyad</label>
-                                        <input className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none focus:border-blue-500 transition-all bg-white" value={editStaffForm.name} onChange={(e) => setEditStaffForm({...editStaffForm, name: e.target.value})} placeholder="Ad Soyad" />
+                                        <input disabled={userRole === 'Yönetici' && selectedStaff?.role === 'Yönetici'} className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none focus:border-blue-500 transition-all bg-white disabled:opacity-60 disabled:bg-slate-100" value={editStaffForm.name} onChange={(e) => setEditStaffForm({...editStaffForm, name: e.target.value})} placeholder="Ad Soyad" />
                                     </div>
                                     <div className="col-span-1">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Telefon</label>
                                         <input className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 transition-all bg-white" value={editStaffForm.phone} onChange={(e) => setEditStaffForm({...editStaffForm, phone: e.target.value})} placeholder="Telefon" />
                                     </div>
                                     
-                                    {/* 🚀 YETKİ KONTROLÜ İLE GÖSTERİLEN SEÇİM KUTUSU EKLENDİ */}
                                     <div className="col-span-1">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Yetki / Rol</label>
                                         <select 
-                                            className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none bg-white focus:border-blue-500 transition-all" 
+                                            disabled={userRole === 'Yönetici' && selectedStaff?.role === 'Yönetici'}
+                                            className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none bg-white focus:border-blue-500 transition-all disabled:opacity-60 disabled:bg-slate-100" 
                                             value={editStaffForm.role || 'Usta'} 
                                             onChange={(e) => setEditStaffForm({...editStaffForm, role: e.target.value})}
                                         >
-                                            {/* Sadece Patron 'Yönetici' rolünü atayabilir veya düzeltebilir */}
                                             {userRole === 'Patron' && <option value="Yönetici">Yönetici</option>}
-                                            {/* Eğer düzenlediğimiz kişi zaten Yöneticiyse ve biz Patronsak görürüz, değilsek adı görünür ama seçemeyiz (böyle bir case olmaz ama garanti olsun) */}
-                                            {userRole !== 'Patron' && selectedStaff?.role === 'Yönetici' && <option value="Yönetici" disabled>Yönetici (Değiştiremezsiniz)</option>}
-                                            
+                                            {userRole !== 'Patron' && selectedStaff?.role === 'Yönetici' && <option value="Yönetici" disabled>Yönetici</option>}
                                             <option value="Usta">Usta</option>
                                             <option value="Çırak">Çırak</option>
                                         </select>
@@ -329,7 +346,7 @@ export default function StaffDetailModal({
                                     
                                     <div className="col-span-1 sm:col-span-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Branş / Uzmanlık</label>
-                                        <select className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none bg-white focus:border-blue-500 transition-all" value={editStaffForm.branch} onChange={(e) => setEditStaffForm({...editStaffForm, branch: e.target.value})}>
+                                        <select disabled={userRole === 'Yönetici' && selectedStaff?.role === 'Yönetici'} className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none bg-white focus:border-blue-500 transition-all disabled:opacity-60 disabled:bg-slate-100" value={editStaffForm.branch} onChange={(e) => setEditStaffForm({...editStaffForm, branch: e.target.value})}>
                                             <option value="">Seçiniz</option>
                                             {branchList.map((subType: any) => (
                                                 <option key={subType} value={subType}>{subType}</option>
@@ -338,9 +355,59 @@ export default function StaffDetailModal({
                                         </select>
                                     </div>
 
-                                    <div className="col-span-1 sm:col-span-2">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Sorumlu Olduğu Bölgeler (Örn: Kadıköy, Beşiktaş)</label>
-                                        <input className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 transition-all bg-white" value={editStaffForm.assigned_regions || ''} onChange={(e) => setEditStaffForm({...editStaffForm, assigned_regions: e.target.value})} placeholder="Virgülle ayırarak yazabilirsiniz" />
+                                    <div className="col-span-1 sm:col-span-2 relative">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Sorumlu Olduğu Bölgeler</label>
+                                        <div 
+                                            onClick={() => { if (!(userRole === 'Yönetici' && selectedStaff?.role === 'Yönetici')) setShowRegionModal(true); }}
+                                            className={`w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold bg-white transition-all min-h-[46px] flex items-center flex-wrap gap-1.5 ${userRole === 'Yönetici' && selectedStaff?.role === 'Yönetici' ? 'opacity-60 bg-slate-100 cursor-not-allowed' : 'cursor-pointer hover:border-blue-500'}`}
+                                        >
+                                            {editStaffForm.assigned_regions ? (
+                                                editStaffForm.assigned_regions.split(',').map((r:string, i:number) => r.trim() && (
+                                                    <span key={i} className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md text-[11px] font-bold">{r.trim()}</span>
+                                                ))
+                                            ) : (
+                                                <span className="text-slate-400 font-medium">Bölge seçmek için tıklayın...</span>
+                                            )}
+                                        </div>
+                                        
+                                        {showRegionModal && !(userRole === 'Yönetici' && selectedStaff?.role === 'Yönetici') && (
+                                            <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm pointer-events-auto">
+                                                <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+                                                    <div className="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50">
+                                                        <h3 className="font-black text-slate-800">Bölgeleri Seçin</h3>
+                                                        <button onClick={(e) => { e.stopPropagation(); setShowRegionModal(false); }} className="p-2 text-slate-400 hover:text-slate-600 bg-white rounded-lg border border-slate-200"><X size={16} /></button>
+                                                    </div>
+                                                    <div className="p-3 border-b border-slate-100">
+                                                        <select 
+                                                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none"
+                                                            value={selectedCity}
+                                                            onChange={(e) => setSelectedCity(e.target.value)}
+                                                        >
+                                                            {citiesList.map(city => (
+                                                                <option key={city} value={city}>{city}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                    <div className="p-4 overflow-y-auto grid grid-cols-2 gap-2 custom-scrollbar">
+                                                        {currentDistricts.map((dist: string) => {
+                                                            const isSelected = editStaffForm.assigned_regions?.includes(dist);
+                                                            return (
+                                                                <button 
+                                                                    key={dist} 
+                                                                    onClick={(e) => { e.stopPropagation(); toggleEditRegion(dist); }}
+                                                                    className={`py-2 px-3 rounded-xl text-xs font-bold text-left transition-all border ${isSelected ? 'bg-blue-500 text-white border-blue-600 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
+                                                                >
+                                                                    {dist}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                    <div className="p-4 border-t border-slate-100 bg-slate-50">
+                                                        <button onClick={(e) => { e.stopPropagation(); setShowRegionModal(false); }} className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2">Seçimi Tamamla</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                     
                                     <div className="col-span-1 sm:col-span-2 pt-3 border-t border-slate-200 mt-1">
@@ -348,15 +415,15 @@ export default function StaffDetailModal({
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div className="col-span-1">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Kullanıcı Adı</label>
-                                                <input className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none focus:border-blue-500 transition-all bg-white" value={editStaffForm.username} onChange={(e) => setEditStaffForm({...editStaffForm, username: e.target.value.replace(/\s+/g, '').toLowerCase()})} placeholder="örn: ali.usta" />
+                                                <input disabled={userRole === 'Yönetici' && selectedStaff?.role === 'Yönetici'} className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none focus:border-blue-500 transition-all bg-white disabled:opacity-60 disabled:bg-slate-100" value={editStaffForm.username} onChange={(e) => setEditStaffForm({...editStaffForm, username: e.target.value.replace(/\s+/g, '').toLowerCase()})} placeholder="örn: ali.usta" />
                                             </div>
                                             <div className="col-span-1">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Hesap Şifresi</label>
-                                                <input type="text" autoComplete="new-password" title="Mevcut şifreyi değiştirmek istemiyorsanız boş bırakın." className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 transition-all placeholder:text-[10px] placeholder:text-slate-400 bg-white" value={editStaffForm.password} onChange={(e) => setEditStaffForm({...editStaffForm, password: e.target.value})} placeholder="Değiştirmek için yazın..." />
+                                                <input disabled={userRole === 'Yönetici' && selectedStaff?.role === 'Yönetici'} type="text" autoComplete="new-password" title="Mevcut şifreyi değiştirmek istemiyorsanız boş bırakın." className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 transition-all placeholder:text-[10px] placeholder:text-slate-400 bg-white disabled:opacity-60 disabled:bg-slate-100" value={editStaffForm.password} onChange={(e) => setEditStaffForm({...editStaffForm, password: e.target.value})} placeholder="Değiştirmek için yazın..." />
                                             </div>
                                             <div className="col-span-1 sm:col-span-2">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Hesap Durumu</label>
-                                                <select className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none bg-white focus:border-blue-500 transition-all" value={editStaffForm.is_active} onChange={(e) => setEditStaffForm({...editStaffForm, is_active: Number(e.target.value)})}>
+                                                <select disabled={userRole === 'Yönetici' && selectedStaff?.role === 'Yönetici'} className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none bg-white focus:border-blue-500 transition-all disabled:opacity-60 disabled:bg-slate-100" value={editStaffForm.is_active} onChange={(e) => setEditStaffForm({...editStaffForm, is_active: Number(e.target.value)})}>
                                                     <option value={1}>Aktif (Sisteme Girebilir)</option>
                                                     <option value={0}>Pasif (Dondurulmuş Hesap)</option>
                                                 </select>

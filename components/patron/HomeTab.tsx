@@ -480,22 +480,31 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                                 </p>
                             </div>
                             
+                            {/* 🚀 DÜZELTME: Doğru sekmeye yönlendirme yapıldı */}
                             <button
-                                onClick={() => { if (setActiveTab) setActiveTab('periodic_maintenance') }}
+                                onClick={() => { 
+                                    if (userRole === 'Usta') {
+                                       setAlertModal({ isOpen: true, message: "Yaklaşan bakımlar yönetici/patron tarafından size iş olarak atandığında 'Bekleyen İşler' ekranınıza düşecektir.", type: 'info' });
+                                    } else if (setActiveTab) {
+                                       setActiveTab('periodic'); 
+                                    }
+                                }}
                                 className="mt-2 w-full bg-white text-cyan-700 hover:bg-cyan-50 py-2.5 rounded-xl text-xs font-black transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
                             >
-                                <ArrowRight size={14} /> BAKIMLARA GİT
+                                <ArrowRight size={14} /> {userRole === 'Usta' ? 'BİLGİ AL' : 'YÖNETİME GİT'}
                             </button>
                         </div>
                     );
                  })}
                  {upcomingMaintenances.length > 3 && (
                      <div 
-                        onClick={() => { if (setActiveTab) setActiveTab('periodic_maintenance') }}
-                        className="bg-cyan-900/50 border border-cyan-400/30 rounded-2xl p-4 flex flex-col justify-center items-center cursor-pointer hover:bg-cyan-800/50 transition-colors"
+                        onClick={() => { 
+                            if (userRole !== 'Usta' && setActiveTab) setActiveTab('periodic'); 
+                        }}
+                        className={`bg-cyan-900/50 border border-cyan-400/30 rounded-2xl p-4 flex flex-col justify-center items-center transition-colors ${userRole !== 'Usta' ? 'cursor-pointer hover:bg-cyan-800/50' : 'opacity-70'}`}
                      >
                          <span className="text-2xl font-black text-cyan-200 mb-1">+{upcomingMaintenances.length - 3}</span>
-                         <span className="text-xs font-bold text-cyan-100">Diğer Bakımlar</span>
+                         <span className="text-xs font-bold text-cyan-100">Tümünü Gör</span>
                      </div>
                  )}
               </div>
@@ -765,13 +774,14 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
               </div>
             </div>
 
-            <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-indigo-300 transition-colors group cursor-pointer active:scale-95">
-              <div className="w-10 h-10 bg-indigo-50/80 rounded-xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform shrink-0">
+            {/* 🚀 DÜZELTME: Bu kutu artık tıklanamaz ve pasif */}
+            <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 cursor-default">
+              <div className="w-10 h-10 bg-indigo-50/80 rounded-xl flex items-center justify-center text-indigo-600 shrink-0">
                 <ImageIcon size={18} />
               </div>
               <div>
                 <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none mb-1">{monthlyPhotos}</div>
-                <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Bu Ayki Foto</div>
+                <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Bu Ayki Fotoğraflar</div>
               </div>
             </div>
             
@@ -956,6 +966,29 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
 
             </div>
           </div>
+      )}
+
+      {/* 🚀 YENİ: OTOPİLOT VE PERİYODİK BAKIM ÖZETİ (Yönetici ve Patron Görür) */}
+      {userRole !== 'Usta' && !isMyJobsTab && (
+         <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-5 sm:p-6 shadow-lg border border-slate-800 flex items-center justify-between gap-4 overflow-hidden relative">
+            <div className="absolute -right-10 -top-10 opacity-10 pointer-events-none">
+                <Box size={150} />
+            </div>
+            <div className="relative z-10">
+                <h3 className="text-sm font-black text-white flex items-center gap-2 tracking-wide mb-1">
+                   <RefreshCw size={18} className="text-blue-400" /> Otopilot Bakım Sistemi
+                </h3>
+                <p className="text-[11px] text-slate-400 font-medium">
+                   Şu an sisteminizdeki <strong className="text-white">{data?.assets?.length || 0}</strong> varlıktan <strong className="text-emerald-400">{data?.assets?.filter((a: any) => a.is_autopilot === 1)?.length || 0}</strong> tanesinde tam otomatik bakım (otopilot) aktiftir.
+                </p>
+            </div>
+            <button 
+                onClick={() => { if (setActiveTab) setActiveTab('periodic') }}
+                className="shrink-0 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-2 relative z-10"
+            >
+                Yönet <ArrowRight size={14} />
+            </button>
+         </div>
       )}
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">

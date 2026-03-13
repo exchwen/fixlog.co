@@ -32,7 +32,8 @@ export default function CustomerDetailModal({
   // 🚀 Yeni Varlık Ekleme / Atama State'leri
   const [assignAssetId, setAssignAssetId] = useState('');
   const [isCreatingAsset, setIsCreatingAsset] = useState(false);
-  const [newAssetForm, setNewAssetForm] = useState({ name: '', apartmentName: '' });
+  // 🚀 Form state'i periyot, ücret ve personel alanlarıyla genişletildi
+  const [newAssetForm, setNewAssetForm] = useState<any>({ name: '', apartmentName: '', maintenance_period: 30, maintenance_fee: '', route_staff_id: '' });
 
   // 🚀 Hangi alt modalın BU modal tarafından açıldığını takip ediyoruz
   const [openedChild, setOpenedChild] = useState<'asset' | 'job' | null>(null);
@@ -527,19 +528,49 @@ export default function CustomerDetailModal({
                                                 ))}
                                             </select>
 
-                                            {/* 🚀 YENİ: MÜŞTERİ PROFİLİNDEN VARLIK EKLERKEN BAKIM ÜCRETİ */}
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-emerald-600 text-xs">₺</span>
-                                                <input 
-                                                    type="number" 
-                                                    placeholder="Aylık Bakım Ücreti (Opsiyonel)" 
-                                                    className="w-full pl-7 pr-3 py-2 border border-emerald-200 rounded-md text-xs font-bold outline-none focus:border-emerald-500 bg-emerald-50/50 focus:bg-white transition-all text-emerald-800" 
-                                                    value={newAssetForm.maintenance_fee || ''} 
-                                                    onChange={e => setNewAssetForm({...newAssetForm, maintenance_fee: e.target.value})} 
-                                                />
+                                            {/* 🚀 YENİ EKLENEN ALANLAR: Periyot ve Rota Personeli */}
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Periyot (Gün)</label>
+                                                    <input 
+                                                        type="number" 
+                                                        placeholder="Örn: 30" 
+                                                        className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white"
+                                                        value={newAssetForm.maintenance_period || 30}
+                                                        onChange={e => setNewAssetForm({...newAssetForm, maintenance_period: parseInt(e.target.value) || 30})}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Rota Personeli</label>
+                                                    <select 
+                                                        className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white appearance-none cursor-pointer"
+                                                        value={newAssetForm.route_staff_id || ''}
+                                                        onChange={e => setNewAssetForm({...newAssetForm, route_staff_id: e.target.value})}
+                                                    >
+                                                        <option value="">Otomatik</option>
+                                                        {(data?.staff || []).filter((s: any) => s.role !== 'Yönetici').map((s: any) => (
+                                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
                                             </div>
 
-                                            <div className="flex gap-2 pt-1">
+                                            {/* MÜŞTERİ PROFİLİNDEN VARLIK EKLERKEN BAKIM ÜCRETİ */}
+                                            <div>
+                                                <label className="text-[9px] font-black text-emerald-600 uppercase tracking-widest block mb-1">💰 Bakım Ücreti (Opsiyonel)</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-emerald-600 text-xs">₺</span>
+                                                    <input 
+                                                        type="number" 
+                                                        placeholder="Tutar..." 
+                                                        className="w-full pl-7 pr-3 py-2 border border-emerald-200 rounded-md text-xs font-bold outline-none focus:border-emerald-500 bg-emerald-50/50 focus:bg-white transition-all text-emerald-800" 
+                                                        value={newAssetForm.maintenance_fee || ''} 
+                                                        onChange={e => setNewAssetForm({...newAssetForm, maintenance_fee: e.target.value})} 
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-2 pt-2">
                                                 <button 
                                                     disabled={!newAssetForm.name || isSaving}
                                                     onClick={async (e) => {
@@ -548,9 +579,9 @@ export default function CustomerDetailModal({
                                                         await handleAction('add-asset', { ...newAssetForm, customer_id: selectedCustomer.id, location: combinedAddress });
                                                         setIsCreatingAsset(false);
                                                         // 🚀 Form sıfırlama güncellendi
-                                                        setNewAssetForm({ name: '', apartmentName: '', maintenance_fee: '' });
+                                                        setNewAssetForm({ name: '', apartmentName: '', maintenance_period: 30, maintenance_fee: '', route_staff_id: '' });
                                                     }}
-                                                    className="flex-[2] bg-emerald-600 text-white py-2 rounded-md text-xs font-bold hover:bg-emerald-700 transition-all disabled:opacity-50 flex justify-center items-center"
+                                                    className="flex-[2] bg-emerald-600 text-white py-2 rounded-md text-xs font-bold hover:bg-emerald-700 transition-all disabled:opacity-50 flex justify-center items-center shadow-sm"
                                                 >
                                                     {isSaving && !assignAssetId ? <Loader2 size={14} className="animate-spin" /> : 'Kaydet ve Ata'}
                                                 </button>

@@ -1,15 +1,33 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, User, Phone, ShieldCheck, Briefcase, KeyRound, MapPin } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
+import trCitiesData from '@/lib/data/tr-cities.json';
 
 export default function AddStaffModal({
   showAddStaff, setShowAddStaff,
   newStaff, setNewStaff,
   isSaving, handleAction, data, userRole // 🚀 userRole eklendi
 }: any) {
+  const [showRegionModal, setShowRegionModal] = useState(false);
+  const [selectedCity, setSelectedCity] = useState('İstanbul');
+  
+  const trCities: any = trCitiesData;
+  const citiesList = Object.keys(trCities);
+  const currentDistricts = trCities[selectedCity] || [];
+  
+  const toggleRegion = (region: string) => {
+      let currentRegions = newStaff.assigned_regions ? newStaff.assigned_regions.split(',').map((r:string)=>r.trim()).filter(Boolean) : [];
+      // Şehir ve İlçe formatında kaydetmek istersen `${selectedCity} - ${region}` yapılabilir, mevcut yapıyı koruyoruz.
+      if (currentRegions.includes(region)) {
+          currentRegions = currentRegions.filter((r:string) => r !== region);
+      } else {
+          currentRegions.push(region);
+      }
+      setNewStaff({...newStaff, assigned_regions: currentRegions.join(', ')});
+  };
 
   const currentSector = data?.sector || '';
   const safeSectors: any = sectorsData;
@@ -150,15 +168,59 @@ export default function AddStaffModal({
 
                 <div>
                   <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5 mt-2">
-                      <MapPin size={14} /> Sorumlu Olduğu Bölgeler (Örn: Kadıköy, Beşiktaş)
+                      <MapPin size={14} /> Sorumlu Olduğu Bölgeler
                   </label>
-                  <input 
-                      type="text" 
-                      placeholder="Virgülle ayırarak yazabilirsiniz" 
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400" 
-                      value={newStaff.assigned_regions || ''} 
-                      onChange={e => setNewStaff({...newStaff, assigned_regions: e.target.value})} 
-                  />
+                  <div 
+                      onClick={() => setShowRegionModal(true)}
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold cursor-pointer bg-slate-50 hover:bg-white transition-all text-slate-700 min-h-[46px] flex items-center flex-wrap gap-1.5"
+                  >
+                      {newStaff.assigned_regions ? (
+                          newStaff.assigned_regions.split(',').map((r:string, i:number) => r.trim() && (
+                              <span key={i} className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md text-xs font-bold">{r.trim()}</span>
+                          ))
+                      ) : (
+                          <span className="text-slate-400 font-medium">Bölge seçmek için tıklayın...</span>
+                      )}
+                  </div>
+                  
+                  {showRegionModal && (
+                      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm pointer-events-auto">
+                          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden">
+                              <div className="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50">
+                                  <h3 className="font-black text-slate-800">Bölgeleri Seçin</h3>
+                                  <button onClick={(e) => { e.stopPropagation(); setShowRegionModal(false); }} className="p-2 text-slate-400 hover:text-slate-600 bg-white rounded-lg border border-slate-200"><X size={16} /></button>
+                              </div>
+                              <div className="p-3 border-b border-slate-100">
+                                  <select 
+                                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none"
+                                      value={selectedCity}
+                                      onChange={(e) => setSelectedCity(e.target.value)}
+                                  >
+                                      {citiesList.map(city => (
+                                          <option key={city} value={city}>{city}</option>
+                                      ))}
+                                  </select>
+                              </div>
+                              <div className="p-4 overflow-y-auto grid grid-cols-2 gap-2 custom-scrollbar">
+                                  {currentDistricts.map((dist: string) => {
+                                      const isSelected = newStaff.assigned_regions?.includes(dist);
+                                      return (
+                                          <button 
+                                              key={dist} 
+                                              onClick={(e) => { e.stopPropagation(); toggleRegion(dist); }}
+                                              className={`py-2 px-3 rounded-xl text-xs font-bold text-left transition-all border ${isSelected ? 'bg-blue-500 text-white border-blue-600 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
+                                          >
+                                              {dist}
+                                          </button>
+                                      );
+                                  })}
+                              </div>
+                              <div className="p-4 border-t border-slate-100 bg-slate-50">
+                                  <button onClick={(e) => { e.stopPropagation(); setShowRegionModal(false); }} className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2">Seçimi Tamamla</button>
+                              </div>
+                          </div>
+                      </div>
+                  )}
                 </div>
 
             </div>

@@ -105,7 +105,7 @@ const getAutoStatus = (staffId: string | number): StatusResult => {
     
     if (activeJobs.length > 0) {
       const detailsArray: DetailItem[] = activeJobs.map((j: Job) => ({
-        text: j.customer_name || j.title || 'İsimsiz Görev',
+        text: j.customer_name || j.title || j.work_type || 'Genel Görev',
         jobData: j
       }));
 
@@ -123,7 +123,7 @@ const getAutoStatus = (staffId: string | number): StatusResult => {
     
     if (pendingJobs.length > 0) {
       const detailsArray: DetailItem[] = pendingJobs.map((j: Job) => ({
-        text: `${j.customer_name || j.title || 'İsimsiz Görev'}`,
+        text: j.customer_name || j.title || j.work_type || 'Genel Görev',
         jobData: j
       }));
 

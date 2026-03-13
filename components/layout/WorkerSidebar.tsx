@@ -59,11 +59,15 @@ export default function WorkerSidebar({ activeTab, setActiveTab, isMobileMenuOpe
   }, [isMobileMenuOpen, setIsMobileMenuOpen, isDesktop]);
 
   const handleLogout = () => {
-    localStorage.removeItem('staff_authToken');
-    localStorage.removeItem('staff_userRole');
-    localStorage.removeItem('staff_userName');
-    localStorage.removeItem('staff_userSlug');
-    router.push(`/${slug}/login`);
+    // 🚀 KESİN ÇIKIŞ MANTIĞI: Tüm önbelleği, çerezleri ve local verileri silip zorla yönlendirir.
+    localStorage.clear();
+    sessionStorage.clear();
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+    window.location.replace(`/${slug}/login`); 
   };
 
   const navItems = [

@@ -1062,14 +1062,34 @@ const handleStatusUpdate = async (newStatus) => {
                        <p className="text-sm text-slate-500 mt-1 font-medium">Bugüne kadar başarıyla bitirdiğiniz tüm görevler.</p>
                    </div>
                    
-                   {/* 🚀 YENİ EKLENEN VERİ KUTUSU */}
-                   <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-center gap-3 shrink-0">
-                       <div className="w-12 h-12 bg-white rounded-lg shadow-sm border border-emerald-200 flex items-center justify-center">
-                           <span className="text-xl font-black text-emerald-600">{completedJobs.length}</span>
+                   <div className="flex flex-col sm:flex-row gap-4 sm:items-center w-full sm:w-auto">
+                       {/* 🚀 YENİ EKLENEN ARAMA KUTUSU */}
+                       <div className="relative w-full sm:w-64">
+                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                           <input 
+                               type="text" 
+                               placeholder="Müşteri veya İş Ara..." 
+                               className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-emerald-500 focus:bg-white transition-all"
+                               onChange={(e) => {
+                                   const val = e.target.value.toLowerCase();
+                                   const cards = document.querySelectorAll('.completed-job-card');
+                                   cards.forEach((card) => {
+                                       const text = card.textContent.toLowerCase();
+                                       card.style.display = text.includes(val) ? 'flex' : 'none';
+                                   });
+                               }}
+                           />
                        </div>
-                       <div className="pr-3">
-                           <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">Toplam İşlem</div>
-                           <div className="text-sm font-bold text-emerald-900">Görev Bitirildi</div>
+
+                       {/* 🚀 VERİ KUTUSU */}
+                       <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-2.5 flex items-center gap-3 shrink-0 hidden sm:flex">
+                           <div className="w-10 h-10 bg-white rounded-lg shadow-sm border border-emerald-200 flex items-center justify-center">
+                               <span className="text-lg font-black text-emerald-600">{completedJobs.length}</span>
+                           </div>
+                           <div className="pr-2">
+                               <div className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">Toplam İşlem</div>
+                               <div className="text-xs font-bold text-emerald-900">Görev Bitti</div>
+                           </div>
                        </div>
                    </div>
                 </div>
@@ -1078,7 +1098,7 @@ const handleStatusUpdate = async (newStatus) => {
                 {completedJobs.length > 0 ? completedJobs.map(job => {
                       const asset = getAssetDetails(job.asset_id);
                       return (
-                      <div key={job.id} onClick={() => setSelectedJob(job)} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 cursor-pointer hover:border-emerald-300 transition-colors group flex flex-col justify-between">
+                        <div key={job.id} onClick={() => setSelectedJob(job)} className="completed-job-card bg-white rounded-2xl p-5 shadow-sm border border-slate-200 cursor-pointer hover:border-emerald-300 transition-colors group flex flex-col justify-between">
                           <div>
                               <div className="flex justify-between items-start mb-3">
                                  <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border border-emerald-100">{job.status}</span>

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCw, Bot, AlertTriangle, CheckCircle2, Clock, User, Building2, MapPin, Wallet, Power, Settings2, ShieldCheck } from 'lucide-react';
+import { RefreshCw, Bot, AlertTriangle, CheckCircle2, Clock, User, Building2, MapPin, Wallet, Power, Settings2, ShieldCheck, X, Loader2 } from 'lucide-react';
 
 export default function PeriodicTab({ data, handleAction, statusColors, setSelectedAsset, handleGenerateMonthlyMaintenance, isGenerating }: any) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,6 +35,40 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
       await handleAction('update-asset', { id: asset.id, is_autopilot: newStatus });
   };
 
+  // 🚀 TAHSİLAT MODALI İÇİN YENİ STATE VE FONKSİYONLAR
+  const [collectionModal, setCollectionModal] = useState({ isOpen: false, asset: null as any });
+  const [collectionAmount, setCollectionAmount] = useState('');
+  const [isCollecting, setIsCollecting] = useState(false);
+
+  const handleOpenCollectionModal = (asset: any) => {
+      setCollectionAmount(asset.maintenance_fee ? String(asset.maintenance_fee) : '');
+      setCollectionModal({ isOpen: true, asset });
+  };
+
+  const handleProcessCollection = async () => {
+      if (!collectionAmount || Number(collectionAmount) <= 0) return;
+      
+      setIsCollecting(true);
+      const asset = collectionModal.asset;
+      
+      const description = `Periyodik Bakım Tahsilatı: ${asset.apartmentName || asset.apartment_name || ''} - ${asset.name}`;
+      
+      // Kasaya Gelir Olarak İşle (add-income apisi)
+      const success = await handleAction('add-income', {
+          description: description,
+          amount: Number(collectionAmount),
+          addedBy: data?.ownerName || 'Yönetici',
+          status: 'Onaylandı'
+      }, null, null);
+
+      setIsCollecting(false);
+      
+      if (success) {
+          setCollectionModal({ isOpen: false, asset: null });
+          setCollectionAmount('');
+      }
+  };
+
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       
@@ -60,21 +94,21 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                         {totalAssets} varlık için {staffCount} personelinizin iş yükü dengeli görünüyor. Personel başına ortalama {assetsPerStaff} bakım düşüyor. Sisteminiz otopilotta kusursuz ilerliyor.
                     </div>
                 )}
-                </div>
             </div>
-            
-            {/* 🚀 OTONOM DAĞITIM BUTONU EKLENDİ */}
-            <div className="mt-5 border-t border-slate-700/50 pt-4 flex justify-end">
-                <button 
-                    onClick={handleGenerateMonthlyMaintenance} 
-                    disabled={isGenerating}
-                    className="bg-blue-600 hover:bg-blue-500 text-white font-black text-sm px-6 py-3 rounded-xl flex items-center gap-2 shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all active:scale-95 disabled:opacity-50"
-                >
-                    {isGenerating ? <RefreshCw className="animate-spin" size={18} /> : <Bot size={18} />}
-                    {isGenerating ? 'Otopilot Çalışıyor...' : 'Aylık Bakımları Otonom Dağıt'}
-                </button>
-            </div>
-          </div>
+        </div>
+        
+        {/* 🚀 OTONOM DAĞITIM BUTONU */}
+        <div className="mt-5 border-t border-slate-700/50 pt-4 flex justify-end">
+            <button 
+                onClick={handleGenerateMonthlyMaintenance} 
+                disabled={isGenerating}
+                className="bg-blue-600 hover:bg-blue-500 text-white font-black text-sm px-6 py-3 rounded-xl flex items-center gap-2 shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all active:scale-95 disabled:opacity-50"
+            >
+                {isGenerating ? <RefreshCw className="animate-spin" size={18} /> : <Bot size={18} />}
+                {isGenerating ? 'Otopilot Çalışıyor...' : 'Aylık Bakımları Otonom Dağıt'}
+            </button>
+        </div>
+      </div>
 
       {/* 2. VERİ ÇUBUKLARI (Dashboard Özet) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -124,14 +158,15 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                 <input 
                     type="text" 
                     placeholder="Varlık, Tesis veya Apartman Ara..." 
-                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 transition-all"
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 transition-all shadow-inner"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* 🚀 MASAÜSTÜ GÖRÜNÜM TABLOSU */}
+        <div className="hidden md:block overflow-x-auto w-full">
             <table className="w-full text-left text-sm border-collapse min-w-[800px]">
                 <thead>
                     <tr className="bg-slate-50/50 text-slate-500 border-b border-slate-200 text-xs uppercase tracking-widest font-black">
@@ -154,7 +189,7 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                                     </div>
                                     <div className="text-xs text-slate-500 mt-1 font-medium ml-6 flex items-center gap-2">
                                         {asset.name}
-                                        <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-black text-[10px]">
+                                        <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-black text-[10px] border border-emerald-100">
                                             ₺{asset.maintenance_fee || 0} / Ay
                                         </span>
                                     </div>
@@ -178,18 +213,17 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
 
                                 <td className="p-4 text-center">
                                     <button 
-                                        onClick={() => toggleAutopilot(asset)}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${asset.is_autopilot ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                                        onClick={(e) => { e.stopPropagation(); toggleAutopilot(asset); }}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shadow-sm ${asset.is_autopilot ? 'bg-emerald-500' : 'bg-slate-300'}`}
                                     >
                                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${asset.is_autopilot ? 'translate-x-6' : 'translate-x-1'}`} />
                                     </button>
                                 </td>
 
                                 <td className="p-4 pr-6 text-right">
-                                    {/* Tahsilat Modülü Kısayolu */}
                                     <button 
-                                        onClick={() => alert('Bu buton Finans/Kasa modalını açacak ve hızlı ödeme almayı sağlayacak.')} 
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold hover:bg-emerald-100 transition-all active:scale-95"
+                                        onClick={(e) => { e.stopPropagation(); handleOpenCollectionModal(asset); }} 
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold hover:bg-emerald-100 transition-all active:scale-95 shadow-sm"
                                     >
                                         <Wallet size={14} /> Tahsilat Gir
                                     </button>
@@ -207,7 +241,122 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                 </tbody>
             </table>
         </div>
+
+        {/* 🚀 MOBİL GÖRÜNÜM KARTLARI */}
+        <div className="md:hidden flex flex-col gap-4 p-4 bg-slate-50/50">
+            {filteredAssets.length > 0 ? filteredAssets.map((asset: any) => {
+                const assignedStaff = staff.find((s:any) => s.id === asset.route_staff_id);
+                return (
+                    <div key={asset.id} onClick={() => setSelectedAsset && setSelectedAsset(asset)} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3 relative cursor-pointer active:scale-95 transition-all">
+                        <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+                            <div className="pr-12">
+                                <div className="font-black text-slate-800 text-sm truncate flex items-center gap-1.5 mb-1">
+                                    <Building2 size={14} className="text-slate-400 shrink-0" />
+                                    <span className="truncate">{asset.apartmentName || asset.apartment_name || 'Bilinmeyen Tesis'}</span>
+                                </div>
+                                <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5 truncate">
+                                    {asset.name}
+                                </div>
+                            </div>
+                            
+                            <div className="absolute right-4 top-4">
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); toggleAutopilot(asset); }}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shadow-sm ${asset.is_autopilot ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                                >
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${asset.is_autopilot ? 'translate-x-6' : 'translate-x-1'}`} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                            <div className="flex flex-col gap-0.5">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sorumlu</span>
+                                <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                                    <User size={10} className="text-slate-400"/> 
+                                    {assignedStaff ? assignedStaff.name : 'Atanmadı'}
+                                </span>
+                            </div>
+                            <div className="flex flex-col gap-0.5 text-right">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Periyot / Fiyat</span>
+                                <span className="text-[11px] font-bold text-emerald-600">
+                                    {asset.maintenance_period || 30} Gün | ₺{asset.maintenance_fee || 0}
+                                </span>
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); handleOpenCollectionModal(asset); }}
+                            className="w-full mt-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                        >
+                            <Wallet size={14} /> Tahsilat Gir
+                        </button>
+                    </div>
+                )
+            }) : (
+                <div className="text-center p-8 text-slate-500 font-medium bg-white rounded-xl border border-slate-200">
+                    Aramanıza uygun varlık bulunamadı.
+                </div>
+            )}
+        </div>
       </div>
+
+      {/* 🚀 ŞIK TAHSİLAT MODALI */}
+      <AnimatePresence>
+          {collectionModal.isOpen && (
+              <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                  <motion.div 
+                      initial={{ scale: 0.95, opacity: 0, y: 10 }} 
+                      animate={{ scale: 1, opacity: 1, y: 0 }} 
+                      exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                      className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl relative overflow-hidden border border-slate-200"
+                  >
+                      <button 
+                          onClick={() => setCollectionModal({ isOpen: false, asset: null })} 
+                          className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-2 rounded-xl transition-colors"
+                      >
+                          <X size={18} />
+                      </button>
+
+                      <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-5 mx-auto shadow-inner">
+                          <Wallet size={32} />
+                      </div>
+
+                      <div className="text-center mb-6">
+                          <h3 className="text-xl font-black text-slate-900 tracking-tight">Hızlı Tahsilat</h3>
+                          <p className="text-xs font-medium text-slate-500 mt-1 line-clamp-2">
+                              <strong className="text-slate-700">{collectionModal.asset?.apartmentName || collectionModal.asset?.apartment_name}</strong> - {collectionModal.asset?.name}
+                          </p>
+                      </div>
+
+                      <div className="space-y-4">
+                          <div>
+                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Tahsil Edilen Tutar</label>
+                              <div className="relative">
+                                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-emerald-600">₺</span>
+                                  <input 
+                                      type="number" 
+                                      className="w-full pl-10 pr-4 py-3.5 bg-white border border-emerald-200 rounded-xl text-lg font-black outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 shadow-inner transition-all text-emerald-800" 
+                                      placeholder="0.00" 
+                                      value={collectionAmount} 
+                                      onChange={e => setCollectionAmount(e.target.value)} 
+                                  />
+                              </div>
+                          </div>
+
+                          <button 
+                              onClick={handleProcessCollection}
+                              disabled={isCollecting || !collectionAmount}
+                              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm py-4 rounded-xl shadow-lg shadow-emerald-200 transition-all active:scale-95 flex justify-center items-center gap-2 disabled:opacity-50"
+                          >
+                              {isCollecting ? <Loader2 size={18} className="animate-spin" /> : <><CheckCircle2 size={18} /> Kasaya Gelir Olarak İşle</>}
+                          </button>
+                      </div>
+                  </motion.div>
+              </div>
+          )}
+      </AnimatePresence>
+
     </motion.div>
   );
 }

@@ -4,7 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UploadCloud, Loader2, CheckCircle2, FileSpreadsheet, Bot, ArrowRight, AlertCircle, Download, FileWarning } from 'lucide-react'; 
 import * as XLSX from 'xlsx'; 
-import sectorsData from '@/lib/data/sectors.json'; // 🚀 SEKTÖR VERİSİ EKLENDİ
+import sectorsData from '@/lib/data/sectors.json'; 
+import trCitiesData from '@/lib/data/tr-cities.json'; // 🚀 ŞEHİR VERİSİ EKLENDİ
+
+const CITY_DATA: any = trCitiesData;
+const citiesList = Object.keys(CITY_DATA);
 
 export default function SmartExcelModal({
   showSmartExcelModal, setShowSmartExcelModal, handleAction
@@ -41,12 +45,13 @@ export default function SmartExcelModal({
       taxInfo: ['vergi', 'tc', 't.c.', 'v.d.', 'vd']
   };
 
-  // 🚀 YENİ MİMARİ: İL/İLÇE/BİNA NO AYRIMLI
-  const targetFields = [
+
+ // 🚀 EKSİKSİZ 10 SÜTUNLUK YENİ MİMARİ
+ const targetFields = [
     { id: 'apartmentName', label: 'Bina / Apartman Adı (ZORUNLU)' },
     { id: 'assetType', label: 'Varlık (Cihaz) Türü (LİSTEDEN SEÇİN)' },
     { id: 'streetDetail', label: 'Mahalle / Cadde / Sokak (ZORUNLU)' },
-    { id: 'city', label: 'İl' },
+    { id: 'city', label: 'İl (LİSTEDEN SEÇİN)' },
     { id: 'district', label: 'İlçe' },
     { id: 'buildingNo', label: 'Bina No' },
     { id: 'assetDetails', label: 'Cihaz Detayları (Kapasite, Durak, Konum vb.)' },
@@ -75,26 +80,55 @@ export default function SmartExcelModal({
     ];
 
     const worksheet = XLSX.utils.aoa_to_sheet([templateHeaders, exampleRow]);
-    
-    // 🚀 DROPDOWN LİSTESİ: B Sütununa (AssetType) Sektör Listesini Gömme
-    const dropdownList = assetTypesList.join(',');
+
+    // 🚀 EXCEL DROPDOWN HİLESİ VE CAYDIRICI MESAJ
+    const dataSheetAOA = [
+        ["⚠️ DİKKAT: BU SAYFADAKİ VERİLER SİSTEMİN ZORUNLU REFERANS LİSTELERİDİR."],
+        ["Bu veriler yer tutucudur. Değiştirmeniz veya silmeniz halinde sistemde ciddi sorunlar yaşarsınız."],
+        ["Sistem hatalı verileri KESİNLİKLE KABUL ETMEZ. Yükleme ekranında hepsini manuel düzeltmek zorunda kalır ve işçiliğinizi artırırsınız!"],
+        ["Lütfen bu sayfaya DOKUNMAYINIZ."], // 4. Satır
+        ["Varlık Türleri", "İller"] // 5. Satır Başlıkları
+    ];
+
+    const maxRows = Math.max(assetTypesList.length, citiesList.length);
+    for (let i = 0; i < maxRows; i++) {
+        dataSheetAOA.push([assetTypesList[i] || "", citiesList[i] || ""]);
+    }
+    const dataWorksheet = XLSX.utils.aoa_to_sheet(dataSheetAOA);
+
+    // Uyarı mesajı okunsun diye ilk sütunu kocaman yapıyoruz
+    dataWorksheet['!cols'] = [{ wch: 110 }, { wch: 30 }];
+
     if (!worksheet['!dataValidation']) worksheet['!dataValidation'] = [];
+    
+    // B Sütunu (Varlık Türü) Dropdown (Uyarı mesajlarından dolayı 6. satırdan başlar -> A6)
     worksheet['!dataValidation'].push({
       sqref: 'B2:B1000', 
-      type: 'list',
-      formula1: `"${dropdownList}"`,
+      type: 'list', 
+      formula1: `Veriler!$A$6:$A$${assetTypesList.length + 5}`,
       showErrorMessage: true,
       errorTitle: 'Hatalı Tür Seçimi',
       error: 'Lütfen listedeki tanımlı asansör türlerinden birini seçiniz.'
     });
 
+    // D Sütunu (İl) Dropdown (Veriler sayfası 6. satırdan başlar -> B6)
+    worksheet['!dataValidation'].push({
+      sqref: 'D2:D1000', 
+      type: 'list', 
+      formula1: `Veriler!$B$6:$B$${citiesList.length + 5}`,
+      showErrorMessage: true,
+      errorTitle: 'Hatalı İl Seçimi',
+      error: 'Lütfen açılır listeden geçerli bir İl seçiniz.'
+    });
+
     worksheet['!cols'] = [
-        { wch: 25 }, { wch: 35 }, { wch: 30 }, { wch: 12 }, 
-        { wch: 12 }, { wch: 10 }, { wch: 40 }, { wch: 25 }, { wch: 18 }, { wch: 20 }
+        { wch: 25 }, { wch: 35 }, { wch: 30 }, { wch: 20 }, 
+        { wch: 15 }, { wch: 10 }, { wch: 40 }, { wch: 25 }, { wch: 18 }, { wch: 20 }
     ];
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Şablon");
+    XLSX.utils.book_append_sheet(workbook, dataWorksheet, "Veriler"); // Gizli Veri Sayfası
 
     XLSX.writeFile(workbook, "IsDokumu_Akilli_Excel_Sablonu.xlsx");
   };
@@ -173,18 +207,17 @@ export default function SmartExcelModal({
   // 🚀 Adım 4'e Geçiş: Taslakları Hazırla ve Doğrula
   const handlePrepareDrafts = () => {
     const formattedData = rawExcelData.map((row, index) => {
-        let cleanRow: any = { _id: index }; // Silme ve düzenleme için geçici ID
+        let cleanRow: any = { _id: index };
         targetFields.forEach(field => {
             const excelHeaderName = mappings[field.id];
             cleanRow[field.id] = excelHeaderName ? row[excelHeaderName] : "";
         });
 
-        // Telefon numarasındaki boşlukları vs. temizle (Gümrük kuralı)
         if (cleanRow.customerPhone) {
             cleanRow.customerPhone = cleanRow.customerPhone.toString().trim();
         }
 
-        // 🚀 ADRES BİRLEŞTİRME (AddAssetModal formatına uydurma)
+        // 🚀 ADRES BİRLEŞTİRME
         const street = cleanRow.streetDetail?.trim() || "";
         const bNo = cleanRow.buildingNo?.toString().trim() || "";
         const dist = cleanRow.district?.trim() || "";
@@ -194,32 +227,27 @@ export default function SmartExcelModal({
         if (bNo) combinedLocation += ` No:${bNo}`;
         if (dist) combinedLocation += ` / ${dist}`;
         if (city) combinedLocation += ` / ${city}`;
-        
         cleanRow.location = combinedLocation;
 
-        // Cihaz türü sektör json listemizde var mı?
         const isValidType = assetTypesList.includes(cleanRow.assetType?.toString().trim());
         const isValidApartment = cleanRow.apartmentName && cleanRow.apartmentName.toString().trim() !== "";
+        
+        // 🚀 İL VE İLÇE GÜMRÜĞÜ
+        const isCityValid = city === "" || citiesList.includes(city);
+        const isDistrictValid = dist === "" || (city !== "" && CITY_DATA[city]?.includes(dist));
 
-        // Eğer tür listede yoksa veya apartman boşsa bu satır "Geçersiz/Hatalı" kabul edilir
-        cleanRow._isValid = isValidType && isValidApartment;
+        cleanRow.isCityValid = isCityValid;
+        cleanRow.isDistrictValid = isDistrictValid;
+        cleanRow._isValid = isValidType && isValidApartment && isCityValid && isDistrictValid;
         
         return cleanRow;
     });
     
-    // Tamamen boş satırları (Hem adı hem türü olmayanları) komple çöpe at
-    const nonEmpties = formattedData.filter(d => 
-        (d.apartmentName && d.apartmentName.toString().trim() !== "") || 
-        (d.assetType && d.assetType.toString().trim() !== "")
-    );
-    
+    const nonEmpties = formattedData.filter(d => d.apartmentName || d.assetType);
     setDraftData(nonEmpties);
-
-    // Eğer geçersiz veri varsa direkt "Hatalılar" sekmesini aç, yoksa "Geçerliler"i aç.
-    const hasInvalid = nonEmpties.some(d => !d._isValid);
-    setDraftTab(hasInvalid ? 'invalid' : 'valid');
+    setDraftTab(nonEmpties.some(d => !d._isValid) ? 'invalid' : 'valid');
     setStep(4);
-};
+  };
 
   // 🚀 Taslak Tablosunda Müşterinin Elle Düzeltme Yaptığı Fonksiyon
   const handleDraftTypeChange = (id: number, newType: string) => {
@@ -508,7 +536,12 @@ export default function SmartExcelModal({
                                                     <div className={`font-bold ${!row.apartmentName ? 'text-rose-500' : 'text-slate-800'}`}>
                                                         {row.apartmentName || 'BİNA ADI EKSİK!'}
                                                     </div>
-                                                    {row.assetLocation && <div className="text-[10px] text-slate-400 font-medium truncate max-w-[200px]">{row.assetLocation}</div>}
+                                                    <div className="text-[10px] text-slate-400 font-medium truncate max-w-[200px]">{row.location}</div>
+                                                    {(!row.isCityValid || !row.isDistrictValid) && (
+                                                        <div className="text-[9px] text-rose-500 font-bold bg-rose-50 px-1.5 py-0.5 rounded mt-1 inline-block border border-rose-200">
+                                                            ⚠️ İl veya İlçe sistemde bulunamadı!
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td className="p-3">
                                                     {/* Kırmızı Yanan Veri Gümrüğü Dropdown'ı */}

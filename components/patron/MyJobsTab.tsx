@@ -597,9 +597,29 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
 
           {/* TABLO 2: TAMAMLANAN İŞLER */}
           <div className="bg-white rounded-3xl border border-emerald-100 shadow-sm overflow-hidden opacity-90 hover:opacity-100 transition-opacity">
-              <div className="p-5 bg-emerald-50/50 border-b border-emerald-100 flex items-center gap-2">
-                  <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><CheckCircle size={18} /></div>
-                  <h3 className="font-black text-emerald-900 text-sm uppercase tracking-wide">Yönetimimde Tamamlanan İşler ({completedJobs.length})</h3>
+              <div className="p-4 sm:p-5 bg-emerald-50/50 border-b border-emerald-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                      <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><CheckCircle size={18} /></div>
+                      <h3 className="font-black text-emerald-900 text-sm uppercase tracking-wide">Yönetimimde Tamamlanan İşler ({completedJobs.length})</h3>
+                  </div>
+                  {/* 🚀 YENİ EKLENEN ARAMA KUTUSU */}
+                  <div className="relative w-full sm:w-64">
+                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-600/50" size={16} />
+                       <input 
+                           type="text" 
+                           placeholder="Müşteri veya İş Ara..." 
+                           className="w-full pl-9 pr-4 py-2 bg-white border border-emerald-200 rounded-xl text-xs font-semibold outline-none focus:border-emerald-500 transition-all shadow-inner"
+                           onChange={(e) => {
+                               const val = e.target.value.toLowerCase();
+                               // Hem masaüstü tr'leri hem de mobil card'ları filtrele
+                               const items = document.querySelectorAll('.completed-myjob-item');
+                               items.forEach((item: any) => {
+                                   const text = item.textContent.toLowerCase();
+                                   item.style.display = text.includes(val) ? '' : 'none'; // Flex yapısını bozmamak için 'flex' yerine boş bırakıyoruz
+                               });
+                           }}
+                       />
+                  </div>
               </div>
               
               {/* Masaüstü Görünüm */}
@@ -630,7 +650,7 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                               const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
 
                               return (
-                                  <tr key={job.id} onClick={() => handleOpenModal(job)} className="hover:bg-emerald-50/50 transition-colors cursor-pointer group">
+                                <tr key={job.id} onClick={() => handleOpenModal(job)} className="completed-myjob-item hover:bg-emerald-50/50 transition-colors cursor-pointer group">
                                       <td className="px-6 py-4">
                                           <div className="font-bold text-slate-800 text-sm leading-tight max-w-[250px] truncate">
                                             {aptName ? <><span className="text-emerald-600">{aptName}</span> - {job.customer_name}</> : job.customer_name}
@@ -687,7 +707,7 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                       const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
 
                       return (
-                        <div key={job.id} onClick={() => handleOpenModal(job)} className="bg-white rounded-xl border border-emerald-100 p-4 shadow-sm flex flex-col gap-3 active:scale-95 transition-all cursor-pointer">
+                        <div key={job.id} onClick={() => handleOpenModal(job)} className="completed-myjob-item bg-white rounded-xl border border-emerald-100 p-4 shadow-sm flex flex-col gap-3 active:scale-95 transition-all cursor-pointer">
                            <div className="flex justify-between items-start gap-2 border-b border-slate-50 pb-2">
                               <div className="min-w-0 pr-2">
                                 <div className="font-bold text-slate-800 text-sm line-clamp-2">

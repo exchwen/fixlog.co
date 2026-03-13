@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Box, MapPin, Users, Search, QrCode, ExternalLink, Tag, Archive } from 'lucide-react';
+import { Plus, Box, MapPin, Users, Search, QrCode, ExternalLink, Tag, Archive, Loader2 } from 'lucide-react';
 
 export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, setShowQRModal, setSelectedQRAsset, setShowSmartExcelModal }: any) {
   const [searchTerm, setSearchTerm] = useState('');
   const [logoBgColor, setLogoBgColor] = useState<string>('#f8fafc');
+  // 🚀 YENİ: Arşiv taranırken butonun durumunu takip edecek sistem eklendi
+  const [isScanning, setIsScanning] = useState(false);
 
   // 🚀 GÜVENLİ LİNK DÖNÜŞÜTÜRÜCÜ (PROXY)
   const getSafeImageUrl = (url: string | undefined) => {
@@ -124,28 +126,55 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
             />
           </div>
 
-          {/* 🚀 1: Akıllı Excel Butonu Eklendi */}
           <button onClick={() => setShowSmartExcelModal && setShowSmartExcelModal(true)} className="bg-emerald-600 text-white w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm shadow-emerald-200 hover:bg-emerald-700 active:scale-95 transition-all whitespace-nowrap">
             <Box size={16} /> Akıllı Excel Yükle
           </button>
 
-          {/* 🚀 2: Tüm Varlıkların Arşiv Geçmişini Getir */}
+          {/* 🚀 YENİ: Akıllandırılmış Arşiv Tarama Butonu */}
           <button 
+            disabled={isScanning}
             onClick={async () => {
-               const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
-               const res = await fetch(`https://backend.isdokumu.workers.dev/get-archived-jobs?slug=${data.slug}`, {
-                   headers: { 'Authorization': `Bearer ${token}` }
-               });
-               const archived = await res.json();
-               if(archived.length > 0) {
-                   data.jobs = [...archived, ...data.jobs];
-                   setSearchTerm(searchTerm + ' ');
-                   alert("Cihazların tüm arşiv dökümleri yüklendi. Etiket renkleri ve geçmiş veriler güncellendi.");
+               setIsScanning(true); // Yüklenme ekranını başlat
+               try {
+                 const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
+                 const res = await fetch(`https://backend.isdokumu.workers.dev/get-archived-jobs?slug=${data.slug}`, {
+                     headers: { 'Authorization': `Bearer ${token}` }
+                 });
+                 
+                 if (!res.ok) throw new Error('Sunucu hatası');
+                 
+                 const archived = await res.json();
+                 
+                 if(archived.length > 0) {
+                     data.jobs = [...archived, ...data.jobs];
+                     setSearchTerm(searchTerm + ' '); // Arayüzü yenilemek için küçük bir taktik
+                     alert("Cihazların tüm arşiv dökümleri başarıyla yüklendi. Etiket renkleri ve geçmiş veriler güncellendi.");
+                 } else {
+                     // Eskiden sessiz kaldığı yer burasıydı, artık kullanıcıya bilgi veriyor
+                     alert("Şu anda sisteme eklenecek yeni bir arşiv kaydı bulunamadı.");
+                 }
+               } catch (error) {
+                 // İnternet kopması gibi hatalarda bilgi veriyor
+                 alert("Arşiv taranırken bir bağlantı sorunu oluştu. Lütfen tekrar deneyin.");
+               } finally {
+                 setIsScanning(false); // İşlem bitince yüklenme ekranını kapat
                }
             }}
-            className="bg-slate-100 text-slate-700 w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border border-slate-200 hover:bg-slate-200 active:scale-95 transition-all whitespace-nowrap"
+            className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border transition-all whitespace-nowrap ${
+              isScanning 
+                ? 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed' 
+                : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 active:scale-95'
+            }`}
           >
-            <Archive size={16} className="text-blue-500" /> Arşivi Taramaya Başla
+            {isScanning ? (
+              <>
+                <Loader2 size={16} className="animate-spin text-blue-500" /> Taranıyor...
+              </>
+            ) : (
+              <>
+                <Archive size={16} className="text-blue-500" /> Arşivi Taramaya Başla
+              </>
+            )}
           </button>
 
           <button onClick={() => setShowAddAsset(true)} className="bg-blue-600 text-white w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all whitespace-nowrap">
@@ -158,7 +187,6 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
         {filteredAssets.length > 0 ? filteredAssets.map((a: any) => {
             const aptName = a.apartmentName || a.apartment_name;
             
-            // 🚀 HİBRİT ETİKET SİSTEMİ: Arşivlenmiş veya Sıcak işleri tarar
             const latestColor = (() => {
               const assetJobs = (data?.jobs || [])
                 .filter((j: any) => String(j.asset_id) === String(a.id) && j.work_type === 'Periyodik Bakım' && j.details && (j.details.label_color || j.details['Mevcut Etiket']))
@@ -167,7 +195,6 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
               return assetJobs[0]?.details?.label_color || assetJobs[0]?.details?.['Mevcut Etiket'] || a.label_color || a.labelColor || null;
             })();
 
-            // 🚀 ARŞİV DENETLEYİCİ: Eğer asansör çok eskiyse arşivden güncel rengi getirmek için tetikleyici
             const checkArchiveForColor = async (assetId: string) => {
                const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
                const res = await fetch(`https://backend.isdokumu.workers.dev/get-archived-jobs?slug=${data.slug}&assetId=${assetId}`, {
@@ -176,11 +203,10 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
                const archived = await res.json();
                if (archived.length > 0) {
                    data.jobs = [...archived, ...data.jobs];
-                   setSearchTerm(searchTerm + ' '); // Arayüzü tazele
+                   setSearchTerm(searchTerm + ' '); 
                }
             };
 
-            // 🚀 RENGE GÖRE KARTIN ÇERÇEVE VE GÖLGE STİLLERİ
             const getBorderClass = (color: string) => {
               switch(color?.toLowerCase()) {
                 case 'kırmızı': return 'border-rose-500 hover:border-rose-600 shadow-rose-100/50 bg-rose-50/10';
@@ -208,10 +234,8 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
               <div 
                 key={a.id} 
                 onClick={() => setSelectedAsset && setSelectedAsset(a)}
-                // 🚀 DİNAMİK ÇERÇEVE SINIFI BURAYA EKLENDİ (border-2 yapılarak belirginleştirildi)
                 className={`rounded-2xl border-2 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col group overflow-hidden relative ${borderClass}`}
               >
-                {/* 🚀 SAĞ ÜST KÖŞEDEKİ ŞIK RENK ETİKETİ ROZETİ */}
                 {latestColor && badgeClass !== 'hidden' && (
                   <div className={`absolute top-4 right-4 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border flex items-center gap-1 shadow-sm ${badgeClass}`}>
                     <Tag size={10} /> {latestColor}
