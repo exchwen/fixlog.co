@@ -7,7 +7,7 @@ import {
   ClipboardList, Users, Box, Wallet, Plus, ArrowUpRight, 
   CheckCircle, Clock, Calendar, TrendingUp, TrendingDown, 
   Package, AlertTriangle, ShieldCheck, Activity, User, Lock, 
-  Settings, X, Wrench, Link as LinkIcon, Check, Database, Image as ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2, Bell, CheckSquare, UserPlus, UserCheck, MapPin, AlertCircle, Info
+  Settings, X, Wrench, Link as LinkIcon, Check, Database, ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2, Bell, CheckSquare, UserPlus, UserCheck, MapPin, AlertCircle, Info, ShieldAlert, ArrowRight
 } from 'lucide-react';
 
 export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob, setActiveTab, userRole: propRole, handleAction, isMyJobsTab, setJobModalType }: any) {
@@ -22,7 +22,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   
   const [isApproving, setIsApproving] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false); 
-  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '', type: 'info' }); // 🚀 Yeni Uyarı State'i
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '', type: 'info' });
 
   const [newJobNotification, setNewJobNotification] = useState<{show: boolean, jobName: string}>({show: false, jobName: ''});
   const prevJobIds = useRef<string[]>([]);
@@ -74,7 +74,27 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const pendingJobs = jobs.filter((j: any) => j.status === 'Beklemede' || j.status === 'Devam Ediyor').length;
   const plannedJobs = jobs.filter((j: any) => j.status === 'Gelecek').length;
 
-  // 🚀 TÜM İŞLERİ KİMLİĞE VE DURUMA GÖRE FİLTRELEME (TEK DÖNGÜ, YÜKSEK PERFORMANS)
+  // 🚀 YENİ: Onay Bekleyen Kasa İşlemleri (Sadece Patron veya Yetkili Görecek)
+  const pendingFinances = useMemo(() => {
+    return finances.filter((f: any) => f.status === 'Bekliyor');
+  }, [finances]);
+
+  // 🚀 YENİ: Yaklaşan Periyodik Bakımlar (Son 30 gün kalanlar veya gecikenler)
+  const upcomingMaintenances = useMemo(() => {
+    const maintenances = data?.maintenances || [];
+    return maintenances.filter((m: any) => {
+        if (m.status === 'Tamamlandı') return false;
+        if (!m.next_date) return false;
+        const nextDate = new Date(m.next_date);
+        const today = new Date();
+        const diffTime = nextDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        // 30 günden az kalmışsa VEYA tarihi geçmişse (negatif değer) listele
+        return diffDays <= 30; 
+    }).sort((a: any, b: any) => new Date(a.next_date).getTime() - new Date(b.next_date).getTime());
+  }, [data?.maintenances]);
+
+  // 🚀 TÜM İŞLERİ KİMLİĞE VE DURUMA GÖRE FİLTRELEME
   const { incomingJobs, waitingForAssignmentJobs } = useMemo(() => {
     if (!currentUserId || userRole === 'Patron') {
         return { incomingJobs: [], waitingForAssignmentJobs: [] };
@@ -84,30 +104,21 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
     const waiting: any[] = [];
 
     jobs.forEach((j: any) => {
-        // Bu işi bizzat ben (şu anki kullanıcı) mi oluşturdum?
         const isCreatedByMe = (j.creator_name === currentUserName) || (j.details?.createdBy === currentUserName);
-        
-        // Bu iş bana mı atandı? (Patron bana atamış olabilir, ben kendimi sorumlu yapmış olabilirim)
         const isAssignedToMe = String(j.manager_id) === String(currentUserId) || 
                                String(j.details?.managerId) === String(currentUserId) || 
                                String(j.staff_id) === String(currentUserId);
                                
-        // İşin bir saha ustası (sahadaki eleman) var mı?
         const hasWorker = !!j.worker_id || !!j.details?.worker_id;
 
-        // EĞER İŞ BANA AİT DEĞİLSE PAS GEÇ!
         if (!isCreatedByMe && !isAssignedToMe) return;
         if (j.status === 'İptal' || j.status === 'Tamamlandı') return;
 
-        // 1. ONAY BEKLEYENLER (Sarı Kutu)
-        // Patron atadı, durum Beklemede, ustası yok ve BEN OLUŞTURMADIM.
         if ((j.status === 'Beklemede' || j.status === 'Gelecek') && isAssignedToMe && !hasWorker && !isCreatedByMe) {
             incoming.push(j);
             return;
         }
 
-        // 2. ATAMA BEKLEYENLER (Mor Kutu)
-        // Yönetici kabul etti ("Usta Bekliyor" statüsüne geçti) ama henüz usta atamadı.
         if (j.status === 'Usta Bekliyor' && isAssignedToMe && !hasWorker) {
             waiting.push(j);
             return;
@@ -177,9 +188,8 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const handleAssignWorker = (job: any) => {
     if (setJobModalType) setJobModalType('ASSIGN');
     setSelectedJob(job);
-};
+  };
 
-  // 🚀 YENİ: Malzeme Talebini Onaylama İşlemi
   const handleApproveMaterial = async () => {
     if (!selectedMaterialRequest || !handleAction) return;
     setIsApproving(selectedMaterialRequest.id);
@@ -294,19 +304,15 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // 🚀 DÜZELTİLMİŞ: Dinamik Statü Kontrolü (Mantık Hatalarını ve Gecikmeleri Tespit Eder)
   const getDynamicStatus = (job: any, hasWorker: boolean) => {
     let label = job.status || 'Beklemede';
 
-    // 🛠️ MANTIK HATASI DÜZELTMESİ: 
-    // İş tamamlanmadıysa, iptal edilmediyse ve onay beklemiyorsa ustanın varlığına göre durumu otomatik düzelt.
     if (label === 'Usta Bekliyor' || label === 'Devam Ediyor') {
         label = hasWorker ? 'Devam Ediyor' : 'Usta Bekliyor';
     }
 
     let colorClass = statusColors[label] || 'bg-slate-100 text-slate-500 border-slate-200';
 
-    // Gecikme Kontrolü
     if ((label === 'Gelecek' || label === 'Beklemede' || label === 'Usta Bekliyor') && job.scheduled_date) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -441,6 +447,112 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         </div>
       </div>
 
+      {/* 🚀 YENİ: Yaklaşan Periyodik Bakımlar Modülü */}
+      {upcomingMaintenances.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-cyan-600 rounded-3xl p-5 shadow-xl shadow-cyan-600/20 text-white relative overflow-hidden">
+           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+           <div className="relative z-10">
+              <h2 className="text-xs font-black text-cyan-100 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-cyan-400/30 pb-2">
+                 <Wrench size={16} /> Yaklaşan Periyodik Bakımlar ({upcomingMaintenances.length})
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                 {upcomingMaintenances.slice(0, 3).map((m: any) => {
+                    const daysDiff = Math.ceil((new Date(m.next_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                    const isOverdue = daysDiff < 0;
+
+                    return (
+                        <div key={m.id} className="bg-cyan-950/40 border border-cyan-400/30 rounded-2xl p-4 flex flex-col justify-between hover:bg-cyan-950/60 transition-colors">
+                            <div className="mb-2">
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${isOverdue ? 'bg-rose-500 text-white' : 'bg-white/20 text-white'}`}>
+                                        {isOverdue ? 'GECİKTİ' : 'YAKLAŞIYOR'}
+                                    </span>
+                                </div>
+                                <h3 className="text-sm font-black leading-tight mb-0.5 line-clamp-2">
+                                    {m.customer_name}
+                                </h3>
+                                <div className="text-[10px] font-bold text-cyan-200/80 mb-2 truncate">
+                                    {m.equipment}
+                                </div>
+                                <p className={`text-[11px] font-bold flex items-center gap-1.5 truncate ${isOverdue ? 'text-rose-300' : 'text-cyan-100'}`}>
+                                    <Clock size={12} className="shrink-0 opacity-70"/> 
+                                    {isOverdue ? `${Math.abs(daysDiff)} gün gecikti` : `${daysDiff} gün kaldı`} ({new Date(m.next_date).toLocaleDateString('tr-TR')})
+                                </p>
+                            </div>
+                            
+                            <button
+                                onClick={() => { if (setActiveTab) setActiveTab('periodic_maintenance') }}
+                                className="mt-2 w-full bg-white text-cyan-700 hover:bg-cyan-50 py-2.5 rounded-xl text-xs font-black transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+                            >
+                                <ArrowRight size={14} /> BAKIMLARA GİT
+                            </button>
+                        </div>
+                    );
+                 })}
+                 {upcomingMaintenances.length > 3 && (
+                     <div 
+                        onClick={() => { if (setActiveTab) setActiveTab('periodic_maintenance') }}
+                        className="bg-cyan-900/50 border border-cyan-400/30 rounded-2xl p-4 flex flex-col justify-center items-center cursor-pointer hover:bg-cyan-800/50 transition-colors"
+                     >
+                         <span className="text-2xl font-black text-cyan-200 mb-1">+{upcomingMaintenances.length - 3}</span>
+                         <span className="text-xs font-bold text-cyan-100">Diğer Bakımlar</span>
+                     </div>
+                 )}
+              </div>
+           </div>
+        </motion.div>
+      )}
+
+      {/* 🚀 YENİ: Kasa Onay Bekleyenler Modülü (Sadece Patron Görür) */}
+      {pendingFinances.length > 0 && userRole === 'Patron' && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-rose-600 rounded-3xl p-5 shadow-xl shadow-rose-600/20 text-white relative overflow-hidden">
+           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+           <div className="relative z-10">
+              <h2 className="text-xs font-black text-rose-100 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-rose-400/30 pb-2">
+                 <ShieldAlert size={16} /> Onay Bekleyen Kasa İşlemleri ({pendingFinances.length})
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                 {pendingFinances.slice(0, 3).map((f: any) => {
+                    const isIncome = f.type === 'Gelir';
+                    return (
+                        <div key={f.id} className="bg-rose-950/40 border border-rose-400/30 rounded-2xl p-4 flex flex-col justify-between hover:bg-rose-950/60 transition-colors">
+                            <div className="mb-2">
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-white/20 text-white flex items-center gap-1">
+                                        <User size={10} /> {f.added_by}
+                                    </span>
+                                    <span className={`text-[11px] font-black ${isIncome ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                        {isIncome ? '+' : '-'}₺{f.amount.toLocaleString('tr-TR')}
+                                    </span>
+                                </div>
+                                <h3 className="text-xs font-semibold leading-relaxed line-clamp-2 text-rose-100">
+                                    {f.description}
+                                </h3>
+                            </div>
+                            
+                            <button
+                                onClick={() => { if (setActiveTab) setActiveTab('finance') }}
+                                className="mt-2 w-full bg-white text-rose-700 hover:bg-rose-50 py-2.5 rounded-xl text-xs font-black transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+                            >
+                                <Wallet size={14} /> KASAYI GÖR VE ONAYLA
+                            </button>
+                        </div>
+                    );
+                 })}
+                 {pendingFinances.length > 3 && (
+                     <div 
+                        onClick={() => { if (setActiveTab) setActiveTab('finance') }}
+                        className="bg-rose-900/50 border border-rose-400/30 rounded-2xl p-4 flex flex-col justify-center items-center cursor-pointer hover:bg-rose-800/50 transition-colors"
+                     >
+                         <span className="text-2xl font-black text-rose-200 mb-1">+{pendingFinances.length - 3}</span>
+                         <span className="text-xs font-bold text-rose-100">Tümünü Gör</span>
+                     </div>
+                 )}
+              </div>
+           </div>
+        </motion.div>
+      )}
+
       {incomingJobs.length > 0 && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-amber-500 rounded-3xl p-5 shadow-xl shadow-amber-500/20 text-white relative overflow-hidden">
            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
@@ -473,7 +585,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                                     </span>
                                 </div>
                                 
-                                {/* 🚀 EKLENDİ: Müşteri, Apartman ve Cihaz Türü Birlikte */}
                                 <h3 className="text-sm font-black leading-tight mb-0.5 line-clamp-2">
                                     {aptName ? <><span className="text-amber-300">{aptName}</span> - {job.customer_name}</> : job.customer_name}
                                 </h3>
@@ -535,7 +646,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                                     </span>
                                 </div>
                                 
-                                {/* 🚀 EKLENDİ: Müşteri, Apartman ve Cihaz Türü Birlikte */}
                                 <h3 className="text-sm font-black leading-tight mb-0.5 line-clamp-2">
                                     {aptName ? <><span className="text-indigo-300">{aptName}</span> - {job.customer_name}</> : job.customer_name}
                                 </h3>
@@ -562,7 +672,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         </motion.div>
       )}
 
-      {/* 🚀 YENİ: Malzeme Talepleri Kutusu */}
       {materialRequests.length > 0 && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-teal-600 rounded-3xl p-5 shadow-xl shadow-teal-600/20 text-white relative overflow-hidden">
            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
@@ -615,7 +724,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
       )}
 
       {!isMyJobsTab && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
             <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-blue-300 transition-colors group cursor-pointer active:scale-95">
               <div className="w-10 h-10 bg-blue-50/80 rounded-xl flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform shrink-0">
                 <ClipboardList size={18} />
@@ -656,7 +765,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
               </div>
             </div>
 
-            <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-indigo-300 transition-colors group cursor-pointer active:scale-95 sm:col-span-2 md:col-span-1 lg:col-span-1">
+            <div onClick={() => setActiveTab('jobs')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-indigo-300 transition-colors group cursor-pointer active:scale-95">
               <div className="w-10 h-10 bg-indigo-50/80 rounded-xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform shrink-0">
                 <ImageIcon size={18} />
               </div>
@@ -665,6 +774,18 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                 <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Bu Ayki Foto</div>
               </div>
             </div>
+            
+            {/* 🚀 YENİ: Yaklaşan Bakımlar Kartı */}
+            <div onClick={() => setActiveTab('periodic_maintenance')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-cyan-300 transition-colors group cursor-pointer active:scale-95 sm:col-span-2 md:col-span-1 lg:col-span-1">
+              <div className="w-10 h-10 bg-cyan-50/80 rounded-xl flex items-center justify-center text-cyan-600 group-hover:scale-110 transition-transform shrink-0">
+                <Wrench size={18} />
+              </div>
+              <div>
+                <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none mb-1">{upcomingMaintenances.length}</div>
+                <div className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wide">Bakım Alarmı</div>
+              </div>
+            </div>
+
           </div>
       )}
 
@@ -861,12 +982,10 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
             <tbody className="divide-y divide-slate-50">
             {jobs.slice(0, 10).map((j: any) => {
                 
-                // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA (Tertemiz)
                 const creator = j.creator_name || j.details?.createdBy || (data?.ownerName?.split(' ')[0] || 'Sistem');
                 const manager = j.manager_name || j.details?.managerName || null;
                 const worker = j.worker_name || null;
 
-                // 🚀 Atayan ve Sorumlu aynı kişi mi?
                 const isCreatorSameAsManager = manager && creator === manager;
 
                 const isApproved = j.status === 'Tamamlandı';
@@ -994,7 +1113,6 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
 
         <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50/50 max-h-[500px] overflow-y-auto custom-scrollbar">
         {jobs.slice(0, 10).map((j: any) => {
-             // 🚀 D1 SÜTUNLARINDAN DİREKT OKUMA (Tertemiz)
              const creator = j.creator_name || j.details?.createdBy || (data?.ownerName?.split(' ')[0] || 'Sistem');
              const manager = j.manager_name || j.details?.managerName || null;
              const worker = j.worker_name || null;
@@ -1036,13 +1154,11 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                         {j.work_type}
                       </div>
                     </div>
-                    {/* 🚀 Dinamik Rozet (Mobil) */}
                     <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border shrink-0 shadow-sm ${getDynamicStatus(j, !!worker).colorClass}`}>
                       {getDynamicStatus(j, !!worker).label}
                     </span>
                  </div>
 
-                 {/* 🚀 DÜZELTİLMİŞ: Mobil Personel Hiyerarşisi UI */}
                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-2.5">
                     {isCreatorSameAsManager ? (
                         <div className="flex items-center gap-2">

@@ -22,8 +22,9 @@ import PendingJobsTab from '@/components/patron/PendingJobsTab';
 import CompletedJobsTab from '@/components/patron/CompletedJobsTab';
 import AlertsTab from '@/components/patron/AlertsTab';
 import SupportTab from '@/components/patron/SupportTab'; 
+import PeriodicTab from '@/components/patron/PeriodicTab';
 import AssetQRModal from '@/components/modals/AssetQRModal';
-import DynamicPWA from '@/components/DynamicPWA'; 
+import DynamicPWA from '@/components/DynamicPWA';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
@@ -623,6 +624,7 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
           {activeTab === 'team' && <TeamTab data={data} setShowAddStaff={setShowAddStaff} setShowJobModal={setShowAddJob} setSelectedStaff={setSelectedStaff} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} setSelectedJob={setSelectedJob} setJobModalType={setJobModalType} handleAction={handleAction} />}
           {activeTab === 'customers' && <CustomersTab data={data} setShowAddCustomer={setShowAddCustomer} setSelectedCustomer={setSelectedCustomer} handleAction={handleAction} />}
           {activeTab === 'support' && <SupportTab handleAction={handleAction} isSaving={isSaving} />} 
+          {activeTab === 'periodic' && <PeriodicTab data={data} handleAction={handleAction} statusColors={statusColors} setSelectedAsset={setSelectedAsset} />}
           
           {activeTab === 'stock' && (
             <div className="flex flex-col space-y-4">

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Phone, Mail, Briefcase, Calendar, User, ShieldCheck, CheckCircle, Clock, Settings, Trash2, Loader2, Filter } from 'lucide-react';
+import { X, Phone, Mail, Briefcase, Calendar, User, ShieldCheck, CheckCircle, Clock, Settings, Trash2, Loader2, Filter, MapPin } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 
 export default function StaffDetailModal({
@@ -286,6 +286,14 @@ export default function StaffDetailModal({
                                             <div className="text-sm font-bold text-slate-800 break-all">{selectedStaff.branch || 'Genel'}</div>
                                         </div>
                                     </div>
+                                    
+                                    <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm flex items-start gap-3 sm:col-span-2">
+                                        <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg shrink-0"><MapPin size={18} /></div>
+                                        <div>
+                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Sorumlu Olduğu Bölgeler</div>
+                                            <div className="text-sm font-bold text-slate-800 break-all">{selectedStaff.assigned_regions || 'Tüm Bölgeler'}</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </>
                         ) : (
@@ -328,6 +336,11 @@ export default function StaffDetailModal({
                                             ))}
                                             <option value="Genel Usta">Genel Usta</option>
                                         </select>
+                                    </div>
+
+                                    <div className="col-span-1 sm:col-span-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Sorumlu Olduğu Bölgeler (Örn: Kadıköy, Beşiktaş)</label>
+                                        <input className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 transition-all bg-white" value={editStaffForm.assigned_regions || ''} onChange={(e) => setEditStaffForm({...editStaffForm, assigned_regions: e.target.value})} placeholder="Virgülle ayırarak yazabilirsiniz" />
                                     </div>
                                     
                                     <div className="col-span-1 sm:col-span-2 pt-3 border-t border-slate-200 mt-1">

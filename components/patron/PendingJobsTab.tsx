@@ -219,6 +219,9 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                   const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
                   const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
                   
+                  // 🚀 YENİ: Varlığın varsayılan rota personeli var mı?
+                  const recommendedStaff = currentAsset?.route_staff_id ? staff.find((s:any) => String(s.id) === String(currentAsset.route_staff_id))?.name : null;
+
                   const dynamicStatus = getDynamicStatus(j, !!worker);
 
                   return (
@@ -290,20 +293,27 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                               </>
                           )}
                           <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-1.5 w-[130px] shrink-0">
-                                <Wrench size={14} className={worker ? 'text-indigo-500' : 'text-slate-400'} />
-                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">SAHA USTASI:</span>
+                                  <div className="flex items-center gap-1.5 w-[130px] shrink-0">
+                                    <Wrench size={14} className={worker ? 'text-indigo-500' : 'text-slate-400'} />
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">SAHA USTASI:</span>
+                                  </div>
+                                  {worker ? (
+                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-indigo-700 whitespace-nowrap shadow-sm">
+                                          {worker}
+                                      </span>
+                                  ) : (
+                                      <div className="flex items-center gap-1.5">
+                                          <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-600 whitespace-nowrap shadow-sm">
+                                              Atanmadı
+                                          </span>
+                                          {recommendedStaff && (
+                                              <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded whitespace-nowrap">
+                                                  Öneri: {recommendedStaff}
+                                              </span>
+                                          )}
+                                      </div>
+                                  )}
                               </div>
-                              {worker ? (
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-indigo-700 whitespace-nowrap shadow-sm">
-                                      {worker}
-                                  </span>
-                              ) : (
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-600 whitespace-nowrap shadow-sm">
-                                      Atanmadı
-                                  </span>
-                              )}
-                          </div>
                         </div>
                       </td>
 
@@ -367,6 +377,10 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
               const isCreatorSameAsManager = manager && creator === manager;
               const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
               const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
+              
+              // 🚀 YENİ: Varlığın varsayılan rota personeli var mı?
+              const recommendedStaff = currentAsset?.route_staff_id ? staff.find((s:any) => String(s.id) === String(currentAsset.route_staff_id))?.name : null;
+
               const dynamicStatus = getDynamicStatus(j, !!worker);
 
               return (
@@ -435,8 +449,15 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
                              <Wrench size={10} /> SAHA USTASI
                           </span>
-                          <div className={`text-[11px] font-bold px-2 py-0.5 rounded border shadow-sm ${worker ? 'text-indigo-700 bg-indigo-50 border-indigo-100' : 'text-rose-600 bg-rose-50 border-rose-200'}`}>
-                              {worker || 'Atanmadı'}
+                          <div className={`flex items-center gap-1.5 ${worker ? '' : 'flex-wrap'}`}>
+                              <div className={`text-[11px] font-bold px-2 py-0.5 rounded border shadow-sm ${worker ? 'text-indigo-700 bg-indigo-50 border-indigo-100' : 'text-rose-600 bg-rose-50 border-rose-200'}`}>
+                                  {worker || 'Atanmadı'}
+                              </div>
+                              {!worker && recommendedStaff && (
+                                  <div className="text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded">
+                                      Öneri: {recommendedStaff}
+                                  </div>
+                              )}
                           </div>
                       </div>
                   </div>
@@ -515,6 +536,10 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                const isCreatorSameAsManager = managerName && (creatorName === managerName);
                const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
                const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name;
+               
+               // 🚀 YENİ: Varlığın varsayılan rota personeli var mı?
+               const recommendedStaff = currentAsset?.route_staff_id ? staff.find((s:any) => String(s.id) === String(currentAsset.route_staff_id))?.name : null;
+
                const dynamicStatus = getDynamicStatus(j, !!workerName);
 
                return (
@@ -573,8 +598,15 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
                              <Wrench size={10} /> SAHA USTASI
                           </span>
-                          <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${workerName ? 'text-indigo-700 bg-indigo-50 border-indigo-100' : 'text-rose-600 bg-rose-50 border-rose-200'}`}>
-                              {workerName || 'Atanmadı'}
+                          <div className={`flex items-center gap-1.5 ${workerName ? '' : 'flex-wrap'}`}>
+                              <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${workerName ? 'text-indigo-700 bg-indigo-50 border-indigo-100' : 'text-rose-600 bg-rose-50 border-rose-200'}`}>
+                                  {workerName || 'Atanmadı'}
+                              </div>
+                              {!workerName && recommendedStaff && (
+                                  <div className="text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded">
+                                      Öneri: {recommendedStaff}
+                                  </div>
+                              )}
                           </div>
                       </div>
                    </div>

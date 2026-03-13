@@ -1,8 +1,8 @@
 'use client';
 
-// YENİ: WifiOff eklendi
+// YENİ: WifiOff ve Bell eklendi
 import React, { useEffect, useState } from 'react';
-import { Save, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle, MessageCircle, ImagePlus, CheckCircle, Globe, WifiOff } from 'lucide-react';
+import { Save, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle, MessageCircle, ImagePlus, CheckCircle, Globe, WifiOff, Bell } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -513,6 +513,52 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
               onChange={(e) => setSettingsForm({ ...settingsForm, taxInfo: e.target.value })}
               placeholder="Vergi Dairesi ve Numarası"
             />
+          </div>
+        </div>
+
+        {/* 🚀 YENİ: Periyodik Bakım ve Bildirim Ayarları */}
+        <div className="border-t border-slate-100 pt-6 pb-2">
+          <div className="flex items-center gap-2 mb-4">
+             <Bell className="text-amber-500" size={20} />
+             <label className="text-[13px] font-black text-slate-800 uppercase tracking-widest">Akıllı Bildirim ve Bakım Ayarları</label>
+          </div>
+          
+          <div className="bg-amber-50/50 border border-amber-200 p-5 rounded-2xl space-y-5">
+             <div>
+                <label className="text-[11px] font-black text-slate-600 uppercase tracking-widest mb-2 block">Yaklaşan Bakım Uyarısı</label>
+                <div className="flex items-center gap-3">
+                   <select 
+                      className="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 appearance-none pr-8 cursor-pointer w-48 shadow-sm"
+                      value={settingsForm?.maintenanceAlertDays || '7'}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, maintenanceAlertDays: e.target.value })}
+                      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center' }}
+                   >
+                      <option value="3">3 Gün Kala</option>
+                      <option value="7">7 Gün Kala</option>
+                      <option value="15">15 Gün Kala</option>
+                      <option value="30">30 Gün Kala</option>
+                   </select>
+                   <p className="text-[10px] font-medium text-slate-500 leading-snug">
+                     Periyodik bakım tarihi yaklaşan müşteriler için sistemin sizi ne zaman uyaracağını belirleyin.
+                   </p>
+                </div>
+             </div>
+
+             <div className="border-t border-amber-200/50 pt-4 flex items-start gap-3">
+                <input 
+                   type="checkbox" 
+                   id="pushEnabled"
+                   className="mt-1 w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-slate-300 cursor-pointer"
+                   checked={settingsForm?.pushNotificationsEnabled !== false}
+                   onChange={(e) => setSettingsForm({ ...settingsForm, pushNotificationsEnabled: e.target.checked })}
+                />
+                <label htmlFor="pushEnabled" className="cursor-pointer flex-1">
+                   <span className="text-xs font-bold text-slate-800 block mb-1">Cihaz Bildirimlerine İzin Ver (PWA)</span>
+                   <span className="text-[10px] font-medium text-slate-500 leading-relaxed block">
+                     Bu özellik aktif olduğunda, uygulama kapalı olsa bile yaklaşan bakımlar ve önemli saha gelişmeleri hakkında telefonunuza bildirim gönderilir. (Tarayıcı izni gerektirir)
+                   </span>
+                </label>
+             </div>
           </div>
         </div>
 

@@ -184,7 +184,11 @@ export default function AddJobModal({
                                          return (
                                            <div className="pt-2 border-t border-slate-100">
                                               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">2. Bu Müşteriye Ait Varlık (İsteğe Bağlı)</label>
-                                              <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500" value={jobForm?.assetId || ''} onChange={e => setJobForm({...jobForm, assetId: e.target.value})}>
+                                              <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500" value={jobForm?.assetId || ''} onChange={e => {
+                                                  const selectedAsset = customerAssets.find((a:any) => String(a.id) === String(e.target.value));
+                                                  const autoStaffId = selectedAsset?.route_staff_id || jobForm.staffId;
+                                                  setJobForm({...jobForm, assetId: e.target.value, staffId: autoStaffId});
+                                              }}>
                                                   <option value="">-- Varlık Seçilmedi (Genel Müşteri İşi) --</option>
                                                   {customerAssets.map((a:any) => {
                                                      const aptName = a.apartmentName || a.apartment_name || '';
@@ -206,7 +210,8 @@ export default function AddJobModal({
                                       <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500 custom-scrollbar" size={4} value={jobForm?.assetId || ''} onChange={e => {
                                         const selectedAsset = (data?.assets || []).find((a:any) => String(a.id) === String(e.target.value));
                                         const parentCust = (data?.customers || []).find((c:any) => String(c.id) === String(selectedAsset?.customer_id));
-                                        setJobForm({...jobForm, assetId: e.target.value, customerName: parentCust?.name || ''});
+                                        const autoStaffId = selectedAsset?.route_staff_id || jobForm.staffId;
+                                        setJobForm({...jobForm, assetId: e.target.value, customerName: parentCust?.name || '', staffId: autoStaffId});
                                       }}>
                                         <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- Listeden Varlık Seçin --</option>
                                         

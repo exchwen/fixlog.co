@@ -417,6 +417,22 @@ export default function AssetDetailModal({
                             </div>
                         </div>
                        
+                        <div className="grid grid-cols-2 gap-3">
+                           <div>
+                               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Bakım Periyodu (Gün)</label>
+                               <input type="number" className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" value={editForm.maintenance_period || 30} onChange={e => setEditForm({...editForm, maintenance_period: parseInt(e.target.value) || 30})} />
+                           </div>
+                           <div>
+                               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Rota Personeli</label>
+                               <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all appearance-none" value={editForm.route_staff_id || ''} onChange={e => setEditForm({...editForm, route_staff_id: e.target.value})}>
+                                   <option value="">Otomatik / Atanmamış</option>
+                                   {(data?.staff || []).filter((s: any) => s.role !== 'Yönetici').map((s: any) => (
+                                       <option key={s.id} value={s.id}>{s.name}</option>
+                                   ))}
+                               </select>
+                           </div>
+                       </div>
+
                        <div>
                           <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Varlık / Cihaz Detayları</label>
                           <textarea rows={3} placeholder="Teknik detaylar, kapasite, marka, model veya özel notlar..." className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all resize-none" value={editForm.asset_details || ''} onChange={e => setEditForm({...editForm, asset_details: e.target.value})} />

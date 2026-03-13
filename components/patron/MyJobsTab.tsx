@@ -409,7 +409,7 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
 
                                     <td className="px-6 py-4">
                                       <div className="flex flex-col gap-2 w-fit">
-                                          {manager === creator ? (
+                                          {manager && manager === creator ? (
                                               <div className="flex items-center gap-2">
                                                   <div className="flex items-center gap-1.5 w-[130px] shrink-0">
                                                     <ShieldCheck size={14} className="text-blue-600" />
@@ -550,7 +550,7 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                            </div>
 
                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-2.5">
-                                {manager === creator ? (
+                                {manager && manager === creator ? (
                                     <div className="flex items-center gap-2">
                                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
                                            <ShieldCheck size={10} /> ATAYAN & SORUMLU
@@ -615,11 +615,15 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                       </thead>
                       <tbody className="divide-y divide-slate-50">
                           {completedJobs.length > 0 ? completedJobs.map((job: any) => {
-                              let worker = null;
-                              if (String(job.staff_id) !== String(currentUserId)) {
-                                  worker = staff.find((s:any) => String(s.id) === String(job.staff_id));
-                              } else if (job.details?.worker_id) {
-                                  worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                              let worker = job.worker_name || null;
+                              if (!worker) {
+                                  if (String(job.staff_id) !== String(currentUserId)) {
+                                      const w = staff.find((s:any) => String(s.id) === String(job.staff_id));
+                                      if (w) worker = w.name;
+                                  } else if (job.details?.worker_id) {
+                                      const w = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                                      if (w) worker = w.name;
+                                  }
                               }
 
                               const currentAsset = assets.find((a: any) => String(a.id) === String(job.asset_id));
@@ -648,7 +652,7 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                                       </td>
                                       <td className="px-6 py-4">
                                           {worker ? (
-                                              <span className="font-bold text-slate-700 text-xs bg-slate-100 px-2 py-1 rounded border border-slate-200 flex items-center gap-1 w-fit"><User size={12} className="text-slate-400"/> {worker.name}</span>
+                                              <span className="font-bold text-slate-700 text-xs bg-slate-100 px-2 py-1 rounded border border-slate-200 flex items-center gap-1 w-fit"><User size={12} className="text-slate-400"/> {worker}</span>
                                           ) : <span className="text-slate-400 italic">-</span>}
                                       </td>
                                       <td className="px-6 py-4 text-right">
@@ -668,11 +672,15 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
               {/* Mobil Görünüm */}
               <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50">
                   {completedJobs.length > 0 ? completedJobs.map((job: any) => {
-                      let worker = null;
-                      if (String(job.staff_id) !== String(currentUserId)) {
-                          worker = staff.find((s:any) => String(s.id) === String(job.staff_id));
-                      } else if (job.details?.worker_id) {
-                          worker = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                      let worker = job.worker_name || null;
+                      if (!worker) {
+                          if (String(job.staff_id) !== String(currentUserId)) {
+                              const w = staff.find((s:any) => String(s.id) === String(job.staff_id));
+                              if (w) worker = w.name;
+                          } else if (job.details?.worker_id) {
+                              const w = staff.find((s:any) => String(s.id) === String(job.details?.worker_id));
+                              if (w) worker = w.name;
+                          }
                       }
 
                       const currentAsset = assets.find((a: any) => String(a.id) === String(job.asset_id));
@@ -706,7 +714,7 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
 
                            <div className="flex items-center gap-1.5 mt-1">
                                <User size={12} className="text-slate-400"/>
-                               <span className="text-[11px] font-bold text-slate-600">{worker ? worker.name : 'Usta Yok'}</span>
+                               <span className="text-[11px] font-bold text-slate-600">{worker || 'Usta Yok'}</span>
                            </div>
                         </div>
                       );

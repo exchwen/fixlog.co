@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Box, User, MapPin, FileText, Building2, ChevronDown, Search } from 'lucide-react';
+import { X, Loader2, Box, User, MapPin, FileText, Building2, ChevronDown, Search, Calendar } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
 import sectorsData from '@/lib/data/sectors.json'; // 🚀 EKLENDİ
 
@@ -260,6 +260,37 @@ return (
                             value={newAsset.location || ''} 
                             onChange={e => setNewAsset({...newAsset, location: e.target.value})} 
                         />
+                    </div>
+                </div>
+
+                {/* Periyodik Bakım Ayarları (Yeni Eklenen) */}
+                <div className="grid grid-cols-2 gap-3">
+                    <div>
+                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
+                            <Calendar size={14} /> Bakım Periyodu (Gün)
+                        </label>
+                        <input 
+                            type="number" 
+                            placeholder="Örn: 30" 
+                            className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" 
+                            value={newAsset.maintenance_period || 30} 
+                            onChange={e => setNewAsset({...newAsset, maintenance_period: parseInt(e.target.value) || 30})} 
+                        />
+                    </div>
+                    <div>
+                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
+                            <User size={14} /> Rota Personeli
+                        </label>
+                        <select 
+                            className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all appearance-none cursor-pointer" 
+                            value={newAsset.route_staff_id || ''} 
+                            onChange={e => setNewAsset({...newAsset, route_staff_id: e.target.value})} 
+                        >
+                            <option value="">Otomatik / Atanmamış</option>
+                            {(data?.staff || []).filter((s: any) => s.role !== 'Yönetici').map((s: any) => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
 

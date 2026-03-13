@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Loader2, ArrowDownRight, ArrowUpRight, Trash2, Download, Eye, Calendar, Clock, Filter, WifiOff, Wallet, User, AlertCircle, CheckCircle, Info } from 'lucide-react';
+import { Plus, X, Loader2, ArrowDownRight, ArrowUpRight, Trash2, Download, Eye, Calendar, Clock, Filter, WifiOff, Wallet, User, AlertCircle, CheckCircle, Info, Wrench, Check, ShieldAlert } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as XLSX from 'xlsx';
@@ -17,6 +17,7 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
   const [financeItems, setFinanceItems] = useState([{ name: '', qty: '1' }]);
   const [financeAmount, setFinanceAmount] = useState('');
   const [isSavingFinance, setIsSavingFinance] = useState(false);
+  const [isProcessingAction, setIsProcessingAction] = useState<string | null>(null);
 
   const [isOffline, setIsOffline] = useState(false);
 
@@ -33,14 +34,17 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
   });
 
   const [selectedJobDetail, setSelectedJobDetail] = useState<any>(null);
-  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '', type: 'info' }); // 🚀 Yeni Uyarı State'i
+  const [selectedMaintenanceDetail, setSelectedMaintenanceDetail] = useState<any>(null); 
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '', type: 'info' }); 
 
-  const [localFinances, setLocalFinances] = useState(data?.finances || []);
-  const [localJobs, setLocalJobs] = useState(data?.jobs || []);
+  const [localFinances, setLocalFinances] = useState<any[]>(data?.finances || []);
+  const [localJobs, setLocalJobs] = useState<any[]>(data?.jobs || []);
+  const [localMaintenances, setLocalMaintenances] = useState<any[]>(data?.maintenances || []); 
 
   useEffect(() => {
     setLocalFinances(data?.finances || []);
     setLocalJobs(data?.jobs || []);
+    setLocalMaintenances(data?.maintenances || []); 
   }, [data]);
 
   useEffect(() => {
@@ -80,16 +84,18 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
     
     let currentUserName = data?.ownerName || 'Patron';
     if (!isPatronPath) {
-       currentUserName = data?.staffName || 'Yönetici / Usta';
+       currentUserName = data?.staffName || 'Usta / Personel';
     }
 
-    // 🚀 D1 Veritabanı ve Worker kodlarımız güncellendiği için 
-    // gizli tag'e gerek kalmadı, addedBy olarak yolluyoruz.
+    // 🚀 ONAY MEKANİZMASI: Usta ise "Bekliyor", Yönetici/Patron ise direkt "Onaylandı"
+    const recordStatus = userRole === 'Usta' ? 'Bekliyor' : 'Onaylandı';
+
     const bodyData = { 
         slug: activeSlug, 
         description: description, 
         amount: parseFloat(financeAmount),
-        addedBy: currentUserName
+        addedBy: currentUserName,
+        status: recordStatus
     };
     
     const newRecord = {
@@ -98,7 +104,8 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
         amount: parseFloat(financeAmount),
         type: financeModal.type,
         created_at: new Date().toISOString(),
-        added_by: currentUserName // 🚀 Arayüzde anında gösterebilmek için D1 isimlendirmesi ile eşleşti
+        added_by: currentUserName,
+        status: recordStatus
     };
 
     const token = localStorage.getItem(isPatronPath ? 'patron_authToken' : 'staff_authToken');
@@ -116,15 +123,17 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
       if (res.ok) {
         setLocalFinances([newRecord, ...localFinances]);
         closeFinanceModal();
-        if (!isPatronPath) {
-            setAlertModal({ isOpen: true, message: 'İşlem başarıyla kaydedildi. Patron hesabına aktarıldı.', type: 'success' });
+        if (userRole === 'Usta') {
+            setAlertModal({ isOpen: true, message: 'İşlem başarıyla eklendi. Yöneticinizin onayından sonra kasaya işlenecektir.', type: 'success' });
+        } else {
+            setAlertModal({ isOpen: true, message: 'İşlem başarıyla kasaya eklendi.', type: 'success' });
         }
         router.refresh(); 
       } else {
             setAlertModal({ isOpen: true, message: "Kayıt Başarısız! İşlem reddedildi veya bağlantınız koptu.", type: 'error' });
       }
     } catch (e) { 
-      console.warn("İnternet bağlantısı yok veya sunucuya ulaşılamadı. Finans işlemi kuyruğa alındı.");
+      console.warn("İnternet bağlantısı yok. Finans işlemi kuyruğa alındı.");
       
       const pending = JSON.parse(localStorage.getItem(`offline_actions_${activeSlug}`) || '[]');
       pending.push({ endpoint, body: bodyData, timestamp: new Date().toISOString() });
@@ -136,6 +145,56 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
       setAlertModal({ isOpen: true, message: "İnternet bağlantınız yok. İşlem cihazınıza kaydedildi, bağlantı geldiğinde otomatik olarak sisteme aktarılacaktır.", type: 'info' });
     } finally {
       setIsSavingFinance(false); 
+    }
+  };
+
+  // 🚀 ONAYLAMA FONKSİYONU
+  const handleApproveTransaction = async (id: string) => {
+    setIsProcessingAction(id);
+    const token = localStorage.getItem(isPatronPath ? 'patron_authToken' : 'staff_authToken');
+    
+    try {
+      const res = await fetch(`https://backend.isdokumu.workers.dev/approve-finance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ slug: activeSlug, id })
+      });
+
+      if (res.ok) {
+        setLocalFinances(localFinances.map(f => f.id === id ? { ...f, status: 'Onaylandı' } : f));
+        setAlertModal({ isOpen: true, message: "İşlem başarıyla onaylandı ve kasaya işlendi.", type: 'success' });
+      } else {
+        setAlertModal({ isOpen: true, message: "Onay işlemi sırasında bir hata oluştu.", type: 'error' });
+      }
+    } catch (e) {
+      setAlertModal({ isOpen: true, message: "Bağlantı hatası. Lütfen internetinizi kontrol edin.", type: 'error' });
+    } finally {
+      setIsProcessingAction(null);
+    }
+  };
+
+  // 🚀 REDDETME FONKSİYONU
+  const handleRejectTransaction = async (id: string) => {
+    setIsProcessingAction(id);
+    const token = localStorage.getItem(isPatronPath ? 'patron_authToken' : 'staff_authToken');
+    
+    try {
+      const res = await fetch(`https://backend.isdokumu.workers.dev/reject-finance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ slug: activeSlug, id })
+      });
+
+      if (res.ok) {
+        setLocalFinances(localFinances.filter(f => f.id !== id));
+        setAlertModal({ isOpen: true, message: "İşlem reddedildi ve sistemden silindi.", type: 'info' });
+      } else {
+        setAlertModal({ isOpen: true, message: "Red işlemi sırasında bir hata oluştu.", type: 'error' });
+      }
+    } catch (e) {
+      setAlertModal({ isOpen: true, message: "Bağlantı hatası. Lütfen internetinizi kontrol edin.", type: 'error' });
+    } finally {
+      setIsProcessingAction(null);
     }
   };
 
@@ -157,7 +216,7 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
         'Açıklama / Kalemler': f.description?.replace(/\n|,/g, ' - ') || '', 
         'Miktar (TL)': f.amount,
         'İşlem Tipi': f.type,
-        'Ekleyen Kişi': f.added_by || 'Sistem / Patron' // 🚀 added_by db sütunundan okuyor
+        'Ekleyen Kişi': f.added_by || 'Sistem / Patron' 
       };
     });
 
@@ -194,6 +253,72 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
       }
       return true;
     });
+  };
+
+  const pendingFinances = localFinances.filter(f => f.status === 'Bekliyor');
+  const approvedFinances = localFinances.filter(f => f.status !== 'Bekliyor');
+
+  const renderPendingApprovals = () => {
+    if (pendingFinances.length === 0 || userRole === 'Usta') return null;
+
+    return (
+      <div className="mb-10 bg-amber-50/50 border border-amber-200 rounded-3xl p-5 sm:p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-5">
+           <div className="w-10 h-10 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center">
+             <ShieldAlert size={20} />
+           </div>
+           <div>
+             <h3 className="text-lg font-black text-amber-900 tracking-tight">Onay Bekleyen İşlemler</h3>
+             <p className="text-xs font-medium text-amber-700/80">Sahadan girilen ve kasaya işlenmesi için onayınızı bekleyen hareketler.</p>
+           </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {pendingFinances.map((f: any) => {
+             const dateObj = new Date(f.created_at);
+             const isGelir = f.type === 'Gelir';
+             
+             return (
+               <div key={f.id} className="bg-white border border-amber-200/60 p-4 rounded-2xl shadow-sm flex flex-col gap-3 relative">
+                  <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+                     <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><User size={10}/> {f.added_by}</span>
+                        <span className={`text-xs font-black uppercase tracking-wider ${isGelir ? 'text-emerald-600' : 'text-rose-600'}`}>
+                           {isGelir ? 'KASAYA GİRİŞ TALEBİ' : 'KASADAN ÇIKIŞ TALEBİ'}
+                        </span>
+                     </div>
+                     <div className={`font-black text-base flex items-center gap-1 ${isGelir ? 'text-emerald-600' : 'text-rose-600'}`}>
+                       {isGelir ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                       ₺{f.amount.toLocaleString('tr-TR')}
+                     </div>
+                  </div>
+                  
+                  <div className="text-xs font-semibold text-slate-600 leading-relaxed min-h-[40px]">
+                     {f.description}
+                  </div>
+                  
+                  <div className="flex items-center gap-2 pt-2">
+                     <button 
+                        disabled={isProcessingAction === f.id}
+                        onClick={() => handleApproveTransaction(f.id)} 
+                        className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-2.5 rounded-xl text-xs font-bold flex justify-center items-center gap-1.5 transition-all shadow-sm shadow-emerald-200 disabled:opacity-50"
+                     >
+                       {isProcessingAction === f.id ? <Loader2 size={14} className="animate-spin" /> : <><Check size={14} strokeWidth={3} /> Onayla</>}
+                     </button>
+                     <button 
+                        disabled={isProcessingAction === f.id}
+                        onClick={() => handleRejectTransaction(f.id)} 
+                        className="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 py-2.5 rounded-xl text-xs font-bold flex justify-center items-center gap-1.5 transition-all disabled:opacity-50"
+                     >
+                       <X size={14} strokeWidth={3} /> Reddet
+                     </button>
+                  </div>
+               </div>
+             )
+          })}
+        </div>
+      </div>
+    );
   };
 
   const renderFinanceTable = (title: string, rawData: any[]) => {
@@ -269,9 +394,12 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
               <tbody className="divide-y divide-slate-100">
               {filteredData.length > 0 ? filteredData.map((f: any, index: number) => {
                   
-                  // 🚀 BUG FIX: Sadece açıklama "İş Geliri: " ile başlıyorsa ve müşteri ismi eşleşiyorsa işi bul!
                   const relatedJob = f.description?.startsWith('İş Geliri:') 
                     ? localJobs.find((j: any) => f.type === 'Gelir' && j.status === 'Tamamlandı' && f.description.includes(j.customer_name))
+                    : null;
+                  
+                  const relatedMaintenance = f.description?.startsWith('Bakım Geliri:') 
+                    ? localMaintenances.find((m: any) => f.type === 'Gelir' && m.status === 'Tamamlandı' && f.description.includes(m.customer_name))
                     : null;
                     
                   const descriptionItems = (f.description || '').split(/,|\n/).map((item: string) => item.trim()).filter((item: string) => item.length > 0);
@@ -289,13 +417,21 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
                         ))}
                       </div>
                       
-                      {/* Sadece gerçek bir İş'ten geliyorsa butonu göster */}
                       {relatedJob && (
                         <button 
                           onClick={() => setSelectedJobDetail(relatedJob)} 
                           className="mt-3 text-[10px] font-bold text-blue-600 bg-blue-50/80 px-2.5 py-1.5 rounded-lg border border-blue-100 hover:bg-blue-100 flex items-center gap-1.5 transition-colors w-max shadow-sm active:scale-95"
                         >
                           <Eye size={12} /> İş Kaydını İncele
+                        </button>
+                      )}
+
+                      {relatedMaintenance && (
+                        <button 
+                          onClick={() => setSelectedMaintenanceDetail(relatedMaintenance)} 
+                          className="mt-3 text-[10px] font-bold text-emerald-600 bg-emerald-50/80 px-2.5 py-1.5 rounded-lg border border-emerald-100 hover:bg-emerald-100 flex items-center gap-1.5 transition-colors w-max shadow-sm active:scale-95"
+                        >
+                          <Wrench size={12} /> Bakım Kaydını İncele
                         </button>
                       )}
                     </td>
@@ -330,9 +466,12 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
         <div className="md:hidden flex flex-col gap-3">
           {filteredData.length > 0 ? filteredData.map((f: any) => {
 
-            // 🚀 BUG FIX: Aynı mantığı mobilde de uyguluyoruz. Açıklaması 'İş Geliri:' olmayanlara buton göstermiyoruz.
             const relatedJob = f.description?.startsWith('İş Geliri:') 
                 ? localJobs.find((j: any) => f.type === 'Gelir' && j.status === 'Tamamlandı' && (f.description || '').includes(j.customer_name))
+                : null;
+
+            const relatedMaintenance = f.description?.startsWith('Bakım Geliri:') 
+                ? localMaintenances.find((m: any) => f.type === 'Gelir' && m.status === 'Tamamlandı' && (f.description || '').includes(m.customer_name))
                 : null;
                 
             const descriptionItems = (f.description || '').split(/,|\n/).map((item: string) => item.trim()).filter((item: string) => item.length > 0);
@@ -377,6 +516,15 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
                     <Eye size={14} /> Bağlantılı İş Kaydını Görüntüle
                   </button>
                 )}
+
+                {relatedMaintenance && (
+                  <button 
+                    onClick={() => setSelectedMaintenanceDetail(relatedMaintenance)} 
+                    className="mt-2 w-full text-xs font-bold text-emerald-600 bg-emerald-50 py-2.5 rounded-xl border border-emerald-100 hover:bg-emerald-100 flex justify-center items-center gap-2 transition-colors active:scale-95"
+                  >
+                    <Wrench size={14} /> Bağlantılı Bakım Kaydını Görüntüle
+                  </button>
+                )}
               </div>
             );
           }) : (
@@ -392,6 +540,8 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
   return (
     <div className={`relative pb-10 ${!isPatronPath && userRole === 'Yönetici' ? 'flex flex-col items-center justify-center min-h-[70vh] px-4' : 'space-y-6 sm:space-y-8'}`}>
        
+       {renderPendingApprovals()}
+
        {!isPatronPath && userRole === 'Yönetici' ? (
          <div className="w-full max-w-lg bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xl text-center flex flex-col items-center gap-6 mt-10">
             <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center shadow-inner border border-blue-100">
@@ -429,9 +579,9 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
              </div>
            </div>
 
-           {renderFinanceTable("Tüm Hesap Hareketleri", localFinances)}
-           {renderFinanceTable("Sadece Gelirler", localFinances.filter((f: any) => f.type === 'Gelir'))}
-           {renderFinanceTable("Sadece Giderler", localFinances.filter((f: any) => f.type === 'Gider'))}
+           {renderFinanceTable("Tüm Hesap Hareketleri", approvedFinances)}
+           {renderFinanceTable("Sadece Gelirler", approvedFinances.filter((f: any) => f.type === 'Gelir'))}
+           {renderFinanceTable("Sadece Giderler", approvedFinances.filter((f: any) => f.type === 'Gider'))}
          </>
        )}
 
@@ -505,7 +655,9 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
                 onClick={handleAddFinanceRecord}
               >
                 {isSavingFinance ? <Loader2 className="animate-spin" size={20} /> : (
-                  isOffline ? 'Kuyruğa Al ve Kaydet' : (financeModal.type === 'Gelir' ? 'KASAYA GELİR İŞLE' : 'KASADAN GİDER ÇIK')
+                  isOffline ? 'Kuyruğa Al ve Kaydet' : (
+                      userRole === 'Usta' ? 'ONAYA GÖNDER' : (financeModal.type === 'Gelir' ? 'KASAYA GELİR İŞLE' : 'KASADAN GİDER ÇIK')
+                  )
                 )}
               </button>
             </div>
@@ -553,8 +705,49 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
               </div>
            </div>
          )}
+
+       {selectedMaintenanceDetail && isPatronPath && (
+         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-sm rounded-2xl p-0 shadow-2xl relative overflow-hidden flex flex-col">
+              
+              <div className="bg-emerald-900 p-5 flex justify-between items-start text-white">
+                <div>
+                  <h2 className="text-xl font-black tracking-tight">Bakım Kaydı Detayı</h2>
+                  <div className="text-xs font-medium text-emerald-200 mt-1">Bu işlemden sağlanan gelir</div>
+                </div>
+                <button onClick={() => setSelectedMaintenanceDetail(null)} className="text-slate-400 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all active:scale-95"><X size={18} /></button>
+              </div>
+              
+              <div className="p-6 space-y-5 bg-slate-50">
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Müşteri / Firma</div>
+                  <div className="text-base font-black text-slate-800">{selectedMaintenanceDetail.customer_name}</div>
+                </div>
+                
+                <div className="flex gap-4">
+                  <div className="flex-1 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Cihaz / Ekipman</div>
+                    <div className="text-sm font-bold text-slate-700">{selectedMaintenanceDetail.equipment}</div>
+                  </div>
+                  <div className="flex-1 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Bakım Tarihi</div>
+                    <div className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                       <Calendar size={14} className="text-emerald-500" /> {selectedMaintenanceDetail.next_date ? selectedMaintenanceDetail.next_date.split('-').reverse().join('.') : '-'}
+                    </div>
+                  </div>
+                </div>
+
+                {selectedMaintenanceDetail.notes && (
+                  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Bakım Notları</div>
+                    <div className="text-sm font-medium text-slate-600 italic border-l-2 border-emerald-400 pl-3 leading-relaxed">"{selectedMaintenanceDetail.notes}"</div>
+                  </div>
+                )}
+                </div>
+              </div>
+           </div>
+         )}
   
-        {/* 🚀 DİNAMİK GENEL UYARI MODALI */}
         <AnimatePresence>
           {alertModal.isOpen && (
             <motion.div 

@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, User, Phone, ShieldCheck, Briefcase, KeyRound } from 'lucide-react';
+import { X, Loader2, User, Phone, ShieldCheck, Briefcase, KeyRound, MapPin } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 
 export default function AddStaffModal({
@@ -145,6 +145,19 @@ export default function AddStaffModal({
                       className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400" 
                       value={newStaff.contact || ''} 
                       onChange={e => setNewStaff({...newStaff, contact: e.target.value})} 
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5 mt-2">
+                      <MapPin size={14} /> Sorumlu Olduğu Bölgeler (Örn: Kadıköy, Beşiktaş)
+                  </label>
+                  <input 
+                      type="text" 
+                      placeholder="Virgülle ayırarak yazabilirsiniz" 
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400" 
+                      value={newStaff.assigned_regions || ''} 
+                      onChange={e => setNewStaff({...newStaff, assigned_regions: e.target.value})} 
                   />
                 </div>
 

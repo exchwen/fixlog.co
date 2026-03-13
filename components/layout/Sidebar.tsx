@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, ShieldCheck, CheckSquare, Bell, HelpCircle, X, CheckCircle2, UserCircle, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, ShieldCheck, CheckSquare, Bell, HelpCircle, X, CheckCircle2, UserCircle, ChevronRight, RefreshCw } from 'lucide-react';
 import { useParams } from 'next/navigation';
 
 export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen }: any) {
@@ -83,6 +83,7 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
     { id: 'jobs', label: 'İş Emirleri', icon: ClipboardList },
     { id: 'pending', label: 'Onay Bekleyenler', icon: CheckSquare },
     { id: 'completed', label: 'Tamamlanan İşler', icon: CheckCircle2 },
+    { id: 'periodic', label: 'Periyodik Bakım', icon: RefreshCw },
     { id: 'alerts', label: 'Kayıt Geçmişi', icon: Bell },
     { id: 'team', label: 'Saha Ekibi', icon: Users },
     { id: 'customers', label: 'Müşteriler', icon: UserPlus },
