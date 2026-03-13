@@ -110,7 +110,7 @@ export default function ManagerDashboard() {
   });
 
   const [newAsset, setNewAsset] = useState({ 
-    name: '', location: '', customer_id: '', type: '', serial_number: '' 
+    name: '', location: '', customer_id: '', type: '', serial_number: '', maintenance_fee: '' // 🚀 PATRON/YÖNETİCİ BAKIM ÜCRETİNİ BURADAN GİRECEK
   });
 
   const [newStaff, setNewStaff] = useState({ 
@@ -153,7 +153,8 @@ export default function ManagerDashboard() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [editJobDetailForm, setEditJobDetailForm] = useState({ 
     workCategory: '', workType: '', jobType: '', scheduledDate: '', 
-    staffId: '', taskNote: '', customerName: '', assetId: '' 
+    staffId: '', taskNote: '', customerName: '', assetId: '',
+    paymentStatus: 'Bekliyor', paymentAmount: '' // 🚀 MERKEZİN TAHSİLAT GİRİŞİ İÇİN
   });
   const [jobTargetMode, setJobTargetMode] = useState('CUSTOMER');
   const [jobPrice, setJobPrice] = useState('');
@@ -394,6 +395,37 @@ const handleResolveEmergency = async (emg) => {
 };
 const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, null, null);
 
+  // 🚀 OTONOM BAKIM DAĞITIM MOTORUNU TETİKLEME (Yapay Zekasız, Sıfır Maliyetli Algoritma)
+  const [isGeneratingMaintenance, setIsGeneratingMaintenance] = useState(false);
+  
+  const handleGenerateMonthlyMaintenance = async () => {
+      const confirmRun = window.confirm("Dikkat! Bu işlem, 'Otomatik Bakım' açık olan TÜM asansörlerin periyodik bakımlarını, ustalarınızın takvimine bu ayın iş günleri içine eşit ve adil bir şekilde dağıtacaktır. Onaylıyor musunuz?");
+      if (!confirmRun) return;
+
+      setIsGeneratingMaintenance(true);
+      const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
+      
+      try {
+          const res = await fetch(`${API_URL}/generate-monthly-maintenance`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({ slug })
+          });
+          
+          const result = await res.json();
+          if (res.ok) {
+              alert(`✅ Başarılı: ${result.message}`);
+              fetchData(true); // Dashboard'u yenile ki işler ekrana düşsün
+          } else {
+              alert(`❌ Hata: ${result.error || 'Dağıtım yapılamadı.'}`);
+          }
+      } catch (err) {
+          alert('Sunucu ile bağlantı kurulamadı.');
+      } finally {
+          setIsGeneratingMaintenance(false);
+      }
+  };
+
   // Yönetici kısıtlaması (Ayarlar'a erişemez)
   useEffect(() => {
       if (activeTab === 'settings') {
@@ -624,7 +656,7 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
           {activeTab === 'team' && <TeamTab data={data} setShowAddStaff={setShowAddStaff} setShowJobModal={setShowAddJob} setSelectedStaff={setSelectedStaff} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} setSelectedJob={setSelectedJob} setJobModalType={setJobModalType} handleAction={handleAction} />}
           {activeTab === 'customers' && <CustomersTab data={data} setShowAddCustomer={setShowAddCustomer} setSelectedCustomer={setSelectedCustomer} handleAction={handleAction} />}
           {activeTab === 'support' && <SupportTab handleAction={handleAction} isSaving={isSaving} />} 
-          {activeTab === 'periodic' && <PeriodicTab data={data} handleAction={handleAction} statusColors={statusColors} setSelectedAsset={setSelectedAsset} />}
+          {activeTab === 'periodic' && <PeriodicTab data={data} handleAction={handleAction} statusColors={statusColors} setSelectedAsset={setSelectedAsset} handleGenerateMonthlyMaintenance={handleGenerateMonthlyMaintenance} isGenerating={isGeneratingMaintenance} />}
           
           {activeTab === 'stock' && (
             <div className="flex flex-col space-y-4">

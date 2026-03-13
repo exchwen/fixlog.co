@@ -264,10 +264,10 @@ return (
                 </div>
 
                 {/* Periyodik Bakım Ayarları (Yeni Eklenen) */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                         <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
-                            <Calendar size={14} /> Bakım Periyodu (Gün)
+                            <Calendar size={14} /> Periyot (Gün)
                         </label>
                         <input 
                             type="number" 
@@ -277,16 +277,32 @@ return (
                             onChange={e => setNewAsset({...newAsset, maintenance_period: parseInt(e.target.value) || 30})} 
                         />
                     </div>
+                    {/* 🚀 PATRONUN FİYAT BELİRLEME ALANI */}
+                    <div>
+                        <label className="text-[11px] font-black text-emerald-600 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
+                            💰 Bakım Ücreti
+                        </label>
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-emerald-600 text-sm">₺</span>
+                            <input 
+                                type="number" 
+                                placeholder="Tutar..." 
+                                className="w-full pl-7 pr-3 py-3 border border-emerald-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-500 bg-emerald-50/50 focus:bg-white transition-all text-emerald-800" 
+                                value={newAsset.maintenance_fee || ''} 
+                                onChange={e => setNewAsset({...newAsset, maintenance_fee: e.target.value})} 
+                            />
+                        </div>
+                    </div>
                     <div>
                         <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
                             <User size={14} /> Rota Personeli
                         </label>
                         <select 
-                            className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all appearance-none cursor-pointer" 
+                            className="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all appearance-none cursor-pointer" 
                             value={newAsset.route_staff_id || ''} 
                             onChange={e => setNewAsset({...newAsset, route_staff_id: e.target.value})} 
                         >
-                            <option value="">Otomatik / Atanmamış</option>
+                            <option value="">Otomatik</option>
                             {(data?.staff || []).filter((s: any) => s.role !== 'Yönetici').map((s: any) => (
                                 <option key={s.id} value={s.id}>{s.name}</option>
                             ))}
@@ -299,7 +315,7 @@ return (
                   <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
                       <FileText size={14} /> Varlık / Cihaz Detayları
                   </label>
-                  <textarea 
+                  <textarea
                       rows={3}
                       placeholder="Teknik detaylar, kapasite, marka, model veya özel notlar..." 
                       className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400 resize-none" 

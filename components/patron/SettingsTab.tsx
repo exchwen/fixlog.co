@@ -194,12 +194,18 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
   };
 
   const handleSave = async () => {
+    // 🚀 ÇALIŞMA GÜNLERİNİ STRİNG'E (JSON) ÇEVİREREK GÖNDERİYORUZ
+    const finalForm = {
+        ...settingsForm,
+        work_days: settingsForm.work_days ? JSON.stringify(settingsForm.work_days) : '[1,2,3,4,5,6]'
+    };
+
     // Çevrimdışı/Offline Kuyruk Koruması Entegrasyonu
     if (isOffline) {
        console.warn("İnternet bağlantısı yok. Ayarlarınız kuyruğa alındı.");
        const activeSlug = localStorage.getItem('companySlug') || ''; 
        const pending = JSON.parse(localStorage.getItem(`offline_actions_${activeSlug}`) || '[]');
-       pending.push({ endpoint: 'update-settings', body: settingsForm, timestamp: new Date().toISOString() });
+       pending.push({ endpoint: 'update-settings', body: finalForm, timestamp: new Date().toISOString() }); // 🚀 finalForm gönderildi
        localStorage.setItem(`offline_actions_${activeSlug}`, JSON.stringify(pending));
        
        setModalState('success');
@@ -207,7 +213,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
        return;
     }
 
-    const success = await handleAction('update-settings', settingsForm);
+    const success = await handleAction('update-settings', finalForm); // 🚀 finalForm gönderildi
     if (success) {
       setModalState('success');
       setTimeout(() => setModalState('idle'), 3000);
@@ -513,6 +519,48 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
               onChange={(e) => setSettingsForm({ ...settingsForm, taxInfo: e.target.value })}
               placeholder="Vergi Dairesi ve Numarası"
             />
+          </div>
+        </div>
+
+        {/* 🚀 YENİ: ÇALIŞMA GÜNLERİ AYARI (OTOPİLOT İÇİN) */}
+        <div className="border-t border-slate-100 pt-6 pb-2">
+          <label className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+            <Calendar size={16} /> Firmanın Çalışma Günleri
+          </label>
+          <p className="text-[11px] font-medium text-slate-500 mb-4 leading-relaxed">
+            Seçtiğiniz günler, <strong>Otonom Periyodik Bakım Dağıtım Sistemi</strong> tarafından ustaların işlerini planlarken kullanılır. (Sistem sadece seçili günlere iş atar).
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: 1, label: 'Pazartesi' }, { id: 2, label: 'Salı' }, { id: 3, label: 'Çarşamba' },
+              { id: 4, label: 'Perşembe' }, { id: 5, label: 'Cuma' }, { id: 6, label: 'Cumartesi' }, { id: 7, label: 'Pazar' }
+            ].map((day) => {
+              // Varsayılan olarak Pzt-Cmt seçili gelsin
+              const currentDays = settingsForm?.work_days ? (typeof settingsForm.work_days === 'string' ? JSON.parse(settingsForm.work_days) : settingsForm.work_days) : [1,2,3,4,5,6];
+              const isSelected = currentDays.includes(day.id);
+              
+              return (
+                <button
+                  key={day.id}
+                  onClick={() => {
+                    let newDays = [...currentDays];
+                    if (isSelected) {
+                        newDays = newDays.filter((d: number) => d !== day.id);
+                    } else {
+                        newDays.push(day.id);
+                        newDays.sort();
+                    }
+                    // En az 1 gün seçili olmak zorunda, hepsini silemez
+                    if (newDays.length > 0) {
+                        setSettingsForm({ ...settingsForm, work_days: newDays });
+                    }
+                  }}
+                  className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border shadow-sm ${isSelected ? 'bg-blue-600 text-white border-blue-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-blue-50 hover:text-blue-600'}`}
+                >
+                  {day.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 

@@ -526,6 +526,19 @@ export default function CustomerDetailModal({
                                                     <option key={type} value={type}>{type}</option>
                                                 ))}
                                             </select>
+
+                                            {/* 🚀 YENİ: MÜŞTERİ PROFİLİNDEN VARLIK EKLERKEN BAKIM ÜCRETİ */}
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-emerald-600 text-xs">₺</span>
+                                                <input 
+                                                    type="number" 
+                                                    placeholder="Aylık Bakım Ücreti (Opsiyonel)" 
+                                                    className="w-full pl-7 pr-3 py-2 border border-emerald-200 rounded-md text-xs font-bold outline-none focus:border-emerald-500 bg-emerald-50/50 focus:bg-white transition-all text-emerald-800" 
+                                                    value={newAssetForm.maintenance_fee || ''} 
+                                                    onChange={e => setNewAssetForm({...newAssetForm, maintenance_fee: e.target.value})} 
+                                                />
+                                            </div>
+
                                             <div className="flex gap-2 pt-1">
                                                 <button 
                                                     disabled={!newAssetForm.name || isSaving}
@@ -534,7 +547,8 @@ export default function CustomerDetailModal({
                                                         const combinedAddress = getFullAddress(editCustomerForm.address, buildingNo, selectedCity, selectedDistrict);
                                                         await handleAction('add-asset', { ...newAssetForm, customer_id: selectedCustomer.id, location: combinedAddress });
                                                         setIsCreatingAsset(false);
-                                                        setNewAssetForm({ name: '', apartmentName: '' });
+                                                        // 🚀 Form sıfırlama güncellendi
+                                                        setNewAssetForm({ name: '', apartmentName: '', maintenance_fee: '' });
                                                     }}
                                                     className="flex-[2] bg-emerald-600 text-white py-2 rounded-md text-xs font-bold hover:bg-emerald-700 transition-all disabled:opacity-50 flex justify-center items-center"
                                                 >

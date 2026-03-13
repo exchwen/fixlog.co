@@ -1298,7 +1298,7 @@ useEffect(() => {
                     </div>
 
                     <div className="p-4 border-t border-slate-100 bg-white shrink-0">
-                        {selectedJob.status === 'Onay Bekliyor' && (
+                    {selectedJob.status === 'Onay Bekliyor' && (
                                     <div className="bg-amber-50 border border-amber-200 p-4 sm:p-5 rounded-2xl flex flex-col gap-3 shadow-inner">
                                        <div className="text-amber-800 font-black text-sm flex items-center gap-2"><AlertTriangle size={18}/> Personel İşi Tamamladı. Onayınız Bekleniyor.</div>
                                        
@@ -1312,12 +1312,43 @@ useEffect(() => {
                                            </button>
                                        ) : (
                                            <>
-                                               <input type="number" placeholder="Müşteriye yansıtılacak işlem ücreti (₺)" value={jobPrice} onChange={e => setJobPrice(e.target.value)} className="px-4 py-3 sm:py-3.5 rounded-xl border border-amber-300 font-bold outline-none focus:border-amber-500 w-full text-sm bg-white" />
-                                               <button disabled={isApproving || !jobPrice} onClick={async () => {
+                                               {/* 🚀 YENİ: Otopilot fiyatı varsa input'a otomatik yansır */}
+                                               <div className="relative">
+                                                   <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-amber-600 text-sm">₺</span>
+                                                   <input 
+                                                       type="number" 
+                                                       placeholder="Müşteriye yansıtılacak işlem ücreti" 
+                                                       value={jobPrice !== '' ? jobPrice : (selectedJob.payment_amount || '')} 
+                                                       onChange={e => setJobPrice(e.target.value)} 
+                                                       className="w-full pl-8 pr-4 py-3 sm:py-3.5 rounded-xl border border-amber-300 font-bold outline-none focus:border-amber-500 text-sm bg-white text-amber-900" 
+                                                   />
+                                               </div>
+                                               <button disabled={isApproving || (!jobPrice && !selectedJob.payment_amount)} onClick={async () => {
                                                    setIsApproving(true);
-                                                   const newDetails = { ...selectedJob.details, price: jobPrice + ' TL' };
-                                                   await handleAction('update-job', { id: selectedJob.id, status: 'Tamamlandı', taskNote: selectedJob.details?.note, lastEditedBy: data?.ownerName, workType: selectedJob.work_type, details: newDetails }, null, null);
-                                                   await handleAction('approve-job', { jobId: selectedJob.id, amount: jobPrice, customerName: selectedJob.customer_name }, () => setSelectedJob(null), () => setJobPrice(''));
+                                                   // 🚀 Hangi fiyatı kullanacağımızı belirliyoruz
+                                                   const finalPrice = jobPrice !== '' ? jobPrice : selectedJob.payment_amount;
+                                                   const newDetails = { ...selectedJob.details, price: finalPrice + ' TL' };
+                                                   
+                                                   // 1. İşi Tamamla ve Tahsilat Durumunu Güncelle
+                                                   await handleAction('update-job', { 
+                                                       id: selectedJob.id, 
+                                                       status: 'Tamamlandı', 
+                                                       taskNote: selectedJob.details?.note, 
+                                                       lastEditedBy: data?.ownerName || 'Yönetici', 
+                                                       workType: selectedJob.work_type, 
+                                                       details: newDetails,
+                                                       paymentStatus: 'Tahsil Edildi',
+                                                       paymentAmount: finalPrice
+                                                   }, null, null);
+                                                   
+                                                   // 2. Parayı Kasaya İşle
+                                                   await handleAction('approve-job', { 
+                                                       jobId: selectedJob.id, 
+                                                       amount: finalPrice, 
+                                                       customerName: selectedJob.customer_name,
+                                                       paymentStatus: 'Tahsil Edildi'
+                                                   }, () => setSelectedJob(null), () => setJobPrice(''));
+                                                   
                                                    setIsApproving(false);
                                                }} className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black py-3 sm:py-3.5 rounded-xl transition-all shadow-md flex justify-center items-center active:scale-95 text-sm">
                                                    {isApproving ? <Loader2 className="animate-spin" size={18}/> : 'Fiyatı Onayla ve Kasa\'ya İşle'}
@@ -1543,6 +1574,39 @@ useEffect(() => {
                     <div>
                       <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Görev Özeti / Talimatlar <span className="text-slate-400 font-medium normal-case">(İsteğe Bağlı)</span></label>
                       <textarea rows={3} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none resize-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="İşin detayı nedir?..." value={editJobDetailForm.taskNote} onChange={e => setEditJobDetailForm({...editJobDetailForm, taskNote: e.target.value})} />
+                    </div>
+
+                    {/* 🚀 AKILLI TAHSİLAT KONTROLÜ (Sadece Merkez İçin) */}
+                    <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 mt-2">
+                        <label className="text-[11px] font-black text-emerald-700 uppercase tracking-widest block mb-3 flex items-center gap-1.5">
+                            💰 Tahsilat Durumu & Tutar
+                        </label>
+                        <div className="grid grid-cols-2 gap-2 mb-3">
+                            <button 
+                                onClick={() => setEditJobDetailForm({...editJobDetailForm, paymentStatus: 'Tahsil Edildi'})} 
+                                className={`py-2 rounded-xl text-xs font-bold transition-all border ${editJobDetailForm.paymentStatus === 'Tahsil Edildi' ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'}`}
+                            >
+                                Tahsil Edildi
+                            </button>
+                            <button 
+                                onClick={() => setEditJobDetailForm({...editJobDetailForm, paymentStatus: 'Bekliyor', paymentAmount: ''})} 
+                                className={`py-2 rounded-xl text-xs font-bold transition-all border ${editJobDetailForm.paymentStatus === 'Bekliyor' ? 'bg-amber-500 text-white border-amber-600 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:border-amber-300'}`}
+                            >
+                                Ödeme Bekliyor
+                            </button>
+                        </div>
+                        {editJobDetailForm.paymentStatus === 'Tahsil Edildi' && (
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-emerald-600 text-sm">₺</span>
+                                <input 
+                                    type="number" 
+                                    placeholder="Tahsil edilen tutar..." 
+                                    value={editJobDetailForm.paymentAmount || ''} 
+                                    onChange={(e) => setEditJobDetailForm({...editJobDetailForm, paymentAmount: e.target.value})}
+                                    className="w-full bg-white border border-emerald-200 rounded-xl pl-8 pr-4 py-2.5 text-sm font-bold outline-none focus:border-emerald-500 text-emerald-800" 
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3 w-full pt-4 mt-2 border-t border-slate-100">

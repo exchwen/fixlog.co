@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Bot, AlertTriangle, CheckCircle2, Clock, User, Building2, MapPin, Wallet, Power, Settings2, ShieldCheck } from 'lucide-react';
 
-export default function PeriodicTab({ data, handleAction, statusColors, setSelectedAsset }: any) {
+export default function PeriodicTab({ data, handleAction, statusColors, setSelectedAsset, handleGenerateMonthlyMaintenance, isGenerating }: any) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('Tümü');
 
@@ -60,9 +60,21 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                         {totalAssets} varlık için {staffCount} personelinizin iş yükü dengeli görünüyor. Personel başına ortalama {assetsPerStaff} bakım düşüyor. Sisteminiz otopilotta kusursuz ilerliyor.
                     </div>
                 )}
+                </div>
             </div>
-        </div>
-      </div>
+            
+            {/* 🚀 OTONOM DAĞITIM BUTONU EKLENDİ */}
+            <div className="mt-5 border-t border-slate-700/50 pt-4 flex justify-end">
+                <button 
+                    onClick={handleGenerateMonthlyMaintenance} 
+                    disabled={isGenerating}
+                    className="bg-blue-600 hover:bg-blue-500 text-white font-black text-sm px-6 py-3 rounded-xl flex items-center gap-2 shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all active:scale-95 disabled:opacity-50"
+                >
+                    {isGenerating ? <RefreshCw className="animate-spin" size={18} /> : <Bot size={18} />}
+                    {isGenerating ? 'Otopilot Çalışıyor...' : 'Aylık Bakımları Otonom Dağıt'}
+                </button>
+            </div>
+          </div>
 
       {/* 2. VERİ ÇUBUKLARI (Dashboard Özet) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -140,7 +152,12 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                                         <Building2 size={16} className="text-slate-400" />
                                         {asset.apartmentName || asset.apartment_name || 'Bilinmeyen Tesis'}
                                     </div>
-                                    <div className="text-xs text-slate-500 mt-1 font-medium ml-6">{asset.name}</div>
+                                    <div className="text-xs text-slate-500 mt-1 font-medium ml-6 flex items-center gap-2">
+                                        {asset.name}
+                                        <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-black text-[10px]">
+                                            ₺{asset.maintenance_fee || 0} / Ay
+                                        </span>
+                                    </div>
                                 </td>
                                 
                                 <td className="p-4">

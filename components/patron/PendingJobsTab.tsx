@@ -101,7 +101,8 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
 
   // Yönetici İşi Onaylayıp Gelir Olarak Kaydeder
   const handleApproveJob = async (job: any) => {
-    const amount = jobPrices[job.id];
+    // 🚀 OTOPİLOT FİYATI: Eğer inputa bir şey yazılmadıysa, Otopilot'un DB'ye yazdığı payment_amount'u al
+    const amount = jobPrices[job.id] !== undefined ? jobPrices[job.id] : (job.payment_amount || 0);
     
     if (!amount || amount <= 0) {
       setAlertModal({ isOpen: true, title: 'Fiyat Eksik!', message: 'Lütfen onaylamadan önce geçerli bir fiyat giriniz.', type: 'warning' });
@@ -111,7 +112,13 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
     setIsProcessing(job.id);
 
     const endpoint = 'approve-job';
-    const bodyData = { slug: activeSlug, jobId: job.id, amount: parseFloat(amount), customerName: job.customer_name };
+    const bodyData = { 
+        slug: activeSlug, 
+        jobId: job.id, 
+        amount: parseFloat(amount), 
+        customerName: job.customer_name,
+        paymentStatus: 'Tahsil Edildi' // 🚀 Kasa döngüsü için eklendi
+    };
 
     const attemptRequest = async (retries: number = 3): Promise<boolean> => {
       try {
@@ -326,13 +333,14 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                       
                       <td className="px-5 py-4 align-top text-right bg-slate-50/50">
                          <div className="flex flex-col sm:flex-row items-end sm:items-center justify-end gap-2.5 w-full">
-                           <div className="relative w-full max-w-[140px]">
+                         <div className="relative w-full max-w-[140px]">
                              <span className="absolute left-3 top-2.5 font-bold text-slate-400">₺</span>
                              <input 
                                type="number" 
                                placeholder="Fiyat Girin" 
                                className="w-full pl-7 pr-3 py-2 border border-amber-300 rounded-xl outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/20 bg-white shadow-inner font-black text-sm text-slate-800 transition-all placeholder:font-bold placeholder:text-xs" 
-                               value={jobPrices[j.id] || ''} 
+                               // 🚀 Otopilot'un atadığı fiyatı varsayılan olarak gösteriyoruz
+                               value={jobPrices[j.id] !== undefined ? jobPrices[j.id] : (j.payment_amount || '')} 
                                onChange={e => setJobPrices({...jobPrices, [j.id]: e.target.value})} 
                              />
                            </div>
@@ -466,13 +474,14 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                   <div className="flex flex-col gap-2 pt-1 border-t border-slate-50">
                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Fiyat Belirle ve Onayla</label>
                      <div className="flex flex-col gap-2 w-full">
-                       <div className="relative w-full">
+                     <div className="relative w-full">
                          <span className="absolute left-3 top-3 font-bold text-slate-400 text-sm">₺</span>
                          <input 
                            type="number" 
                            placeholder="Tutar (Örn: 1500)" 
                            className="w-full pl-8 pr-4 py-3 border border-amber-300 rounded-xl outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/20 bg-slate-50 shadow-inner font-black text-base text-slate-800 transition-all placeholder:font-bold placeholder:text-xs" 
-                           value={jobPrices[j.id] || ''} 
+                           // 🚀 Otopilot'un atadığı fiyatı varsayılan olarak gösteriyoruz
+                           value={jobPrices[j.id] !== undefined ? jobPrices[j.id] : (j.payment_amount || '')} 
                            onChange={e => setJobPrices({...jobPrices, [j.id]: e.target.value})} 
                          />
                        </div>

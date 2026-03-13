@@ -417,10 +417,23 @@ export default function AssetDetailModal({
                             </div>
                         </div>
                        
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                            <div>
-                               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Bakım Periyodu (Gün)</label>
+                               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Periyot (Gün)</label>
                                <input type="number" className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" value={editForm.maintenance_period || 30} onChange={e => setEditForm({...editForm, maintenance_period: parseInt(e.target.value) || 30})} />
+                           </div>
+                           {/* 🚀 YENİ: VARLIK DÜZENLEME EKRANINDA BAKIM ÜCRETİ */}
+                           <div>
+                               <label className="text-[11px] font-black text-emerald-600 uppercase tracking-widest block mb-2">💰 Bakım Ücreti</label>
+                               <div className="relative">
+                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-emerald-600 text-sm">₺</span>
+                                  <input 
+                                      type="number" 
+                                      className="w-full pl-7 pr-3 py-3 border border-emerald-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-500 bg-emerald-50/50 focus:bg-white transition-all text-emerald-800" 
+                                      value={editForm.maintenance_fee || ''} 
+                                      onChange={e => setEditForm({...editForm, maintenance_fee: e.target.value})} 
+                                  />
+                               </div>
                            </div>
                            <div>
                                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Rota Personeli</label>
