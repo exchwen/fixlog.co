@@ -786,7 +786,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
             </div>
             
             {/* 🚀 YENİ: Yaklaşan Bakımlar Kartı */}
-            <div onClick={() => setActiveTab('periodic_maintenance')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-cyan-300 transition-colors group cursor-pointer active:scale-95 sm:col-span-2 md:col-span-1 lg:col-span-1">
+            <div onClick={() => setActiveTab('periodic')} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:border-cyan-300 transition-colors group cursor-pointer active:scale-95 sm:col-span-2 md:col-span-1 lg:col-span-1">
               <div className="w-10 h-10 bg-cyan-50/80 rounded-xl flex items-center justify-center text-cyan-600 group-hover:scale-110 transition-transform shrink-0">
                 <Wrench size={18} />
               </div>
