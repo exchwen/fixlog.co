@@ -38,6 +38,9 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
   const isOverloaded = assetsPerStaff > 150; 
 
   const [alertModal, setAlertModal] = useState({ isOpen: false, message: '', type: 'info' });
+  // 🚀 YENİ: SİSTEM GENELİ ONAY MODALI
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+  
   const [collectionModal, setCollectionModal] = useState({ isOpen: false, asset: null as any });
   const [collectionAmount, setCollectionAmount] = useState('');
   const [isCollecting, setIsCollecting] = useState(false);
@@ -57,7 +60,6 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
           const success = await handleAction('update-asset', { id: asset.id, is_autopilot: newStatus });
           
           if (success) {
-              // Anında arayüze yansıt
               setLocalAssetUpdates(prev => ({
                   ...prev,
                   [asset.id]: { ...prev[asset.id], is_autopilot: newStatus }
@@ -89,7 +91,6 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
       const description = `Periyodik Bakım Tahsilatı: ${asset.apartmentName || asset.apartment_name || ''} - ${asset.name}`;
       
       try {
-          // 1. Kasaya parayı işle
           const incomeSuccess = await handleAction('add-income', {
               description: description,
               amount: Number(collectionAmount),
@@ -98,11 +99,9 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
           }, null, null);
 
           if (incomeSuccess) {
-              // 2. Varlığın "son tahsilat tarihini" veritabanında güncelle
               const nowIso = new Date().toISOString();
               await handleAction('update-asset', { id: asset.id, last_collection_date: nowIso });
               
-              // 3. Arayüzü anında "Tahsil Edildi" moduna sok
               setLocalAssetUpdates(prev => ({
                   ...prev,
                   [asset.id]: { ...prev[asset.id], last_collection_date: nowIso }
@@ -123,6 +122,8 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
 
   const executeOtopilot = async () => {
     if (isGenerating) return;
+    setConfirmModal({ ...confirmModal, isOpen: false }); // İşlem başlarken modalı kapat
+    
     try {
         await handleGenerateMonthlyMaintenance();
         setAlertModal({ 
@@ -134,6 +135,16 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
     } catch (error) {
         setAlertModal({ isOpen: true, message: 'Otopilot çalıştırılırken bir hata oluştu. Lütfen tekrar deneyin.', type: 'error' });
     }
+  };
+
+  // 🚀 Otopilot Butonu Artık Modalı Çağırıyor
+  const triggerOtopilotConfirmation = () => {
+      setConfirmModal({
+          isOpen: true,
+          title: 'Otopilot Sistemini Başlat',
+          message: 'Otopilotta olan tüm tesisler için bu ayki periyodik bakımlar otomatik olarak oluşturulacak ve ustaların rotalarına dengeli bir şekilde dağıtılacaktır. Bu işlemi onaylıyor musunuz?',
+          onConfirm: executeOtopilot
+      });
   };
 
   return (
@@ -162,7 +173,7 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
         </div>
         <div className="mt-5 border-t border-slate-700/50 pt-4 flex justify-end">
             <button 
-                onClick={executeOtopilot} 
+                onClick={triggerOtopilotConfirmation} 
                 disabled={isGenerating}
                 className="bg-blue-600 hover:bg-blue-500 text-white font-black text-sm px-6 py-3 rounded-xl flex items-center gap-2 shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all active:scale-95 disabled:opacity-50"
             >
@@ -240,7 +251,6 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                     {filteredAssets.length > 0 ? filteredAssets.map((asset: any) => {
                         const assignedStaff = staff.find((s:any) => s.id === asset.route_staff_id);
                         
-                        // 🚀 ZAMAN MAKİNESİ: Tahsilat bu ay mı yapıldı kontrolü
                         const isCollected = (() => {
                             if (!asset.last_collection_date) return false;
                             const collDate = new Date(asset.last_collection_date);
@@ -398,6 +408,43 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
             )}
         </div>
       </div>
+
+      {/* 🚀 EKLENEN ONAY MODALI (CONFIRMATION MODAL) */}
+      <AnimatePresence>
+        {confirmModal.isOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 10 }} 
+              animate={{ scale: 1, opacity: 1, y: 0 }} 
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl relative overflow-hidden border border-slate-200"
+            >
+              <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mb-5 mx-auto shadow-inner">
+                  <AlertTriangle size={32} />
+              </div>
+              <h3 className="text-xl font-black text-slate-800 tracking-tight text-center mb-2">{confirmModal.title}</h3>
+              <p className="text-sm font-medium text-slate-500 text-center mb-6 leading-relaxed">
+                  {confirmModal.message}
+              </p>
+              
+              <div className="flex gap-3">
+                  <button 
+                      onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                      className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 rounded-xl transition-all active:scale-95 flex justify-center items-center"
+                  >
+                      İptal
+                  </button>
+                  <button 
+                      onClick={confirmModal.onConfirm}
+                      className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-amber-200/50 transition-all active:scale-95 flex justify-center items-center"
+                  >
+                      Evet, Onaylıyorum
+                  </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
           {collectionModal.isOpen && (

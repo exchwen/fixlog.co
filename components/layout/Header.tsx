@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Bell, Building2, ScanLine, X, ArrowRight, QrCode, Camera } from 'lucide-react';
+import { Menu, Bell, Building2, ScanLine, X, ArrowRight, QrCode, Camera, AlertTriangle, Wrench, Package, Info, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useRouter } from 'next/navigation';
@@ -20,14 +20,34 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
   const [cameraError, setCameraError] = useState('');
   const qrRef = useRef<Html5Qrcode | null>(null);
 
+  // 🚀 BİLDİRİM MENÜSÜ STATE'İ
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
+
   // 🚀 GÜVENLİ LİNK DÖNÜŞÜTÜRÜCÜ (PROXY)
   const getSafeImageUrl = (url: string) => {
     if (!url) return '';
-    // Eğer link bizim R2 bucket ise, onu Vercel proxy'sine çevir
     if (url.includes('pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev')) {
        return url.replace('https://pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev', '/dosya-deposu');
     }
     return url;
+  };
+
+  // Zamanı "5 dk önce", "2 saat önce" gibi formatlamak için yardımcı fonksiyon
+  const timeAgo = (dateString: string) => {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHrs = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHrs / 24);
+
+      if (diffMins < 1) return 'Az önce';
+      if (diffMins < 60) return `${diffMins} dk önce`;
+      if (diffHrs < 24) return `${diffHrs} saat önce`;
+      if (diffDays === 1) return `Dün`;
+      return `${diffDays} gün önce`;
   };
 
   useEffect(() => {
@@ -36,6 +56,14 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
     const handleOffline = () => setIsOffline(true);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+
+    // Menü dışına tıklanınca bildirimleri kapatma
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setIsNotificationOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
 
     const isPatronPath = window?.location?.pathname?.endsWith('/dashboard');
     const prefix = isPatronPath ? 'patron_' : 'staff_';
@@ -52,7 +80,6 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
 
     if (data?.logo) {
       const safeLogoUrl = getSafeImageUrl(data.logo);
-
       const img = new Image();
       img.crossOrigin = "Anonymous";
       img.onerror = () => setLogoBgColor('#ffffff');
@@ -94,10 +121,48 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [data]);
 
-  const notificationCount = (data?.activeEmergencies?.length || 0) + (data?.pendingFaults?.length || 0);
+  // 🚀 BİLDİRİMLERİ HARMANLAMA MOTORU (Acil Durum + Arıza + Malzeme + SOS)
+  const getNotifications = () => {
+      const emergencies = data?.activeEmergencies || [];
+      const faults = data?.pendingFaults || [];
+      const materials = data?.pendingMaterialRequests || [];
+
+      const all = [
+          ...emergencies.map((e: any) => ({
+              id: e.id,
+              type: e.staff_id ? 'sos' : 'emergency', // Usta gönderdiyse SOS, Müşteri gönderdiyse Acil Durum
+              title: e.staff_id ? `Personel Acil Durumu` : `Acil Müdahale`,
+              desc: e.staff_id ? (e.message || `${e.staff_name} yardım talep etti.`) : `Bina: ${e.asset_apartment || 'Bilinmiyor'}`,
+              date: e.created_at,
+              timestamp: new Date(e.created_at).getTime()
+          })),
+          ...faults.map((f: any) => ({
+              id: f.id,
+              type: 'fault',
+              title: `Arıza Bildirimi`,
+              desc: `Bina: ${f.asset_apartment || 'Bilinmiyor'} - ${f.description || 'Detay yok'}`,
+              date: f.created_at,
+              timestamp: new Date(f.created_at).getTime()
+          })),
+          ...materials.map((m: any) => ({
+              id: m.id,
+              type: 'material',
+              title: `Malzeme Talebi`,
+              desc: `${m.staff_name} yeni malzeme talep etti.`,
+              date: m.created_at,
+              timestamp: new Date(m.created_at).getTime()
+          }))
+      ];
+
+      return all.sort((a, b) => b.timestamp - a.timestamp); // En yeni en üstte
+  };
+
+  const notifications = getNotifications();
+  const notificationCount = notifications.length;
 
   const processQRData = (code: string) => {
     if (!code.trim()) return;
@@ -110,12 +175,10 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
     }
 
     const isUsta = userInfo.role === 'Usta';
-    
     let finalUuidForRouting = extractedId; 
     
     if (data?.assets) {
         const foundAsset = data.assets.find((a: any) => String(a.uuid) === String(extractedId) || String(a.id) === String(extractedId));
-        
         if (foundAsset) {
             finalUuidForRouting = foundAsset.uuid || foundAsset.id; 
 
@@ -143,30 +206,20 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
   const startCamera = () => {
     setIsCameraActive(true);
     setCameraError('');
-
     setTimeout(() => {
       try {
         const html5QrCode = new Html5Qrcode("qr-reader-container");
         qrRef.current = html5QrCode;
-
         html5QrCode.start(
           { facingMode: "environment" }, 
-          {
-            fps: 10,    
-            qrbox: { width: 250, height: 250 }, 
-            aspectRatio: 1.0
-          },
-          (decodedText) => {
-            processQRData(decodedText);
-          },
+          { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+          (decodedText) => processQRData(decodedText),
           (errorMessage) => {}
         ).catch((err) => {
-          console.error(err);
           setCameraError("Kameraya erişilemedi. Tarayıcı izinlerini kontrol edin.");
           setIsCameraActive(false);
         });
       } catch (err) {
-         console.error(err);
          setCameraError("Kamera başlatılırken bir sorun oluştu.");
          setIsCameraActive(false);
       }
@@ -181,59 +234,56 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
           qrRef.current?.clear();
           qrRef.current = null;
         }).catch(() => {});
-      } catch (e) {
-        console.error(e);
-      }
+      } catch (e) {}
     }
   };
 
   useEffect(() => {
-    if (!showScanner) {
-        stopCamera();
-    }
-    return () => {
-        stopCamera(); 
-    };
+    if (!showScanner) stopCamera();
+    return () => stopCamera(); 
   }, [showScanner]);
 
   return (
     <>
-      <header className="h-16 sm:h-14 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40 transition-colors duration-300 shadow-sm">
-        <div className="flex items-center gap-3 sm:gap-4">
+      {/* 🚀 MOBİL UYUMLULUK VE ESNEK (FLEX) YAPI İYİLEŞTİRİLDİ */}
+      <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-40 shadow-sm relative">
+        
+        {/* SOL KISIM: Logo ve İsim (flex-1 ve overflow-hidden eklendi) */}
+        <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
           <button 
             onClick={() => setIsMobileMenuOpen(true)} 
-            className="lg:hidden p-2 text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-all active:scale-95 border border-slate-100 shrink-0"
+            className="lg:hidden p-1.5 sm:p-2 text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-all active:scale-95 border border-slate-100 shrink-0"
           >
             <Menu size={20} />
           </button>
 
           {data?.logo ? (
             <div 
-               className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shadow-sm shrink-0 border border-slate-200/50 p-1.5 overflow-hidden"
+               className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shadow-sm shrink-0 border border-slate-200/50 p-1.5 overflow-hidden"
                style={{ backgroundColor: logoBgColor }}
             >
                <img src={getSafeImageUrl(data.logo)} alt="Firma Logo" crossOrigin="anonymous" className="w-full h-full object-contain drop-shadow-sm" />
             </div>
           ) : (
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
-              <Building2 size={20} />
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+              <Building2 size={18} />
             </div>
           )}
 
-          <div className="flex flex-col justify-center ml-1">
-            <h1 className="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2 tracking-tight max-w-[150px] sm:max-w-xs">
+          {/* Yazı Alanı (Uzun isimler mobilde kayarak devam eder) */}
+          <div className="flex flex-col justify-center flex-1 min-w-0">
+            <h1 className="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2 tracking-tight truncate">
               <span className="truncate">{data?.name || 'Yükleniyor...'}</span>
-              <span title={isOffline ? "Çevrimdışı (Önbellek)" : "Çevrimiçi (Canlı)"} className={`w-2 h-2 rounded-full animate-pulse shadow-sm shrink-0 ${isOffline ? 'bg-rose-500' : 'bg-emerald-500'}`}></span>
+              <span title={isOffline ? "Çevrimdışı (Önbellek)" : "Çevrimiçi (Canlı)"} className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full animate-pulse shadow-sm shrink-0 ${isOffline ? 'bg-rose-500' : 'bg-emerald-500'}`}></span>
             </h1>
             
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[11px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider truncate max-w-[80px] sm:max-w-[120px]">
+            <div className="flex items-center gap-1.5 mt-0.5 sm:mt-1 truncate">
+              <span className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider truncate">
                 {userInfo.name || 'Yönetim'}
               </span>
               
-              {/* DÜZENLENEN KISIM: Mobil Görünüm İyileştirildi */}
               {userInfo.role && (
-                <span className={`text-[10px] sm:text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg border shadow-sm shrink-0
+                <span className={`text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md border shadow-sm shrink-0
                   ${userInfo.role === 'Patron' ? 'bg-purple-50 text-purple-700 border-purple-200' : 
                     userInfo.role === 'Yönetici' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
                     'bg-emerald-50 text-emerald-700 border-emerald-200'}`}
@@ -245,25 +295,108 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
           </div>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
-          
+        {/* SAĞ KISIM: Butonlar */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-2">
           <button 
              onClick={() => setShowScanner(true)}
-             className="relative flex items-center gap-2 p-2 sm:px-3 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all active:scale-95 shadow-md shadow-blue-600/20 group"
+             className="relative flex items-center justify-center gap-2 p-2 w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all active:scale-95 shadow-md shadow-blue-600/20 group"
           >
              <ScanLine size={18} className="group-hover:scale-110 transition-transform" />
              <span className="hidden sm:inline text-xs font-bold">QR Okut</span>
           </button>
 
-          <button className="relative p-2.5 sm:p-2 bg-slate-50 border border-slate-100 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all active:scale-95 shadow-sm">
-            <Bell size={18} />
-            {notificationCount > 0 && (
-              <span className="absolute top-0 right-0 w-3 h-3 bg-rose-500 rounded-full border-2 border-white animate-pulse"></span>
-            )}
-          </button>
+          <div ref={notificationRef} className="relative">
+            <button 
+                onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                className={`relative p-2 w-9 h-9 sm:w-auto sm:h-auto border rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-sm
+                  ${isNotificationOpen ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100'}
+                `}
+            >
+              <Bell size={18} />
+              {notificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+                    {notificationCount > 9 ? '9+' : notificationCount}
+                </span>
+              )}
+            </button>
+
+            {/* 🚀 AÇILIR BİLDİRİM MENÜSÜ (DROPDOWN) */}
+            <AnimatePresence>
+                {isNotificationOpen && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 top-12 sm:top-14 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col z-[100]"
+                    >
+                        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <div>
+                                <h3 className="text-sm font-black text-slate-800">Bildirim Merkezi</h3>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Son Aktiviteler</p>
+                            </div>
+                            {notificationCount > 0 && (
+                                <span className="bg-rose-100 text-rose-600 px-2 py-1 rounded-md text-[10px] font-black">
+                                    {notificationCount} Bekleyen
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="max-h-[60vh] sm:max-h-96 overflow-y-auto divide-y divide-slate-100 overscroll-contain">
+                            {notifications.length > 0 ? notifications.map((notif: any) => (
+                                <div key={notif.id} className="p-4 hover:bg-slate-50 transition-colors flex gap-3 items-start group">
+                                    {/* İkonlar duruma göre renkleniyor */}
+                                    <div className={`mt-0.5 p-2 rounded-xl shrink-0 shadow-sm
+                                        ${notif.type === 'sos' || notif.type === 'emergency' ? 'bg-rose-100 text-rose-600' : 
+                                          notif.type === 'fault' ? 'bg-amber-100 text-amber-600' : 
+                                          'bg-blue-100 text-blue-600'}`}
+                                    >
+                                        {notif.type === 'sos' || notif.type === 'emergency' ? <AlertTriangle size={16} /> :
+                                         notif.type === 'fault' ? <Wrench size={16} /> : <Package size={16} />}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-start gap-2">
+                                            <h4 className={`text-xs font-black truncate ${
+                                                notif.type === 'sos' || notif.type === 'emergency' ? 'text-rose-700' : 'text-slate-800'
+                                            }`}>
+                                                {notif.title}
+                                            </h4>
+                                            <span className="text-[9px] font-bold text-slate-400 whitespace-nowrap shrink-0">
+                                                {timeAgo(notif.date)}
+                                            </span>
+                                        </div>
+                                        <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed font-medium">
+                                            {notif.desc}
+                                        </p>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="p-8 flex flex-col items-center justify-center text-center">
+                                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-3 text-slate-300">
+                                        <CheckCircle2 size={32} />
+                                    </div>
+                                    <h4 className="text-sm font-black text-slate-700 mb-1">Her Şey Yolunda</h4>
+                                    <p className="text-xs text-slate-500 font-medium">Aktif bir çağrı veya bildirim bulunmuyor.</p>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Tümünü gör butonu (görsel olarak eklendi, yönetici zaten sekmelerden detayları görüyor) */}
+                        {notificationCount > 0 && (
+                             <div className="p-3 bg-slate-50 border-t border-slate-100 text-center">
+                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                     Detaylar için ilgili menüleri ziyaret edin.
+                                 </span>
+                             </div>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+          </div>
         </div>
       </header>
 
+      {/* QR Tarayıcı Modalı */}
       <AnimatePresence>
          {showScanner && (
             <div className="fixed inset-0 bg-slate-900/90 sm:bg-slate-900/80 backdrop-blur-md z-[200] flex items-center justify-center p-0 sm:p-4">
