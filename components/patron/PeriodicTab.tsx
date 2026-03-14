@@ -6,14 +6,22 @@ import { RefreshCw, Bot, AlertTriangle, CheckCircle2, Clock, User, Building2, Ma
 
 export default function PeriodicTab({ data, handleAction, statusColors, setSelectedAsset, handleGenerateMonthlyMaintenance, isGenerating }: any) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRegion, setSelectedRegion] = useState('Tümü');
-
-  const assets = data?.assets || [];
+  
+  const rawAssets = data?.assets || [];
   const staff = data?.staff?.filter((s: any) => s.role !== 'Yönetici') || [];
   
-  const totalAssets = assets.length;
+  const totalAssets = rawAssets.length;
   
-  // GERÇEK VERİ ENTEGRASYONU:
+  // 🚀 ARAYÜZÜN FİŞEK GİBİ HİSSETTİRMESİ İÇİN ANLIK DURUM YÖNETİMİ
+  const [localAssetUpdates, setLocalAssetUpdates] = useState<Record<string, any>>({});
+  const [isToggling, setIsToggling] = useState<string | null>(null);
+
+  // Varlık verilerini yerel güncellemelerle harmanlıyoruz
+  const assets = rawAssets.map((asset: any) => ({
+      ...asset,
+      ...(localAssetUpdates[asset.id] || {})
+  }));
+
   const actualCompletedCount = (data?.jobs || []).filter((j: any) => {
       if (j.work_type !== 'Periyodik Bakım' || j.status !== 'Tamamlandı' || !j.created_at) return false;
       const jobDate = new Date(j.created_at);
@@ -30,10 +38,9 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
   const isOverloaded = assetsPerStaff > 150; 
 
   const [alertModal, setAlertModal] = useState({ isOpen: false, message: '', type: 'info' });
-
-  // 🚀 ANLIK ARAYÜZ GÜNCELLEMELERİ İÇİN STATE'LER
-  const [isToggling, setIsToggling] = useState<string | null>(null);
-  const [collectedAssets, setCollectedAssets] = useState<string[]>([]);
+  const [collectionModal, setCollectionModal] = useState({ isOpen: false, asset: null as any });
+  const [collectionAmount, setCollectionAmount] = useState('');
+  const [isCollecting, setIsCollecting] = useState(false);
 
   const filteredAssets = assets.filter((a: any) => {
       const matchSearch = (a.apartmentName || a.apartment_name || a.name || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -44,11 +51,18 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
       if (isToggling === asset.id) return;
       setIsToggling(asset.id);
       
+      const newStatus = asset.is_autopilot ? 0 : 1;
+      
       try {
-          const newStatus = asset.is_autopilot ? 0 : 1;
           const success = await handleAction('update-asset', { id: asset.id, is_autopilot: newStatus });
           
-          if (!success) {
+          if (success) {
+              // Anında arayüze yansıt
+              setLocalAssetUpdates(prev => ({
+                  ...prev,
+                  [asset.id]: { ...prev[asset.id], is_autopilot: newStatus }
+              }));
+          } else {
               setAlertModal({ isOpen: true, message: 'Otopilot durumu güncellenirken bir hata oluştu.', type: 'error' });
           }
       } catch (e) {
@@ -58,12 +72,7 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
       }
   };
 
-  const [collectionModal, setCollectionModal] = useState({ isOpen: false, asset: null as any });
-  const [collectionAmount, setCollectionAmount] = useState('');
-  const [isCollecting, setIsCollecting] = useState(false);
-
   const handleOpenCollectionModal = (asset: any) => {
-      // 🚀 Fiyat çekme garantisi (Bazen API'den string gelebiliyor)
       const rawFee = asset.maintenance_fee || asset.maintenanceFee || 0;
       setCollectionAmount(String(rawFee));
       setCollectionModal({ isOpen: true, asset });
@@ -80,18 +89,28 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
       const description = `Periyodik Bakım Tahsilatı: ${asset.apartmentName || asset.apartment_name || ''} - ${asset.name}`;
       
       try {
-          const success = await handleAction('add-income', {
+          // 1. Kasaya parayı işle
+          const incomeSuccess = await handleAction('add-income', {
               description: description,
               amount: Number(collectionAmount),
               addedBy: data?.ownerName || 'Yönetici',
               status: 'Onaylandı'
           }, null, null);
 
-          if (success) {
+          if (incomeSuccess) {
+              // 2. Varlığın "son tahsilat tarihini" veritabanında güncelle
+              const nowIso = new Date().toISOString();
+              await handleAction('update-asset', { id: asset.id, last_collection_date: nowIso });
+              
+              // 3. Arayüzü anında "Tahsil Edildi" moduna sok
+              setLocalAssetUpdates(prev => ({
+                  ...prev,
+                  [asset.id]: { ...prev[asset.id], last_collection_date: nowIso }
+              }));
+
               setCollectionModal({ isOpen: false, asset: null });
               setCollectionAmount('');
-              setCollectedAssets(prev => [...prev, asset.id]);
-              setAlertModal({ isOpen: true, message: 'Tahsilat başarıyla kasaya eklendi.', type: 'success' });
+              setAlertModal({ isOpen: true, message: 'Tahsilat başarıyla kasaya eklendi ve sisteme işlendi.', type: 'success' });
           } else {
               setAlertModal({ isOpen: true, message: 'Tahsilat işlemi kaydedilemedi.', type: 'error' });
           }
@@ -102,35 +121,26 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
       }
   };
 
-  // 🚀 OTONOM DAĞITIM BUTONU TETİKLEYİCİSİ (Hata yakalamalı)
   const executeOtopilot = async () => {
     if (isGenerating) return;
     try {
-        const response = await handleGenerateMonthlyMaintenance();
-        // Eğer fonksiyon hata dönmezse başarılı sayıp uyarı veriyoruz
+        await handleGenerateMonthlyMaintenance();
         setAlertModal({ 
             isOpen: true, 
             message: 'Otopilot sistemi çalıştı. Periyodik bakımlar, ustaların rotalarına başarıyla dağıtıldı.', 
             type: 'success' 
         });
-        
-        // Ekranda yeni atanan işleri göstermek için küçük bir gecikmeyle sayfayı yeniliyoruz
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
+        setTimeout(() => { window.location.reload(); }, 2000);
     } catch (error) {
         setAlertModal({ isOpen: true, message: 'Otopilot çalıştırılırken bir hata oluştu. Lütfen tekrar deneyin.', type: 'error' });
     }
-};
+  };
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       
       <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-6 rounded-2xl shadow-lg relative overflow-hidden border border-slate-700">
-        <div className="absolute -right-10 -top-10 opacity-10 pointer-events-none">
-            <Bot size={150} />
-        </div>
+        <div className="absolute -right-10 -top-10 opacity-10 pointer-events-none"><Bot size={150} /></div>
         <div className="relative z-10 flex items-start gap-4">
             <div className="p-3 bg-blue-500/20 text-blue-400 rounded-xl shrink-0 border border-blue-500/30 shadow-inner">
                 <Bot size={28} />
@@ -150,7 +160,6 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                 )}
             </div>
         </div>
-        
         <div className="mt-5 border-t border-slate-700/50 pt-4 flex justify-end">
             <button 
                 onClick={executeOtopilot} 
@@ -216,7 +225,6 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
             </div>
         </div>
 
-        {/* 🚀 MASAÜSTÜ GÖRÜNÜM TABLOSU */}
         <div className="hidden md:block overflow-x-auto w-full">
             <table className="w-full text-left text-sm border-collapse min-w-[800px]">
                 <thead>
@@ -231,9 +239,15 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                 <tbody className="divide-y divide-slate-100">
                     {filteredAssets.length > 0 ? filteredAssets.map((asset: any) => {
                         const assignedStaff = staff.find((s:any) => s.id === asset.route_staff_id);
-                        const isCollected = collectedAssets.includes(asset.id);
                         
-                        // 🚀 FİYAT OKUMA GARANTİSİ
+                        // 🚀 ZAMAN MAKİNESİ: Tahsilat bu ay mı yapıldı kontrolü
+                        const isCollected = (() => {
+                            if (!asset.last_collection_date) return false;
+                            const collDate = new Date(asset.last_collection_date);
+                            const now = new Date();
+                            return collDate.getMonth() === now.getMonth() && collDate.getFullYear() === now.getFullYear();
+                        })();
+
                         const displayFee = asset.maintenance_fee || asset.maintenanceFee || 0;
 
                         return (
@@ -268,7 +282,6 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                                 </td>
 
                                 <td className="p-4 text-center">
-                                    {/* 🚀 OTOPİLOT BUTONU DÜZELTİLDİ (z-10 eklendi) */}
                                     <button 
                                         disabled={isToggling === asset.id}
                                         onClick={(e) => { e.stopPropagation(); toggleAutopilot(asset); }}
@@ -309,13 +322,17 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
             </table>
         </div>
 
-        {/* 🚀 MOBİL GÖRÜNÜM KARTLARI */}
         <div className="md:hidden flex flex-col gap-4 p-4 bg-slate-50/50">
             {filteredAssets.length > 0 ? filteredAssets.map((asset: any) => {
                 const assignedStaff = staff.find((s:any) => s.id === asset.route_staff_id);
-                const isCollected = collectedAssets.includes(asset.id);
                 
-                // 🚀 FİYAT OKUMA GARANTİSİ
+                const isCollected = (() => {
+                    if (!asset.last_collection_date) return false;
+                    const collDate = new Date(asset.last_collection_date);
+                    const now = new Date();
+                    return collDate.getMonth() === now.getMonth() && collDate.getFullYear() === now.getFullYear();
+                })();
+                
                 const displayFee = asset.maintenance_fee || asset.maintenanceFee || 0;
 
                 return (
