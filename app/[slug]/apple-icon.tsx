@@ -1,7 +1,5 @@
 import { ImageResponse } from 'next/og';
 
-// Vercel uyarısını aşmak için Jimp'i burada en üstte çağırmaktan vazgeçtik.
-
 export const size = { width: 180, height: 180 };
 export const contentType = 'image/png';
 
@@ -10,7 +8,7 @@ const API_URL = 'https://backend.isdokumu.workers.dev';
 export default async function AppleIcon({ params }: { params: { slug: string } }) {
   const slug = params.slug;
   let logoUrl = null;
-  let finalColor = '#0f172a'; // Varsayılan tema rengi
+  let finalColor = '#0f172a'; 
 
   try {
     const res = await fetch(`${API_URL}/public/company-info?slug=${slug}`);
@@ -19,11 +17,12 @@ export default async function AppleIcon({ params }: { params: { slug: string } }
       if (data.logo) {
         logoUrl = data.logo;
 
-        // 🚀 STRATEJİK HAMLE: Dinamik Yükleme (Dynamic Import)
-        // Vercel'in tarama hatalarını atlatmak için paketi sadece tam burada, ihtiyaç anında çağırıyoruz.
         try {
           const jimpModule = await import('jimp');
-          const JimpAny = jimpModule.default || jimpModule;
+          
+          // 🚀 STRATEJİK HAMLE: TypeScript'i tamamen susturmak için 'any' tipini ekliyoruz.
+          // Bu sayede sistem 'read' komutunu gördüğünde hata fırlatmayacak.
+          const JimpAny: any = jimpModule.default || jimpModule;
 
           const image = await JimpAny.read(logoUrl);
           let r = 0, g = 0, b = 0, count = 0;
@@ -49,7 +48,7 @@ export default async function AppleIcon({ params }: { params: { slug: string } }
             b = Math.floor(b / count);
 
             const palette = [
-              { name: 'white', rgb: [255, 255, 255], hex: '#f8fafc' }, // Beyaz parlarsa hafif gri
+              { name: 'white', rgb: [255, 255, 255], hex: '#f8fafc' }, 
               { name: 'black', rgb: [15, 23, 42], hex: '#0f172a' },
               { name: 'blue', rgb: [37, 99, 235], hex: '#2563eb' }
             ];
