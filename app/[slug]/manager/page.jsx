@@ -399,9 +399,7 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
   const [isGeneratingMaintenance, setIsGeneratingMaintenance] = useState(false);
   
   const handleGenerateMonthlyMaintenance = async () => {
-      const confirmRun = window.confirm("Dikkat! Bu işlem, 'Otomatik Bakım' açık olan TÜM asansörlerin periyodik bakımlarını, ustalarınızın takvimine bu ayın iş günleri içine eşit ve adil bir şekilde dağıtacaktır. Onaylıyor musunuz?");
-      if (!confirmRun) return;
-
+      // 🚀 DIKKAT: window.confirm ve kalıntı alert'ler SİLİNDİ!
       setIsGeneratingMaintenance(true);
       const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
       
@@ -414,13 +412,13 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
           
           const result = await res.json();
           if (res.ok) {
-              alert(`✅ Başarılı: ${result.message}`);
               fetchData(true); // Dashboard'u yenile ki işler ekrana düşsün
+              return result; // periodictab.tsx'in başarılı olduğunu anlaması için geri dön
           } else {
-              alert(`❌ Hata: ${result.error || 'Dağıtım yapılamadı.'}`);
+              throw new Error(result.error || 'Dağıtım yapılamadı.');
           }
       } catch (err) {
-          alert('Sunucu ile bağlantı kurulamadı.');
+          throw err; // Hatayı periodictab.tsx'in yakalaması (catch) için fırlat
       } finally {
           setIsGeneratingMaintenance(false);
       }
