@@ -104,14 +104,25 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
 
   // 🚀 OTONOM DAĞITIM BUTONU TETİKLEYİCİSİ (Hata yakalamalı)
   const executeOtopilot = async () => {
-      if (isGenerating) return;
-      try {
-          await handleGenerateMonthlyMaintenance();
-          setAlertModal({ isOpen: true, message: 'Otopilot sistemi çalıştı ve görevler başarıyla dağıtıldı.', type: 'success' });
-      } catch (error) {
-          setAlertModal({ isOpen: true, message: 'Otopilot çalıştırılırken bir hata oluştu.', type: 'error' });
-      }
-  };
+    if (isGenerating) return;
+    try {
+        const response = await handleGenerateMonthlyMaintenance();
+        // Eğer fonksiyon hata dönmezse başarılı sayıp uyarı veriyoruz
+        setAlertModal({ 
+            isOpen: true, 
+            message: 'Otopilot sistemi çalıştı. Periyodik bakımlar, ustaların rotalarına başarıyla dağıtıldı.', 
+            type: 'success' 
+        });
+        
+        // Ekranda yeni atanan işleri göstermek için küçük bir gecikmeyle sayfayı yeniliyoruz
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+        
+    } catch (error) {
+        setAlertModal({ isOpen: true, message: 'Otopilot çalıştırılırken bir hata oluştu. Lütfen tekrar deneyin.', type: 'error' });
+    }
+};
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
