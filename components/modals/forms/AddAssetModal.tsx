@@ -288,8 +288,9 @@ return (
                                 type="number" 
                                 placeholder="Tutar..." 
                                 className="w-full pl-7 pr-3 py-3 border border-emerald-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-500 bg-emerald-50/50 focus:bg-white transition-all text-emerald-800" 
-                                value={newAsset.maintenance_fee || ''} 
-                                onChange={e => setNewAsset({...newAsset, maintenance_fee: e.target.value})} 
+                                // 🚀 DÜZELTME: Worker'ın beklediği camelCase "maintenanceFee" anahtarına yazılıyor
+                                value={newAsset.maintenanceFee || newAsset.maintenance_fee || ''} 
+                                onChange={e => setNewAsset({...newAsset, maintenanceFee: e.target.value})} 
                             />
                         </div>
                     </div>
