@@ -13,17 +13,14 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
   
   const totalAssets = assets.length;
   
-  // 🚀 GERÇEK VERİ ENTEGRASYONU: Gerçek iş geçmişinden bu ay tamamlanan bakımları sayıyoruz.
+  // GERÇEK VERİ ENTEGRASYONU:
   const actualCompletedCount = (data?.jobs || []).filter((j: any) => {
-      // Sadece Periyodik Bakımları ve Tamamlananları al
       if (j.work_type !== 'Periyodik Bakım' || j.status !== 'Tamamlandı' || !j.created_at) return false;
-      // Sadece içinde bulunduğumuz ayın kayıtlarını say
       const jobDate = new Date(j.created_at);
       const now = new Date();
       return jobDate.getMonth() === now.getMonth() && jobDate.getFullYear() === now.getFullYear();
   }).length;
 
-  // Güvenlik Ağı: Aynı asansöre 2 kere bakım girilirse çubuk %100'ü aşıp tasarımı bozmasın
   const completedThisMonth = Math.min(actualCompletedCount, totalAssets);
   const remainingThisMonth = Math.max(0, totalAssets - completedThisMonth);
   const completionPercentage = totalAssets === 0 ? 0 : Math.round((completedThisMonth / totalAssets) * 100);
@@ -32,7 +29,6 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
   const assetsPerStaff = Math.round(totalAssets / staffCount);
   const isOverloaded = assetsPerStaff > 150; 
 
-  // 🚀 DİNAMİK BİLDİRİM MODALI (Alert yerine)
   const [alertModal, setAlertModal] = useState({ isOpen: false, message: '', type: 'info' });
 
   // 🚀 ANLIK ARAYÜZ GÜNCELLEMELERİ İÇİN STATE'LER
@@ -67,7 +63,9 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
   const [isCollecting, setIsCollecting] = useState(false);
 
   const handleOpenCollectionModal = (asset: any) => {
-      setCollectionAmount(asset.maintenance_fee ? String(asset.maintenance_fee) : '');
+      // 🚀 Fiyat çekme garantisi (Bazen API'den string gelebiliyor)
+      const rawFee = asset.maintenance_fee || asset.maintenanceFee || 0;
+      setCollectionAmount(String(rawFee));
       setCollectionModal({ isOpen: true, asset });
   };
 
@@ -92,7 +90,6 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
           if (success) {
               setCollectionModal({ isOpen: false, asset: null });
               setCollectionAmount('');
-              // 🚀 BAŞARILI TAHSİLAT SONRASI BUTONU KAPATMAK İÇİN LİSTEYE EKLİYORUZ
               setCollectedAssets(prev => [...prev, asset.id]);
               setAlertModal({ isOpen: true, message: 'Tahsilat başarıyla kasaya eklendi.', type: 'success' });
           } else {
@@ -102,6 +99,17 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
           setAlertModal({ isOpen: true, message: 'İşlem sırasında beklenmeyen bir hata oluştu.', type: 'error' });
       } finally {
           setIsCollecting(false);
+      }
+  };
+
+  // 🚀 OTONOM DAĞITIM BUTONU TETİKLEYİCİSİ (Hata yakalamalı)
+  const executeOtopilot = async () => {
+      if (isGenerating) return;
+      try {
+          await handleGenerateMonthlyMaintenance();
+          setAlertModal({ isOpen: true, message: 'Otopilot sistemi çalıştı ve görevler başarıyla dağıtıldı.', type: 'success' });
+      } catch (error) {
+          setAlertModal({ isOpen: true, message: 'Otopilot çalıştırılırken bir hata oluştu.', type: 'error' });
       }
   };
 
@@ -134,7 +142,7 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
         
         <div className="mt-5 border-t border-slate-700/50 pt-4 flex justify-end">
             <button 
-                onClick={handleGenerateMonthlyMaintenance} 
+                onClick={executeOtopilot} 
                 disabled={isGenerating}
                 className="bg-blue-600 hover:bg-blue-500 text-white font-black text-sm px-6 py-3 rounded-xl flex items-center gap-2 shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all active:scale-95 disabled:opacity-50"
             >
@@ -213,6 +221,9 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                     {filteredAssets.length > 0 ? filteredAssets.map((asset: any) => {
                         const assignedStaff = staff.find((s:any) => s.id === asset.route_staff_id);
                         const isCollected = collectedAssets.includes(asset.id);
+                        
+                        // 🚀 FİYAT OKUMA GARANTİSİ
+                        const displayFee = asset.maintenance_fee || asset.maintenanceFee || 0;
 
                         return (
                             <tr key={asset.id} onClick={() => setSelectedAsset && setSelectedAsset(asset)} className="hover:bg-slate-50/50 transition-colors group cursor-pointer">
@@ -224,7 +235,7 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                                     <div className="text-xs text-slate-500 mt-1 font-medium ml-6 flex items-center gap-2">
                                         {asset.name}
                                         <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-black text-[10px] border border-emerald-100">
-                                            ₺{asset.maintenance_fee || 0} / Ay
+                                            ₺{displayFee} / Ay
                                         </span>
                                     </div>
                                 </td>
@@ -246,7 +257,7 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                                 </td>
 
                                 <td className="p-4 text-center">
-                                    {/* 🚀 OTOPİLOT BUTONU DÜZELTİLDİ: Katman (z-10) ve Yüklenme Koruması Eklendi */}
+                                    {/* 🚀 OTOPİLOT BUTONU DÜZELTİLDİ (z-10 eklendi) */}
                                     <button 
                                         disabled={isToggling === asset.id}
                                         onClick={(e) => { e.stopPropagation(); toggleAutopilot(asset); }}
@@ -260,7 +271,6 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                                 </td>
 
                                 <td className="p-4 pr-6 text-right">
-                                    {/* 🚀 TAHSİLAT BUTONU DÜZELTİLDİ: Tahsilat yapıldıysa kapanıp etikete dönüşecek */}
                                     {!isCollected ? (
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); handleOpenCollectionModal(asset); }} 
@@ -293,6 +303,9 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
             {filteredAssets.length > 0 ? filteredAssets.map((asset: any) => {
                 const assignedStaff = staff.find((s:any) => s.id === asset.route_staff_id);
                 const isCollected = collectedAssets.includes(asset.id);
+                
+                // 🚀 FİYAT OKUMA GARANTİSİ
+                const displayFee = asset.maintenance_fee || asset.maintenanceFee || 0;
 
                 return (
                     <div key={asset.id} onClick={() => setSelectedAsset && setSelectedAsset(asset)} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3 relative cursor-pointer active:scale-95 transition-all">
@@ -308,7 +321,6 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                             </div>
                             
                             <div className="absolute right-4 top-4">
-                                {/* 🚀 MOBİL OTOPİLOT BUTONU KORUMASI */}
                                 <button 
                                     disabled={isToggling === asset.id}
                                     onClick={(e) => { e.stopPropagation(); toggleAutopilot(asset); }}
@@ -332,12 +344,11 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                             <div className="flex flex-col gap-0.5 text-right">
                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Periyot / Fiyat</span>
                                 <span className="text-[11px] font-bold text-emerald-600">
-                                    {asset.maintenance_period || 30} Gün | ₺{asset.maintenance_fee || 0}
+                                    {asset.maintenance_period || 30} Gün | ₺{displayFee}
                                 </span>
                             </div>
                         </div>
 
-                        {/* 🚀 MOBİL TAHSİLAT BUTONU DÜZELTİLDİ */}
                         {!isCollected ? (
                             <button 
                                 onClick={(e) => { e.stopPropagation(); handleOpenCollectionModal(asset); }}
@@ -415,7 +426,6 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
           )}
       </AnimatePresence>
 
-      {/* 🚀 DİNAMİK GENEL UYARI MODALI */}
       <AnimatePresence>
         {alertModal.isOpen && (
           <motion.div 
