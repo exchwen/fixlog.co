@@ -1,7 +1,6 @@
 import { ImageResponse } from 'next/og';
 
-// TypeScript'in yeni modül import hatalarını aşmak için yıldız import kullanıyoruz
-import * as JimpRaw from 'jimp';
+// Vercel uyarısını aşmak için Jimp'i burada en üstte çağırmaktan vazgeçtik.
 
 export const size = { width: 180, height: 180 };
 export const contentType = 'image/png';
@@ -11,7 +10,7 @@ const API_URL = 'https://backend.isdokumu.workers.dev';
 export default async function AppleIcon({ params }: { params: { slug: string } }) {
   const slug = params.slug;
   let logoUrl = null;
-  let finalColor = '#0f172a'; // Senin varsayılan tema rengin
+  let finalColor = '#0f172a'; // Varsayılan tema rengi
 
   try {
     const res = await fetch(`${API_URL}/public/company-info?slug=${slug}`);
@@ -20,12 +19,12 @@ export default async function AppleIcon({ params }: { params: { slug: string } }
       if (data.logo) {
         logoUrl = data.logo;
 
-        // 🚀 SUNUCU TARAFINDA RENK ANALİZİ (TypeScript Hatalarından Tamamen Arındırıldı)
-        // JimpRaw nesnesinin içindeki asıl Jimp fonksiyonunu güvenli bir şekilde yakalıyoruz
-        // @ts-ignore
-        const JimpAny = typeof JimpRaw.default !== 'undefined' ? JimpRaw.default : (JimpRaw.Jimp || JimpRaw);
-
+        // 🚀 STRATEJİK HAMLE: Dinamik Yükleme (Dynamic Import)
+        // Vercel'in tarama hatalarını atlatmak için paketi sadece tam burada, ihtiyaç anında çağırıyoruz.
         try {
+          const jimpModule = await import('jimp');
+          const JimpAny = jimpModule.default || jimpModule;
+
           const image = await JimpAny.read(logoUrl);
           let r = 0, g = 0, b = 0, count = 0;
 

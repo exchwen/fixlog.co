@@ -4,7 +4,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Briefcase, MapPin, CheckCircle, PlayCircle, 
-    ArrowUpRight, User, Wrench, Loader2, 
+    ArrowUpRight, User, Wrench, Loader2, Search,
     UserPlus, Check, Calendar, Activity, AlertTriangle, CheckSquare, Clock, Eye, ShieldCheck, UserCheck, Box, AlertCircle, Info
   } from 'lucide-react';
 
