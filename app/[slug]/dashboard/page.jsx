@@ -11,6 +11,7 @@ import ChatPanel from '@/components/chat/ChatPanel';
 import DashboardModals from '@/components/modals/DashboardModals'; 
 import DynamicPWA from '@/components/DynamicPWA';
 import AssetQRModal from '@/components/modals/AssetQRModal';
+import { PaywallOverlay } from '@/components/PaywallOverlay';
 
 import HomeTab from '@/components/patron/HomeTab';
 import JobsTab from '@/components/patron/JobsTab';
@@ -372,8 +373,21 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
     'İptal': 'bg-rose-100 text-rose-700 border-rose-200' 
   };
 
+  const isPastDue = data?.subscriptionStatus === 'past_due';
+
   return (
     <div className={`min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 ${hasEmergency ? 'bg-rose-950' : 'bg-[#F8FAFC] text-slate-900'}`}>
+      
+      {isPastDue && (
+        <PaywallOverlay 
+          slug={slug} 
+          role="Patron" 
+          onPayClick={() => {
+            // Gelecekte İyzico Checkout modalını açacak
+            alert("İyzico Ödeme Ekranı Yükleniyor...");
+          }} 
+        />
+      )}
       
       <AnimatePresence>
         {showPwaPrompt && !hasEmergency && activeTab === 'home' && (

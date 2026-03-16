@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const CITY_DATA: any = trCitiesData;
 
-export default function SettingsTab({ settingsForm = {}, setSettingsForm, handleAction, isSaving }: any) {
+export default function SettingsTab({ settingsForm = {}, setSettingsForm, handleAction, isSaving, data }: any) {
   
   const [localCity, setLocalCity] = useState('');
   const [localDistrict, setLocalDistrict] = useState('');
@@ -520,6 +520,51 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
               placeholder="Vergi Dairesi ve Numarası"
             />
           </div>
+        </div>
+
+        {/* 🚀 YENİ: REFERANS PROGRAMI (TAVSİYE KODU VE KAZANÇLAR) */}
+        <div className="border-t border-slate-100 pt-6 pb-2">
+           <label className="text-[11px] font-black text-emerald-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+              <CheckCircle size={16} /> Referans Programı
+           </label>
+           <div className="bg-emerald-50/50 border border-emerald-200 p-5 rounded-2xl flex flex-col md:flex-row gap-6 items-center md:items-start shadow-sm">
+             
+             <div className="flex-1 space-y-3 w-full">
+                <h4 className="font-black text-emerald-800 text-sm">Tavsiye Et, Ücretsiz Kullan!</h4>
+                <p className="text-xs text-emerald-700/80 font-medium leading-relaxed">
+                  Referans kodunuz ile kayıt olan ve ilk ödemesini gerçekleştiren <strong>her firma için +1 ay ücretsiz kullanım (3000 ₺ değerinde)</strong> kazanırsınız. Referans olduğunuz firma da +1 ay kazanır.
+                </p>
+                <div className="mt-4 flex flex-col sm:flex-row items-center gap-3">
+                   <div className="flex bg-white border border-emerald-200 rounded-xl overflow-hidden w-full sm:w-auto shadow-sm">
+                      <span className="bg-emerald-100 text-emerald-800 font-bold px-4 py-2 text-xs flex items-center border-r border-emerald-200">Kodunuz</span>
+                      <input 
+                         type="text" 
+                         readOnly 
+                         value={data?.referralCode || 'Oluşturuluyor...'} 
+                         className="px-4 py-2 font-black text-slate-800 text-sm outline-none bg-transparent w-full sm:w-40 text-center"
+                      />
+                   </div>
+                   <button 
+                     disabled={!data?.referralCode}
+                     onClick={() => {
+                       navigator.clipboard.writeText(data?.referralCode || '');
+                       setModalState('success');
+                       setTimeout(()=> setModalState('idle'), 2000);
+                     }}
+                     className="bg-emerald-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl hover:bg-emerald-700 shadow-sm active:scale-95 transition-all w-full sm:w-auto disabled:opacity-50 flex justify-center"
+                   >
+                     Kodu Kopyala
+                   </button>
+                </div>
+             </div>
+
+             <div className="flex-shrink-0 bg-white border border-emerald-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
+                <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Kazanılan</span>
+                <span className="block text-4xl font-black text-emerald-600 mb-1">{data?.freeMonths || 0}</span>
+                <span className="block text-xs font-bold text-slate-600">Ücretsiz Ay</span>
+             </div>
+
+           </div>
         </div>
 
         {/* 🚀 YENİ: ÇALIŞMA GÜNLERİ AYARI (OTOPİLOT İÇİN) */}

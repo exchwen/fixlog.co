@@ -11,6 +11,7 @@ import WorkerSidebar from '@/components/layout/WorkerSidebar';
 import ChatPanel from '@/components/chat/ChatPanel';
 import DynamicPWA from '@/components/DynamicPWA'; 
 import ThermalPrintModal from '@/components/modals/jobs/ThermalPrintModal'; // 🚀 EKLENDİ
+import { PaywallOverlay } from '@/components/PaywallOverlay';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
 

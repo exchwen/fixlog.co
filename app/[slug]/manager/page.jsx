@@ -25,6 +25,7 @@ import SupportTab from '@/components/patron/SupportTab';
 import PeriodicTab from '@/components/patron/PeriodicTab';
 import AssetQRModal from '@/components/modals/AssetQRModal';
 import DynamicPWA from '@/components/DynamicPWA';
+import { PaywallOverlay } from '@/components/PaywallOverlay';
 
 const API_URL = 'https://backend.isdokumu.workers.dev';
 
@@ -456,8 +457,14 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
     'Usta Bekliyor': 'bg-indigo-100 text-indigo-700 border-indigo-200' 
   };
 
+  const isPastDue = data?.subscriptionStatus === 'past_due';
+
   return (
     <div className={`min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 manager-scope ${hasEmergency ? 'bg-rose-950' : 'bg-[#F8FAFC] text-slate-900'}`}>
+      
+      {isPastDue && (
+        <PaywallOverlay slug={slug} role="Yönetici" />
+      )}
       
       {/* YÖNETİCİ KISITLAMALARI İÇİN CSS (SİLME VE AYAR BUTONLARINI GİZLER) */}
       <style dangerouslySetInnerHTML={{__html: `
