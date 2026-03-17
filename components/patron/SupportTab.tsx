@@ -9,6 +9,9 @@ export default function SupportTab({ handleAction, isSaving }: any) {
   const [message, setMessage] = useState('');
   const [modalState, setModalState] = useState<'idle' | 'success' | 'error'>('idle');
 
+  // 🚀 YENİ: Kendi gönderim durumumuzu tutmak için isSubmitting eklendi
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [isOffline, setIsOffline] = useState(false);
   const [activeView, setActiveView] = useState<'new' | 'history'>('new');
   const [myTickets, setMyTickets] = useState<any[]>([]);
@@ -22,18 +25,14 @@ export default function SupportTab({ handleAction, isSaving }: any) {
     setExpandedTicketId(prev => (prev === id ? null : id));
   };
 
-  // 🚀 YENİ: Akıllı Token Bulucu Fonksiyon
   const getValidToken = () => {
     let token = '';
-    // 1. Önce klasik isimleri dene
     token = localStorage.getItem('token') || localStorage.getItem('userToken') || localStorage.getItem('authToken') || '';
     
-    // 2. Bulamazsa veya geçersizse, tüm localStorage'ı tarayıp JWT (eyJ) ara
     if (!token || !token.includes('eyJ')) {
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
             const val = localStorage.getItem(key || '') || '';
-            // JWT tokenlar her zaman "eyJ" ile başlar
             if (val.includes('eyJ')) {
                 token = val;
                 break;
@@ -41,7 +40,6 @@ export default function SupportTab({ handleAction, isSaving }: any) {
         }
     }
 
-    // 3. Token'ı temizle (tırnakları ve varsa 'Bearer ' kelimesini at)
     token = token.replace(/^"|"$/g, '');
     if (token.toLowerCase().startsWith('bearer ')) {
         token = token.substring(7).trim();
@@ -65,7 +63,6 @@ export default function SupportTab({ handleAction, isSaving }: any) {
         }
       });
 
-      // 🚀 YENİ: 401 Hatası gelirse Worker'ın tam olarak "neden" reddettiğini okur
       if (!res.ok) {
           let exactReason = `Hata Kodu: ${res.status}`;
           try {
@@ -120,7 +117,7 @@ export default function SupportTab({ handleAction, isSaving }: any) {
     setIsReplying(true);
     try {
         const activeSlug = localStorage.getItem('companySlug') || localStorage.getItem('slug') || '';
-        const token = getValidToken(); // Yanıtlarken de akıllı bulucuyu kullan
+        const token = getValidToken(); 
         
         const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
         const BASE_URL = rawBaseUrl.replace(/\/$/, "");
@@ -184,14 +181,45 @@ export default function SupportTab({ handleAction, isSaving }: any) {
        return;
     }
 
-    const success = await handleAction('add-support-ticket', { slug: activeSlug, type: ticketType, message });
+    // 🚀 YENİ: Artık dışarıdaki handleAction komutuna güvenmiyoruz. 
+    // Doğrudan kendi Worker'ımıza istek atıyoruz ki veri D1'e yazılsın!
+    setIsSubmitting(true);
+    let success = false;
+    
+    try {
+        const token = getValidToken();
+        const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+        const BASE_URL = rawBaseUrl.replace(/\/$/, ""); 
+
+        const res = await fetch(`${BASE_URL}/add-support-ticket`, {
+            method: 'POST',
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": token ? `Bearer ${token}` : '' 
+            },
+            body: JSON.stringify({ type: ticketType, message })
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success) {
+                success = true;
+            }
+        } else {
+            console.error("Worker'a kayıt başarısız. Status:", res.status);
+        }
+    } catch (error) {
+        console.error("Bilet gönderilirken ağ hatası:", error);
+    } finally {
+        setIsSubmitting(false);
+    }
     
     if (success) {
       setModalState('success');
       setMessage('');
       setTimeout(() => {
         setModalState('idle');
-        setActiveView('history');
+        setActiveView('history'); // Başarılıysa otomatik geçmişe atar
       }, 2000);
     } else {
       setModalState('error');
@@ -324,11 +352,12 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                         <div className="flex justify-end pt-2">
                             <button 
                                 type="submit"
-                                disabled={isSaving || !message.trim()}
+                                // 🚀 YENİ: Kendi isSubmitting state'imize göre butonu kilitliyoruz
+                                disabled={isSubmitting || !message.trim()}
                                 className="w-full sm:w-auto bg-blue-600 text-white px-8 py-3.5 sm:py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 active:scale-95"
                             >
-                                {isSaving ? <Loader2 size={18} className="animate-spin" /> : (isOffline ? <WifiOff size={18} /> : <Send size={18} />)}
-                                {isSaving ? 'Gönderiliyor...' : (isOffline ? 'Kuyruğa Al' : 'Talebi İlet')}
+                                {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : (isOffline ? <WifiOff size={18} /> : <Send size={18} />)}
+                                {isSubmitting ? 'Gönderiliyor...' : (isOffline ? 'Kuyruğa Al' : 'Talebi İlet')}
                             </button>
                         </div>
                     </motion.form>
