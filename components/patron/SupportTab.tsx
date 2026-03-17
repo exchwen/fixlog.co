@@ -23,67 +23,40 @@ export default function SupportTab({ handleAction, isSaving }: any) {
     setExpandedTicketId(prev => (prev === id ? null : id));
   };
 
-  // 🚀 YENİ: Süper Gelişmiş Token Bulucu
+  // 🚀 NİHAİ ÇÖZÜM: Senin özel authToken yapını bulacak fonksiyon
   const getValidToken = () => {
     if (typeof window === 'undefined') return '';
     
     let token = '';
-    let source = '';
 
-    // 1. Olası localStorage anahtarları
-    const keys = ['token', 'userToken', 'accessToken', 'access_token', 'jwt', 'auth_token'];
-    for (const k of keys) {
-      const val = localStorage.getItem(k);
-      if (val) {
-        token = val;
-        source = `localStorage (${k})`;
-        break;
-      }
-    }
-
-    // 2. Eğer localStorage'da obje olarak saklanıyorsa (örn: user: { token: '...' })
-    if (!token) {
-      try {
-        const userObjStr = localStorage.getItem('user') || localStorage.getItem('session');
-        if (userObjStr) {
-          const userObj = JSON.parse(userObjStr);
-          if (userObj && userObj.token) {
-            token = userObj.token;
-            source = 'localStorage (user.token)';
-          } else if (userObj && userObj.accessToken) {
-            token = userObj.accessToken;
-            source = 'localStorage (user.accessToken)';
-          }
+    // 1. Önce senin yapına göre dinamik olarak token ara (örn: patron_authToken, manager_authToken)
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes('_authToken')) {
+            token = localStorage.getItem(key) || '';
+            break;
         }
-      } catch(e) {}
     }
 
-    // 3. Cookies (Çerezler)
+    // 2. Eğer dinamik isimle bulamadıysa, bildiğimiz diğer isimlere de bak (Yedek plan)
     if (!token) {
-      const cookieNames = ['token', 'accessToken', 'next-auth.session-token'];
-      for (const cName of cookieNames) {
-        const match = document.cookie.match(new RegExp('(^| )' + cName + '=([^;]+)'));
-        if (match) {
-          token = match[2];
-          source = `cookie (${cName})`;
-          break;
+        const keys = ['token', 'userToken', 'accessToken', 'patron_authToken'];
+        for (const k of keys) {
+            const val = localStorage.getItem(k);
+            if (val) {
+                token = val;
+                break;
+            }
         }
-      }
     }
 
-    if (!token) {
-      console.warn("⚠️ SupportTab: Sistemde hiçbir yetki token'ı bulunamadı!");
-      return '';
-    }
+    if (!token) return '';
 
-    // Token içindeki gereksiz tırnakları ve Bearer yazısını temizle
+    // Temizlik
     token = token.replace(/^"|"$/g, '');
     if (token.toLowerCase().startsWith('bearer ')) {
       token = token.substring(7).trim();
     }
-
-    // Sorunu anlamak için konsola ipucu yazdır (Sadece ilk 10 karakteri göster ki güvenlik riski olmasın)
-    console.log(`🎟️ SupportTab Token Bulundu! Kaynak: ${source}. Token: ${token.substring(0, 10)}...`);
     
     return token;
   };
@@ -157,7 +130,17 @@ export default function SupportTab({ handleAction, isSaving }: any) {
 
     setIsReplying(true);
     try {
-        const activeSlug = localStorage.getItem('companySlug') || localStorage.getItem('slug') || '';
+        // slug bilgisini de dinamik olarak alalım
+        let activeSlug = '';
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.includes('_userSlug')) {
+                activeSlug = localStorage.getItem(key) || '';
+                break;
+            }
+        }
+        if (!activeSlug) activeSlug = localStorage.getItem('companySlug') || localStorage.getItem('slug') || '';
+        
         const token = getValidToken(); 
         
         const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
@@ -209,7 +192,16 @@ export default function SupportTab({ handleAction, isSaving }: any) {
     e.preventDefault();
     if (!message.trim()) return;
 
-    const activeSlug = localStorage.getItem('companySlug') || localStorage.getItem('slug') || '';
+    // slug bilgisini de dinamik olarak alalım
+    let activeSlug = '';
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes('_userSlug')) {
+            activeSlug = localStorage.getItem(key) || '';
+            break;
+        }
+    }
+    if (!activeSlug) activeSlug = localStorage.getItem('companySlug') || localStorage.getItem('slug') || '';
 
     if (isOffline) {
        const pending = JSON.parse(localStorage.getItem(`offline_actions_${activeSlug}`) || '[]');
