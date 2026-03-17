@@ -9,9 +9,7 @@ export default function SupportTab({ handleAction, isSaving }: any) {
   const [message, setMessage] = useState('');
   const [modalState, setModalState] = useState<'idle' | 'success' | 'error'>('idle');
 
-  // 🚀 YENİ: Kendi gönderim durumumuzu tutmak için isSubmitting eklendi
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [isOffline, setIsOffline] = useState(false);
   const [activeView, setActiveView] = useState<'new' | 'history'>('new');
   const [myTickets, setMyTickets] = useState<any[]>([]);
@@ -25,21 +23,10 @@ export default function SupportTab({ handleAction, isSaving }: any) {
     setExpandedTicketId(prev => (prev === id ? null : id));
   };
 
+  // 🚀 YENİ: Tehlikeli döngü kaldırıldı, sadece kesin isimlere bakılıyor
   const getValidToken = () => {
-    let token = '';
-    token = localStorage.getItem('token') || localStorage.getItem('userToken') || localStorage.getItem('authToken') || '';
-    
-    if (!token || !token.includes('eyJ')) {
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            const val = localStorage.getItem(key || '') || '';
-            if (val.includes('eyJ')) {
-                token = val;
-                break;
-            }
-        }
-    }
-
+    let token = localStorage.getItem('token') || localStorage.getItem('userToken') || '';
+    if (!token) return '';
     token = token.replace(/^"|"$/g, '');
     if (token.toLowerCase().startsWith('bearer ')) {
         token = token.substring(7).trim();
@@ -75,7 +62,7 @@ export default function SupportTab({ handleAction, isSaving }: any) {
 
           setMyTickets([{ 
               id: 'sistem-hatasi-1', 
-              type: '⚠️ Yetki Hatası (401)', 
+              type: `⚠️ Okuma Hatası (${res.status})`, 
               message: `Sunucu kimliği reddetti. Sebep: ${exactReason}`, 
               status: 'Açık',
               created_at: new Date().toISOString()
@@ -181,10 +168,7 @@ export default function SupportTab({ handleAction, isSaving }: any) {
        return;
     }
 
-    // 🚀 YENİ: Artık dışarıdaki handleAction komutuna güvenmiyoruz. 
-    // Doğrudan kendi Worker'ımıza istek atıyoruz ki veri D1'e yazılsın!
     setIsSubmitting(true);
-    let success = false;
     
     try {
         const token = getValidToken();
@@ -197,33 +181,44 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                 "Content-Type": "application/json",
                 "Authorization": token ? `Bearer ${token}` : '' 
             },
-            body: JSON.stringify({ type: ticketType, message })
+            // 🚀 YENİ: Worker şüphelenmesin diye slug açıkça gövdeye eklendi
+            body: JSON.stringify({ slug: activeSlug, type: ticketType, message })
         });
 
         if (res.ok) {
-            const data = await res.json();
-            if (data.success) {
-                success = true;
-            }
+            setModalState('success');
+            setMessage('');
+            setTimeout(() => {
+                setModalState('idle');
+                setActiveView('history'); 
+            }, 2000);
         } else {
-            console.error("Worker'a kayıt başarısız. Status:", res.status);
+            // 🚀 YENİ: 403 veya başka bir hata gelirse ekranda bilet gibi gösterecek
+            let exactError = 'Bilinmeyen Hata';
+            try {
+                const errData = await res.json();
+                exactError = errData.error || errData.reason || exactError;
+            } catch (err) {
+                exactError = await res.text();
+            }
+            
+            setMyTickets([{ 
+                id: `sistem-hatasi-${Date.now()}`, 
+                type: `⚠️ Gönderim Hatası (${res.status})`, 
+                message: `Sunucu kaydı reddetti: ${exactError.substring(0, 80)}`, 
+                status: 'Açık',
+                created_at: new Date().toISOString()
+            }]);
+            
+            setModalState('idle');
+            setActiveView('history');
         }
     } catch (error) {
         console.error("Bilet gönderilirken ağ hatası:", error);
+        setModalState('error');
+        setTimeout(() => setModalState('idle'), 3000);
     } finally {
         setIsSubmitting(false);
-    }
-    
-    if (success) {
-      setModalState('success');
-      setMessage('');
-      setTimeout(() => {
-        setModalState('idle');
-        setActiveView('history'); // Başarılıysa otomatik geçmişe atar
-      }, 2000);
-    } else {
-      setModalState('error');
-      setTimeout(() => setModalState('idle'), 3000);
     }
   };
 
@@ -352,7 +347,6 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                         <div className="flex justify-end pt-2">
                             <button 
                                 type="submit"
-                                // 🚀 YENİ: Kendi isSubmitting state'imize göre butonu kilitliyoruz
                                 disabled={isSubmitting || !message.trim()}
                                 className="w-full sm:w-auto bg-blue-600 text-white px-8 py-3.5 sm:py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 active:scale-95"
                             >
