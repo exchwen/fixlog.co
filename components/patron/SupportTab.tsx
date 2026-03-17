@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Lightbulb, Wrench, Send, Loader2, CheckCircle, AlertTriangle, WifiOff, History, Clock } from 'lucide-react';
+import { MessageSquare, Lightbulb, Wrench, Send, Loader2, CheckCircle, AlertTriangle, WifiOff, History, Clock, X } from 'lucide-react';
 
 export default function SupportTab({ handleAction, isSaving }: any) {
   const [ticketType, setTicketType] = useState('Öneri/İstek');
@@ -17,19 +17,15 @@ export default function SupportTab({ handleAction, isSaving }: any) {
 
   const [replyMessageText, setReplyMessageText] = useState<{ [key: string]: string }>({});
   const [isReplying, setIsReplying] = useState(false);
-  const [expandedTicketId, setExpandedTicketId] = useState<string | null>(null);
+  
+  // 🚀 YENİ: Akordiyon yerine seçili bileti tutan modal state'i
+  const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
 
-  const toggleTicket = (id: string) => {
-    setExpandedTicketId(prev => (prev === id ? null : id));
-  };
-
-  // 🚀 NİHAİ ÇÖZÜM: Senin özel authToken yapını bulacak fonksiyon
   const getValidToken = () => {
     if (typeof window === 'undefined') return '';
     
     let token = '';
 
-    // 1. Önce senin yapına göre dinamik olarak token ara (örn: patron_authToken, manager_authToken)
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.includes('_authToken')) {
@@ -38,7 +34,6 @@ export default function SupportTab({ handleAction, isSaving }: any) {
         }
     }
 
-    // 2. Eğer dinamik isimle bulamadıysa, bildiğimiz diğer isimlere de bak (Yedek plan)
     if (!token) {
         const keys = ['token', 'userToken', 'accessToken', 'patron_authToken'];
         for (const k of keys) {
@@ -52,7 +47,6 @@ export default function SupportTab({ handleAction, isSaving }: any) {
 
     if (!token) return '';
 
-    // Temizlik
     token = token.replace(/^"|"$/g, '');
     if (token.toLowerCase().startsWith('bearer ')) {
       token = token.substring(7).trim();
@@ -130,7 +124,6 @@ export default function SupportTab({ handleAction, isSaving }: any) {
 
     setIsReplying(true);
     try {
-        // slug bilgisini de dinamik olarak alalım
         let activeSlug = '';
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
@@ -158,7 +151,7 @@ export default function SupportTab({ handleAction, isSaving }: any) {
         const result = await res.json();
         if (result.success) {
             setReplyMessageText(prev => ({ ...prev, [ticketId]: '' }));
-            await fetchMyTickets();
+            await fetchMyTickets(); // Bu işlem bittiğinde aşağıdaki useEffect çalışıp modalı güncelleyecek
         }
     } catch(e) {
         console.error("Yanıt gönderilemedi", e);
@@ -166,6 +159,16 @@ export default function SupportTab({ handleAction, isSaving }: any) {
         setIsReplying(false);
     }
   };
+
+  // 🚀 YENİ: Biletler güncellendiğinde, eğer açık bir modal varsa onun içindeki veriyi de yenile
+  useEffect(() => {
+    if (selectedTicket) {
+       const freshTicket = myTickets.find(t => t.id === selectedTicket.id);
+       if (freshTicket) {
+           setSelectedTicket(freshTicket);
+       }
+    }
+  }, [myTickets]);
 
   useEffect(() => {
     if (activeView === 'history') {
@@ -192,7 +195,6 @@ export default function SupportTab({ handleAction, isSaving }: any) {
     e.preventDefault();
     if (!message.trim()) return;
 
-    // slug bilgisini de dinamik olarak alalım
     let activeSlug = '';
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -273,7 +275,7 @@ export default function SupportTab({ handleAction, isSaving }: any) {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+    <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6 relative">
       
       {/* BAŞLIK */}
       <div className="flex justify-between items-center border-b border-slate-200 pb-3 sm:pb-4">
@@ -420,8 +422,8 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                           return (
                           <div 
                             key={ticket.id} 
-                            onClick={() => toggleTicket(ticket.id)}
-                            className={`bg-white border rounded-2xl p-4 shadow-sm cursor-pointer hover:shadow-md transition-all ${ticket.id.startsWith('sistem-hatasi') ? 'border-rose-400 bg-rose-50' : 'border-slate-200'}`}
+                            onClick={() => setSelectedTicket(ticket)}
+                            className={`bg-white border rounded-2xl p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-blue-300 transition-all ${ticket.id.startsWith('sistem-hatasi') ? 'border-rose-400 bg-rose-50' : 'border-slate-200'}`}
                           >
                             <div className="flex justify-between items-start mb-2">
                               <div className={`font-bold text-sm flex items-center gap-2 ${ticket.id.startsWith('sistem-hatasi') ? 'text-rose-700' : 'text-slate-800'}`}>
@@ -435,61 +437,10 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                             <div className={`text-sm font-medium line-clamp-1 mb-2 ${ticket.id.startsWith('sistem-hatasi') ? 'text-rose-600' : 'text-slate-600'}`}>
                                 {ticket.message}
                             </div>
-                            <div className="text-[10px] text-slate-400 mb-2 font-medium flex items-center gap-1">
-                                <Clock size={12} /> {new Date(ticket.created_at ? ticket.created_at.replace(' ', 'T') : new Date()).toLocaleString('tr-TR')} • {replies.length} Yanıt
+                            <div className="text-[10px] text-slate-400 font-medium flex items-center justify-between">
+                                <span className="flex items-center gap-1"><Clock size={12} /> {new Date(ticket.created_at ? ticket.created_at.replace(' ', 'T') : new Date()).toLocaleString('tr-TR')}</span>
+                                {replies.length > 0 && <span className="text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-md">{replies.length} Yanıt</span>}
                             </div>
-
-                            <AnimatePresence>
-                                {expandedTicketId === ticket.id && (
-                                    <motion.div 
-                                        initial={{ height: 0, opacity: 0 }} 
-                                        animate={{ height: 'auto', opacity: 1 }} 
-                                        exit={{ height: 0, opacity: 0 }}
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="overflow-hidden border-t border-slate-100 mt-3 pt-3"
-                                    >
-                                        <div className="bg-slate-50 p-3 rounded-xl mb-3 border border-slate-100">
-                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">İlk Mesajınız</div>
-                                            <p className={`text-sm ${ticket.id.startsWith('sistem-hatasi') ? 'text-rose-700 font-semibold' : 'text-slate-700'}`}>{ticket.message}</p>
-                                        </div>
-                                        
-                                        {replies.length > 0 && (
-                                            <div className="space-y-2 mb-4 pl-3 ml-2 border-l-2 border-slate-200">
-                                               {replies.map((reply: any, idx: number) => (
-                                                  <div key={idx} className={`p-3 rounded-xl text-sm ${reply.sender === 'masterboss' ? 'bg-blue-50 border border-blue-100 text-blue-900' : 'bg-slate-100 text-slate-700'}`}>
-                                                     <div className="flex justify-between items-center mb-1">
-                                                        <span className={`text-[10px] font-bold uppercase tracking-wider ${reply.sender === 'masterboss' ? 'text-blue-600' : 'text-slate-500'}`}>
-                                                            {reply.sender === 'masterboss' ? 'Destek Ekibi' : 'Siz'}
-                                                        </span>
-                                                        <span className="text-[9px] opacity-60">{new Date(reply.date).toLocaleString('tr-TR')}</span>
-                                                     </div>
-                                                     <p className="font-medium">{reply.message}</p>
-                                                  </div>
-                                               ))}
-                                            </div>
-                                        )}
-
-                                        {ticket.status !== 'Çözüldü' && ticket.status !== 'Resolved' && !ticket.id.startsWith('sistem-hatasi') && (
-                                            <div className="mt-3 pt-3 flex gap-2">
-                                              <input
-                                                 type="text"
-                                                 value={replyMessageText[ticket.id] || ''}
-                                                 onChange={(e) => setReplyMessageText(prev => ({ ...prev, [ticket.id]: e.target.value }))}
-                                                 placeholder="Yanıtınızı yazın..."
-                                                 className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400 focus:bg-white transition-all"
-                                              />
-                                              <button
-                                                 onClick={() => handleCustomerReply(ticket.id)}
-                                                 disabled={isReplying || !(replyMessageText[ticket.id]?.trim())}
-                                                 className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                                              >
-                                                 {isReplying ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                                              </button>
-                                            </div>
-                                        )}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
                           </div>
                         );
                       })
@@ -499,6 +450,107 @@ export default function SupportTab({ handleAction, isSaving }: any) {
             </AnimatePresence>
         </div>
       </div>
+
+      {/* 🚀 YENİ: BİLET DETAY MODALI */}
+      <AnimatePresence>
+        {selectedTicket && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+              onClick={() => setSelectedTicket(null)}
+            >
+               <motion.div
+                 initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                 animate={{ scale: 1, opacity: 1, y: 0 }}
+                 exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                 onClick={(e) => e.stopPropagation()} // Modal içine tıklayınca kapanmasını engelle
+                 className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[90vh]"
+               >
+                 {/* Modal Üst Bilgi */}
+                 <div className="flex justify-between items-center p-4 sm:p-5 border-b border-slate-100 bg-slate-50">
+                   <div>
+                     <h4 className={`font-black text-lg ${selectedTicket.id.startsWith('sistem-hatasi') ? 'text-rose-700' : 'text-slate-800'}`}>
+                        {selectedTicket.type}
+                     </h4>
+                     <div className="text-[11px] font-medium text-slate-500 flex items-center gap-2 mt-0.5">
+                        <span>Oluşturulma: {new Date(selectedTicket.created_at ? selectedTicket.created_at.replace(' ', 'T') : new Date()).toLocaleString('tr-TR')}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] uppercase tracking-wider font-bold ${selectedTicket.status === 'Çözüldü' || selectedTicket.status === 'Resolved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                            {selectedTicket.status === 'Çözüldü' || selectedTicket.status === 'Resolved' ? 'Çözüldü' : 'Açık'}
+                        </span>
+                     </div>
+                   </div>
+                   <button onClick={() => setSelectedTicket(null)} className="p-2 hover:bg-slate-200 rounded-xl text-slate-500 transition-colors bg-white border border-slate-200 shadow-sm">
+                     <X size={20} />
+                   </button>
+                 </div>
+
+                 {/* Modal İçerik (Sohbet Akışı) */}
+                 <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-5 bg-white flex flex-col">
+                   
+                   {/* İlk Mesaj (Sağda - Kullanıcı) */}
+                   <div className="w-11/12 ml-auto">
+                       <div className="flex justify-end mb-1">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">İlk Talebiniz</span>
+                       </div>
+                       <div className={`p-4 rounded-2xl rounded-tr-sm text-sm shadow-sm ${selectedTicket.id.startsWith('sistem-hatasi') ? 'bg-rose-50 border border-rose-100 text-rose-800' : 'bg-blue-600 text-white'}`}>
+                           {selectedTicket.message}
+                       </div>
+                   </div>
+
+                   {/* Yanıtlar */}
+                   {(() => {
+                       let replies = [];
+                       try { replies = JSON.parse(selectedTicket.replies || '[]'); } catch(e) {}
+                       
+                       if (replies.length > 0) {
+                           return replies.map((reply: any, idx: number) => {
+                               const isSupport = reply.sender === 'masterboss';
+                               return (
+                                 <div key={idx} className={`w-11/12 ${isSupport ? 'mr-auto' : 'ml-auto'}`}>
+                                    <div className={`flex items-center mb-1 gap-2 ${isSupport ? 'justify-start' : 'justify-end'}`}>
+                                        <span className={`text-[10px] font-bold uppercase tracking-wider ${isSupport ? 'text-amber-600' : 'text-slate-400'}`}>
+                                            {isSupport ? 'İş Dökümü Destek Ekibi' : 'Siz'}
+                                        </span>
+                                        <span className="text-[9px] font-medium text-slate-400">{new Date(reply.date).toLocaleString('tr-TR')}</span>
+                                    </div>
+                                    <div className={`p-4 rounded-2xl text-sm shadow-sm ${isSupport ? 'bg-slate-100 text-slate-800 rounded-tl-sm border border-slate-200' : 'bg-blue-600 text-white rounded-tr-sm'}`}>
+                                        {reply.message}
+                                    </div>
+                                 </div>
+                               );
+                           });
+                       }
+                       return null;
+                   })()}
+                 </div>
+
+                 {/* Modal Alt Kısmı (Yanıt Yazma Alanı) */}
+                 {selectedTicket.status !== 'Çözüldü' && selectedTicket.status !== 'Resolved' && !selectedTicket.id.startsWith('sistem-hatasi') && (
+                     <div className="p-4 bg-slate-50 border-t border-slate-200 flex gap-2 sm:gap-3 items-center">
+                       <input
+                          type="text"
+                          value={replyMessageText[selectedTicket.id] || ''}
+                          onChange={(e) => setReplyMessageText(prev => ({ ...prev, [selectedTicket.id]: e.target.value }))}
+                          placeholder="Yanıtınızı buraya yazın..."
+                          onKeyDown={(e) => { if(e.key === 'Enter') handleCustomerReply(selectedTicket.id) }}
+                          className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400"
+                       />
+                       <button
+                          onClick={() => handleCustomerReply(selectedTicket.id)}
+                          disabled={isReplying || !(replyMessageText[selectedTicket.id]?.trim())}
+                          className="bg-blue-600 text-white px-5 py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-all shadow-md shadow-blue-600/20 flex items-center justify-center active:scale-95"
+                       >
+                          {isReplying ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                       </button>
+                     </div>
+                 )}
+               </motion.div>
+            </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
