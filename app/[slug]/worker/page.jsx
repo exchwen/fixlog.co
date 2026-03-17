@@ -834,9 +834,15 @@ const handleStatusUpdate = async (newStatus) => {
   const pendingJobs = jobs.filter(j => j.status === 'Beklemede' || j.status === 'Gelecek' || j.status === 'Usta Bekliyor');
   const completedJobs = jobs.filter(j => j.status === 'Tamamlandı');
 
+  const isPastDue = data?.subscriptionStatus === 'past_due';
+
   return (
     <div className="min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 bg-[#F8FAFC] text-slate-900">
       
+      {isPastDue && (
+        <PaywallOverlay slug={slug} role="Usta" />
+      )}
+
       <div className="z-[300] lg:relative absolute">
         <WorkerSidebar activeTab={activeTab} setActiveTab={setActiveTab} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
       </div>

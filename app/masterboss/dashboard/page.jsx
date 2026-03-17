@@ -28,6 +28,9 @@ const [infoLoading, setInfoLoading] = useState(false);
 // 🚀 YENİ: Ticket Modalı State'i
 const [selectedTicket, setSelectedTicket] = useState(null);
 
+// 🚀 YENİ: Firma Filtreleme State'i
+const [companyFilter, setCompanyFilter] = useState("all");
+
   useEffect(() => {
     const fetchDashboard = async () => {
       const token = localStorage.getItem("masterbossToken");
@@ -205,6 +208,22 @@ const [selectedTicket, setSelectedTicket] = useState(null);
   const totalStaff = companies.reduce((acc, c) => acc + (c.total_staff || 0), 0);
   const activeCompanies = companies.filter(c => c.subscription_status === 'active').length;
 
+  // 🚀 YENİ: Toplam Platform Gelir ve Maliyet Hesaplamaları
+  const totalPlatformRevenue = companies.reduce((acc, c) => {
+      if (c.subscription_status === 'active' && (!c.free_months_balance || c.free_months_balance <= 0)) {
+           const basePrice = c.custom_base_price ? Number(c.custom_base_price) : 3000;
+           const assetRevenue = (c.total_assets || 0) * 50;
+           return acc + basePrice + assetRevenue;
+      }
+      return acc;
+  }, 0);
+
+  const totalExpectedCost = companies.reduce((acc, c) => {
+       const dataPoints = (c.job_count || 0) + (c.total_assets || 0) * 3;
+       const cost = dataPoints * 0.005 + 10; 
+       return acc + cost;
+  }, 0);
+
   return (
     <div className="min-h-screen bg-neutral-950 text-white selection:bg-rose-500/30">
       
@@ -230,11 +249,13 @@ const [selectedTicket, setSelectedTicket] = useState(null);
       <div className="max-w-7xl mx-auto px-4 py-8">
         
         {/* Metric Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
           <MetricCard icon={Building2} label="Toplam Firma" value={companies.length} ext={`${activeCompanies} Aktif Üye`} color="from-blue-500 to-indigo-600" />
-          <MetricCard icon={BarChart3} label="Sistemdeki Varlık" value={totalAssets} ext="Global Asansör Hacmi" color="from-rose-500 to-red-600" />
-          <MetricCard icon={Users} label="Sistemdeki Personel" value={totalStaff} ext="Kayıtlı Saha Çalışanı" color="from-emerald-500 to-teal-600" />
+          <MetricCard icon={BarChart3} label="Sistem Varlığı" value={totalAssets} ext="Global Varlık Hacmi" color="from-rose-500 to-red-600" />
+          <MetricCard icon={Users} label="Sistem Personeli" value={totalStaff} ext="Kayıtlı Saha Çalışanı" color="from-emerald-500 to-teal-600" />
           <MetricCard icon={Gift} label="Referans Havuzu" value={referrals.filter(r=>r.is_verified===1).length} ext="Başarılı Davet Sayısı" color="from-amber-500 to-orange-600" />
+          <MetricCard icon={Activity} label="Tahmini Kazanç" value={`₺${totalPlatformRevenue.toLocaleString('tr-TR')}`} ext="Aylık Brüt Ciro" color="from-emerald-500 to-teal-600" />
+          <MetricCard icon={AlertCircle} label="Tahmini Maliyet" value={`₺${totalExpectedCost.toLocaleString('tr-TR')}`} ext="Aylık Sunucu Gideri" color="from-rose-500 to-red-600" />
         </div>
 
         {/* Tabs */}
@@ -252,7 +273,16 @@ const [selectedTicket, setSelectedTicket] = useState(null);
           className="bg-neutral-900/50 border border-neutral-800 rounded-3xl overflow-hidden"
         >
           {activeTab === "companies" && (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto p-4">
+              {/* 🚀 YENİ: Firma Filtreleme Sekmeleri */}
+              <div className="flex flex-wrap items-center gap-2 mb-6 border-b border-neutral-800 pb-4">
+                 <button onClick={() => setCompanyFilter("all")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "all" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Tümü ({companies.length})</button>
+                 <button onClick={() => setCompanyFilter("active")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "active" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Ödeyenler ({companies.filter(c => c.subscription_status === 'active' && (!c.free_months_balance || c.free_months_balance <= 0)).length})</button>
+                 <button onClick={() => setCompanyFilter("trialing")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "trialing" ? "bg-blue-500/20 text-blue-400 border border-blue-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Deneme Sürümü ({companies.filter(c => c.subscription_status === 'trialing').length})</button>
+                 <button onClick={() => setCompanyFilter("past_due")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "past_due" ? "bg-rose-500/20 text-rose-400 border border-rose-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Paywall / Gecikmede ({companies.filter(c => c.subscription_status === 'past_due' || c.subscription_status === 'canceled').length})</button>
+                 <button onClick={() => setCompanyFilter("free_month")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "free_month" ? "bg-amber-500/20 text-amber-400 border border-amber-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>1 Ay Muaf ({companies.filter(c => c.free_months_balance > 0).length})</button>
+              </div>
+
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead className="bg-neutral-900 border-b border-neutral-800 text-neutral-400">
                   <tr>
@@ -265,7 +295,13 @@ const [selectedTicket, setSelectedTicket] = useState(null);
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-800/50">
-                  {companies.map((c) => (
+                  {companies.filter(c => {
+                      if (companyFilter === "active") return c.subscription_status === 'active' && (!c.free_months_balance || c.free_months_balance <= 0);
+                      if (companyFilter === "trialing") return c.subscription_status === 'trialing';
+                      if (companyFilter === "past_due") return c.subscription_status === 'past_due' || c.subscription_status === 'canceled';
+                      if (companyFilter === "free_month") return c.free_months_balance > 0;
+                      return true;
+                  }).map((c) => (
                     <tr key={c.slug} className="hover:bg-neutral-800/20 transition-colors">
                       <td className="px-6 py-4 font-mono text-neutral-300">
                         {c.slug}
@@ -502,13 +538,19 @@ const [selectedTicket, setSelectedTicket] = useState(null);
                 />
               </div>
 
-              {selectedCompany.subscription_status === 'trialing' && (
+              {selectedCompany.subscription_status === 'trialing' && selectedCompany.trial_ends_at !== null && (
                 <div className="flex items-center gap-3 bg-rose-500/10 border border-rose-500/20 p-4 rounded-xl mt-4">
                   <input 
                     type="checkbox" 
                     id="cancelTrial"
                     checked={manageForm.cancelTrial} 
-                    onChange={(e) => setManageForm({...manageForm, cancelTrial: e.target.checked})}
+                    onChange={(e) => {
+                       if (e.target.checked) {
+                           setManageForm({...manageForm, cancelTrial: true, subscriptionStatus: 'past_due'});
+                       } else {
+                           setManageForm({...manageForm, cancelTrial: false});
+                       }
+                    }}
                     className="w-5 h-5 rounded border-rose-500 text-rose-500 focus:ring-rose-500/20 bg-neutral-800"
                   />
                   <label htmlFor="cancelTrial" className="text-sm text-rose-300 font-medium cursor-pointer">Deneme sürümünü iptal et ve anında ödemeye (Paywall'a) düşür</label>
@@ -516,7 +558,7 @@ const [selectedTicket, setSelectedTicket] = useState(null);
               )}
             </div>
 
-            <button 
+            <button
               onClick={handleUpdateSubscription}
               disabled={isSaving}
               className="mt-8 w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-rose-600/20 transition-all active:scale-[0.98] disabled:opacity-50"
@@ -730,24 +772,42 @@ const [selectedTicket, setSelectedTicket] = useState(null);
                         const assetRevenue = assetCount * 50; // Varlık başı 50 TL
                         const totalRevenue = activeBasePrice + assetRevenue;
 
-                        // 2. GİDER (D1 & R2 MALİYET) HESAPLAMASI
-                        // Her fotoğraf için ortalama 0.02 TL (2 Kuruş) R2 depolama / bant genişliği maliyeti
-                        const r2Cost = (infoDetails.photos.total || 0) * 0.02;
-                        
-                        // DB sorguları için her veri kaydını (satırı) 0.005 TL (0.5 kuruş) okuma/yazma maliyeti sayıyoruz
-                        const totalDataPoints = (infoDetails.jobs.total || 0) + (infoDetails.photos.total || 0) + (infoDetails.customers || 0) + (infoDetails.faults.total || 0);
-                        const d1Cost = totalDataPoints * 0.005;
+                        // 2. DETAYLI GİDER (D1 & R2 & WORKER MALİYET) HESAPLAMASI
+                        const photoCount = infoDetails.photos.total || 0;
+                        const jobCount = infoDetails.jobs.total || 0;
+                        const customerCount = infoDetails.customers || 0;
+                        const faultCount = infoDetails.faults.total || 0;
+                        const assetCountReq = infoDetails.assets || 0;
 
-                        const totalServerCost = r2Cost + d1Cost;
+                        // Varsayılan CF Maliyet Çarpanları
+                        const D1_WRITE_COST_PER_REQ = 0.0003; 
+                        const D1_READ_COST_PER_REQ = 0.00005;
+                        const R2_STORAGE_COST_PER_MB = 0.001;
+                        const R2_REQ_COST = 0.0001;
+                        const WORKER_REQ_COST = 0.00001;
+
+                        // Tahmini İstek Sayıları
+                        const estWorkerRequests = (jobCount * 12) + (photoCount * 5) + (customerCount * 8) + (faultCount * 6) + (assetCountReq * 10) + 1000;
+                        const estD1Writes = (jobCount * 3) + (customerCount * 2) + faultCount + assetCountReq + 50;
+                        const estD1Reads = estWorkerRequests * 2;
+                        const estR2Requests = photoCount * 15;
+                        const estR2StorageMB = photoCount * 2.5;
+
+                        const workerTotalCost = estWorkerRequests * WORKER_REQ_COST;
+                        const d1TotalCost = (estD1Writes * D1_WRITE_COST_PER_REQ) + (estD1Reads * D1_READ_COST_PER_REQ);
+                        const r2TotalCost = (estR2Requests * R2_REQ_COST) + (estR2StorageMB * R2_STORAGE_COST_PER_MB);
+
+                        const totalServerCost = workerTotalCost + d1TotalCost + r2TotalCost;
 
                         // 3. NET KÂR
                         const netProfit = totalRevenue - totalServerCost;
 
                         // Sunucu yük durumu etiketi
+                        const totalDataPoints = estWorkerRequests;
                         let loadStatus = "Düşük";
                         let loadColor = "text-emerald-400";
-                        if (totalDataPoints > 5000) { loadStatus = "Orta"; loadColor = "text-amber-400"; }
-                        if (totalDataPoints > 20000) { loadStatus = "Yüksek (Maliyetli)"; loadColor = "text-rose-400"; }
+                        if (totalDataPoints > 10000) { loadStatus = "Orta"; loadColor = "text-amber-400"; }
+                        if (totalDataPoints > 50000) { loadStatus = "Yüksek (Maliyetli)"; loadColor = "text-rose-400"; }
 
                         // 4. İYZİCO ÖDEME DURUMU KONTROLÜ
                         let paymentStatusText = "Bilinmiyor";
@@ -812,22 +872,32 @@ const [selectedTicket, setSelectedTicket] = useState(null);
                               </div>
                               
                               <h4 className="text-sm font-bold text-white mb-4 mt-6 flex items-center gap-2">
-                                <Activity className="w-5 h-5 text-amber-400" /> Tahmini Sunucu Maliyeti (D1 + R2)
+                                <Activity className="w-5 h-5 text-amber-400" /> Tahmini Sunucu & Altyapı Maliyeti (Aylık)
                               </h4>
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b border-neutral-700 pb-4 mb-4">
-                                <div>
-                                  <div className="text-xs text-neutral-500 mb-1">R2 Dosya Depolama (Fotoğraflar)</div>
-                                  <div className="text-lg font-bold text-rose-400">- ₺{r2Cost.toFixed(2)}</div>
-                                  <div className="text-[10px] text-neutral-500 uppercase mt-1">{infoDetails.photos.total || 0} Medya Yükü</div>
+                                <div className="bg-neutral-800/50 p-3 rounded-xl border border-neutral-700/50">
+                                  <div className="text-xs text-neutral-500 mb-1 font-bold">R2 Depolama & İstek</div>
+                                  <div className="text-lg font-black text-rose-400">- ₺{r2TotalCost.toFixed(2)}</div>
+                                  <div className="text-[10px] text-neutral-400 mt-2 space-y-1">
+                                    <div className="flex justify-between"><span>Depolama:</span> <span>{estR2StorageMB.toFixed(1)} MB (₺{(estR2StorageMB * R2_STORAGE_COST_PER_MB).toFixed(2)})</span></div>
+                                    <div className="flex justify-between"><span>Okuma/Yazma:</span> <span>{estR2Requests.toLocaleString('tr-TR')} (₺{(estR2Requests * R2_REQ_COST).toFixed(2)})</span></div>
+                                  </div>
                                 </div>
-                                <div>
-                                  <div className="text-xs text-neutral-500 mb-1">D1 Veritabanı (İşlem Hacmi)</div>
-                                  <div className="text-lg font-bold text-rose-400">- ₺{d1Cost.toFixed(2)}</div>
-                                  <div className="text-[10px] text-neutral-500 uppercase mt-1">{totalDataPoints.toLocaleString('tr-TR')} Kayıt Yükü</div>
+                                <div className="bg-neutral-800/50 p-3 rounded-xl border border-neutral-700/50">
+                                  <div className="text-xs text-neutral-500 mb-1 font-bold">D1 Veritabanı Maliyeti</div>
+                                  <div className="text-lg font-black text-rose-400">- ₺{d1TotalCost.toFixed(2)}</div>
+                                  <div className="text-[10px] text-neutral-400 mt-2 space-y-1">
+                                    <div className="flex justify-between"><span>D1 Yazma:</span> <span>{estD1Writes.toLocaleString('tr-TR')} (₺{(estD1Writes * D1_WRITE_COST_PER_REQ).toFixed(2)})</span></div>
+                                    <div className="flex justify-between"><span>D1 Okuma:</span> <span>{estD1Reads.toLocaleString('tr-TR')} (₺{(estD1Reads * D1_READ_COST_PER_REQ).toFixed(2)})</span></div>
+                                  </div>
                                 </div>
-                                <div>
-                                  <div className="text-xs text-neutral-500 mb-1">Sunucu Tüketim Seviyesi</div>
-                                  <div className={`text-lg font-bold ${loadColor}`}>{loadStatus}</div>
+                                <div className="bg-neutral-800/50 p-3 rounded-xl border border-neutral-700/50">
+                                  <div className="text-xs text-neutral-500 mb-1 font-bold">Worker Trafik Maliyeti</div>
+                                  <div className="text-lg font-black text-rose-400">- ₺{workerTotalCost.toFixed(2)}</div>
+                                  <div className="text-[10px] text-neutral-400 mt-2 space-y-1">
+                                    <div className="flex justify-between"><span>Toplam İstek:</span> <span>{estWorkerRequests.toLocaleString('tr-TR')}</span></div>
+                                    <div className="flex justify-between mt-1 pt-1 border-t border-neutral-700/50 text-neutral-500"><span>Sunucu Yükü:</span> <span className={`${loadColor} font-bold`}>{loadStatus}</span></div>
+                                  </div>
                                 </div>
                               </div>
 

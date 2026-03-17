@@ -7,7 +7,7 @@ import {
   ClipboardList, Users, Box, Wallet, Plus, ArrowUpRight, 
   CheckCircle, Clock, Calendar, TrendingUp, TrendingDown, 
   Package, AlertTriangle, ShieldCheck, Activity, User, Lock, RefreshCw,
-  Settings, X, Wrench, Link as LinkIcon, Check, Database, ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2, Bell, CheckSquare, UserPlus, UserCheck, MapPin, AlertCircle, Info, ShieldAlert, ArrowRight
+  Settings, X, Wrench, Link as LinkIcon, Check, Database, ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2, Bell, CheckSquare, UserPlus, UserCheck, MapPin, AlertCircle, Info, ShieldAlert, ArrowRight, Gift, Star, CreditCard, Copy
 } from 'lucide-react';
 
 export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob, setActiveTab, userRole: propRole, handleAction, isMyJobsTab, setJobModalType }: any) {
@@ -244,7 +244,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const totalAssetsCount = data?.assets?.length || 0;
   const totalStockTypes = stock.length;
 
-  const { usagePaid, totalSystemProfit, currentUsageBill, baseMonthlyFee } = useMemo(() => {
+  const { usagePaid, totalSystemProfit, currentUsageBill, baseMonthlyFee, referralCredits, finalBill, referralCode, subStatus, nextBillingDate, activeReferrals } = useMemo(() => {
     const earliestDate = jobs.length > 0 
       ? new Date(Math.min(...jobs.map((j: any) => new Date(j.created_at || new Date()).getTime()))) 
       : new Date();
@@ -258,19 +258,34 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
     const perJobFee = 5;         
 
     const uPaid = (finalMonthsUsed * (totalAssetsCount * perAssetFee)) + (totalLifetimePhotos * perPhotoFee) + (totalJobs * perJobFee);
-    const cUsageBill = (totalAssetsCount * perAssetFee) + (monthlyPhotos * perPhotoFee) + (currentMonthJobs * perJobFee);
+    // 3000 TL taban ücret bu ayki faturaya eklendi
+    const cUsageBill = baseFee + (totalAssetsCount * perAssetFee) + (monthlyPhotos * perPhotoFee) + (currentMonthJobs * perJobFee);
 
     const operationalSavings = totalJobs * 150; 
     const printAndStorageSavings = totalLifetimePhotos * 5; 
     const profit = operationalSavings + printAndStorageSavings;
 
+    // 🚀 YENİ: Abonelik ve Referans Hesaplamaları
+    const refCode = data?.referralCode || 'ISDOKUMU-' + (currentUserId || '1001');
+    const aReferrals = data?.activeReferrals || 0; // Başarıyla ödeme yapmış referans sayısı
+    const rCredits = aReferrals * 3000; // Her başarılı referans başına 3000 TL
+    const fBill = Math.max(0, cUsageBill - rCredits); // Kredi düşüldükten sonraki net fatura tutarı
+    const sStatus = data?.subscriptionStatus || 'Deneme'; // Deneme, Aktif, Muaf
+    const nBillingDate = data?.nextBillingDate || 'Belirlenmedi';
+
     return { 
         usagePaid: uPaid, 
         totalSystemProfit: profit, 
         currentUsageBill: cUsageBill, 
-        baseMonthlyFee: baseFee 
+        baseMonthlyFee: baseFee,
+        referralCredits: rCredits,
+        finalBill: fBill,
+        referralCode: refCode,
+        subStatus: sStatus,
+        nextBillingDate: nBillingDate,
+        activeReferrals: aReferrals
     };
-  }, [jobs, totalJobs, totalLifetimePhotos, totalAssetsCount, monthlyPhotos, currentMonthJobs]);
+  }, [jobs, totalJobs, totalLifetimePhotos, totalAssetsCount, monthlyPhotos, currentMonthJobs, data, currentUserId]);
 
   const totalIncome = data?.finSummary?.income || 0;
   const totalExpense = data?.finSummary?.expense || 0;
@@ -1251,6 +1266,68 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
         </div>
       </div>
 
+      {/* 🚀 YENİ: ABONELİK VE REFERANS KONTROL MERKEZİ */}
+      {userRole === 'Patron' && !isMyJobsTab && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-8">
+              {/* Abonelik Durumu */}
+              <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200 flex flex-col relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2 mb-4 relative z-10">
+                      <CreditCard size={18} className="text-blue-600" /> Abonelik ve Fatura Durumu
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 relative z-10">
+                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Durum</div>
+                          <div className={`text-lg font-black ${subStatus === 'Aktif' ? 'text-emerald-600' : subStatus === 'Muaf' ? 'text-purple-600' : 'text-amber-600'}`}>
+                              {subStatus}
+                          </div>
+                      </div>
+                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Sonraki Fatura</div>
+                          <div className="text-sm font-bold text-slate-700 mt-1">
+                              {nextBillingDate}
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              {/* Referans Merkezi */}
+              <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-2xl p-5 sm:p-6 shadow-lg border border-indigo-800/50 flex flex-col relative overflow-hidden text-white">
+                  <div className="absolute top-0 right-0 opacity-10 pointer-events-none translate-x-4 -translate-y-4">
+                      <Gift size={100} />
+                  </div>
+                  <h3 className="text-sm font-black text-indigo-100 uppercase tracking-widest flex items-center gap-2 mb-4 relative z-10">
+                      <Users size={18} className="text-indigo-400" /> İş Ortaklığı Merkezi
+                  </h3>
+                  <div className="flex flex-col sm:flex-row gap-4 relative z-10">
+                      <div className="flex-1 bg-white/10 border border-white/10 rounded-xl p-4 flex flex-col justify-center">
+                          <div className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-1">Toplam Kazancınız</div>
+                          <div className="text-2xl font-black text-emerald-400">₺{referralCredits.toLocaleString('tr-TR')}</div>
+                          <div className="text-[10px] text-indigo-100 mt-1 opacity-80">{activeReferrals} aktif iş ortağı kazandırdınız</div>
+                      </div>
+                      <div className="flex-[2] flex flex-col justify-center">
+                          <p className="text-[11px] text-indigo-100 font-medium leading-relaxed mb-3">
+                              Referans kodunuzla kayıt olan ve sistemi aktif kullanan her işletme için <strong>aylık 3.000 ₺</strong> tutarındaki kullanım faturanız bizden!
+                          </p>
+                          <div className="flex items-center gap-2 bg-indigo-950/50 border border-indigo-500/30 rounded-lg p-1.5 pl-3">
+                              <span className="text-xs font-black text-indigo-300 tracking-wider flex-1 truncate">{referralCode}</span>
+                              <button 
+                                onClick={() => {
+                                    navigator.clipboard.writeText(referralCode);
+                                    setAlertModal({ isOpen: true, message: 'Referans kodunuz kopyalandı!', type: 'success' });
+                                }}
+                                className="bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-md transition-colors shadow-sm"
+                                title="Kodu Kopyala"
+                              >
+                                  <Copy size={14} />
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      )}
+
       <div className="bg-slate-900 rounded-2xl p-5 sm:p-6 shadow-xl border border-slate-800 relative overflow-hidden finance-block mt-8">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-emerald-500 to-amber-500"></div>
         
@@ -1303,12 +1380,41 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
             </div>
             
             {userRole === 'Patron' && (
-              <div className="bg-white/5 border border-white/10 rounded-xl p-5 sm:p-6 flex flex-col justify-center relative">
+              <div className="bg-white/5 border border-white/10 rounded-xl p-5 sm:p-6 flex flex-col justify-center relative overflow-hidden">
+                 {referralCredits > 0 && (
+                     <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl shadow-md flex items-center gap-1">
+                         <Star size={10} className="fill-white" /> REFERANS İNDİRİMİ AKTİF
+                     </div>
+                 )}
                  <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1 flex items-center gap-1.5"><Activity size={14}/> Bu Ayki İşlem (Kullanım) Ücreti</div>
-                 <div className="text-3xl sm:text-4xl font-black text-white mt-1 mb-2">₺{currentUsageBill.toLocaleString('tr-TR')}</div>
-                 <div className="text-[10px] text-slate-500 font-medium pt-3 border-t border-white/5 mt-auto">
-                    <span className="block text-slate-400 font-bold mb-0.5">Tüm Zamanlar Toplam İşlem Ücreti:</span>
-                    ₺{usagePaid.toLocaleString('tr-TR')}
+                 
+                 {referralCredits > 0 ? (
+                     <div className="flex items-end gap-3 mt-1 mb-2">
+                         <div className="text-3xl sm:text-4xl font-black text-emerald-400">₺{finalBill.toLocaleString('tr-TR')}</div>
+                         <div className="text-lg font-bold text-slate-500 line-through mb-1">₺{currentUsageBill.toLocaleString('tr-TR')}</div>
+                     </div>
+                 ) : (
+                     <div className="text-3xl sm:text-4xl font-black text-white mt-1 mb-2">₺{currentUsageBill.toLocaleString('tr-TR')}</div>
+                 )}
+
+                 {referralCredits > 0 && (
+                     <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 mt-2 mb-3">
+                         <p className="text-[10px] text-emerald-400 font-medium leading-relaxed flex items-start gap-1.5">
+                             <Gift size={14} className="shrink-0 mt-0.5" />
+                             <span>İş ortaklarımız olarak sizinle büyümekten gurur duyuyoruz! Referansınızla sistemimize katılan işletmeler sayesinde bu ayki <strong className="text-white">₺{referralCredits.toLocaleString('tr-TR')}</strong> tutarındaki kullanım ücretiniz bizden. Birlikte daha güçlüyüz! 🚀</span>
+                         </p>
+                     </div>
+                 )}
+
+                 <div className="text-[10px] text-slate-500 font-medium pt-3 border-t border-white/5 mt-auto flex justify-between items-center">
+                    <div>
+                        <span className="block text-slate-400 font-bold mb-0.5">Sistem Taban Ücreti:</span>
+                        ₺{baseMonthlyFee.toLocaleString('tr-TR')} / Ay
+                    </div>
+                    <div className="text-right">
+                        <span className="block text-slate-400 font-bold mb-0.5">Tüm Zamanlar:</span>
+                        ₺{usagePaid.toLocaleString('tr-TR')}
+                    </div>
                  </div>
               </div>
             )}
