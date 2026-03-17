@@ -23,14 +23,68 @@ export default function SupportTab({ handleAction, isSaving }: any) {
     setExpandedTicketId(prev => (prev === id ? null : id));
   };
 
-  // 🚀 YENİ: Tehlikeli döngü kaldırıldı, sadece kesin isimlere bakılıyor
+  // 🚀 YENİ: Süper Gelişmiş Token Bulucu
   const getValidToken = () => {
-    let token = localStorage.getItem('token') || localStorage.getItem('userToken') || '';
-    if (!token) return '';
+    if (typeof window === 'undefined') return '';
+    
+    let token = '';
+    let source = '';
+
+    // 1. Olası localStorage anahtarları
+    const keys = ['token', 'userToken', 'accessToken', 'access_token', 'jwt', 'auth_token'];
+    for (const k of keys) {
+      const val = localStorage.getItem(k);
+      if (val) {
+        token = val;
+        source = `localStorage (${k})`;
+        break;
+      }
+    }
+
+    // 2. Eğer localStorage'da obje olarak saklanıyorsa (örn: user: { token: '...' })
+    if (!token) {
+      try {
+        const userObjStr = localStorage.getItem('user') || localStorage.getItem('session');
+        if (userObjStr) {
+          const userObj = JSON.parse(userObjStr);
+          if (userObj && userObj.token) {
+            token = userObj.token;
+            source = 'localStorage (user.token)';
+          } else if (userObj && userObj.accessToken) {
+            token = userObj.accessToken;
+            source = 'localStorage (user.accessToken)';
+          }
+        }
+      } catch(e) {}
+    }
+
+    // 3. Cookies (Çerezler)
+    if (!token) {
+      const cookieNames = ['token', 'accessToken', 'next-auth.session-token'];
+      for (const cName of cookieNames) {
+        const match = document.cookie.match(new RegExp('(^| )' + cName + '=([^;]+)'));
+        if (match) {
+          token = match[2];
+          source = `cookie (${cName})`;
+          break;
+        }
+      }
+    }
+
+    if (!token) {
+      console.warn("⚠️ SupportTab: Sistemde hiçbir yetki token'ı bulunamadı!");
+      return '';
+    }
+
+    // Token içindeki gereksiz tırnakları ve Bearer yazısını temizle
     token = token.replace(/^"|"$/g, '');
     if (token.toLowerCase().startsWith('bearer ')) {
-        token = token.substring(7).trim();
+      token = token.substring(7).trim();
     }
+
+    // Sorunu anlamak için konsola ipucu yazdır (Sadece ilk 10 karakteri göster ki güvenlik riski olmasın)
+    console.log(`🎟️ SupportTab Token Bulundu! Kaynak: ${source}. Token: ${token.substring(0, 10)}...`);
+    
     return token;
   };
 
@@ -181,7 +235,6 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                 "Content-Type": "application/json",
                 "Authorization": token ? `Bearer ${token}` : '' 
             },
-            // 🚀 YENİ: Worker şüphelenmesin diye slug açıkça gövdeye eklendi
             body: JSON.stringify({ slug: activeSlug, type: ticketType, message })
         });
 
@@ -193,7 +246,6 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                 setActiveView('history'); 
             }, 2000);
         } else {
-            // 🚀 YENİ: 403 veya başka bir hata gelirse ekranda bilet gibi gösterecek
             let exactError = 'Bilinmeyen Hata';
             try {
                 const errData = await res.json();
