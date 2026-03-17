@@ -12,18 +12,21 @@ export default function MasterbossDashboard() {
   const [activeTab, setActiveTab] = useState("companies");
   const [replyTexts, setReplyTexts] = useState({});
 
-  // Subscription Control States
-  const [showManageModal, setShowManageModal] = useState(false);
-  const [selectedCompany, setSelectedCompany] = useState(null);
-  const [manageForm, setManageForm] = useState({ subscriptionStatus: '', freeMonths: '', customDiscount: '', cancelTrial: false });
-  const [isSaving, setIsSaving] = useState(false);
+// Subscription Control States
+const [showManageModal, setShowManageModal] = useState(false);
+const [selectedCompany, setSelectedCompany] = useState(null);
+const [manageForm, setManageForm] = useState({ subscriptionStatus: '', freeMonths: '', customDiscount: '', cancelTrial: false });
+const [isSaving, setIsSaving] = useState(false);
 
-  // 🚀 YENİ: Bilgi Modalı Stateleri
-  const [showInfoModal, setShowInfoModal] = useState(false);
-  const [infoCompany, setInfoCompany] = useState(null);
+// 🚀 YENİ: Bilgi Modalı Stateleri
+const [showInfoModal, setShowInfoModal] = useState(false);
+const [infoCompany, setInfoCompany] = useState(null);
+const [infoTab, setInfoTab] = useState("genel");
+const [infoDetails, setInfoDetails] = useState(null);
+const [infoLoading, setInfoLoading] = useState(false);
 
-  // 🚀 YENİ: Ticket Modalı State'i
-  const [selectedTicket, setSelectedTicket] = useState(null);
+// 🚀 YENİ: Ticket Modalı State'i
+const [selectedTicket, setSelectedTicket] = useState(null);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -295,13 +298,33 @@ export default function MasterbossDashboard() {
                       <td className="px-6 py-4 text-right">
                         {/* 🚀 YENİ: BİLGİ BUTONU */}
                         <button 
-                          onClick={() => { setInfoCompany(c); setShowInfoModal(true); }}
+                          onClick={async () => { 
+                            setInfoCompany(c); 
+                            setInfoTab("genel");
+                            setInfoDetails(null);
+                            setShowInfoModal(true); 
+                            
+                            setInfoLoading(true);
+                            try {
+                              const token = localStorage.getItem("masterbossToken");
+                              const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+                              const res = await fetch(`${BASE_URL}/masterboss-company-details?slug=${c.slug}`, {
+                                headers: { "Authorization": `Bearer ${token}` }
+                              });
+                              const json = await res.json();
+                              if(json.success) setInfoDetails(json.stats);
+                            } catch(e) {
+                              toast.error("Detaylar alınamadı");
+                            } finally {
+                              setInfoLoading(false);
+                            }
+                          }}
                           className="text-blue-500 hover:text-blue-400 text-sm font-medium transition-colors mr-4"
                         >
                           Bilgi
                         </button>
                         
-                        <button 
+                        <button
                           onClick={() => { 
                             setSelectedCompany(c); 
                             setManageForm({ 
@@ -599,15 +622,15 @@ export default function MasterbossDashboard() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 w-full max-w-2xl shadow-2xl relative max-h-[90vh] overflow-y-auto"
+            className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 w-full max-w-3xl shadow-2xl relative max-h-[90vh] flex flex-col"
           >
             <button 
               onClick={() => setShowInfoModal(false)}
-              className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors text-sm font-medium"
+              className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors text-sm font-medium z-10"
             >
               Kapat
             </button>
-            <div className="flex items-center gap-4 mb-6">
+            <div className="flex items-center gap-4 mb-6 shrink-0">
               {infoCompany.logo ? (
                 <img src={infoCompany.logo} alt="Logo" className="w-16 h-16 rounded-xl object-cover bg-neutral-800" />
               ) : (
@@ -619,23 +642,108 @@ export default function MasterbossDashboard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InfoBox label="Sahibi / Yetkili" value={infoCompany.owner_name} />
-              <InfoBox label="Sektör" value={infoCompany.sector} />
-              <InfoBox label="Kayıt Tarihi" value={new Date(infoCompany.created_at).toLocaleDateString('tr-TR')} />
-              <InfoBox label="Vergi Bilgileri" value={infoCompany.tax_info} />
-              <InfoBox label="Açık Adres" value={infoCompany.address} fullWidth />
-              
-              <div className="col-span-1 md:col-span-2 border-t border-neutral-800 my-2 pt-4">
-                <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-4">İletişim Bilgileri</h4>
-              </div>
-              
-              <InfoBox label="E-Posta (Admin)" value={infoCompany.owner_email || 'Belirtilmemiş'} />
-              <InfoBox label="Ana Telefon" value={infoCompany.phone} />
-              <InfoBox label="WhatsApp" value={infoCompany.whatsapp_phone} />
-              <InfoBox label="Acil Durum Hattı" value={infoCompany.emergency_phone} />
-              <InfoBox label="Sabit Hat" value={infoCompany.landline_phone} />
-              <InfoBox label="Web Sitesi" value={infoCompany.website} />
+            {/* Modal Tabs */}
+            <div className="flex items-center gap-2 mb-4 border-b border-neutral-800 pb-4 shrink-0 overflow-x-auto scrollbar-hide">
+              <button onClick={() => setInfoTab("genel")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${infoTab === "genel" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Genel Bilgiler</button>
+              <button onClick={() => setInfoTab("istatistik")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${infoTab === "istatistik" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Sistem & Kasa Kullanımı</button>
+              <button onClick={() => setInfoTab("abonelik")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${infoTab === "abonelik" ? "bg-rose-500 text-white" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Abonelik & Gelir</button>
+            </div>
+
+            <div className="overflow-y-auto pr-2 scrollbar-hide flex-1">
+              {infoTab === "genel" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <InfoBox label="Sahibi / Yetkili" value={infoCompany.owner_name} />
+                  <InfoBox label="Sektör" value={infoCompany.sector} />
+                  <InfoBox label="Kayıt Tarihi" value={new Date(infoCompany.created_at).toLocaleDateString('tr-TR')} />
+                  <InfoBox label="Vergi Bilgileri" value={infoCompany.tax_info} />
+                  <InfoBox label="Açık Adres" value={infoCompany.address} fullWidth />
+                  
+                  <div className="col-span-1 md:col-span-2 border-t border-neutral-800 my-2 pt-4">
+                    <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-4">İletişim Bilgileri</h4>
+                  </div>
+                  
+                  <InfoBox label="E-Posta (Admin)" value={infoCompany.owner_email || 'Belirtilmemiş'} />
+                  <InfoBox label="Ana Telefon" value={infoCompany.phone} />
+                  <InfoBox label="WhatsApp" value={infoCompany.whatsapp_phone} />
+                  <InfoBox label="Acil Durum Hattı" value={infoCompany.emergency_phone} />
+                  <InfoBox label="Sabit Hat" value={infoCompany.landline_phone} />
+                  <InfoBox label="Web Sitesi" value={infoCompany.website} />
+                </div>
+              )}
+
+              {infoTab === "istatistik" && (
+                <div>
+                  {infoLoading ? (
+                    <div className="flex items-center justify-center py-12 text-neutral-500 text-sm">Veriler yükleniyor...</div>
+                  ) : infoDetails ? (
+                    <div className="space-y-6">
+                      <div>
+                        <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-3">İş Yükü ve Operasyon</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          <InfoBox label="Aylık İş Kaydı" value={infoDetails.jobs.monthly} />
+                          <InfoBox label="Yıllık İş Kaydı" value={infoDetails.jobs.yearly} />
+                          <InfoBox label="Toplam İş Kaydı" value={infoDetails.jobs.total} />
+                          <InfoBox label="Personel Sayısı" value={infoDetails.staff} />
+                          <InfoBox label="Kayıtlı Varlık" value={infoDetails.assets} />
+                          <InfoBox label="Stok Kalemi" value={infoDetails.stock} />
+                        </div>
+                      </div>
+                      
+                      <div className="border-t border-neutral-800 pt-4">
+                        <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-3">Firma İçi Finansal Durum (Kasa)</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <InfoBox label="Toplam Gelir (Tahsilat)" value={`₺${infoDetails.finances.income.toLocaleString('tr-TR')}`} />
+                          <InfoBox label="Toplam Gider (Harcama)" value={`₺${infoDetails.finances.expense.toLocaleString('tr-TR')}`} />
+                          <div className={`p-4 rounded-xl border ${infoDetails.finances.net >= 0 ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-rose-500/10 border-rose-500/20'}`}>
+                             <div className="text-xs font-medium text-neutral-500 mb-1">Net Kasa (İçerideki Para)</div>
+                             <div className={`text-lg font-bold ${infoDetails.finances.net >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>₺{infoDetails.finances.net.toLocaleString('tr-TR')}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-neutral-500 text-sm">Veri bulunamadı.</div>
+                  )}
+                </div>
+              )}
+
+              {infoTab === "abonelik" && (
+                <div className="space-y-4">
+                   <div className="bg-neutral-800/50 p-5 rounded-2xl border border-neutral-800">
+                      <div className="text-sm text-neutral-400 mb-1">Abonelik Durumu</div>
+                      <div className="text-lg font-bold text-white mb-4">
+                        {infoCompany.subscription_status === 'active' ? 'Aktif Üye' : 
+                         infoCompany.subscription_status === 'trialing' ? 'Deneme Sürümünde' : 'Ödeme Bekliyor / Kısıtlı'}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-neutral-700/50 pt-4">
+                         <div>
+                           <div className="text-xs text-neutral-500 mb-1">Özel Tanımlı Fiyat (Aylık)</div>
+                           <div className="text-sm font-medium text-amber-400">{infoCompany.custom_base_price ? `₺${infoCompany.custom_base_price}` : 'Standart Tarife (Örn: 3000₺)'}</div>
+                         </div>
+                         <div>
+                           <div className="text-xs text-neutral-500 mb-1">Tanımlı Hediye / Ücretsiz Ay</div>
+                           <div className="text-sm font-medium text-blue-400">{infoCompany.free_months_balance || 0} Ay</div>
+                         </div>
+                         <div>
+                           <div className="text-xs text-neutral-500 mb-1">Deneme Sürümü Bitişi</div>
+                           <div className="text-sm font-medium text-white">{infoCompany.trial_ends_at ? new Date(infoCompany.trial_ends_at).toLocaleDateString('tr-TR') : '-'}</div>
+                         </div>
+                         <div>
+                           <div className="text-xs text-neutral-500 mb-1">Sonraki Kesim Tarihi</div>
+                           <div className="text-sm font-medium text-white">{infoCompany.billing_cycle_anchor ? new Date(infoCompany.billing_cycle_anchor).toLocaleDateString('tr-TR') : '-'}</div>
+                         </div>
+                      </div>
+                   </div>
+
+                   <div className="bg-rose-500/5 p-4 rounded-xl border border-rose-500/20">
+                     <div className="flex items-center gap-3">
+                       <BarChart3 className="w-5 h-5 text-rose-400" />
+                       <div className="text-sm text-rose-200">Tahmini Toplam Masterboss Ödemesi özelliği sonraki güncellemelerde PayTR/Iyzico entegrasyonu ile otomatik hesaplanacaktır. Şu an firmaların kendi kasaları izlenmektedir.</div>
+                     </div>
+                   </div>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>
