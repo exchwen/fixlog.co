@@ -1,6 +1,5 @@
 'use client';
 
-// YENİ: useEffect, useState ve WifiOff eklendi
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Lightbulb, Wrench, Send, Loader2, CheckCircle, AlertTriangle, WifiOff, History, Clock } from 'lucide-react';
@@ -10,15 +9,11 @@ export default function SupportTab({ handleAction, isSaving }: any) {
   const [message, setMessage] = useState('');
   const [modalState, setModalState] = useState<'idle' | 'success' | 'error'>('idle');
 
-  // Çevrimdışı kontrolü için State
   const [isOffline, setIsOffline] = useState(false);
-
-  // Sekme kontrolü ve geçmiş bilet listesi için stateler
   const [activeView, setActiveView] = useState<'new' | 'history'>('new');
   const [myTickets, setMyTickets] = useState<any[]>([]);
   const [isLoadingTickets, setIsLoadingTickets] = useState(false);
 
-  // Firma içi yanıt gönderme stateleri
   const [replyMessageText, setReplyMessageText] = useState<{ [key: string]: string }>({});
   const [isReplying, setIsReplying] = useState(false);
   const [expandedTicketId, setExpandedTicketId] = useState<string | null>(null);
@@ -27,14 +22,40 @@ export default function SupportTab({ handleAction, isSaving }: any) {
     setExpandedTicketId(prev => (prev === id ? null : id));
   };
 
+  // 🚀 YENİ: Akıllı Token Bulucu Fonksiyon
+  const getValidToken = () => {
+    let token = '';
+    // 1. Önce klasik isimleri dene
+    token = localStorage.getItem('token') || localStorage.getItem('userToken') || localStorage.getItem('authToken') || '';
+    
+    // 2. Bulamazsa veya geçersizse, tüm localStorage'ı tarayıp JWT (eyJ) ara
+    if (!token || !token.includes('eyJ')) {
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            const val = localStorage.getItem(key || '') || '';
+            // JWT tokenlar her zaman "eyJ" ile başlar
+            if (val.includes('eyJ')) {
+                token = val;
+                break;
+            }
+        }
+    }
+
+    // 3. Token'ı temizle (tırnakları ve varsa 'Bearer ' kelimesini at)
+    token = token.replace(/^"|"$/g, '');
+    if (token.toLowerCase().startsWith('bearer ')) {
+        token = token.substring(7).trim();
+    }
+    return token;
+  };
+
   const fetchMyTickets = async () => {
     setIsLoadingTickets(true);
     try {
-      let token = localStorage.getItem('token') || localStorage.getItem('userToken') || '';
-      token = token.replace(/^"|"$/g, ''); 
+      const token = getValidToken();
 
       const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
-      const BASE_URL = rawBaseUrl.replace(/\/$/, ""); // Sondaki slash temizliği
+      const BASE_URL = rawBaseUrl.replace(/\/$/, ""); 
 
       const res = await fetch(`${BASE_URL}/get-my-tickets?t=${Date.now()}`, {
         method: 'GET',
@@ -44,14 +65,21 @@ export default function SupportTab({ handleAction, isSaving }: any) {
         }
       });
 
-      // 🚀 YENİ: Akıllı Hata Bildirim Sistemi (Senin için özel yapıldı)
-      // Eğer Vercel güncellendi ama Cloudflare Worker güncellenmediyse bunu ekranda göreceksin
+      // 🚀 YENİ: 401 Hatası gelirse Worker'ın tam olarak "neden" reddettiğini okur
       if (!res.ok) {
-          const errorText = await res.text();
+          let exactReason = `Hata Kodu: ${res.status}`;
+          try {
+              const errData = await res.json();
+              exactReason = errData.reason || errData.error || exactReason;
+          } catch(e) {
+              const errText = await res.text();
+              exactReason = `${exactReason} - Detay: ${errText.substring(0, 50)}`;
+          }
+
           setMyTickets([{ 
               id: 'sistem-hatasi-1', 
-              type: '⚠️ Bağlantı Sorunu', 
-              message: `Arka uç (Worker) yanıt vermedi. Hata Kodu: ${res.status}. Lütfen güncel worker.js dosyasının Cloudflare'a başarıyla yüklendiğinden (deploy) emin ol. Detay: ${errorText.substring(0, 50)}`, 
+              type: '⚠️ Yetki Hatası (401)', 
+              message: `Sunucu kimliği reddetti. Sebep: ${exactReason}`, 
               status: 'Açık',
               created_at: new Date().toISOString()
           }]);
@@ -64,21 +92,19 @@ export default function SupportTab({ handleAction, isSaving }: any) {
       if (Array.isArray(data)) {
         setMyTickets(data);
       } else {
-         // Veri geldi ama dizi değilse
          setMyTickets([{ 
             id: 'sistem-hatasi-2', 
             type: '⚠️ Veri Okuma Sorunu', 
-            message: `Veritabanından talepler dizi olarak dönmedi. Dönen veri formatı hatalı.`, 
+            message: `Veritabanından talepler dizi olarak dönmedi.`, 
             status: 'Açık',
             created_at: new Date().toISOString()
         }]);
       }
     } catch (e: any) {
-        // Tamamen çökerse
         setMyTickets([{ 
             id: 'sistem-hatasi-3', 
             type: '⚠️ Kritik Çökme', 
-            message: `İstek atılırken tarayıcıda bir şeyler ters gitti: ${e.message}`, 
+            message: `İstek atılırken hata oluştu: ${e.message}`, 
             status: 'Açık',
             created_at: new Date().toISOString()
         }]);
@@ -94,7 +120,7 @@ export default function SupportTab({ handleAction, isSaving }: any) {
     setIsReplying(true);
     try {
         const activeSlug = localStorage.getItem('companySlug') || localStorage.getItem('slug') || '';
-        const token = localStorage.getItem('token') || localStorage.getItem('userToken');
+        const token = getValidToken(); // Yanıtlarken de akıllı bulucuyu kullan
         
         const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
         const BASE_URL = rawBaseUrl.replace(/\/$/, "");
