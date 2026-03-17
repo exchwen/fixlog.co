@@ -834,7 +834,7 @@ const handleStatusUpdate = async (newStatus) => {
   const pendingJobs = jobs.filter(j => j.status === 'Beklemede' || j.status === 'Gelecek' || j.status === 'Usta Bekliyor');
   const completedJobs = jobs.filter(j => j.status === 'Tamamlandı');
 
-  const isPastDue = data?.subscriptionStatus === 'past_due';
+  const isPastDue = data?.subscription_status === 'past_due';
 
   // 🚀 EKLENDİ: Paywall kontrolü. Eğer süre bittiyse (past_due) veya iptal edildiyse (canceled) arkadaki HİÇBİR ŞEYİ yükleme. Sadece siyah karartılmış ekranı ver.
   if (isPastDue || data?.subscription_status === 'canceled') {

@@ -457,7 +457,7 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
     'Usta Bekliyor': 'bg-indigo-100 text-indigo-700 border-indigo-200' 
   };
 
-  const isPastDue = data?.subscriptionStatus === 'past_due';
+  const isPastDue = data?.subscription_status === 'past_due';
 
   // 🚀 EKLENDİ: Paywall kontrolü. Eğer süre bittiyse (past_due) veya iptal edildiyse (canceled) arkadaki HİÇBİR ŞEYİ yükleme. Sadece siyah karartılmış ekranı ver.
   if (isPastDue || data?.subscription_status === 'canceled') {
