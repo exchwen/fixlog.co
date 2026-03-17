@@ -3,7 +3,7 @@
 // YENİ: useEffect, useState ve WifiOff eklendi
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Lightbulb, Wrench, Send, Loader2, CheckCircle, AlertTriangle, WifiOff } from 'lucide-react';
+import { MessageSquare, Lightbulb, Wrench, Send, Loader2, CheckCircle, AlertTriangle, WifiOff, History, Clock } from 'lucide-react';
 
 export default function SupportTab({ handleAction, isSaving }: any) {
   const [ticketType, setTicketType] = useState('Öneri/İstek');
@@ -12,6 +12,32 @@ export default function SupportTab({ handleAction, isSaving }: any) {
 
   // Çevrimdışı kontrolü için State
   const [isOffline, setIsOffline] = useState(false);
+
+  // 🚀 YENİ: Sekme kontrolü ve geçmiş bilet listesi için stateler
+  const [activeView, setActiveView] = useState<'new' | 'history'>('new');
+  const [myTickets, setMyTickets] = useState<any[]>([]);
+  const [isLoadingTickets, setIsLoadingTickets] = useState(false);
+
+  const fetchMyTickets = async () => {
+    setIsLoadingTickets(true);
+    try {
+      const activeSlug = localStorage.getItem('companySlug');
+      const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+      const res = await fetch(`${BASE_URL}/get-my-tickets?slug=${activeSlug}`);
+      const data = await res.json();
+      setMyTickets(data);
+    } catch (e) {
+      console.error("Biletler çekilemedi:", e);
+    } finally {
+      setIsLoadingTickets(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeView === 'history') {
+      fetchMyTickets();
+    }
+  }, [activeView]);
 
   // İnternet durumunu dinleyen useEffect
   useEffect(() => {
@@ -52,7 +78,11 @@ export default function SupportTab({ handleAction, isSaving }: any) {
     if (success) {
       setModalState('success');
       setMessage('');
-      setTimeout(() => setModalState('idle'), 3000);
+      // 🚀 YENİ: Başarılı olunca geçmiş talepler sekmesine geçir ve listeyi yenile
+      setTimeout(() => {
+        setModalState('idle');
+        setActiveView('history');
+      }, 2000);
     } else {
       setModalState('error');
       setTimeout(() => setModalState('idle'), 3000);
@@ -96,8 +126,25 @@ export default function SupportTab({ handleAction, isSaving }: any) {
             </div>
         </div>
 
-        {/* SAĞ TARAF - FORM */}
-        <div className="p-5 sm:p-8 md:w-2/3 flex flex-col justify-center">
+        {/* SAĞ TARAF - FORM VE GEÇMİŞ */}
+        <div className="p-5 sm:p-8 md:w-2/3 flex flex-col justify-start">
+            
+            {/* 🚀 YENİ: SEKMELER (TABS) */}
+            <div className="flex bg-slate-100 p-1 rounded-xl mb-6 w-fit border border-slate-200">
+              <button 
+                onClick={() => setActiveView('new')}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeView === 'new' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                <Send size={14} /> Yeni Talep
+              </button>
+              <button 
+                onClick={() => setActiveView('history')}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeView === 'history' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                <History size={14} /> Geçmiş Taleplerim
+              </button>
+            </div>
+
             <AnimatePresence mode="wait">
                 {modalState === 'success' ? (
                     <motion.div 
@@ -129,14 +176,14 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                         <p className="text-slate-500 mb-6 font-medium px-4 text-sm">Bağlantı hatası nedeniyle talebiniz iletilemedi. Lütfen daha sonra tekrar deneyin.</p>
                         <button onClick={() => setModalState('idle')} className="bg-slate-900 text-white px-8 py-3 rounded-xl font-bold active:scale-95 transition-all shadow-md">Tekrar Dene</button>
                     </motion.div>
-                ) : (
-                    <motion.form 
-                        key="form"
-                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        onSubmit={handleSubmit} 
-                        className="space-y-6"
-                    >
-                        {/* KONU SEÇİMİ */}
+                ) : activeView === 'new' ? (
+                  <motion.form 
+                      key="form"
+                      initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
+                      onSubmit={handleSubmit} 
+                      className="space-y-6"
+                  >
+                      {/* KONU SEÇİMİ */}
                         <div>
                             <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Ne hakkında yazmak istersiniz?</label>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -184,6 +231,50 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                             </button>
                         </div>
                     </motion.form>
+                ) : (
+                    // 🚀 YENİ: GEÇMİŞ TALEPLER LİSTESİ
+                    <motion.div 
+                      key="history"
+                      initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}
+                      className="space-y-4 h-[400px] overflow-y-auto pr-2 scrollbar-hide"
+                    >
+                      {isLoadingTickets ? (
+                        <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-blue-500" /></div>
+                      ) : myTickets.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                          <History size={40} className="mb-3 opacity-20" />
+                          <p className="text-sm font-medium">Henüz bir destek talebi oluşturmadınız.</p>
+                        </div>
+                      ) : (
+                        myTickets.map(ticket => (
+                          <div key={ticket.id} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="font-bold text-sm text-slate-800 flex items-center gap-2">
+                                {ticket.type} 
+                              </div>
+                              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${ticket.status === 'Çözüldü' || ticket.status === 'Resolved' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                                {ticket.status === 'Çözüldü' || ticket.status === 'Resolved' ? 'Çözüldü' : 'İnceleniyor'}
+                              </span>
+                            </div>
+                            <p className="text-sm text-slate-600 mb-3">{ticket.message}</p>
+                            
+                            {/* MASTERBOSS YANITI (Eğer Varsa) */}
+                            {ticket.admin_reply && (
+                              <div className="mt-3 bg-blue-50 border border-blue-100 p-3 rounded-xl relative">
+                                <div className="text-[10px] font-black text-blue-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                  <CheckCircle size={12} /> Masterboss Yanıtı
+                                </div>
+                                <p className="text-sm text-blue-900 font-medium">{ticket.admin_reply}</p>
+                              </div>
+                            )}
+
+                            <div className="text-[10px] text-slate-400 mt-3 flex items-center gap-1 font-medium">
+                              <Clock size={12} /> {new Date(ticket.created_at).toLocaleString('tr-TR')}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </motion.div>
                 )}
             </AnimatePresence>
         </div>

@@ -10,6 +10,7 @@ export default function MasterbossDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("companies");
+  const [replyTexts, setReplyTexts] = useState({});
 
   // Subscription Control States
   const [showManageModal, setShowManageModal] = useState(false);
@@ -103,11 +104,13 @@ export default function MasterbossDashboard() {
     }
   };
 
-  const handleResolveTicket = async (ticketId) => {
+  const handleResolveTicket = async (ticket) => {
     const token = localStorage.getItem("masterbossToken");
     if (!token) return toast.error("Yetkisiz işlem!");
 
-    const toastId = toast.loading("İşleniyor...");
+    const replyMessage = replyTexts[ticket.id] || "";
+    const toastId = toast.loading("Yanıt iletiliyor...");
+    
     try {
       const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
       const res = await fetch(`${BASE_URL}/masterboss-resolve-ticket`, {
@@ -116,16 +119,15 @@ export default function MasterbossDashboard() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ ticketId })
+        body: JSON.stringify({ ticketId: ticket.id, companySlug: ticket.company_slug, replyMessage })
       });
       const result = await res.json();
       
       if (result.success) {
-        toast.success("Talep çözüldü olarak işaretlendi!", { id: toastId });
-        // Update local state
+        toast.success("Talep yanıtlandı ve çözüldü!", { id: toastId });
         setData(prev => ({
           ...prev,
-          tickets: prev.tickets.map(t => t.id === ticketId ? { ...t, status: 'Resolved' } : t)
+          tickets: prev.tickets.map(t => t.id === ticket.id ? { ...t, status: 'Resolved', admin_reply: replyMessage } : t)
         }));
       } else {
         toast.error(result.error || "Hata oluştu!", { id: toastId });
@@ -274,19 +276,38 @@ export default function MasterbossDashboard() {
                           {t.status === 'Resolved' ? 'Çözüldü' : 'Bekliyor'}
                         </span>
                       </div>
-                      <p className="text-sm text-neutral-300 line-clamp-2">{t.message}</p>
+                      <p className="text-sm text-neutral-300 mb-3">{t.message}</p>
                       
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-neutral-800/50">
-                        <div className="text-xs text-neutral-500">{new Date(t.created_at).toLocaleString('tr-TR')}</div>
-                        {t.status !== 'Resolved' && (
-                          <button 
-                            onClick={() => handleResolveTicket(t.id)}
-                            className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors border border-emerald-500/20"
-                          >
-                            Çözüldü İşaretle
-                          </button>
-                        )}
-                      </div>
+                      {t.status !== 'Resolved' ? (
+                        <div className="mt-4 pt-4 border-t border-neutral-800/50 space-y-3">
+                          <textarea
+                            value={replyTexts[t.id] || ""}
+                            onChange={(e) => setReplyTexts(prev => ({ ...prev, [t.id]: e.target.value }))}
+                            placeholder="Firmaya iletilecek yanıtınızı buraya yazın..."
+                            className="w-full bg-neutral-950 border border-neutral-700 text-white text-sm rounded-xl p-3 focus:border-emerald-500 outline-none resize-none transition-colors"
+                            rows="2"
+                          />
+                          <div className="flex items-center justify-between">
+                            <div className="text-xs text-neutral-500">{new Date(t.created_at).toLocaleString('tr-TR')}</div>
+                            <button 
+                              onClick={() => handleResolveTicket(t)}
+                              className="bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors"
+                            >
+                              Yanıtla ve Çöz
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-4 pt-4 border-t border-neutral-800/50">
+                          {t.admin_reply && (
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl mb-3">
+                              <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider mb-1">Yanıtınız</div>
+                              <div className="text-sm text-emerald-100">{t.admin_reply}</div>
+                            </div>
+                          )}
+                          <div className="text-xs text-neutral-500 text-right">{new Date(t.created_at).toLocaleString('tr-TR')}</div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
