@@ -13,12 +13,12 @@ export default function SupportTab({ handleAction, isSaving }: any) {
   // Çevrimdışı kontrolü için State
   const [isOffline, setIsOffline] = useState(false);
 
-  // 🚀 YENİ: Sekme kontrolü ve geçmiş bilet listesi için stateler
+  // Sekme kontrolü ve geçmiş bilet listesi için stateler
   const [activeView, setActiveView] = useState<'new' | 'history'>('new');
   const [myTickets, setMyTickets] = useState<any[]>([]);
   const [isLoadingTickets, setIsLoadingTickets] = useState(false);
 
-  // 🚀 YENİ: Firma içi yanıt gönderme stateleri
+  // Firma içi yanıt gönderme stateleri
   const [replyMessageText, setReplyMessageText] = useState<{ [key: string]: string }>({});
   const [isReplying, setIsReplying] = useState(false);
   const [expandedTicketId, setExpandedTicketId] = useState<string | null>(null);
@@ -31,11 +31,11 @@ export default function SupportTab({ handleAction, isSaving }: any) {
     setIsLoadingTickets(true);
     try {
       let token = localStorage.getItem('token') || localStorage.getItem('userToken') || '';
-      token = token.replace(/^"|"$/g, ''); // 🚀 ÇÖZÜM: Token temizliği garantilendi
+      token = token.replace(/^"|"$/g, ''); 
 
-      const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+      const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+      const BASE_URL = rawBaseUrl.replace(/\/$/, ""); // Sondaki slash temizliği
 
-      // 🚀 ÇÖZÜM: GET metodu eklendi, Content-Type tanımlandı ve backend doğrudan token'daki slug'ı baz alacağı için URL'den manipüle edilebilir slug parametresi kaldırıldı.
       const res = await fetch(`${BASE_URL}/get-my-tickets?t=${Date.now()}`, {
         method: 'GET',
         headers: { 
@@ -44,17 +44,44 @@ export default function SupportTab({ handleAction, isSaving }: any) {
         }
       });
 
+      // 🚀 YENİ: Akıllı Hata Bildirim Sistemi (Senin için özel yapıldı)
+      // Eğer Vercel güncellendi ama Cloudflare Worker güncellenmediyse bunu ekranda göreceksin
+      if (!res.ok) {
+          const errorText = await res.text();
+          setMyTickets([{ 
+              id: 'sistem-hatasi-1', 
+              type: '⚠️ Bağlantı Sorunu', 
+              message: `Arka uç (Worker) yanıt vermedi. Hata Kodu: ${res.status}. Lütfen güncel worker.js dosyasının Cloudflare'a başarıyla yüklendiğinden (deploy) emin ol. Detay: ${errorText.substring(0, 50)}`, 
+              status: 'Açık',
+              created_at: new Date().toISOString()
+          }]);
+          setIsLoadingTickets(false);
+          return;
+      }
+
       const data = await res.json();
 
       if (Array.isArray(data)) {
         setMyTickets(data);
       } else {
-        console.error("Dönen veri dizi değil, yetki veya veri hatası:", data);
-        setMyTickets([]);
+         // Veri geldi ama dizi değilse
+         setMyTickets([{ 
+            id: 'sistem-hatasi-2', 
+            type: '⚠️ Veri Okuma Sorunu', 
+            message: `Veritabanından talepler dizi olarak dönmedi. Dönen veri formatı hatalı.`, 
+            status: 'Açık',
+            created_at: new Date().toISOString()
+        }]);
       }
-    } catch (e) {
-      console.error("Geçmiş talepler çekilirken hata:", e);
-      setMyTickets([]);
+    } catch (e: any) {
+        // Tamamen çökerse
+        setMyTickets([{ 
+            id: 'sistem-hatasi-3', 
+            type: '⚠️ Kritik Çökme', 
+            message: `İstek atılırken tarayıcıda bir şeyler ters gitti: ${e.message}`, 
+            status: 'Açık',
+            created_at: new Date().toISOString()
+        }]);
     } finally {
       setIsLoadingTickets(false);
     }
@@ -66,10 +93,11 @@ export default function SupportTab({ handleAction, isSaving }: any) {
 
     setIsReplying(true);
     try {
-        // 🚀 ÇÖZÜM: Aynı korumayı yanıt bölümüne de uyguladık
         const activeSlug = localStorage.getItem('companySlug') || localStorage.getItem('slug') || '';
         const token = localStorage.getItem('token') || localStorage.getItem('userToken');
-        const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+        
+        const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+        const BASE_URL = rawBaseUrl.replace(/\/$/, "");
         
         const res = await fetch(`${BASE_URL}/reply-support-ticket`, {
             method: 'POST',
@@ -83,7 +111,6 @@ export default function SupportTab({ handleAction, isSaving }: any) {
         const result = await res.json();
         if (result.success) {
             setReplyMessageText(prev => ({ ...prev, [ticketId]: '' }));
-            // Sadece başarılıysa listeyi yenile
             await fetchMyTickets();
         }
     } catch(e) {
@@ -99,7 +126,6 @@ export default function SupportTab({ handleAction, isSaving }: any) {
     }
   }, [activeView]);
 
-  // İnternet durumunu dinleyen useEffect
   useEffect(() => {
     if (typeof navigator !== 'undefined') {
       setIsOffline(!navigator.onLine);
@@ -121,11 +147,8 @@ export default function SupportTab({ handleAction, isSaving }: any) {
 
     const activeSlug = localStorage.getItem('companySlug') || localStorage.getItem('slug') || '';
 
-    // Çevrimdışı/Offline Kuyruk Koruması Entegrasyonu
     if (isOffline) {
-       console.warn("İnternet bağlantısı yok. Destek talebi kuyruğa alındı.");
        const pending = JSON.parse(localStorage.getItem(`offline_actions_${activeSlug}`) || '[]');
-       // 🚀 YENİ: Kuyruğa atarken slug'ı unutmuyoruz!
        pending.push({ endpoint: 'add-support-ticket', body: { slug: activeSlug, type: ticketType, message }, timestamp: new Date().toISOString() });
        localStorage.setItem(`offline_actions_${activeSlug}`, JSON.stringify(pending));
        
@@ -135,13 +158,11 @@ export default function SupportTab({ handleAction, isSaving }: any) {
        return;
     }
 
-    // 🚀 YENİ: handleAction'a slug ekledik. Yoksa DB'ye kaydederken firma bilgisini bulamaz ve biletler firmaya listelenmez!
     const success = await handleAction('add-support-ticket', { slug: activeSlug, type: ticketType, message });
     
     if (success) {
       setModalState('success');
       setMessage('');
-      // 🚀 YENİ: Başarılı olunca geçmiş talepler sekmesine geçir ve listeyi yenile
       setTimeout(() => {
         setModalState('idle');
         setActiveView('history');
@@ -166,7 +187,6 @@ export default function SupportTab({ handleAction, isSaving }: any) {
         <div>
           <h3 className="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2 tracking-tight">
             Destek & Geri Bildirim Merkezi
-            {/* Offline durumu için küçük ikon. Span içine alındı. */}
             {isOffline && <span title="Çevrimdışı Mod"><WifiOff size={16} className="text-amber-500" /></span>}
           </h3>
           <p className="text-[11px] sm:text-xs font-medium text-slate-500 mt-1">İş Dökümü ekibine ulaşın. Fikirleriniz bizim için çok değerli.</p>
@@ -192,7 +212,6 @@ export default function SupportTab({ handleAction, isSaving }: any) {
         {/* SAĞ TARAF - FORM VE GEÇMİŞ */}
         <div className="p-5 sm:p-8 md:w-2/3 flex flex-col justify-start">
             
-            {/* 🚀 YENİ: SEKMELER (TABS) */}
             <div className="flex bg-slate-100 p-1 rounded-xl mb-6 w-fit border border-slate-200">
               <button 
                 onClick={() => setActiveView('new')}
@@ -220,7 +239,6 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                         </div>
                         <h3 className="text-2xl font-black text-slate-800 mb-2">Talebiniz Alındı!</h3>
                         <p className="text-slate-500 font-medium px-4 text-sm">
-                          {/* Çevrimdışı ise farklı mesaj gösterilir */}
                           {isOffline 
                             ? 'İnternet bağlantınız yok. Talebiniz cihaza kaydedildi, bağlantı sağlandığında ekibimize iletilecektir.' 
                             : 'Geri bildiriminiz İş Dökümü ekibine başarıyla iletildi. İlginiz için teşekkür ederiz.'}
@@ -246,18 +264,15 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                       onSubmit={handleSubmit} 
                       className="space-y-6"
                   >
-                      {/* KONU SEÇİMİ */}
                         <div>
                             <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Ne hakkında yazmak istersiniz?</label>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 {types.map((type) => {
-                                    // JSX Parsing hatasını engellemek için Icon değişkenine atandı
                                     const Icon = type.icon;
                                     return (
                                       <div 
                                           key={type.id}
                                           onClick={() => setTicketType(type.id)}
-                                          // YENİ: active:scale-95 eklendi (Mobil Dokunmatik Hissi)
                                           className={`cursor-pointer border rounded-xl p-4 sm:p-3 flex flex-row sm:flex-col items-center sm:text-center gap-3 sm:gap-0 transition-all active:scale-95 ${ticketType === type.id ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500/20 shadow-sm' : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50'}`}
                                       >
                                           <Icon size={24} className={`sm:mb-2 shrink-0 ${ticketType === type.id ? 'text-blue-600' : 'text-slate-400'}`} />
@@ -268,7 +283,6 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                             </div>
                         </div>
 
-                        {/* MESAJ ALANI */}
                         <div>
                             <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Mesajınız</label>
                             <textarea
@@ -281,9 +295,7 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                             ></textarea>
                         </div>
 
-                        {/* GÖNDER BUTONU */}
                         <div className="flex justify-end pt-2">
-                            {/* YENİ: Mobilde buton tam genişlik (w-full), masaüstünde normal (sm:w-auto) */}
                             <button 
                                 type="submit"
                                 disabled={isSaving || !message.trim()}
@@ -295,7 +307,6 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                         </div>
                     </motion.form>
                 ) : (
-                    // 🚀 YENİ: GEÇMİŞ TALEPLER LİSTESİ VE SOHBET
                     <motion.div 
                       key="history"
                       initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}
@@ -317,22 +328,21 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                           <div 
                             key={ticket.id} 
                             onClick={() => toggleTicket(ticket.id)}
-                            className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm cursor-pointer hover:shadow-md transition-all"
+                            className={`bg-white border rounded-2xl p-4 shadow-sm cursor-pointer hover:shadow-md transition-all ${ticket.id.startsWith('sistem-hatasi') ? 'border-rose-400 bg-rose-50' : 'border-slate-200'}`}
                           >
                             <div className="flex justify-between items-start mb-2">
-                              <div className="font-bold text-sm text-slate-800 flex items-center gap-2">
+                              <div className={`font-bold text-sm flex items-center gap-2 ${ticket.id.startsWith('sistem-hatasi') ? 'text-rose-700' : 'text-slate-800'}`}>
                                 {ticket.type} 
                               </div>
-                              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${ticket.status === 'Çözüldü' || ticket.status === 'Resolved' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${ticket.status === 'Çözüldü' || ticket.status === 'Resolved' ? 'bg-emerald-100 text-emerald-600' : (ticket.id.startsWith('sistem-hatasi') ? 'bg-rose-200 text-rose-800' : 'bg-amber-100 text-amber-600')}`}>
                                 {ticket.status === 'Çözüldü' || ticket.status === 'Resolved' ? 'Çözüldü' : 'Açık'}
                               </span>
                             </div>
                             
-                            <div className="text-sm text-slate-600 font-medium line-clamp-1 mb-2">
+                            <div className={`text-sm font-medium line-clamp-1 mb-2 ${ticket.id.startsWith('sistem-hatasi') ? 'text-rose-600' : 'text-slate-600'}`}>
                                 {ticket.message}
                             </div>
                             <div className="text-[10px] text-slate-400 mb-2 font-medium flex items-center gap-1">
-                                {/* 🚀 ÇÖZÜM: SQLite tarih formatındaki boşluğu 'T' ile değiştirerek Safari/iOS'ta "Invalid Date" çökmesini önledik */}
                                 <Clock size={12} /> {new Date(ticket.created_at ? ticket.created_at.replace(' ', 'T') : new Date()).toLocaleString('tr-TR')} • {replies.length} Yanıt
                             </div>
 
@@ -345,13 +355,11 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                                         onClick={(e) => e.stopPropagation()}
                                         className="overflow-hidden border-t border-slate-100 mt-3 pt-3"
                                     >
-                                        {/* Orijinal Mesaj */}
                                         <div className="bg-slate-50 p-3 rounded-xl mb-3 border border-slate-100">
                                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">İlk Mesajınız</div>
-                                            <p className="text-sm text-slate-700">{ticket.message}</p>
+                                            <p className={`text-sm ${ticket.id.startsWith('sistem-hatasi') ? 'text-rose-700 font-semibold' : 'text-slate-700'}`}>{ticket.message}</p>
                                         </div>
                                         
-                                        {/* 🚀 YENİ: SOHBET GEÇMİŞİ */}
                                         {replies.length > 0 && (
                                             <div className="space-y-2 mb-4 pl-3 ml-2 border-l-2 border-slate-200">
                                                {replies.map((reply: any, idx: number) => (
@@ -368,8 +376,7 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                                             </div>
                                         )}
 
-                                        {/* Eğer bilet açık ise firmaya yanıt yazma imkanı ver */}
-                                        {ticket.status !== 'Çözüldü' && ticket.status !== 'Resolved' && (
+                                        {ticket.status !== 'Çözüldü' && ticket.status !== 'Resolved' && !ticket.id.startsWith('sistem-hatasi') && (
                                             <div className="mt-3 pt-3 flex gap-2">
                                               <input
                                                  type="text"
