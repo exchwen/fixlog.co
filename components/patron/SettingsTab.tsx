@@ -531,29 +531,58 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
              <div className="flex-1 space-y-3 w-full">
                 <h4 className="font-black text-blue-800 text-sm">Sistem Kullanım Durumu</h4>
                 <p className="text-xs text-blue-700/80 font-medium leading-relaxed">
-                  İşletmenizin aktif abonelik durumunu ve faturasını buradan takip edebilir, kredi kartı ile güvenle ödeme yapabilirsiniz (Iyzico altyapısı ile korunmaktadır).
+                  İşletmenizin aktif abonelik durumunu ve faturasını buradan takip edebilir, kredi kartı ile güvenle ödeme yapabilirsiniz veya otomatik ödeme talimatı verebilirsiniz (Iyzico altyapısı ile korunmaktadır).
                 </p>
                 <div className="mt-4 flex flex-col sm:flex-row items-center gap-3">
                    <button 
                      onClick={() => {
-                        // İleride İyzico modalı veya ödeme sayfasına yönlendirecek
-                        alert('Ödeme altyapısı (Iyzico) entegrasyonu tamamlandığında bu buton aktif olacaktır.');
+                        // İleride İyzico Checkout formunu tetikleyecek kod
+                        alert('Güvenli Iyzico ödeme altyapısı entegre edildiğinde kart giriş ekranı burada açılacaktır.');
                      }}
                      className="bg-blue-600 text-white font-bold text-xs px-5 py-3 rounded-xl hover:bg-blue-700 shadow-sm active:scale-95 transition-all w-full sm:w-auto flex justify-center items-center gap-2"
                    >
-                     <CreditCard size={16} /> Şimdi Ödeme Yap
+                     <CreditCard size={16} /> Kart Bilgilerini Gir / Öde
                    </button>
                 </div>
              </div>
 
              <div className="flex-shrink-0 bg-white border border-blue-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
                 <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Durum</span>
-                <span className={`block text-lg font-black mb-1 ${data?.subscription_status === 'active' ? 'text-emerald-600' : data?.subscription_status === 'past_due' ? 'text-rose-600' : 'text-blue-600'}`}>
-                    {data?.subscription_status === 'active' ? 'Aktif' : data?.subscription_status === 'past_due' ? 'Ödeme Bekliyor' : 'Deneme Sürümü'}
-                </span>
-                <span className="block text-[10px] font-bold text-slate-500 uppercase">
-                    {data?.custom_base_price ? `Aylık: ₺${data.custom_base_price}` : 'Aylık: ₺3000'}
-                </span>
+                
+                {data?.subscription_status === 'trialing' && (
+                    <>
+                        <span className="block text-lg font-black mb-1 text-blue-600">Deneme Sürümü</span>
+                        {(() => {
+                            if (!data?.trial_ends_at) return <span className="block text-[10px] font-bold text-slate-500 uppercase">Aylık: Ücretsiz</span>;
+                            const diff = Math.ceil((new Date(data.trial_ends_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                            if (diff <= 0) return <span className="block text-[10px] font-bold text-rose-500 uppercase">Süreniz Doldu</span>;
+                            return <span className="block text-[10px] font-bold text-blue-500 uppercase">Kalan Süre: {diff} Gün</span>;
+                        })()}
+                    </>
+                )}
+
+                {data?.subscription_status === 'active' && (
+                    <>
+                        <span className="block text-lg font-black mb-1 text-emerald-600">Aktif</span>
+                        
+                        <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">
+                            Aylık: ₺{data?.custom_base_price ? data.custom_base_price : '3000'}
+                        </span>
+                        
+                        {(data?.free_months_balance || 0) > 0 && (
+                           <span className="block text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-tight bg-emerald-50 py-1.5 px-2 rounded-lg border border-emerald-200">
+                               🎁 Bu Ay Fatura Bizden!<br/>(Kalan Hediye: {data.free_months_balance} Ay)
+                           </span>
+                        )}
+                    </>
+                )}
+
+                {data?.subscription_status === 'past_due' && (
+                    <>
+                        <span className="block text-lg font-black mb-1 text-rose-600">Ödeme Bekliyor</span>
+                        <span className="block text-[10px] font-bold text-rose-500 uppercase">Hesap Kısıtlandı</span>
+                    </>
+                )}
              </div>
            </div>
         </div>
@@ -576,14 +605,14 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
                       <input 
                          type="text" 
                          readOnly 
-                         value={data?.referral_code || data?.referralCode || 'Oluşturuluyor...'} 
+                         value={data?.referralCode || data?.referral_code || 'Oluşturuluyor...'} 
                          className="px-4 py-2 font-black text-slate-800 text-sm outline-none bg-transparent w-full sm:w-40 text-center"
                       />
                    </div>
                    <button 
-                     disabled={!(data?.referral_code || data?.referralCode)}
+                     disabled={!(data?.referralCode || data?.referral_code)}
                      onClick={() => {
-                       navigator.clipboard.writeText(data?.referral_code || data?.referralCode || '');
+                       navigator.clipboard.writeText(data?.referralCode || data?.referral_code || '');
                        setModalState('success');
                        setTimeout(()=> setModalState('idle'), 2000);
                      }}

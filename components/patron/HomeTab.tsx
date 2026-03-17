@@ -1311,7 +1311,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                       </div>
                       <div className="flex-[2] flex flex-col justify-center">
                           <p className="text-[11px] text-indigo-100 font-medium leading-relaxed mb-3">
-                              Referans kodunuzla kayıt olan ve sistemi aktif kullanan her işletme için <strong>aylık {baseMonthlyFee.toLocaleString('tr-TR')} ₺</strong> tutarındaki kullanım faturanız bizden!
+                              Referans kodunuzla kayıt olan ve sistemi aktif kullanan her işletme için <strong>1 aylık ({baseMonthlyFee.toLocaleString('tr-TR')} ₺ değerinde)</strong> kullanım faturanız bizden!
                           </p>
                           <div className="flex items-center gap-2 bg-indigo-950/50 border border-indigo-500/30 rounded-lg p-1.5 pl-3">
                               <span className="text-xs font-black text-indigo-300 tracking-wider flex-1 truncate">{referralCode}</span>

@@ -459,12 +459,17 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
 
   const isPastDue = data?.subscriptionStatus === 'past_due';
 
+  // 🚀 EKLENDİ: Paywall kontrolü. Eğer süre bittiyse (past_due) veya iptal edildiyse (canceled) arkadaki HİÇBİR ŞEYİ yükleme. Sadece siyah karartılmış ekranı ver.
+  if (isPastDue || data?.subscription_status === 'canceled') {
+      return (
+          <div className="bg-neutral-950 min-h-screen">
+            <PaywallOverlay slug={slug} role="Yönetici" />
+          </div>
+      );
+  }
+
   return (
     <div className={`min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 manager-scope ${hasEmergency ? 'bg-rose-950' : 'bg-[#F8FAFC] text-slate-900'}`}>
-      
-      {isPastDue && (
-        <PaywallOverlay slug={slug} role="Yönetici" />
-      )}
       
       {/* YÖNETİCİ KISITLAMALARI İÇİN CSS (SİLME VE AYAR BUTONLARINI GİZLER) */}
       <style dangerouslySetInnerHTML={{__html: `

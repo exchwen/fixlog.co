@@ -836,13 +836,18 @@ const handleStatusUpdate = async (newStatus) => {
 
   const isPastDue = data?.subscriptionStatus === 'past_due';
 
+  // 🚀 EKLENDİ: Paywall kontrolü. Eğer süre bittiyse (past_due) veya iptal edildiyse (canceled) arkadaki HİÇBİR ŞEYİ yükleme. Sadece siyah karartılmış ekranı ver.
+  if (isPastDue || data?.subscription_status === 'canceled') {
+      return (
+          <div className="bg-neutral-950 min-h-screen">
+            <PaywallOverlay slug={slug} role="Usta" />
+          </div>
+      );
+  }
+
   return (
     <div className="min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 bg-[#F8FAFC] text-slate-900">
       
-      {isPastDue && (
-        <PaywallOverlay slug={slug} role="Usta" />
-      )}
-
       <div className="z-[300] lg:relative absolute">
         <WorkerSidebar activeTab={activeTab} setActiveTab={setActiveTab} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
       </div>

@@ -375,21 +375,26 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
 
   const isPastDue = data?.subscriptionStatus === 'past_due';
 
-  return (
-    <div className={`min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 ${hasEmergency ? 'bg-rose-950' : 'bg-[#F8FAFC] text-slate-900'}`}>
-      
-      {isPastDue && (
-        <PaywallOverlay 
-          slug={slug} 
-          role="Patron" 
-          onPayClick={() => {
-            // Gelecekte İyzico Checkout modalını açacak
-            alert("İyzico Ödeme Ekranı Yükleniyor...");
-          }} 
-        />
-      )}
-      
-      <AnimatePresence>
+  // 🚀 EKLENDİ: Paywall kontrolü. Eğer süre bittiyse (past_due) veya iptal edildiyse (canceled) arkadaki HİÇBİR ŞEYİ yükleme. Sadece siyah karartılmış ekranı ver.
+  if (isPastDue || data?.subscription_status === 'canceled') {
+    return (
+        <div className="bg-neutral-950 min-h-screen">
+          <PaywallOverlay 
+            slug={slug} 
+            role="Patron" 
+            onPayClick={() => {
+              // Gelecekte İyzico Checkout modalını açacak (Örneğin router.push(`/${slug}/checkout`))
+              alert("İyzico Ödeme Ekranı Yükleniyor...");
+            }} 
+          />
+        </div>
+    );
+}
+
+return (
+  <div className={`min-h-[100dvh] flex font-sans text-sm overflow-hidden relative selection:bg-blue-100 ${hasEmergency ? 'bg-rose-950' : 'bg-[#F8FAFC] text-slate-900'}`}>
+    
+    <AnimatePresence>
         {showPwaPrompt && !hasEmergency && activeTab === 'home' && (
            <motion.div 
              initial={{ y: 100 }} 
