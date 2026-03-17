@@ -30,8 +30,12 @@ export default function SupportTab({ handleAction, isSaving }: any) {
     try {
       const token = localStorage.getItem('token');
       const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
-      const res = await fetch(`${BASE_URL}/get-my-tickets?slug=${activeSlug}`, {
-        headers: { "Authorization": `Bearer ${token}` }
+      // 🚀 YENİ: Tarayıcının eski bilet listesini önbellekte tutmasını engellemek için cache-control ve zaman damgası eklendi
+      const res = await fetch(`${BASE_URL}/get-my-tickets?slug=${activeSlug}&t=${Date.now()}`, {
+        headers: { 
+            "Authorization": `Bearer ${token}`,
+            "Cache-Control": "no-store" 
+        }
       });
       const data = await res.json();
       
@@ -106,12 +110,14 @@ export default function SupportTab({ handleAction, isSaving }: any) {
     e.preventDefault();
     if (!message.trim()) return;
 
+    const activeSlug = localStorage.getItem('companySlug') || localStorage.getItem('slug') || '';
+
     // Çevrimdışı/Offline Kuyruk Koruması Entegrasyonu
     if (isOffline) {
        console.warn("İnternet bağlantısı yok. Destek talebi kuyruğa alındı.");
-       const activeSlug = localStorage.getItem('companySlug') || ''; 
        const pending = JSON.parse(localStorage.getItem(`offline_actions_${activeSlug}`) || '[]');
-       pending.push({ endpoint: 'add-support-ticket', body: { type: ticketType, message }, timestamp: new Date().toISOString() });
+       // 🚀 YENİ: Kuyruğa atarken slug'ı unutmuyoruz!
+       pending.push({ endpoint: 'add-support-ticket', body: { slug: activeSlug, type: ticketType, message }, timestamp: new Date().toISOString() });
        localStorage.setItem(`offline_actions_${activeSlug}`, JSON.stringify(pending));
        
        setModalState('success');
@@ -120,7 +126,8 @@ export default function SupportTab({ handleAction, isSaving }: any) {
        return;
     }
 
-    const success = await handleAction('add-support-ticket', { type: ticketType, message });
+    // 🚀 YENİ: handleAction'a slug ekledik. Yoksa DB'ye kaydederken firma bilgisini bulamaz ve biletler firmaya listelenmez!
+    const success = await handleAction('add-support-ticket', { slug: activeSlug, type: ticketType, message });
     
     if (success) {
       setModalState('success');

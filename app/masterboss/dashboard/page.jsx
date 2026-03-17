@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Building2, Users, Activity, BarChart3, LogOut, TicketCheck, Gift, AlertCircle } from "lucide-react";
+import { Building2, Users, Activity, BarChart3, LogOut, TicketCheck, Gift, AlertCircle, CheckCircle } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function MasterbossDashboard() {
