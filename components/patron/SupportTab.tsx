@@ -28,16 +28,21 @@ export default function SupportTab({ handleAction, isSaving }: any) {
   };
 
   const fetchMyTickets = async () => {
-    const activeSlug = localStorage.getItem('companySlug') || localStorage.getItem('slug');
-    if (!activeSlug) return; 
+    // 🚀 ÇÖZÜM: localStorage'da slug yoksa bile fonksiyonun durmasını engelliyoruz. 
+    // Boş string ('') atıyoruz ki metin olarak "null" gitmesin ve backend token'dan asıl slug'ı bulabilsin.
+    const activeSlug = localStorage.getItem('companySlug') || localStorage.getItem('slug') || '';
     
     setIsLoadingTickets(true);
     try {
-      // 🚀 Güvenlik: Her ihtimale karşı tüm token varyasyonlarını alıyoruz
       const token = localStorage.getItem('token') || localStorage.getItem('userToken');
+      if (!token) {
+          setIsLoadingTickets(false);
+          return;
+      }
+
       const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
       
-      // 🚀 ÇÖZÜM: GET isteğinde slug açıkça URL parametresi olarak gönderiliyor
+      // ?slug= boş gitse dahi backend token üzerinden tanıyacak.
       const res = await fetch(`${BASE_URL}/get-my-tickets?slug=${activeSlug}&t=${Date.now()}`, {
         headers: { 
             "Authorization": `Bearer ${token}` 
@@ -49,11 +54,9 @@ export default function SupportTab({ handleAction, isSaving }: any) {
       if (res.ok && Array.isArray(data)) {
         setMyTickets(data);
       } else {
-        console.error("Biletler alınamadı veya geçersiz format:", data);
         setMyTickets([]);
       }
     } catch (e) {
-      console.error("Bilet fetch hatası:", e);
       setMyTickets([]);
     } finally {
       setIsLoadingTickets(false);
@@ -66,8 +69,9 @@ export default function SupportTab({ handleAction, isSaving }: any) {
 
     setIsReplying(true);
     try {
-        const activeSlug = localStorage.getItem('companySlug') || localStorage.getItem('slug');
-        const token = localStorage.getItem('token');
+        // 🚀 ÇÖZÜM: Aynı korumayı yanıt bölümüne de uyguladık
+        const activeSlug = localStorage.getItem('companySlug') || localStorage.getItem('slug') || '';
+        const token = localStorage.getItem('token') || localStorage.getItem('userToken');
         const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
         
         const res = await fetch(`${BASE_URL}/reply-support-ticket`, {
