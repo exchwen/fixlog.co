@@ -111,6 +111,34 @@ export default function MasterbossDashboard() {
     }
   };
 
+  // 🚀 YENİ: Esc ve Mobil Geri Tuşu (PopState) ile Modalları Kapatma
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setSelectedTicket(null);
+        setShowInfoModal(false);
+        setShowManageModal(false);
+      }
+    };
+
+    const handlePopState = () => {
+      if (selectedTicket) setSelectedTicket(null);
+      if (showInfoModal) setShowInfoModal(false);
+      if (showManageModal) setShowManageModal(false);
+    };
+
+    if (selectedTicket || showInfoModal || showManageModal) {
+      window.history.pushState({ modal: "open" }, "");
+      window.addEventListener("keydown", handleKeyDown);
+      window.addEventListener("popstate", handlePopState);
+    }
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [selectedTicket, showInfoModal, showManageModal]);
+
   // 🚀 YENİ: Artık eylemin (action) türünü de alıyor ('reply' veya 'resolve')
   const handleTicketAction = async (ticket, actionType) => {
     const token = localStorage.getItem("masterbossToken");
@@ -484,17 +512,22 @@ export default function MasterbossDashboard() {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-neutral-900 border border-neutral-800 rounded-3xl w-full max-w-2xl shadow-2xl relative flex flex-col h-[85vh]"
           >
-            <div className="p-6 border-b border-neutral-800 flex justify-between items-center shrink-0">
+            <div className="p-6 border-b border-neutral-800 flex justify-between items-start shrink-0">
                 <div>
-                    <h3 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                        {selectedTicket.company_slug}
+                    <h3 className="text-xl font-bold text-white tracking-tight flex items-center gap-2 mb-2">
+                        {selectedTicket.company_name || selectedTicket.company_slug}
                         <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${selectedTicket.status === 'Çözüldü' || selectedTicket.status === 'Resolved' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
                            {selectedTicket.status === 'Çözüldü' || selectedTicket.status === 'Resolved' ? 'Çözüldü' : 'Açık'}
                         </span>
                     </h3>
-                    <div className="text-sm text-neutral-500 mt-1">{selectedTicket.type} • {new Date(selectedTicket.created_at).toLocaleString('tr-TR')}</div>
+                    <div className="text-sm text-neutral-400 font-medium flex items-center gap-2 mb-1">
+                        <span>Slug: <span className="text-blue-400">{selectedTicket.company_slug}</span></span>
+                        <span className="opacity-50">•</span>
+                        <span>Açan: <span className="text-amber-400">{selectedTicket.sender_name || 'Bilinmiyor'}</span></span>
+                    </div>
+                    <div className="text-sm text-neutral-500">{selectedTicket.type} • {new Date(selectedTicket.created_at).toLocaleString('tr-TR')}</div>
                 </div>
-                <button onClick={() => setSelectedTicket(null)} className="text-neutral-500 hover:text-white transition-colors text-sm font-medium">Kapat</button>
+                <button onClick={() => setSelectedTicket(null)} className="text-neutral-500 hover:text-white transition-colors text-sm font-medium mt-1">Kapat</button>
             </div>
 
             {/* Mesaj Alanı (Scrollable) */}

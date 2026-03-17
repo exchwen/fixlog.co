@@ -21,6 +21,11 @@ export default function SupportTab({ handleAction, isSaving }: any) {
   // 🚀 YENİ: Firma içi yanıt gönderme stateleri
   const [replyMessageText, setReplyMessageText] = useState<{ [key: string]: string }>({});
   const [isReplying, setIsReplying] = useState(false);
+  const [expandedTicketId, setExpandedTicketId] = useState<string | null>(null);
+
+  const toggleTicket = (id: string) => {
+    setExpandedTicketId(prev => (prev === id ? null : id));
+  };
 
   const fetchMyTickets = async () => {
     const activeSlug = localStorage.getItem('companySlug') || localStorage.getItem('slug');
@@ -304,7 +309,11 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                           try { replies = JSON.parse(ticket.replies || '[]'); } catch(e) {}
                           
                           return (
-                          <div key={ticket.id} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                          <div 
+                            key={ticket.id} 
+                            onClick={() => toggleTicket(ticket.id)}
+                            className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm cursor-pointer hover:shadow-md transition-all"
+                          >
                             <div className="flex justify-between items-start mb-2">
                               <div className="font-bold text-sm text-slate-800 flex items-center gap-2">
                                 {ticket.type} 
@@ -314,50 +323,67 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                               </span>
                             </div>
                             
-                            {/* Orijinal Mesaj */}
-                            <div className="bg-slate-50 p-3 rounded-xl mb-3 border border-slate-100">
-                              <p className="text-sm text-slate-700">{ticket.message}</p>
-                              <div className="text-[10px] text-slate-400 mt-2 flex items-center gap-1 font-medium">
-                                <Clock size={12} /> {new Date(ticket.created_at).toLocaleString('tr-TR')}
-                              </div>
+                            <div className="text-sm text-slate-600 font-medium line-clamp-1 mb-2">
+                                {ticket.message}
                             </div>
-                            
-                            {/* 🚀 YENİ: SOHBET GEÇMİŞİ */}
-                            {replies.length > 0 && (
-                                <div className="space-y-2 mb-4 pl-3 ml-2 border-l-2 border-slate-200">
-                                   {replies.map((reply: any, idx: number) => (
-                                      <div key={idx} className={`p-3 rounded-xl text-sm ${reply.sender === 'masterboss' ? 'bg-blue-50 border border-blue-100 text-blue-900' : 'bg-slate-100 text-slate-700'}`}>
-                                         <div className="flex justify-between items-center mb-1">
-                                            <span className={`text-[10px] font-bold uppercase tracking-wider ${reply.sender === 'masterboss' ? 'text-blue-600' : 'text-slate-500'}`}>
-                                                {reply.sender === 'masterboss' ? 'Destek Ekibi' : 'Siz'}
-                                            </span>
-                                            <span className="text-[9px] opacity-60">{new Date(reply.date).toLocaleString('tr-TR')}</span>
-                                         </div>
-                                         <p className="font-medium">{reply.message}</p>
-                                      </div>
-                                   ))}
-                                </div>
-                            )}
+                            <div className="text-[10px] text-slate-400 mb-2 font-medium flex items-center gap-1">
+                                <Clock size={12} /> {new Date(ticket.created_at).toLocaleString('tr-TR')} • {replies.length} Yanıt
+                            </div>
 
-                            {/* Eğer bilet açık ise firmaya yanıt yazma imkanı ver */}
-                            {ticket.status !== 'Çözüldü' && ticket.status !== 'Resolved' && (
-                                <div className="mt-3 pt-3 border-t border-slate-100 flex gap-2">
-                                  <input
-                                     type="text"
-                                     value={replyMessageText[ticket.id] || ''}
-                                     onChange={(e) => setReplyMessageText(prev => ({ ...prev, [ticket.id]: e.target.value }))}
-                                     placeholder="Yanıtınızı yazın..."
-                                     className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400 focus:bg-white transition-all"
-                                  />
-                                  <button
-                                     onClick={() => handleCustomerReply(ticket.id)}
-                                     disabled={isReplying || !(replyMessageText[ticket.id]?.trim())}
-                                     className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                                  >
-                                     {isReplying ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                                  </button>
-                                </div>
-                            )}
+                            <AnimatePresence>
+                                {expandedTicketId === ticket.id && (
+                                    <motion.div 
+                                        initial={{ height: 0, opacity: 0 }} 
+                                        animate={{ height: 'auto', opacity: 1 }} 
+                                        exit={{ height: 0, opacity: 0 }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="overflow-hidden border-t border-slate-100 mt-3 pt-3"
+                                    >
+                                        {/* Orijinal Mesaj */}
+                                        <div className="bg-slate-50 p-3 rounded-xl mb-3 border border-slate-100">
+                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">İlk Mesajınız</div>
+                                            <p className="text-sm text-slate-700">{ticket.message}</p>
+                                        </div>
+                                        
+                                        {/* 🚀 YENİ: SOHBET GEÇMİŞİ */}
+                                        {replies.length > 0 && (
+                                            <div className="space-y-2 mb-4 pl-3 ml-2 border-l-2 border-slate-200">
+                                               {replies.map((reply: any, idx: number) => (
+                                                  <div key={idx} className={`p-3 rounded-xl text-sm ${reply.sender === 'masterboss' ? 'bg-blue-50 border border-blue-100 text-blue-900' : 'bg-slate-100 text-slate-700'}`}>
+                                                     <div className="flex justify-between items-center mb-1">
+                                                        <span className={`text-[10px] font-bold uppercase tracking-wider ${reply.sender === 'masterboss' ? 'text-blue-600' : 'text-slate-500'}`}>
+                                                            {reply.sender === 'masterboss' ? 'Destek Ekibi' : 'Siz'}
+                                                        </span>
+                                                        <span className="text-[9px] opacity-60">{new Date(reply.date).toLocaleString('tr-TR')}</span>
+                                                     </div>
+                                                     <p className="font-medium">{reply.message}</p>
+                                                  </div>
+                                               ))}
+                                            </div>
+                                        )}
+
+                                        {/* Eğer bilet açık ise firmaya yanıt yazma imkanı ver */}
+                                        {ticket.status !== 'Çözüldü' && ticket.status !== 'Resolved' && (
+                                            <div className="mt-3 pt-3 flex gap-2">
+                                              <input
+                                                 type="text"
+                                                 value={replyMessageText[ticket.id] || ''}
+                                                 onChange={(e) => setReplyMessageText(prev => ({ ...prev, [ticket.id]: e.target.value }))}
+                                                 placeholder="Yanıtınızı yazın..."
+                                                 className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400 focus:bg-white transition-all"
+                                              />
+                                              <button
+                                                 onClick={() => handleCustomerReply(ticket.id)}
+                                                 disabled={isReplying || !(replyMessageText[ticket.id]?.trim())}
+                                                 className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                                              >
+                                                 {isReplying ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                                              </button>
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                           </div>
                         );
                       })
