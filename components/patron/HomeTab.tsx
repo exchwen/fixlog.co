@@ -69,6 +69,46 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const stock = data?.stock || [];
   const staff = data?.staff || [];
 
+  // 🚀 YENİ: DENEME SÜRÜMÜ VE NORMAL FATURA GERİ SAYIM HESAPLAMASI
+  const { daysLeft, showWarning, warningType } = useMemo(() => {
+    const subStatus = data?.subscription_status;
+    const freeMonths = data?.free_months_balance || 0;
+    let endDateStr = null;
+    let type = 'trial';
+
+    if (subStatus === 'trialing' && data?.trial_ends_at) {
+        endDateStr = data.trial_ends_at;
+        type = 'trial';
+    } else if (subStatus === 'active' && data?.billing_cycle_anchor) {
+        endDateStr = data.billing_cycle_anchor;
+        type = 'active';
+    }
+
+    if (!endDateStr || subStatus === 'past_due' || subStatus === 'canceled') {
+        return { daysLeft: null, showWarning: false, warningType: type };
+    }
+    
+    const today = new Date();
+    const endDate = new Date(endDateStr);
+    
+    // Saat farklarını sıfırlayarak net gün farkını bulalım
+    today.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+    
+    const diffTime = endDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Eğer firmanın hediye ayı varsa normal fatura ödeme uyarısı gösterme, darlamayalım.
+    const isFree = type === 'active' && freeMonths > 0;
+    const shouldShow = diffDays <= 7 && !isFree;
+    
+    return { 
+        daysLeft: diffDays, 
+        showWarning: shouldShow, 
+        warningType: type
+    };
+  }, [data?.subscription_status, data?.trial_ends_at, data?.billing_cycle_anchor, data?.free_months_balance]);
+
   const totalJobs = jobs.length;
   const completedJobs = jobs.filter((j: any) => j.status === 'Tamamlandı').length;
   const pendingJobs = jobs.filter((j: any) => j.status === 'Beklemede' || j.status === 'Devam Ediyor').length;
@@ -244,52 +284,54 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const totalAssetsCount = data?.assets?.length || 0;
   const totalStockTypes = stock.length;
 
-  const { usagePaid, totalSystemProfit, currentUsageBill, baseMonthlyFee, referralCredits, finalBill, referralCode, subStatus, nextBillingDate, activeReferrals } = useMemo(() => {
-    const earliestDate = jobs.length > 0 
-      ? new Date(Math.min(...jobs.map((j: any) => new Date(j.created_at || new Date()).getTime()))) 
-      : new Date();
-    
-    const calculatedMonths = (new Date().getFullYear() - earliestDate.getFullYear()) * 12 + new Date().getMonth() - earliestDate.getMonth() + 1;
-    const finalMonthsUsed = Math.max(1, calculatedMonths); 
-    
-    // Veritabanından gelen dinamik değerleri kullan
-    const baseFee = data?.custom_base_price !== undefined && data?.custom_base_price !== null ? Number(data.custom_base_price) : 3000;        
-    const perAssetFee = 50;      
+const { usagePaid, totalSystemProfit, currentUsageBill, baseMonthlyFee, referralCredits, finalBill, referralCode, subStatus, nextBillingDate, activeReferrals, isExempt } = useMemo(() => {
+    const earliestDate = jobs.length > 0 
+      ? new Date(Math.min(...jobs.map((j: any) => new Date(j.created_at || new Date()).getTime()))) 
+      : new Date();
+    
+    const calculatedMonths = (new Date().getFullYear() - earliestDate.getFullYear()) * 12 + new Date().getMonth() - earliestDate.getMonth() + 1;
+    const finalMonthsUsed = Math.max(1, calculatedMonths); 
+    
+    const exemptStatus = data?.subscription_status === 'exempt';
+    // Veritabanından gelen dinamik değerleri kullan
+    const baseFee = data?.custom_base_price !== undefined && data?.custom_base_price !== null ? Number(data.custom_base_price) : 3000;        
+    const perAssetFee = 50;      
 
-    // Tüm zamanlar ödenen tahmini tutar (sabit fiyat üzerinden hesaplıyoruz)
-    const uPaid = finalMonthsUsed * (baseFee + (totalAssetsCount * perAssetFee));
-    
-    // Bu ayki standart fatura (Masterboss ile birebir aynı)
-    const cUsageBill = baseFee + (totalAssetsCount * perAssetFee);
+    // Tüm zamanlar ödenen tahmini tutar (sabit fiyat üzerinden hesaplıyoruz)
+    const uPaid = exemptStatus ? 0 : finalMonthsUsed * (baseFee + (totalAssetsCount * perAssetFee));
+    
+    // Bu ayki standart fatura (Masterboss ile birebir aynı)
+    const cUsageBill = exemptStatus ? 0 : baseFee + (totalAssetsCount * perAssetFee);
 
-    const operationalSavings = totalJobs * 150; 
-    const printAndStorageSavings = totalLifetimePhotos * 5; 
-    const profit = operationalSavings + printAndStorageSavings;
+    const operationalSavings = totalJobs * 150; 
+    const printAndStorageSavings = totalLifetimePhotos * 5; 
+    const profit = operationalSavings + printAndStorageSavings;
 
-    // 🚀 YENİ: Abonelik ve Referans Hesaplamaları
-    const refCode = data?.referralCode || 'ISDOKUMU-' + (currentUserId || '1001');
-    const aReferrals = data?.free_months_balance || 0; // Backend'den gelen hediye ay (Masterboss'un girdiği)
-    
-    // Eğer hediye ayı varsa, taban ücret (baseFee) kadar indirim uygula (Masterboss ile aynı mantık)
-    const rCredits = aReferrals > 0 ? baseFee : 0; 
-    const fBill = Math.max(0, cUsageBill - rCredits); // İndirim düşüldükten sonra net fatura
-    
-    const sStatus = data?.subscription_status === 'active' ? 'Aktif' : (data?.subscription_status === 'past_due' ? 'Ödeme Bekliyor' : 'Deneme');
-    const nBillingDate = data?.nextBillingDate || 'Belirlenmedi';
+    // 🚀 YENİ: Abonelik ve Referans Hesaplamaları
+    const refCode = data?.referralCode || data?.referral_code || 'ISDOKUMU-' + (currentUserId || '1001');
+    const aReferrals = exemptStatus ? 0 : (data?.free_months_balance || 0); // Backend'den gelen hediye ay (Masterboss'un girdiği)
+    
+    // Eğer hediye ayı varsa, taban ücret (baseFee) kadar indirim uygula (Masterboss ile aynı mantık)
+    const rCredits = aReferrals > 0 ? baseFee : 0; 
+    const fBill = exemptStatus ? 0 : Math.max(0, cUsageBill - rCredits); // İndirim düşüldükten sonra net fatura
+    
+    const sStatus = exemptStatus ? 'Muaf' : (data?.subscription_status === 'active' ? 'Aktif' : (data?.subscription_status === 'past_due' ? 'Ödeme Bekliyor' : 'Deneme'));
+    const nBillingDate = data?.nextBillingDate || 'Belirlenmedi';
 
-    return { 
-        usagePaid: uPaid, 
-        totalSystemProfit: profit, 
-        currentUsageBill: cUsageBill, 
-        baseMonthlyFee: baseFee,
-        referralCredits: rCredits,
-        finalBill: fBill,
-        referralCode: refCode,
-        subStatus: sStatus,
-        nextBillingDate: nBillingDate,
-        activeReferrals: aReferrals
-    };
-  }, [jobs, totalJobs, totalLifetimePhotos, totalAssetsCount, monthlyPhotos, currentMonthJobs, data, currentUserId]);
+    return { 
+        usagePaid: uPaid, 
+        totalSystemProfit: profit, 
+        currentUsageBill: cUsageBill, 
+        baseMonthlyFee: baseFee,
+        referralCredits: rCredits,
+        finalBill: fBill,
+        referralCode: refCode,
+        subStatus: sStatus,
+        nextBillingDate: nBillingDate,
+        activeReferrals: aReferrals,
+        isExempt: exemptStatus
+    };
+  }, [jobs, totalJobs, totalLifetimePhotos, totalAssetsCount, monthlyPhotos, currentMonthJobs, data, currentUserId]);
 
   const totalIncome = data?.finSummary?.income || 0;
   const totalExpense = data?.finSummary?.expense || 0;
@@ -386,6 +428,44 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 relative">
       
+      {/* 🚀 YENİ: DENEME SÜRÜMÜ VE FATURA BİTİŞ UYARI ÇUBUĞU */}
+      <AnimatePresence>
+        {showWarning && (
+            <motion.div 
+                initial={{ opacity: 0, y: -20 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                exit={{ opacity: 0, y: -20 }}
+                className={`w-full rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm border ${daysLeft <= 0 ? 'bg-rose-50 border-rose-200' : 'bg-amber-50 border-amber-200'}`}
+            >
+                <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${daysLeft <= 0 ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600 animate-pulse'}`}>
+                        {daysLeft <= 0 ? <Lock size={20} /> : <AlertTriangle size={20} />}
+                    </div>
+                    <div>
+                        <h3 className={`text-sm font-black ${daysLeft <= 0 ? 'text-rose-800' : 'text-amber-800'}`}>
+                            {warningType === 'trial' 
+                                ? (daysLeft <= 0 ? 'Deneme Süreniz Doldu!' : 'Deneme Süreniz Sona Eriyor')
+                                : (daysLeft <= 0 ? 'Fatura Ödeme Günü!' : 'Fatura Kesim Tarihiniz Yaklaşıyor')}
+                        </h3>
+                        <p className={`text-xs font-medium mt-0.5 ${daysLeft <= 0 ? 'text-rose-600' : 'text-amber-700'}`}>
+                            {daysLeft <= 0 
+                                ? 'Bugün ödeme için son gün! Ödeme yapmazsanız gün sonunda erişiminiz kısıtlanacaktır fakat verileriniz güvenle korunacaktır.'
+                                : `Ödemenize son ${daysLeft} gün kaldı. Ödeme yapmazsanız erişiminiz kısıtlanacaktır fakat verileriniz güvenle korunacaktır.`}
+                        </p>
+                    </div>
+                </div>
+                {userRole === 'Patron' && (
+                    <button 
+                        onClick={() => { if (setActiveTab) setActiveTab('settings'); }} 
+                        className={`shrink-0 px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 ${daysLeft <= 0 ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-amber-500 hover:bg-amber-600 text-white'}`}
+                    >
+                        Ödeme Yap
+                    </button>
+                )}
+            </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {newJobNotification.show && (
             <motion.div 
