@@ -29,27 +29,31 @@ export default function SupportTab({ handleAction, isSaving }: any) {
 
   const fetchMyTickets = async () => {
     const activeSlug = localStorage.getItem('companySlug') || localStorage.getItem('slug');
-    if (!activeSlug) return; // Slug yoksa hiç istek atma, 401'i engeller.
+    if (!activeSlug) return; 
     
     setIsLoadingTickets(true);
     try {
-      const token = localStorage.getItem('token');
+      // 🚀 Güvenlik: Her ihtimale karşı tüm token varyasyonlarını alıyoruz
+      const token = localStorage.getItem('token') || localStorage.getItem('userToken');
       const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
-      // 🚀 CORS ÇÖZÜMÜ: Cache-Control başlığı Worker tarafından reddedildiği için kaldırıldı, önbellek kırma işini sadece URL parametresi yapacak.
-      const res = await fetch(`${BASE_URL}/get-my-tickets?t=${Date.now()}`, {
+      
+      // 🚀 ÇÖZÜM: GET isteğinde slug açıkça URL parametresi olarak gönderiliyor
+      const res = await fetch(`${BASE_URL}/get-my-tickets?slug=${activeSlug}&t=${Date.now()}`, {
         headers: { 
             "Authorization": `Bearer ${token}` 
         }
       });
+      
       const data = await res.json();
       
-      if (Array.isArray(data)) {
+      if (res.ok && Array.isArray(data)) {
         setMyTickets(data);
       } else {
+        console.error("Biletler alınamadı veya geçersiz format:", data);
         setMyTickets([]);
       }
     } catch (e) {
-      console.error("Biletler çekilemedi:", e);
+      console.error("Bilet fetch hatası:", e);
       setMyTickets([]);
     } finally {
       setIsLoadingTickets(false);
