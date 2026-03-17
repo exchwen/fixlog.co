@@ -28,30 +28,28 @@ export default function SupportTab({ handleAction, isSaving }: any) {
   };
 
   const fetchMyTickets = async () => {
-    const activeSlug = localStorage.getItem('companySlug') || localStorage.getItem('slug') || '';
-    
-    // Slug gerçekten boşsa çekme
-    if (!activeSlug) return;
-    
     setIsLoadingTickets(true);
     try {
-      // Sadece token'ı authorization olarak yolluyoruz.
-      const token = localStorage.getItem('token') || localStorage.getItem('userToken');
+      let token = localStorage.getItem('token') || localStorage.getItem('userToken') || '';
+      token = token.replace(/^"|"$/g, ''); // 🚀 ÇÖZÜM: Token temizliği garantilendi
+
       const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
-      
-      const res = await fetch(`${BASE_URL}/get-my-tickets?slug=${activeSlug}&t=${Date.now()}`, {
+
+      // 🚀 ÇÖZÜM: GET metodu eklendi, Content-Type tanımlandı ve backend doğrudan token'daki slug'ı baz alacağı için URL'den manipüle edilebilir slug parametresi kaldırıldı.
+      const res = await fetch(`${BASE_URL}/get-my-tickets?t=${Date.now()}`, {
+        method: 'GET',
         headers: { 
+            "Content-Type": "application/json",
             "Authorization": token ? `Bearer ${token}` : '' 
         }
       });
-      
+
       const data = await res.json();
-      
-      // Array geliyorsa (biletler bulunduysa) state'e at.
+
       if (Array.isArray(data)) {
         setMyTickets(data);
       } else {
-        console.error("Dönen veri dizi değil:", data);
+        console.error("Dönen veri dizi değil, yetki veya veri hatası:", data);
         setMyTickets([]);
       }
     } catch (e) {
@@ -334,7 +332,8 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                                 {ticket.message}
                             </div>
                             <div className="text-[10px] text-slate-400 mb-2 font-medium flex items-center gap-1">
-                                <Clock size={12} /> {new Date(ticket.created_at).toLocaleString('tr-TR')} • {replies.length} Yanıt
+                                {/* 🚀 ÇÖZÜM: SQLite tarih formatındaki boşluğu 'T' ile değiştirerek Safari/iOS'ta "Invalid Date" çökmesini önledik */}
+                                <Clock size={12} /> {new Date(ticket.created_at ? ticket.created_at.replace(' ', 'T') : new Date()).toLocaleString('tr-TR')} • {replies.length} Yanıt
                             </div>
 
                             <AnimatePresence>
