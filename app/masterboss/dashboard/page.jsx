@@ -22,6 +22,9 @@ export default function MasterbossDashboard() {
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [infoCompany, setInfoCompany] = useState(null);
 
+  // 🚀 YENİ: Ticket Modalı State'i
+  const [selectedTicket, setSelectedTicket] = useState(null);
+
   useEffect(() => {
     const fetchDashboard = async () => {
       const token = localStorage.getItem("masterbossToken");
@@ -131,14 +134,24 @@ export default function MasterbossDashboard() {
       
       if (result.success) {
         toast.success(actionType === 'resolve' ? "Talep çözüldü!" : "Yanıt gönderildi!", { id: toastId });
+        
+        const updatedStatus = actionType === 'resolve' ? 'Çözüldü' : ticket.status;
+        const newReplies = result.updatedReplies || ticket.replies;
+
         setData(prev => ({
           ...prev,
-          tickets: prev.tickets.map(t => t.id === ticket.id ? { 
-             ...t, 
-             status: actionType === 'resolve' ? 'Resolved' : t.status, 
-             admin_reply: replyMessage || t.admin_reply 
-          } : t)
+          tickets: prev.tickets.map(t => 
+             t.id === ticket.id 
+               ? { ...t, status: updatedStatus, replies: newReplies } 
+               : t
+          )
         }));
+
+        if (selectedTicket && selectedTicket.id === ticket.id) {
+             setSelectedTicket(prev => ({ ...prev, status: updatedStatus, replies: newReplies }));
+        }
+
+        setReplyTexts(prev => ({ ...prev, [ticket.id]: "" }));
       } else {
         toast.error(result.error || "Hata oluştu!", { id: toastId });
       }
@@ -291,83 +304,28 @@ export default function MasterbossDashboard() {
 {activeTab === "tickets" && (
             <div className="p-6">
               <div className="space-y-4">
-                {tickets.map(t => {
-                  let replies = [];
-                  try { replies = JSON.parse(t.replies || '[]'); } catch(e) {}
-                  
-                  return (
-                  <div key={t.id} className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 flex gap-4">
-                    <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center shrink-0 mt-1">
+                {tickets.map(t => (
+                  <div key={t.id} className="bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-2xl p-4 flex gap-4 transition-colors items-center">
+                    <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center shrink-0">
                       <AlertCircle className="w-5 h-5 text-neutral-400" />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <div className="font-medium text-white">{t.company_slug} <span className="text-neutral-500 text-sm ml-2">({t.type})</span></div>
-                        <span className={`text-xs px-2 py-1 rounded-full ${t.status === 'Çözüldü' || t.status === 'Resolved' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                        <div className="font-medium text-white truncate">{t.company_slug} <span className="text-neutral-500 text-sm ml-2">({t.type})</span></div>
+                        <span className={`shrink-0 ml-2 text-xs px-2 py-1 rounded-full ${t.status === 'Çözüldü' || t.status === 'Resolved' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
                           {t.status === 'Çözüldü' || t.status === 'Resolved' ? 'Çözüldü' : 'Açık'}
                         </span>
                       </div>
-                      
-                      {/* Orijinal Mesaj */}
-                      <div className="bg-neutral-800/50 p-3 rounded-xl mb-3">
-                         <div className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1 flex justify-between">
-                            <span>Firma Mesajı</span>
-                            <span>{new Date(t.created_at).toLocaleString('tr-TR')}</span>
-                         </div>
-                         <p className="text-sm text-neutral-200">{t.message}</p>
-                      </div>
-
-                      {/* 🚀 YENİ: SOHBET GEÇMİŞİ */}
-                      {replies.length > 0 && (
-                        <div className="space-y-2 mb-4 ml-4 pl-4 border-l-2 border-neutral-800">
-                           {replies.map((reply, idx) => (
-                              <div key={idx} className={`p-3 rounded-xl text-sm ${reply.sender === 'masterboss' ? 'bg-blue-500/10 border border-blue-500/20 text-blue-100' : 'bg-neutral-800/80 text-neutral-300'}`}>
-                                 <div className="flex justify-between items-center mb-1">
-                                    <span className={`text-[10px] font-bold uppercase tracking-wider ${reply.sender === 'masterboss' ? 'text-blue-400' : 'text-neutral-500'}`}>
-                                        {reply.sender === 'masterboss' ? 'Siz (Masterboss)' : t.company_slug}
-                                    </span>
-                                    <span className="text-[9px] opacity-50">{new Date(reply.date).toLocaleString('tr-TR')}</span>
-                                 </div>
-                                 <p>{reply.message}</p>
-                              </div>
-                           ))}
-                        </div>
-                      )}
-                      
-                      {/* Yanıt Alanı (Sadece Açık olanlarda görünür) */}
-                      {t.status !== 'Çözüldü' && t.status !== 'Resolved' && (
-                        <div className="mt-4 pt-4 border-t border-neutral-800/50 space-y-3">
-                          <textarea
-                            value={replyTexts[t.id] || ""}
-                            onChange={(e) => setReplyTexts(prev => ({ ...prev, [t.id]: e.target.value }))}
-                            placeholder="Firmaya iletilecek yanıtınızı buraya yazın..."
-                            className="w-full bg-neutral-950 border border-neutral-700 text-white text-sm rounded-xl p-3 focus:border-emerald-500 outline-none resize-none transition-colors"
-                            rows="2"
-                          />
-                          <div className="flex items-center justify-end mt-2">
-                            <div className="flex gap-2">
-                              <button 
-                                onClick={() => {
-                                  handleTicketAction(t, 'reply');
-                                  setReplyTexts(prev => ({ ...prev, [t.id]: "" })); // Temizle
-                                }}
-                                className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 text-xs font-bold px-4 py-2 rounded-lg transition-colors"
-                              >
-                                Sadece Yanıtla
-                              </button>
-                              <button 
-                                onClick={() => handleTicketAction(t, 'resolve')}
-                                className="bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors"
-                              >
-                                Çözüldü İşaretle
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                      <p className="text-sm text-neutral-400 truncate">{t.message}</p>
                     </div>
+                    <button 
+                        onClick={() => setSelectedTicket(t)}
+                        className="bg-neutral-800 hover:bg-neutral-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors shrink-0"
+                    >
+                        Bileti İncele
+                    </button>
                   </div>
-                )})}
+                ))}
                 {tickets.length === 0 && <div className="text-center py-12 text-neutral-500">Destek talebi bulunmuyor.</div>}
               </div>
             </div>
@@ -510,6 +468,90 @@ export default function MasterbossDashboard() {
             >
               {isSaving ? "Değişiklikler Kaydediliyor..." : "Ayarları Kaydet ve Uygula"}
             </button>
+          </motion.div>
+        </div>
+      )}
+
+      {/* 🚀 YENİ: Ticket Sohbet Modalı */}
+      {selectedTicket && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 text-left">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-neutral-900 border border-neutral-800 rounded-3xl w-full max-w-2xl shadow-2xl relative flex flex-col h-[85vh]"
+          >
+            <div className="p-6 border-b border-neutral-800 flex justify-between items-center shrink-0">
+                <div>
+                    <h3 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                        {selectedTicket.company_slug}
+                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${selectedTicket.status === 'Çözüldü' || selectedTicket.status === 'Resolved' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                           {selectedTicket.status === 'Çözüldü' || selectedTicket.status === 'Resolved' ? 'Çözüldü' : 'Açık'}
+                        </span>
+                    </h3>
+                    <div className="text-sm text-neutral-500 mt-1">{selectedTicket.type} • {new Date(selectedTicket.created_at).toLocaleString('tr-TR')}</div>
+                </div>
+                <button onClick={() => setSelectedTicket(null)} className="text-neutral-500 hover:text-white transition-colors text-sm font-medium">Kapat</button>
+            </div>
+
+            {/* Mesaj Alanı (Scrollable) */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide">
+                {/* Orijinal Mesaj */}
+                <div className="bg-neutral-800/50 p-4 rounded-2xl border border-neutral-800/50">
+                    <div className="text-[10px] text-neutral-500 uppercase tracking-wider mb-2 font-bold">İlk Talep Mesajı</div>
+                    <p className="text-sm text-neutral-200 leading-relaxed">{selectedTicket.message}</p>
+                </div>
+
+                {/* Yanıtlar */}
+                {(() => {
+                    let replies = [];
+                    try { replies = JSON.parse(selectedTicket.replies || '[]'); } catch(e) {}
+                    
+                    return replies.map((reply, idx) => (
+                        <div key={idx} className={`p-4 rounded-2xl text-sm max-w-[85%] ${reply.sender === 'masterboss' ? 'bg-blue-600/20 border border-blue-500/30 text-blue-50 ml-auto rounded-tr-sm' : 'bg-neutral-800/80 text-neutral-200 mr-auto rounded-tl-sm'}`}>
+                            <div className="flex justify-between items-center mb-2 gap-4">
+                                <span className={`text-[10px] font-black uppercase tracking-wider ${reply.sender === 'masterboss' ? 'text-blue-400' : 'text-neutral-500'}`}>
+                                    {reply.sender === 'masterboss' ? 'Siz (Masterboss)' : selectedTicket.company_slug}
+                                </span>
+                                <span className="text-[9px] opacity-50 font-mono">{new Date(reply.date).toLocaleString('tr-TR')}</span>
+                            </div>
+                            <p className="leading-relaxed">{reply.message}</p>
+                        </div>
+                    ));
+                })()}
+            </div>
+
+            {/* Yanıt Gönderme Alanı */}
+            {selectedTicket.status !== 'Çözüldü' && selectedTicket.status !== 'Resolved' ? (
+                <div className="p-6 border-t border-neutral-800 bg-neutral-900/50 rounded-b-3xl shrink-0">
+                    <textarea
+                        value={replyTexts[selectedTicket.id] || ""}
+                        onChange={(e) => setReplyTexts(prev => ({ ...prev, [selectedTicket.id]: e.target.value }))}
+                        placeholder="Yanıtınızı buraya yazın..."
+                        className="w-full bg-neutral-950 border border-neutral-700 text-white text-sm rounded-xl p-4 focus:border-blue-500 outline-none resize-none transition-colors mb-3"
+                        rows="3"
+                    />
+                    <div className="flex justify-end gap-3">
+                        <button 
+                            onClick={() => handleTicketAction(selectedTicket, 'reply')}
+                            className="bg-neutral-800 hover:bg-neutral-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors"
+                        >
+                            Gönder
+                        </button>
+                        <button 
+                            onClick={() => handleTicketAction(selectedTicket, 'resolve')}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors shadow-lg shadow-emerald-600/20"
+                        >
+                            Çözüldü İşaretle
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <div className="p-6 border-t border-neutral-800 bg-emerald-500/5 rounded-b-3xl text-center shrink-0">
+                    <div className="text-sm font-bold text-emerald-500 flex items-center justify-center gap-2">
+                        <CheckCircle size={18} /> Bu talep çözülmüş olarak kapatıldı.
+                    </div>
+                </div>
+            )}
           </motion.div>
         </div>
       )}

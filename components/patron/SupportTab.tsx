@@ -22,48 +22,19 @@ export default function SupportTab({ handleAction, isSaving }: any) {
   const [replyMessageText, setReplyMessageText] = useState<{ [key: string]: string }>({});
   const [isReplying, setIsReplying] = useState(false);
 
-  const handleCustomerReply = async (ticketId: string) => {
-    const text = replyMessageText[ticketId];
-    if (!text || !text.trim()) return;
-
-    setIsReplying(true);
-    try {
-        const activeSlug = localStorage.getItem('companySlug');
-        const token = localStorage.getItem('token');
-        const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
-        
-        await fetch(`${BASE_URL}/reply-support-ticket`, {
-            method: 'POST',
-            headers: { 
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}` 
-            },
-            body: JSON.stringify({ slug: activeSlug, ticketId, replyMessage: text })
-        });
-        
-        setReplyMessageText(prev => ({ ...prev, [ticketId]: '' }));
-        // Biletleri yenile ki yazdığımız görünsün
-        await fetchMyTickets();
-    } catch(e) {
-        console.error("Yanıt gönderilemedi", e);
-    } finally {
-        setIsReplying(false);
-    }
-  };
-
   const fetchMyTickets = async () => {
+    const activeSlug = localStorage.getItem('companySlug') || localStorage.getItem('slug');
+    if (!activeSlug) return; // Slug yoksa hiç istek atma, 401'i engeller.
+    
     setIsLoadingTickets(true);
     try {
-      const activeSlug = localStorage.getItem('companySlug');
-      const token = localStorage.getItem('token'); // 🚀 YENİ: Token eklendi
-      
+      const token = localStorage.getItem('token');
       const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
       const res = await fetch(`${BASE_URL}/get-my-tickets?slug=${activeSlug}`, {
-        headers: { "Authorization": `Bearer ${token}` } // 🚀 YENİ: Güvenlik anahtarı iletildi
+        headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await res.json();
       
-      // 🚀 YENİ: Gelen verinin gerçekten bir liste (Array) olup olmadığını kontrol et (C.map çökmesini önler)
       if (Array.isArray(data)) {
         setMyTickets(data);
       } else {
@@ -74,6 +45,38 @@ export default function SupportTab({ handleAction, isSaving }: any) {
       setMyTickets([]);
     } finally {
       setIsLoadingTickets(false);
+    }
+  };
+
+  const handleCustomerReply = async (ticketId: string) => {
+    const text = replyMessageText[ticketId];
+    if (!text || !text.trim()) return;
+
+    setIsReplying(true);
+    try {
+        const activeSlug = localStorage.getItem('companySlug') || localStorage.getItem('slug');
+        const token = localStorage.getItem('token');
+        const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+        
+        const res = await fetch(`${BASE_URL}/reply-support-ticket`, {
+            method: 'POST',
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}` 
+            },
+            body: JSON.stringify({ slug: activeSlug, ticketId, replyMessage: text })
+        });
+        
+        const result = await res.json();
+        if (result.success) {
+            setReplyMessageText(prev => ({ ...prev, [ticketId]: '' }));
+            // Sadece başarılıysa listeyi yenile
+            await fetchMyTickets();
+        }
+    } catch(e) {
+        console.error("Yanıt gönderilemedi", e);
+    } finally {
+        setIsReplying(false);
     }
   };
 
