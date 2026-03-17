@@ -252,14 +252,15 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
     const calculatedMonths = (new Date().getFullYear() - earliestDate.getFullYear()) * 12 + new Date().getMonth() - earliestDate.getMonth() + 1;
     const finalMonthsUsed = Math.max(1, calculatedMonths); 
     
-    const baseFee = 3000;        
+    // Veritabanından gelen dinamik değerleri kullan
+    const baseFee = data?.custom_base_price !== undefined && data?.custom_base_price !== null ? Number(data.custom_base_price) : 3000;        
     const perAssetFee = 50;      
-    const perPhotoFee = 1;       
-    const perJobFee = 5;         
 
-    const uPaid = (finalMonthsUsed * (totalAssetsCount * perAssetFee)) + (totalLifetimePhotos * perPhotoFee) + (totalJobs * perJobFee);
-    // 3000 TL taban ücret bu ayki faturaya eklendi
-    const cUsageBill = baseFee + (totalAssetsCount * perAssetFee) + (monthlyPhotos * perPhotoFee) + (currentMonthJobs * perJobFee);
+    // Tüm zamanlar ödenen tahmini tutar (sabit fiyat üzerinden hesaplıyoruz)
+    const uPaid = finalMonthsUsed * (baseFee + (totalAssetsCount * perAssetFee));
+    
+    // Bu ayki standart fatura (Masterboss ile birebir aynı)
+    const cUsageBill = baseFee + (totalAssetsCount * perAssetFee);
 
     const operationalSavings = totalJobs * 150; 
     const printAndStorageSavings = totalLifetimePhotos * 5; 
@@ -267,10 +268,13 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
 
     // 🚀 YENİ: Abonelik ve Referans Hesaplamaları
     const refCode = data?.referralCode || 'ISDOKUMU-' + (currentUserId || '1001');
-    const aReferrals = data?.activeReferrals || 0; // Başarıyla ödeme yapmış referans sayısı
-    const rCredits = aReferrals * 3000; // Her başarılı referans başına 3000 TL
-    const fBill = Math.max(0, cUsageBill - rCredits); // Kredi düşüldükten sonraki net fatura tutarı
-    const sStatus = data?.subscriptionStatus || 'Deneme'; // Deneme, Aktif, Muaf
+    const aReferrals = data?.free_months_balance || 0; // Backend'den gelen hediye ay (Masterboss'un girdiği)
+    
+    // Eğer hediye ayı varsa, taban ücret (baseFee) kadar indirim uygula (Masterboss ile aynı mantık)
+    const rCredits = aReferrals > 0 ? baseFee : 0; 
+    const fBill = Math.max(0, cUsageBill - rCredits); // İndirim düşüldükten sonra net fatura
+    
+    const sStatus = data?.subscription_status === 'active' ? 'Aktif' : (data?.subscription_status === 'past_due' ? 'Ödeme Bekliyor' : 'Deneme');
     const nBillingDate = data?.nextBillingDate || 'Belirlenmedi';
 
     return { 
@@ -1300,14 +1304,14 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
                       <Users size={18} className="text-indigo-400" /> İş Ortaklığı Merkezi
                   </h3>
                   <div className="flex flex-col sm:flex-row gap-4 relative z-10">
-                      <div className="flex-1 bg-white/10 border border-white/10 rounded-xl p-4 flex flex-col justify-center">
-                          <div className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-1">Toplam Kazancınız</div>
+                  <div className="flex-1 bg-white/10 border border-white/10 rounded-xl p-4 flex flex-col justify-center">
+                          <div className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-1">Kazanılan İndirim Tutarı</div>
                           <div className="text-2xl font-black text-emerald-400">₺{referralCredits.toLocaleString('tr-TR')}</div>
-                          <div className="text-[10px] text-indigo-100 mt-1 opacity-80">{activeReferrals} aktif iş ortağı kazandırdınız</div>
+                          <div className="text-[10px] text-indigo-100 mt-1 opacity-80">{activeReferrals} ay hediye kullanım hakkınız var</div>
                       </div>
                       <div className="flex-[2] flex flex-col justify-center">
                           <p className="text-[11px] text-indigo-100 font-medium leading-relaxed mb-3">
-                              Referans kodunuzla kayıt olan ve sistemi aktif kullanan her işletme için <strong>aylık 3.000 ₺</strong> tutarındaki kullanım faturanız bizden!
+                              Referans kodunuzla kayıt olan ve sistemi aktif kullanan her işletme için <strong>aylık {baseMonthlyFee.toLocaleString('tr-TR')} ₺</strong> tutarındaki kullanım faturanız bizden!
                           </p>
                           <div className="flex items-center gap-2 bg-indigo-950/50 border border-indigo-500/30 rounded-lg p-1.5 pl-3">
                               <span className="text-xs font-black text-indigo-300 tracking-wider flex-1 truncate">{referralCode}</span>

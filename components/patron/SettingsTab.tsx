@@ -2,7 +2,7 @@
 
 // YENİ: WifiOff ve Bell eklendi
 import React, { useEffect, useState } from 'react';
-import { Save, Calendar, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle, MessageCircle, ImagePlus, CheckCircle, Globe, WifiOff, Bell } from 'lucide-react';
+import { Save, Calendar, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle, MessageCircle, ImagePlus, CheckCircle, Globe, WifiOff, Bell, CreditCard } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -522,6 +522,42 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
           </div>
         </div>
 
+        {/* 🚀 YENİ: FATURA VE ABONELİK (İYZİCO ENTEGRASYON ALANI) */}
+        <div className="border-t border-slate-100 pt-6 pb-2">
+           <label className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+              <CreditCard size={16} /> Fatura ve Abonelik Yönetimi
+           </label>
+           <div className="bg-blue-50/50 border border-blue-200 p-5 rounded-2xl flex flex-col md:flex-row gap-6 items-center md:items-start shadow-sm">
+             <div className="flex-1 space-y-3 w-full">
+                <h4 className="font-black text-blue-800 text-sm">Sistem Kullanım Durumu</h4>
+                <p className="text-xs text-blue-700/80 font-medium leading-relaxed">
+                  İşletmenizin aktif abonelik durumunu ve faturasını buradan takip edebilir, kredi kartı ile güvenle ödeme yapabilirsiniz (Iyzico altyapısı ile korunmaktadır).
+                </p>
+                <div className="mt-4 flex flex-col sm:flex-row items-center gap-3">
+                   <button 
+                     onClick={() => {
+                        // İleride İyzico modalı veya ödeme sayfasına yönlendirecek
+                        alert('Ödeme altyapısı (Iyzico) entegrasyonu tamamlandığında bu buton aktif olacaktır.');
+                     }}
+                     className="bg-blue-600 text-white font-bold text-xs px-5 py-3 rounded-xl hover:bg-blue-700 shadow-sm active:scale-95 transition-all w-full sm:w-auto flex justify-center items-center gap-2"
+                   >
+                     <CreditCard size={16} /> Şimdi Ödeme Yap
+                   </button>
+                </div>
+             </div>
+
+             <div className="flex-shrink-0 bg-white border border-blue-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
+                <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Durum</span>
+                <span className={`block text-lg font-black mb-1 ${data?.subscription_status === 'active' ? 'text-emerald-600' : data?.subscription_status === 'past_due' ? 'text-rose-600' : 'text-blue-600'}`}>
+                    {data?.subscription_status === 'active' ? 'Aktif' : data?.subscription_status === 'past_due' ? 'Ödeme Bekliyor' : 'Deneme Sürümü'}
+                </span>
+                <span className="block text-[10px] font-bold text-slate-500 uppercase">
+                    {data?.custom_base_price ? `Aylık: ₺${data.custom_base_price}` : 'Aylık: ₺3000'}
+                </span>
+             </div>
+           </div>
+        </div>
+
         {/* 🚀 YENİ: REFERANS PROGRAMI (TAVSİYE KODU VE KAZANÇLAR) */}
         <div className="border-t border-slate-100 pt-6 pb-2">
            <label className="text-[11px] font-black text-emerald-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
@@ -540,14 +576,14 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
                       <input 
                          type="text" 
                          readOnly 
-                         value={data?.referralCode || 'Oluşturuluyor...'} 
+                         value={data?.referral_code || data?.referralCode || 'Oluşturuluyor...'} 
                          className="px-4 py-2 font-black text-slate-800 text-sm outline-none bg-transparent w-full sm:w-40 text-center"
                       />
                    </div>
                    <button 
-                     disabled={!data?.referralCode}
+                     disabled={!(data?.referral_code || data?.referralCode)}
                      onClick={() => {
-                       navigator.clipboard.writeText(data?.referralCode || '');
+                       navigator.clipboard.writeText(data?.referral_code || data?.referralCode || '');
                        setModalState('success');
                        setTimeout(()=> setModalState('idle'), 2000);
                      }}
@@ -560,7 +596,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
 
              <div className="flex-shrink-0 bg-white border border-emerald-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
                 <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Kazanılan</span>
-                <span className="block text-4xl font-black text-emerald-600 mb-1">{data?.freeMonths || 0}</span>
+                <span className="block text-4xl font-black text-emerald-600 mb-1">{data?.free_months_balance || data?.freeMonths || 0}</span>
                 <span className="block text-xs font-bold text-slate-600">Ücretsiz Ay</span>
              </div>
 
