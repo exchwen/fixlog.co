@@ -30,11 +30,10 @@ export default function SupportTab({ handleAction, isSaving }: any) {
     try {
       const token = localStorage.getItem('token');
       const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
-      // 🚀 YENİ: Tarayıcının eski bilet listesini önbellekte tutmasını engellemek için cache-control ve zaman damgası eklendi
-      const res = await fetch(`${BASE_URL}/get-my-tickets?slug=${activeSlug}&t=${Date.now()}`, {
+      // 🚀 CORS ÇÖZÜMÜ: Cache-Control başlığı Worker tarafından reddedildiği için kaldırıldı, önbellek kırma işini sadece URL parametresi yapacak.
+      const res = await fetch(`${BASE_URL}/get-my-tickets?t=${Date.now()}`, {
         headers: { 
-            "Authorization": `Bearer ${token}`,
-            "Cache-Control": "no-store" 
+            "Authorization": `Bearer ${token}` 
         }
       });
       const data = await res.json();
