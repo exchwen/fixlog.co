@@ -18,8 +18,39 @@ export default function SupportTab({ handleAction, isSaving }: any) {
   const [replyMessageText, setReplyMessageText] = useState<{ [key: string]: string }>({});
   const [isReplying, setIsReplying] = useState(false);
   
-  // 🚀 YENİ: Akordiyon yerine seçili bileti tutan modal state'i
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
+
+  // 🚀 YENİ: Akıllı Popstate ve Esc Yönetimi
+  const handleCloseModal = () => {
+    setSelectedTicket(null);
+  };
+
+  useEffect(() => {
+    if (!selectedTicket) return;
+
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleCloseModal();
+    };
+
+    const handlePopState = () => {
+      // Kullanıcı donanımsal geri tuşuna veya tarayıcı geri butonuna bastığında sadece modalı kapat
+      setSelectedTicket(null);
+    };
+
+    // Modal açıldığında tarayıcı geçmişine hayali bir adım ekle
+    window.history.pushState({ modal: 'ticketOpen' }, '');
+    window.addEventListener('keydown', handleEsc);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+      window.removeEventListener('popstate', handlePopState);
+      // Eğer kullanıcı X tuşuyla kapattıysa ve hayali adım hala geçmişte duruyorsa, onu temizle
+      if (window.history.state?.modal === 'ticketOpen') {
+        window.history.back();
+      }
+    };
+  }, [selectedTicket]);
 
   const getValidToken = () => {
     if (typeof window === 'undefined') return '';
@@ -151,7 +182,7 @@ export default function SupportTab({ handleAction, isSaving }: any) {
         const result = await res.json();
         if (result.success) {
             setReplyMessageText(prev => ({ ...prev, [ticketId]: '' }));
-            await fetchMyTickets(); // Bu işlem bittiğinde aşağıdaki useEffect çalışıp modalı güncelleyecek
+            await fetchMyTickets(); 
         }
     } catch(e) {
         console.error("Yanıt gönderilemedi", e);
@@ -160,7 +191,6 @@ export default function SupportTab({ handleAction, isSaving }: any) {
     }
   };
 
-  // 🚀 YENİ: Biletler güncellendiğinde, eğer açık bir modal varsa onun içindeki veriyi de yenile
   useEffect(() => {
     if (selectedTicket) {
        const freshTicket = myTickets.find(t => t.id === selectedTicket.id);
@@ -451,25 +481,25 @@ export default function SupportTab({ handleAction, isSaving }: any) {
         </div>
       </div>
 
-      {/* 🚀 YENİ: BİLET DETAY MODALI */}
+      {/* 🚀 YENİ: GENİŞ, SABİT BOYUTLU VE MOBİL UYUMLU BİLET DETAY MODALI */}
       <AnimatePresence>
         {selectedTicket && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
-              onClick={() => setSelectedTicket(null)}
+              className="fixed inset-0 z-[100] flex items-center justify-center sm:p-4 bg-slate-900/60 backdrop-blur-sm"
+              onClick={handleCloseModal}
             >
                <motion.div
                  initial={{ scale: 0.95, opacity: 0, y: 10 }}
                  animate={{ scale: 1, opacity: 1, y: 0 }}
                  exit={{ scale: 0.95, opacity: 0, y: 10 }}
-                 onClick={(e) => e.stopPropagation()} // Modal içine tıklayınca kapanmasını engelle
-                 className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[90vh]"
+                 onClick={(e) => e.stopPropagation()} 
+                 className="bg-white w-full h-[100dvh] rounded-none sm:w-[95%] sm:max-w-4xl sm:h-[85vh] sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
                >
-                 {/* Modal Üst Bilgi */}
-                 <div className="flex justify-between items-center p-4 sm:p-5 border-b border-slate-100 bg-slate-50">
+                 {/* Modal Üst Bilgi (Sabit) */}
+                 <div className="flex justify-between items-center p-4 sm:p-5 border-b border-slate-100 bg-slate-50 shrink-0">
                    <div>
                      <h4 className={`font-black text-lg ${selectedTicket.id.startsWith('sistem-hatasi') ? 'text-rose-700' : 'text-slate-800'}`}>
                         {selectedTicket.type}
@@ -481,20 +511,20 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                         </span>
                      </div>
                    </div>
-                   <button onClick={() => setSelectedTicket(null)} className="p-2 hover:bg-slate-200 rounded-xl text-slate-500 transition-colors bg-white border border-slate-200 shadow-sm">
+                   <button onClick={handleCloseModal} className="p-2 hover:bg-rose-100 rounded-xl text-slate-500 hover:text-rose-600 transition-colors bg-white border border-slate-200 shadow-sm">
                      <X size={20} />
                    </button>
                  </div>
 
-                 {/* Modal İçerik (Sohbet Akışı) */}
-                 <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-5 bg-white flex flex-col">
+                 {/* Modal İçerik / Sohbet Akışı (Scrollable) */}
+                 <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6 bg-slate-50/50 flex flex-col scrollbar-hide">
                    
-                   {/* İlk Mesaj (Sağda - Kullanıcı) */}
-                   <div className="w-11/12 ml-auto">
+                   {/* İlk Mesaj (Sağda - Kullanıcı) - Geniş ekranlarda mesaj balonu çok uzamasın diye max-w limiti var */}
+                   <div className="w-full max-w-[90%] sm:max-w-[75%] ml-auto">
                        <div className="flex justify-end mb-1">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">İlk Talebiniz</span>
                        </div>
-                       <div className={`p-4 rounded-2xl rounded-tr-sm text-sm shadow-sm ${selectedTicket.id.startsWith('sistem-hatasi') ? 'bg-rose-50 border border-rose-100 text-rose-800' : 'bg-blue-600 text-white'}`}>
+                       <div className={`p-4 sm:p-5 rounded-2xl rounded-tr-sm text-sm shadow-sm leading-relaxed ${selectedTicket.id.startsWith('sistem-hatasi') ? 'bg-rose-50 border border-rose-100 text-rose-800' : 'bg-blue-600 text-white'}`}>
                            {selectedTicket.message}
                        </div>
                    </div>
@@ -508,14 +538,14 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                            return replies.map((reply: any, idx: number) => {
                                const isSupport = reply.sender === 'masterboss';
                                return (
-                                 <div key={idx} className={`w-11/12 ${isSupport ? 'mr-auto' : 'ml-auto'}`}>
+                                 <div key={idx} className={`w-full max-w-[90%] sm:max-w-[75%] ${isSupport ? 'mr-auto' : 'ml-auto'}`}>
                                     <div className={`flex items-center mb-1 gap-2 ${isSupport ? 'justify-start' : 'justify-end'}`}>
                                         <span className={`text-[10px] font-bold uppercase tracking-wider ${isSupport ? 'text-amber-600' : 'text-slate-400'}`}>
                                             {isSupport ? 'İş Dökümü Destek Ekibi' : 'Siz'}
                                         </span>
                                         <span className="text-[9px] font-medium text-slate-400">{new Date(reply.date).toLocaleString('tr-TR')}</span>
                                     </div>
-                                    <div className={`p-4 rounded-2xl text-sm shadow-sm ${isSupport ? 'bg-slate-100 text-slate-800 rounded-tl-sm border border-slate-200' : 'bg-blue-600 text-white rounded-tr-sm'}`}>
+                                    <div className={`p-4 sm:p-5 rounded-2xl text-sm shadow-sm leading-relaxed ${isSupport ? 'bg-white text-slate-800 rounded-tl-sm border border-slate-200' : 'bg-blue-600 text-white rounded-tr-sm'}`}>
                                         {reply.message}
                                     </div>
                                  </div>
@@ -526,24 +556,26 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                    })()}
                  </div>
 
-                 {/* Modal Alt Kısmı (Yanıt Yazma Alanı) */}
+                 {/* Modal Alt Kısmı / Yanıt Yazma Alanı (Sabit) */}
                  {selectedTicket.status !== 'Çözüldü' && selectedTicket.status !== 'Resolved' && !selectedTicket.id.startsWith('sistem-hatasi') && (
-                     <div className="p-4 bg-slate-50 border-t border-slate-200 flex gap-2 sm:gap-3 items-center">
-                       <input
-                          type="text"
-                          value={replyMessageText[selectedTicket.id] || ''}
-                          onChange={(e) => setReplyMessageText(prev => ({ ...prev, [selectedTicket.id]: e.target.value }))}
-                          placeholder="Yanıtınızı buraya yazın..."
-                          onKeyDown={(e) => { if(e.key === 'Enter') handleCustomerReply(selectedTicket.id) }}
-                          className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400"
-                       />
-                       <button
-                          onClick={() => handleCustomerReply(selectedTicket.id)}
-                          disabled={isReplying || !(replyMessageText[selectedTicket.id]?.trim())}
-                          className="bg-blue-600 text-white px-5 py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-all shadow-md shadow-blue-600/20 flex items-center justify-center active:scale-95"
-                       >
-                          {isReplying ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                       </button>
+                     <div className="p-4 sm:p-5 bg-white border-t border-slate-200 shrink-0">
+                       <div className="flex gap-2 sm:gap-3 items-center max-w-4xl mx-auto">
+                           <input
+                              type="text"
+                              value={replyMessageText[selectedTicket.id] || ''}
+                              onChange={(e) => setReplyMessageText(prev => ({ ...prev, [selectedTicket.id]: e.target.value }))}
+                              placeholder="Yanıtınızı buraya yazın..."
+                              onKeyDown={(e) => { if(e.key === 'Enter') handleCustomerReply(selectedTicket.id) }}
+                              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 sm:py-4 text-sm font-medium outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400"
+                           />
+                           <button
+                              onClick={() => handleCustomerReply(selectedTicket.id)}
+                              disabled={isReplying || !(replyMessageText[selectedTicket.id]?.trim())}
+                              className="bg-blue-600 text-white px-5 py-3 sm:py-4 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-all shadow-md shadow-blue-600/20 flex items-center justify-center active:scale-95"
+                           >
+                              {isReplying ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
+                           </button>
+                       </div>
                      </div>
                  )}
                </motion.div>
