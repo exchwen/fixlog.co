@@ -20,7 +20,6 @@ export default function SupportTab({ handleAction, isSaving }: any) {
   
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
 
-  // 🚀 YENİ: Akıllı Popstate ve Esc Yönetimi
   const handleCloseModal = () => {
     setSelectedTicket(null);
   };
@@ -33,11 +32,9 @@ export default function SupportTab({ handleAction, isSaving }: any) {
     };
 
     const handlePopState = () => {
-      // Kullanıcı donanımsal geri tuşuna veya tarayıcı geri butonuna bastığında sadece modalı kapat
       setSelectedTicket(null);
     };
 
-    // Modal açıldığında tarayıcı geçmişine hayali bir adım ekle
     window.history.pushState({ modal: 'ticketOpen' }, '');
     window.addEventListener('keydown', handleEsc);
     window.addEventListener('popstate', handlePopState);
@@ -45,7 +42,6 @@ export default function SupportTab({ handleAction, isSaving }: any) {
     return () => {
       window.removeEventListener('keydown', handleEsc);
       window.removeEventListener('popstate', handlePopState);
-      // Eğer kullanıcı X tuşuyla kapattıysa ve hayali adım hala geçmişte duruyorsa, onu temizle
       if (window.history.state?.modal === 'ticketOpen') {
         window.history.back();
       }
@@ -126,6 +122,22 @@ export default function SupportTab({ handleAction, isSaving }: any) {
       const data = await res.json();
 
       if (Array.isArray(data)) {
+        // 🚀 YENİ: En son mesaj yazılan bileti en üste taşıyan sıralama algoritması
+        data.sort((a, b) => {
+            const getLatestDate = (ticket: any) => {
+                let latest = new Date(ticket.created_at ? ticket.created_at.replace(' ', 'T') : 0).getTime();
+                try {
+                    const replies = JSON.parse(ticket.replies || '[]');
+                    if (replies.length > 0) {
+                        const lastReplyDate = new Date(replies[replies.length - 1].date).getTime();
+                        if (lastReplyDate > latest) latest = lastReplyDate;
+                    }
+                } catch(e) {}
+                return latest;
+            };
+            return getLatestDate(b) - getLatestDate(a); // Büyükten küçüğe (En yeni tarih en üstte)
+        });
+
         setMyTickets(data);
       } else {
          setMyTickets([{ 
