@@ -28,35 +28,34 @@ export default function SupportTab({ handleAction, isSaving }: any) {
   };
 
   const fetchMyTickets = async () => {
-    // 🚀 ÇÖZÜM: localStorage'da slug yoksa bile fonksiyonun durmasını engelliyoruz. 
-    // Boş string ('') atıyoruz ki metin olarak "null" gitmesin ve backend token'dan asıl slug'ı bulabilsin.
     const activeSlug = localStorage.getItem('companySlug') || localStorage.getItem('slug') || '';
+    
+    // Slug gerçekten boşsa çekme
+    if (!activeSlug) return;
     
     setIsLoadingTickets(true);
     try {
+      // Sadece token'ı authorization olarak yolluyoruz.
       const token = localStorage.getItem('token') || localStorage.getItem('userToken');
-      if (!token) {
-          setIsLoadingTickets(false);
-          return;
-      }
-
       const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
       
-      // ?slug= boş gitse dahi backend token üzerinden tanıyacak.
       const res = await fetch(`${BASE_URL}/get-my-tickets?slug=${activeSlug}&t=${Date.now()}`, {
         headers: { 
-            "Authorization": `Bearer ${token}` 
+            "Authorization": token ? `Bearer ${token}` : '' 
         }
       });
       
       const data = await res.json();
       
-      if (res.ok && Array.isArray(data)) {
+      // Array geliyorsa (biletler bulunduysa) state'e at.
+      if (Array.isArray(data)) {
         setMyTickets(data);
       } else {
+        console.error("Dönen veri dizi değil:", data);
         setMyTickets([]);
       }
     } catch (e) {
+      console.error("Geçmiş talepler çekilirken hata:", e);
       setMyTickets([]);
     } finally {
       setIsLoadingTickets(false);
