@@ -672,7 +672,7 @@ const [selectedTicket, setSelectedTicket] = useState(null);
                 </div>
               )}
 
-{infoTab === "istatistik" && (
+              {infoTab === "istatistik" && (
                 <div>
                   {infoLoading ? (
                     <div className="flex items-center justify-center py-12 text-neutral-500 text-sm">Veriler yükleniyor...</div>
@@ -721,23 +721,70 @@ const [selectedTicket, setSelectedTicket] = useState(null);
                   ) : infoDetails ? (
                     <div className="space-y-6">
                       {(() => {
+                        // 1. GELİR HESAPLAMASI
                         const basePrice = infoCompany.custom_base_price ? Number(infoCompany.custom_base_price) : 3000;
                         const hasFreeMonth = infoCompany.free_months_balance && Number(infoCompany.free_months_balance) > 0;
                         const activeBasePrice = hasFreeMonth ? 0 : basePrice;
                         
                         const assetCount = infoDetails.assets || 0;
-                        const assetRevenue = assetCount * 50;
+                        const assetRevenue = assetCount * 50; // Varlık başı 50 TL
                         const totalRevenue = activeBasePrice + assetRevenue;
 
-                        // DB Okuma/Yazma ve R2 Storage Yükü tahmini skoru
+                        // 2. GİDER (D1 & R2 MALİYET) HESAPLAMASI
+                        // Her fotoğraf için ortalama 0.02 TL (2 Kuruş) R2 depolama / bant genişliği maliyeti
+                        const r2Cost = (infoDetails.photos.total || 0) * 0.02;
+                        
+                        // DB sorguları için her veri kaydını (satırı) 0.005 TL (0.5 kuruş) okuma/yazma maliyeti sayıyoruz
                         const totalDataPoints = (infoDetails.jobs.total || 0) + (infoDetails.photos.total || 0) + (infoDetails.customers || 0) + (infoDetails.faults.total || 0);
+                        const d1Cost = totalDataPoints * 0.005;
+
+                        const totalServerCost = r2Cost + d1Cost;
+
+                        // 3. NET KÂR
+                        const netProfit = totalRevenue - totalServerCost;
+
+                        // Sunucu yük durumu etiketi
                         let loadStatus = "Düşük";
                         let loadColor = "text-emerald-400";
-                        if(totalDataPoints > 5000) { loadStatus = "Orta"; loadColor = "text-amber-400"; }
-                        if(totalDataPoints > 20000) { loadStatus = "Yüksek (Maliyetli)"; loadColor = "text-rose-400"; }
+                        if (totalDataPoints > 5000) { loadStatus = "Orta"; loadColor = "text-amber-400"; }
+                        if (totalDataPoints > 20000) { loadStatus = "Yüksek (Maliyetli)"; loadColor = "text-rose-400"; }
+
+                        // 4. İYZİCO ÖDEME DURUMU KONTROLÜ
+                        let paymentStatusText = "Bilinmiyor";
+                        let paymentStatusColor = "text-neutral-500";
+                        let paymentBgColor = "bg-neutral-800";
+
+                        if (infoCompany.subscription_status === 'active') {
+                            paymentStatusText = "ÖDENDİ (İyzico Altyapısı)";
+                            paymentStatusColor = "text-emerald-400";
+                            paymentBgColor = "bg-emerald-500/10 border-emerald-500/20";
+                        } else if (infoCompany.subscription_status === 'past_due') {
+                            paymentStatusText = "ÖDENMEDİ (Gecikmede)";
+                            paymentStatusColor = "text-rose-400";
+                            paymentBgColor = "bg-rose-500/10 border-rose-500/20";
+                        } else if (infoCompany.subscription_status === 'trialing') {
+                            paymentStatusText = "DENEME SÜRÜMÜ (Ücretsiz)";
+                            paymentStatusColor = "text-blue-400";
+                            paymentBgColor = "bg-blue-500/10 border-blue-500/20";
+                        } else if (infoCompany.subscription_status === 'canceled') {
+                            paymentStatusText = "İPTAL EDİLDİ";
+                            paymentStatusColor = "text-neutral-400";
+                            paymentBgColor = "bg-neutral-800 border-neutral-700";
+                        }
 
                         return (
                           <>
+                            {/* ÖDEME DURUMU KARTI */}
+                            <div className={`p-5 rounded-2xl border ${paymentBgColor} flex items-center justify-between`}>
+                               <div>
+                                  <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Fatura & Ödeme Durumu</div>
+                                  <div className={`text-lg font-black ${paymentStatusColor}`}>{paymentStatusText}</div>
+                               </div>
+                               <div className="w-12 h-12 rounded-full bg-black/20 flex items-center justify-center">
+                                  {infoCompany.subscription_status === 'active' ? <CheckCircle className={`w-6 h-6 ${paymentStatusColor}`} /> : <AlertCircle className={`w-6 h-6 ${paymentStatusColor}`} />}
+                               </div>
+                            </div>
+
                             <div className="bg-neutral-800/50 p-6 rounded-2xl border border-neutral-800">
                               <h4 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
                                 <Activity className="w-5 h-5 text-emerald-400" /> Platform Gelir Analizi (Aylık)
@@ -758,25 +805,41 @@ const [selectedTicket, setSelectedTicket] = useState(null);
                                   <div className="text-lg font-bold text-blue-400">₺{assetRevenue}</div>
                                   <div className="text-[10px] text-neutral-500 uppercase mt-1">{assetCount} Kayıtlı Cihaz</div>
                                 </div>
-                                <div className="bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20">
-                                  <div className="text-xs font-bold text-emerald-500 mb-1 uppercase">Beklenen Net Fatura</div>
-                                  <div className="text-xl font-black text-emerald-400">₺{totalRevenue.toLocaleString('tr-TR')}</div>
+                                <div>
+                                  <div className="text-xs font-bold text-neutral-400 mb-1 uppercase">Beklenen Brüt Ciro</div>
+                                  <div className="text-xl font-black text-white">₺{totalRevenue.toLocaleString('tr-TR')}</div>
                                 </div>
                               </div>
                               
                               <h4 className="text-sm font-bold text-white mb-4 mt-6 flex items-center gap-2">
-                                <Activity className="w-5 h-5 text-amber-400" /> Sistem ve Sunucu Yükü (D1 + R2)
+                                <Activity className="w-5 h-5 text-amber-400" /> Tahmini Sunucu Maliyeti (D1 + R2)
                               </h4>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b border-neutral-700 pb-4 mb-4">
                                 <div>
-                                  <div className="text-xs text-neutral-500 mb-1">Veritabanı Ağır İşlem Skoru</div>
-                                  <div className="text-lg font-bold text-white">{totalDataPoints.toLocaleString('tr-TR')} İşlem</div>
+                                  <div className="text-xs text-neutral-500 mb-1">R2 Dosya Depolama (Fotoğraflar)</div>
+                                  <div className="text-lg font-bold text-rose-400">- ₺{r2Cost.toFixed(2)}</div>
+                                  <div className="text-[10px] text-neutral-500 uppercase mt-1">{infoDetails.photos.total || 0} Medya Yükü</div>
+                                </div>
+                                <div>
+                                  <div className="text-xs text-neutral-500 mb-1">D1 Veritabanı (İşlem Hacmi)</div>
+                                  <div className="text-lg font-bold text-rose-400">- ₺{d1Cost.toFixed(2)}</div>
+                                  <div className="text-[10px] text-neutral-500 uppercase mt-1">{totalDataPoints.toLocaleString('tr-TR')} Kayıt Yükü</div>
                                 </div>
                                 <div>
                                   <div className="text-xs text-neutral-500 mb-1">Sunucu Tüketim Seviyesi</div>
                                   <div className={`text-lg font-bold ${loadColor}`}>{loadStatus}</div>
                                 </div>
                               </div>
+
+                              {/* NET KÂR GÖSTERGESİ */}
+                              <div className="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20 flex items-center justify-between">
+                                  <div>
+                                    <div className="text-xs font-bold text-emerald-500 mb-1 uppercase tracking-wider">Net Platform Karı</div>
+                                    <div className="text-[10px] text-emerald-500/70">Cirodan sunucu ve veritabanı masrafları düşüldükten sonra</div>
+                                  </div>
+                                  <div className="text-2xl font-black text-emerald-400">₺{netProfit.toFixed(2).toLocaleString('tr-TR')}</div>
+                              </div>
+
                             </div>
                           </>
                         );
@@ -820,7 +883,7 @@ const [selectedTicket, setSelectedTicket] = useState(null);
                    <div className="bg-rose-500/5 p-4 rounded-xl border border-rose-500/20">
                      <div className="flex items-center gap-3">
                        <BarChart3 className="w-5 h-5 text-rose-400" />
-                       <div className="text-sm text-rose-200">Tahmini Toplam Masterboss Ödemesi özelliği sonraki güncellemelerde PayTR/Iyzico entegrasyonu ile otomatik hesaplanacaktır. Şu an firmaların kendi kasaları izlenmektedir.</div>
+                       <div className="text-sm text-rose-200">Tahmini Toplam Masterboss Ödemesi özelliği sonraki güncellemelerde PayTR/Iyzico entegrasyonu ile otomatik hesaplanacaktır. Şu an firmaların kendi kasaları izlenmektedir. Detaylar "Karlılık & Veri Yükü" sekmesine taşınmıştır.</div>
                      </div>
                    </div>
                 </div>
