@@ -647,6 +647,7 @@ const [selectedTicket, setSelectedTicket] = useState(null);
               <button onClick={() => setInfoTab("genel")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${infoTab === "genel" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Genel Bilgiler</button>
               <button onClick={() => setInfoTab("istatistik")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${infoTab === "istatistik" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Sistem & Kasa Kullanımı</button>
               <button onClick={() => setInfoTab("abonelik")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${infoTab === "abonelik" ? "bg-rose-500 text-white" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Abonelik & Gelir</button>
+              <button onClick={() => setInfoTab("karlilik")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${infoTab === "karlilik" ? "bg-emerald-500 text-white" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}><Activity size={16} /> Karlılık & Veri Yükü</button>
             </div>
 
             <div className="overflow-y-auto pr-2 scrollbar-hide flex-1">
@@ -671,7 +672,7 @@ const [selectedTicket, setSelectedTicket] = useState(null);
                 </div>
               )}
 
-              {infoTab === "istatistik" && (
+{infoTab === "istatistik" && (
                 <div>
                   {infoLoading ? (
                     <div className="flex items-center justify-center py-12 text-neutral-500 text-sm">Veriler yükleniyor...</div>
@@ -686,6 +687,12 @@ const [selectedTicket, setSelectedTicket] = useState(null);
                           <InfoBox label="Personel Sayısı" value={infoDetails.staff} />
                           <InfoBox label="Kayıtlı Varlık" value={infoDetails.assets} />
                           <InfoBox label="Stok Kalemi" value={infoDetails.stock} />
+                          <InfoBox label="Müşteri Sayısı" value={infoDetails.customers} />
+                          <InfoBox label="Tedarikçi Sayısı" value={infoDetails.suppliers} />
+                          <InfoBox label="Aylık R2 Foto Yükü" value={infoDetails.photos.monthly} />
+                          <InfoBox label="Toplam R2 Foto Arşivi" value={infoDetails.photos.total} />
+                          <InfoBox label="Toplam Arıza Kaydı" value={infoDetails.faults.total} />
+                          <InfoBox label="Aktif Acil Durum" value={infoDetails.emergencies.active} />
                         </div>
                       </div>
                       
@@ -703,6 +710,80 @@ const [selectedTicket, setSelectedTicket] = useState(null);
                     </div>
                   ) : (
                     <div className="text-center py-12 text-neutral-500 text-sm">Veri bulunamadı.</div>
+                  )}
+                </div>
+              )}
+
+              {infoTab === "karlilik" && (
+                <div>
+                  {infoLoading ? (
+                    <div className="flex items-center justify-center py-12 text-neutral-500 text-sm">Hesaplanıyor...</div>
+                  ) : infoDetails ? (
+                    <div className="space-y-6">
+                      {(() => {
+                        const basePrice = infoCompany.custom_base_price ? Number(infoCompany.custom_base_price) : 3000;
+                        const hasFreeMonth = infoCompany.free_months_balance && Number(infoCompany.free_months_balance) > 0;
+                        const activeBasePrice = hasFreeMonth ? 0 : basePrice;
+                        
+                        const assetCount = infoDetails.assets || 0;
+                        const assetRevenue = assetCount * 50;
+                        const totalRevenue = activeBasePrice + assetRevenue;
+
+                        // DB Okuma/Yazma ve R2 Storage Yükü tahmini skoru
+                        const totalDataPoints = (infoDetails.jobs.total || 0) + (infoDetails.photos.total || 0) + (infoDetails.customers || 0) + (infoDetails.faults.total || 0);
+                        let loadStatus = "Düşük";
+                        let loadColor = "text-emerald-400";
+                        if(totalDataPoints > 5000) { loadStatus = "Orta"; loadColor = "text-amber-400"; }
+                        if(totalDataPoints > 20000) { loadStatus = "Yüksek (Maliyetli)"; loadColor = "text-rose-400"; }
+
+                        return (
+                          <>
+                            <div className="bg-neutral-800/50 p-6 rounded-2xl border border-neutral-800">
+                              <h4 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                                <Activity className="w-5 h-5 text-emerald-400" /> Platform Gelir Analizi (Aylık)
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b border-neutral-700 pb-4 mb-4">
+                                <div>
+                                  <div className="text-xs text-neutral-500 mb-1">Taban Paket Ücreti</div>
+                                  <div className="text-lg font-bold text-white">
+                                    {hasFreeMonth ? (
+                                      <span className="text-rose-400 line-through mr-2">₺{basePrice}</span>
+                                    ) : null}
+                                    ₺{activeBasePrice}
+                                  </div>
+                                  {hasFreeMonth && <div className="text-[10px] text-rose-400 font-bold uppercase mt-1">Referans İndirimi Aktif</div>}
+                                </div>
+                                <div>
+                                  <div className="text-xs text-neutral-500 mb-1">Varlık Başı Kazanç (50₺)</div>
+                                  <div className="text-lg font-bold text-blue-400">₺{assetRevenue}</div>
+                                  <div className="text-[10px] text-neutral-500 uppercase mt-1">{assetCount} Kayıtlı Cihaz</div>
+                                </div>
+                                <div className="bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20">
+                                  <div className="text-xs font-bold text-emerald-500 mb-1 uppercase">Beklenen Net Fatura</div>
+                                  <div className="text-xl font-black text-emerald-400">₺{totalRevenue.toLocaleString('tr-TR')}</div>
+                                </div>
+                              </div>
+                              
+                              <h4 className="text-sm font-bold text-white mb-4 mt-6 flex items-center gap-2">
+                                <Activity className="w-5 h-5 text-amber-400" /> Sistem ve Sunucu Yükü (D1 + R2)
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <div className="text-xs text-neutral-500 mb-1">Veritabanı Ağır İşlem Skoru</div>
+                                  <div className="text-lg font-bold text-white">{totalDataPoints.toLocaleString('tr-TR')} İşlem</div>
+                                </div>
+                                <div>
+                                  <div className="text-xs text-neutral-500 mb-1">Sunucu Tüketim Seviyesi</div>
+                                  <div className={`text-lg font-bold ${loadColor}`}>{loadStatus}</div>
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-neutral-500 text-sm">Analiz oluşturulamadı.</div>
                   )}
                 </div>
               )}
