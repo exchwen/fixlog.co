@@ -311,7 +311,11 @@ export default function MasterbossDashboard() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <div className="font-medium text-white truncate">{t.company_slug} <span className="text-neutral-500 text-sm ml-2">({t.type})</span></div>
+                        <div className="font-medium text-white truncate">
+                          {t.company_name || t.company_slug} 
+                          <span className="text-neutral-400 text-xs ml-2">- {t.sender_name || 'Bilinmiyor'}</span>
+                          <span className="text-neutral-500 text-sm ml-2">({t.type})</span>
+                        </div>
                         <span className={`shrink-0 ml-2 text-xs px-2 py-1 rounded-full ${t.status === 'Çözüldü' || t.status === 'Resolved' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
                           {t.status === 'Çözüldü' || t.status === 'Resolved' ? 'Çözüldü' : 'Açık'}
                         </span>
