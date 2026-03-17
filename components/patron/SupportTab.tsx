@@ -22,12 +22,23 @@ export default function SupportTab({ handleAction, isSaving }: any) {
     setIsLoadingTickets(true);
     try {
       const activeSlug = localStorage.getItem('companySlug');
+      const token = localStorage.getItem('token'); // 🚀 YENİ: Token eklendi
+      
       const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
-      const res = await fetch(`${BASE_URL}/get-my-tickets?slug=${activeSlug}`);
+      const res = await fetch(`${BASE_URL}/get-my-tickets?slug=${activeSlug}`, {
+        headers: { "Authorization": `Bearer ${token}` } // 🚀 YENİ: Güvenlik anahtarı iletildi
+      });
       const data = await res.json();
-      setMyTickets(data);
+      
+      // 🚀 YENİ: Gelen verinin gerçekten bir liste (Array) olup olmadığını kontrol et (C.map çökmesini önler)
+      if (Array.isArray(data)) {
+        setMyTickets(data);
+      } else {
+        setMyTickets([]);
+      }
     } catch (e) {
       console.error("Biletler çekilemedi:", e);
+      setMyTickets([]);
     } finally {
       setIsLoadingTickets(false);
     }

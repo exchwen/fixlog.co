@@ -18,6 +18,10 @@ export default function MasterbossDashboard() {
   const [manageForm, setManageForm] = useState({ subscriptionStatus: '', freeMonths: '', customDiscount: '', cancelTrial: false });
   const [isSaving, setIsSaving] = useState(false);
 
+  // 🚀 YENİ: Bilgi Modalı Stateleri
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [infoCompany, setInfoCompany] = useState(null);
+
   useEffect(() => {
     const fetchDashboard = async () => {
       const token = localStorage.getItem("masterbossToken");
@@ -104,13 +108,15 @@ export default function MasterbossDashboard() {
     }
   };
 
-  const handleResolveTicket = async (ticket) => {
+  // 🚀 YENİ: Artık eylemin (action) türünü de alıyor ('reply' veya 'resolve')
+  const handleTicketAction = async (ticket, actionType) => {
     const token = localStorage.getItem("masterbossToken");
     if (!token) return toast.error("Yetkisiz işlem!");
 
     const replyMessage = replyTexts[ticket.id] || "";
-    const toastId = toast.loading("Yanıt iletiliyor...");
-    
+    if (actionType === 'reply' && !replyMessage.trim()) return toast.error("Yanıt göndermek için bir mesaj yazmalısınız.");
+
+    const toastId = toast.loading("İşleniyor...");
     try {
       const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
       const res = await fetch(`${BASE_URL}/masterboss-resolve-ticket`, {
@@ -119,15 +125,19 @@ export default function MasterbossDashboard() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ ticketId: ticket.id, companySlug: ticket.company_slug, replyMessage })
+        body: JSON.stringify({ ticketId: ticket.id, companySlug: ticket.company_slug, replyMessage, action: actionType })
       });
       const result = await res.json();
       
       if (result.success) {
-        toast.success("Talep yanıtlandı ve çözüldü!", { id: toastId });
+        toast.success(actionType === 'resolve' ? "Talep çözüldü!" : "Yanıt gönderildi!", { id: toastId });
         setData(prev => ({
           ...prev,
-          tickets: prev.tickets.map(t => t.id === ticket.id ? { ...t, status: 'Resolved', admin_reply: replyMessage } : t)
+          tickets: prev.tickets.map(t => t.id === ticket.id ? { 
+             ...t, 
+             status: actionType === 'resolve' ? 'Resolved' : t.status, 
+             admin_reply: replyMessage || t.admin_reply 
+          } : t)
         }));
       } else {
         toast.error(result.error || "Hata oluştu!", { id: toastId });
@@ -242,8 +252,25 @@ export default function MasterbossDashboard() {
                         <div>Personel: <span className="text-white">{c.total_staff}</span></div>
                       </td>
                       <td className="px-6 py-4 text-right">
+                        {/* 🚀 YENİ: BİLGİ BUTONU */}
                         <button 
-                          onClick={() => { setSelectedCompany(c); setManageForm({ subscriptionStatus: c.subscription_status || 'trialing', freeMonths: '', customDiscount: c.custom_base_price || '', cancelTrial: false }); setShowManageModal(true); }} 
+                          onClick={() => { setInfoCompany(c); setShowInfoModal(true); }}
+                          className="text-blue-500 hover:text-blue-400 text-sm font-medium transition-colors mr-4"
+                        >
+                          Bilgi
+                        </button>
+                        
+                        <button 
+                          onClick={() => { 
+                            setSelectedCompany(c); 
+                            setManageForm({ 
+                              subscriptionStatus: c.subscription_status || 'trialing', 
+                              freeMonths: c.free_months_balance !== undefined && c.free_months_balance !== null ? c.free_months_balance : '', 
+                              customDiscount: c.custom_base_price !== undefined && c.custom_base_price !== null ? c.custom_base_price : '', 
+                              cancelTrial: false 
+                            }); 
+                            setShowManageModal(true); 
+                          }} 
                           className="text-rose-500 hover:text-rose-400 text-sm font-medium transition-colors"
                         >
                           Yönet
@@ -287,14 +314,23 @@ export default function MasterbossDashboard() {
                             className="w-full bg-neutral-950 border border-neutral-700 text-white text-sm rounded-xl p-3 focus:border-emerald-500 outline-none resize-none transition-colors"
                             rows="2"
                           />
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between mt-2">
                             <div className="text-xs text-neutral-500">{new Date(t.created_at).toLocaleString('tr-TR')}</div>
-                            <button 
-                              onClick={() => handleResolveTicket(t)}
-                              className="bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors"
-                            >
-                              Yanıtla ve Çöz
-                            </button>
+                            {/* 🚀 YENİ: İKİYE AYRILMIŞ BUTONLAR */}
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => handleTicketAction(t, 'reply')}
+                                className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 text-xs font-bold px-4 py-2 rounded-lg transition-colors"
+                              >
+                                Sadece Yanıtla
+                              </button>
+                              <button 
+                                onClick={() => handleTicketAction(t, 'resolve')}
+                                className="bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors"
+                              >
+                                Çözüldü İşaretle
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ) : (
@@ -457,6 +493,54 @@ export default function MasterbossDashboard() {
         </div>
       )}
 
+      {/* 🚀 YENİ: Company Info Modal */}
+      {showInfoModal && infoCompany && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 text-left">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 w-full max-w-2xl shadow-2xl relative max-h-[90vh] overflow-y-auto"
+          >
+            <button 
+              onClick={() => setShowInfoModal(false)}
+              className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors text-sm font-medium"
+            >
+              Kapat
+            </button>
+            <div className="flex items-center gap-4 mb-6">
+              {infoCompany.logo ? (
+                <img src={infoCompany.logo} alt="Logo" className="w-16 h-16 rounded-xl object-cover bg-neutral-800" />
+              ) : (
+                <div className="w-16 h-16 rounded-xl bg-neutral-800 flex items-center justify-center"><Building2 className="w-8 h-8 text-neutral-500"/></div>
+              )}
+              <div>
+                <h3 className="text-xl font-bold text-white tracking-tight">{infoCompany.company_name}</h3>
+                <div className="text-sm font-mono text-blue-400">{infoCompany.slug}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InfoBox label="Sahibi / Yetkili" value={infoCompany.owner_name} />
+              <InfoBox label="Sektör" value={infoCompany.sector} />
+              <InfoBox label="Kayıt Tarihi" value={new Date(infoCompany.created_at).toLocaleDateString('tr-TR')} />
+              <InfoBox label="Vergi Bilgileri" value={infoCompany.tax_info} />
+              <InfoBox label="Açık Adres" value={infoCompany.address} fullWidth />
+              
+              <div className="col-span-1 md:col-span-2 border-t border-neutral-800 my-2 pt-4">
+                <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-4">İletişim Bilgileri</h4>
+              </div>
+              
+              <InfoBox label="E-Posta (Admin)" value={infoCompany.owner_email || 'Belirtilmemiş'} />
+              <InfoBox label="Ana Telefon" value={infoCompany.phone} />
+              <InfoBox label="WhatsApp" value={infoCompany.whatsapp_phone} />
+              <InfoBox label="Acil Durum Hattı" value={infoCompany.emergency_phone} />
+              <InfoBox label="Sabit Hat" value={infoCompany.landline_phone} />
+              <InfoBox label="Web Sitesi" value={infoCompany.website} />
+            </div>
+          </motion.div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -494,5 +578,15 @@ function TabButton({ active, onClick, icon: Icon, label }) {
       <Icon className="w-4 h-4" /> 
       {label}
     </button>
+  );
+}
+
+// 🚀 YENİ EKLENEN: InfoBox Bileşeni
+function InfoBox({ label, value, fullWidth = false }) {
+  return (
+    <div className={`bg-neutral-800/30 border border-neutral-800/50 p-4 rounded-xl ${fullWidth ? 'col-span-1 md:col-span-2' : ''}`}>
+      <div className="text-xs font-medium text-neutral-500 mb-1">{label}</div>
+      <div className="text-sm text-white font-medium break-words">{value || '-'}</div>
+    </div>
   );
 }
