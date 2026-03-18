@@ -284,54 +284,69 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const totalAssetsCount = data?.assets?.length || 0;
   const totalStockTypes = stock.length;
 
-const { usagePaid, totalSystemProfit, currentUsageBill, baseMonthlyFee, referralCredits, finalBill, referralCode, subStatus, nextBillingDate, activeReferrals, isExempt } = useMemo(() => {
-    const earliestDate = jobs.length > 0 
-      ? new Date(Math.min(...jobs.map((j: any) => new Date(j.created_at || new Date()).getTime()))) 
-      : new Date();
-    
-    const calculatedMonths = (new Date().getFullYear() - earliestDate.getFullYear()) * 12 + new Date().getMonth() - earliestDate.getMonth() + 1;
-    const finalMonthsUsed = Math.max(1, calculatedMonths); 
-    
-    const exemptStatus = data?.subscription_status === 'exempt';
-    // Veritabanından gelen dinamik değerleri kullan
-    const baseFee = data?.custom_base_price !== undefined && data?.custom_base_price !== null ? Number(data.custom_base_price) : 3000;        
-    const perAssetFee = 50;      
-
-    // Tüm zamanlar ödenen tahmini tutar (sabit fiyat üzerinden hesaplıyoruz)
-    const uPaid = exemptStatus ? 0 : finalMonthsUsed * (baseFee + (totalAssetsCount * perAssetFee));
-    
-    // Bu ayki standart fatura (Masterboss ile birebir aynı)
-    const cUsageBill = exemptStatus ? 0 : baseFee + (totalAssetsCount * perAssetFee);
-
-    const operationalSavings = totalJobs * 150; 
-    const printAndStorageSavings = totalLifetimePhotos * 5; 
-    const profit = operationalSavings + printAndStorageSavings;
-
-    // 🚀 YENİ: Abonelik ve Referans Hesaplamaları
-    const refCode = data?.referralCode || data?.referral_code || 'BEKLENİYOR...';
-    const aReferrals = data?.free_months_balance || 0; // Backend'den gelen hediye ay (Masterboss'un girdiği)
-    
-    // Eğer hediye ayı varsa, taban ücret (baseFee) kadar indirim uygula (Masterboss ile aynı mantık)
-    const rCredits = aReferrals > 0 ? baseFee : 0; 
-    const fBill = exemptStatus ? 0 : Math.max(0, cUsageBill - rCredits); // İndirim düşüldükten sonra net fatura
-    
-    const sStatus = exemptStatus ? 'Muaf' : (data?.subscription_status === 'active' ? 'Aktif' : (data?.subscription_status === 'past_due' ? 'Ödeme Bekliyor' : 'Deneme'));
-    const nBillingDate = data?.nextBillingDate || 'Belirlenmedi';
-
-    return { 
-        usagePaid: uPaid, 
-        totalSystemProfit: profit, 
-        currentUsageBill: cUsageBill, 
-        baseMonthlyFee: baseFee,
-        referralCredits: rCredits,
-        finalBill: fBill,
-        referralCode: refCode,
-        subStatus: sStatus,
-        nextBillingDate: nBillingDate,
-        activeReferrals: aReferrals,
-        isExempt: exemptStatus
-    };
-  }, [jobs, totalJobs, totalLifetimePhotos, totalAssetsCount, monthlyPhotos, currentMonthJobs, data, currentUserId]);
+  const { usagePaid, totalSystemProfit, currentUsageBill, baseMonthlyFee, referralCredits, finalBill, referralCode, subStatus, nextBillingDate, activeReferrals, isExempt } = useMemo(() => {
+        const earliestDate = jobs.length > 0 
+          ? new Date(Math.min(...jobs.map((j: any) => new Date(j.created_at || new Date()).getTime()))) 
+          : new Date();
+        
+        const calculatedMonths = (new Date().getFullYear() - earliestDate.getFullYear()) * 12 + new Date().getMonth() - earliestDate.getMonth() + 1;
+        const finalMonthsUsed = Math.max(1, calculatedMonths); 
+        
+        const exemptStatus = data?.subscription_status === 'exempt';
+        // Veritabanından gelen dinamik değerleri kullan
+        const baseFee = data?.custom_base_price !== undefined && data?.custom_base_price !== null ? Number(data.custom_base_price) : 3000;        
+        const perAssetFee = 50;      
+    
+        // Tüm zamanlar ödenen tahmini tutar (sabit fiyat üzerinden hesaplıyoruz)
+        const uPaid = exemptStatus ? 0 : finalMonthsUsed * (baseFee + (totalAssetsCount * perAssetFee));
+        
+        // Bu ayki standart fatura (Masterboss ile birebir aynı)
+        const cUsageBill = exemptStatus ? 0 : baseFee + (totalAssetsCount * perAssetFee);
+    
+        const operationalSavings = totalJobs * 150; 
+        const printAndStorageSavings = totalLifetimePhotos * 5; 
+        const profit = operationalSavings + printAndStorageSavings;
+    
+        // 🚀 YENİ: Abonelik ve Referans Hesaplamaları
+        const refCode = data?.referralCode || data?.referral_code || 'BEKLENİYOR...';
+        const aReferrals = data?.free_months_balance || 0; // Backend'den gelen hediye ay (Masterboss'un girdiği)
+        const hasMasterbossGift = data?.has_masterboss_gift; // Backend'den gelecek yeni alan
+        
+        // Eğer Masterboss hediye ay verdiyse TÜM fatura düşer. Sadece referans ise taban ücreti (baseFee) kadar indirim uygula.
+        let rCredits = 0;
+        let fBill = cUsageBill;
+    
+        if (exemptStatus) {
+            rCredits = 0;
+            fBill = 0;
+        } else if (aReferrals > 0) {
+            if (hasMasterbossGift) {
+                rCredits = cUsageBill; // Faturanın tamamını sil
+                fBill = 0;
+            } else {
+                rCredits = baseFee; // Sadece taban ücreti sil
+                fBill = Math.max(0, cUsageBill - rCredits);
+            }
+        }
+        
+        const sStatus = exemptStatus ? 'Muaf' : (data?.subscription_status === 'active' ? 'Aktif' : (data?.subscription_status === 'past_due' ? 'Ödeme Bekliyor' : 'Deneme'));
+        const nBillingDate = data?.nextBillingDate || 'Belirlenmedi';
+    
+        return { 
+            usagePaid: uPaid, 
+            totalSystemProfit: profit, 
+            currentUsageBill: cUsageBill, 
+            baseMonthlyFee: baseFee,
+            referralCredits: rCredits,
+            finalBill: fBill,
+            referralCode: refCode,
+            subStatus: sStatus,
+            nextBillingDate: nBillingDate,
+            activeReferrals: aReferrals,
+            isExempt: exemptStatus,
+            hasMasterbossGift: hasMasterbossGift
+        };
+      }, [jobs, totalJobs, totalLifetimePhotos, totalAssetsCount, monthlyPhotos, currentMonthJobs, data, currentUserId]);
 
   const totalIncome = data?.finSummary?.income || 0;
   const totalExpense = data?.finSummary?.expense || 0;
@@ -1464,44 +1479,44 @@ const { usagePaid, totalSystemProfit, currentUsageBill, baseMonthlyFee, referral
             </div>
             
             {userRole === 'Patron' && (
-              <div className="bg-white/5 border border-white/10 rounded-xl p-5 sm:p-6 flex flex-col justify-center relative overflow-hidden">
-              {referralCredits > 0 && (
-                  <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl shadow-md flex items-center gap-1">
-                      <Star size={10} className="fill-white" /> HEDİYE KULLANIM AKTİF
-                  </div>
-              )}
-              <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1 flex items-center gap-1.5"><Activity size={14}/> Bu Ayki İşlem (Kullanım) Ücreti</div>
-              
-              {referralCredits > 0 ? (
-                  <div className="flex items-end gap-3 mt-1 mb-2">
-                      <div className="text-3xl sm:text-4xl font-black text-emerald-400">₺{finalBill.toLocaleString('tr-TR')}</div>
-                      <div className="text-lg font-bold text-slate-500 line-through mb-1">₺{currentUsageBill.toLocaleString('tr-TR')}</div>
-                  </div>
-              ) : (
-                  <div className="text-3xl sm:text-4xl font-black text-white mt-1 mb-2">₺{currentUsageBill.toLocaleString('tr-TR')}</div>
-              )}
+              <div className="bg-white/5 border border-white/10 rounded-xl p-5 sm:p-6 flex flex-col justify-center relative overflow-hidden">
+              {referralCredits > 0 && (
+                  <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl shadow-md flex items-center gap-1">
+                      <Star size={10} className="fill-white" /> HEDİYE KULLANIM AKTİF
+                  </div>
+              )}
+              <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1 flex items-center gap-1.5"><Activity size={14}/> Bu Ayki İşlem (Kullanım) Ücreti</div>
+              
+              {referralCredits > 0 ? (
+                  <div className="flex items-end gap-3 mt-1 mb-2">
+                      <div className="text-3xl sm:text-4xl font-black text-emerald-400">₺{finalBill.toLocaleString('tr-TR')}</div>
+                      <div className="text-lg font-bold text-slate-500 line-through mb-1">₺{currentUsageBill.toLocaleString('tr-TR')}</div>
+                  </div>
+              ) : (
+                  <div className="text-3xl sm:text-4xl font-black text-white mt-1 mb-2">₺{currentUsageBill.toLocaleString('tr-TR')}</div>
+              )}
 
-              {referralCredits > 0 && (
-                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 mt-2 mb-3">
-                      <p className="text-[10px] text-emerald-400 font-medium leading-relaxed flex items-start gap-1.5">
-                          <Gift size={14} className="shrink-0 mt-0.5" />
-                          <span>Sistemimizde tanımlı <strong>ücretsiz kullanım hakkınız ({activeReferrals} Ay)</strong> bulunmaktadır. Bu ayki lisans ve altyapı ücretiniz olan <strong className="text-white">₺{referralCredits.toLocaleString('tr-TR')}</strong> tarafımızca karşılanmıştır. İyi çalışmalar dileriz! 🚀</span>
-                      </p>
-                  </div>
-              )}
+              {referralCredits > 0 && (
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 mt-2 mb-3">
+                      <p className="text-[10px] text-emerald-400 font-medium leading-relaxed flex items-start gap-1.5">
+                          <Gift size={14} className="shrink-0 mt-0.5" />
+                          <span>Sistemimizde tanımlı <strong>ücretsiz kullanım hakkınız ({activeReferrals} Ay)</strong> bulunmaktadır. Bu ayki faturanızdan <strong className="text-white">₺{referralCredits.toLocaleString('tr-TR')}</strong> tutarında indirim sağlanmıştır. {data?.has_masterboss_gift ? 'İyi çalışmalar dileriz! 🚀' : 'Birlikte daha güçlüyüz! 🚀'}</span>
+                         </p>
+                      </div>
+              )}
 
-              <div className="text-[10px] text-slate-500 font-medium pt-3 border-t border-white/5 mt-auto flex justify-between items-center">
-                 <div>
-                     <span className="block text-slate-400 font-bold mb-0.5">Sistem Taban Ücreti:</span>
-                     ₺{baseMonthlyFee.toLocaleString('tr-TR')} / Ay
-                 </div>
-                 <div className="text-right">
-                     <span className="block text-slate-400 font-bold mb-0.5">Tüm Zamanlar:</span>
-                     ₺{usagePaid.toLocaleString('tr-TR')}
-                 </div>
-              </div>
-           </div>
-            )}
+              <div className="text-[10px] text-slate-500 font-medium pt-3 border-t border-white/5 mt-auto flex justify-between items-center">
+                 <div>
+                     <span className="block text-slate-400 font-bold mb-0.5">Sistem Taban Ücreti:</span>
+                     ₺{baseMonthlyFee.toLocaleString('tr-TR')} / Ay
+                 </div>
+                 <div className="text-right">
+                     <span className="block text-slate-400 font-bold mb-0.5">Tüm Zamanlar:</span>
+                     ₺{usagePaid.toLocaleString('tr-TR')}
+                 </div>
+              </div>
+           </div>
+            )}
         </div>
       </div>
 

@@ -574,7 +574,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
                         
                         {(data?.free_months_balance || 0) > 0 && (
                            <span className="block text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-tight bg-emerald-50 py-1.5 px-2 rounded-lg border border-emerald-200">
-                               🎁 Bu Ay Fatura Bizden!<br/>(Kalan Hediye: {data.free_months_balance} Ay)
+                               🎁 Bu Ay İndirimli Kullanım!<br/>(Kalan Hediye: {data.free_months_balance} Ay)
                            </span>
                         )}
                     </>
