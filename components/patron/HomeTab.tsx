@@ -308,8 +308,8 @@ const { usagePaid, totalSystemProfit, currentUsageBill, baseMonthlyFee, referral
     const profit = operationalSavings + printAndStorageSavings;
 
     // 🚀 YENİ: Abonelik ve Referans Hesaplamaları
-    const refCode = data?.referralCode || data?.referral_code || 'ISDOKUMU-' + (currentUserId || '1001');
-    const aReferrals = exemptStatus ? 0 : (data?.free_months_balance || 0); // Backend'den gelen hediye ay (Masterboss'un girdiği)
+    const refCode = data?.referralCode || data?.referral_code || 'BEKLENİYOR...';
+    const aReferrals = data?.free_months_balance || 0; // Backend'den gelen hediye ay (Masterboss'un girdiği)
     
     // Eğer hediye ayı varsa, taban ücret (baseFee) kadar indirim uygula (Masterboss ile aynı mantık)
     const rCredits = aReferrals > 0 ? baseFee : 0; 
@@ -1465,42 +1465,42 @@ const { usagePaid, totalSystemProfit, currentUsageBill, baseMonthlyFee, referral
             
             {userRole === 'Patron' && (
               <div className="bg-white/5 border border-white/10 rounded-xl p-5 sm:p-6 flex flex-col justify-center relative overflow-hidden">
-                 {referralCredits > 0 && (
-                     <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl shadow-md flex items-center gap-1">
-                         <Star size={10} className="fill-white" /> REFERANS İNDİRİMİ AKTİF
-                     </div>
-                 )}
-                 <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1 flex items-center gap-1.5"><Activity size={14}/> Bu Ayki İşlem (Kullanım) Ücreti</div>
-                 
-                 {referralCredits > 0 ? (
-                     <div className="flex items-end gap-3 mt-1 mb-2">
-                         <div className="text-3xl sm:text-4xl font-black text-emerald-400">₺{finalBill.toLocaleString('tr-TR')}</div>
-                         <div className="text-lg font-bold text-slate-500 line-through mb-1">₺{currentUsageBill.toLocaleString('tr-TR')}</div>
-                     </div>
-                 ) : (
-                     <div className="text-3xl sm:text-4xl font-black text-white mt-1 mb-2">₺{currentUsageBill.toLocaleString('tr-TR')}</div>
-                 )}
+              {referralCredits > 0 && (
+                  <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl shadow-md flex items-center gap-1">
+                      <Star size={10} className="fill-white" /> HEDİYE KULLANIM AKTİF
+                  </div>
+              )}
+              <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1 flex items-center gap-1.5"><Activity size={14}/> Bu Ayki İşlem (Kullanım) Ücreti</div>
+              
+              {referralCredits > 0 ? (
+                  <div className="flex items-end gap-3 mt-1 mb-2">
+                      <div className="text-3xl sm:text-4xl font-black text-emerald-400">₺{finalBill.toLocaleString('tr-TR')}</div>
+                      <div className="text-lg font-bold text-slate-500 line-through mb-1">₺{currentUsageBill.toLocaleString('tr-TR')}</div>
+                  </div>
+              ) : (
+                  <div className="text-3xl sm:text-4xl font-black text-white mt-1 mb-2">₺{currentUsageBill.toLocaleString('tr-TR')}</div>
+              )}
 
-                 {referralCredits > 0 && (
-                     <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 mt-2 mb-3">
-                         <p className="text-[10px] text-emerald-400 font-medium leading-relaxed flex items-start gap-1.5">
-                             <Gift size={14} className="shrink-0 mt-0.5" />
-                             <span>İş ortaklarımız olarak sizinle büyümekten gurur duyuyoruz! Referansınızla sistemimize katılan işletmeler sayesinde bu ayki <strong className="text-white">₺{referralCredits.toLocaleString('tr-TR')}</strong> tutarındaki kullanım ücretiniz bizden. Birlikte daha güçlüyüz! 🚀</span>
-                         </p>
-                     </div>
-                 )}
+              {referralCredits > 0 && (
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 mt-2 mb-3">
+                      <p className="text-[10px] text-emerald-400 font-medium leading-relaxed flex items-start gap-1.5">
+                          <Gift size={14} className="shrink-0 mt-0.5" />
+                          <span>Sistemimizde tanımlı <strong>ücretsiz kullanım hakkınız ({activeReferrals} Ay)</strong> bulunmaktadır. Bu ayki lisans ve altyapı ücretiniz olan <strong className="text-white">₺{referralCredits.toLocaleString('tr-TR')}</strong> tarafımızca karşılanmıştır. İyi çalışmalar dileriz! 🚀</span>
+                      </p>
+                  </div>
+              )}
 
-                 <div className="text-[10px] text-slate-500 font-medium pt-3 border-t border-white/5 mt-auto flex justify-between items-center">
-                    <div>
-                        <span className="block text-slate-400 font-bold mb-0.5">Sistem Taban Ücreti:</span>
-                        ₺{baseMonthlyFee.toLocaleString('tr-TR')} / Ay
-                    </div>
-                    <div className="text-right">
-                        <span className="block text-slate-400 font-bold mb-0.5">Tüm Zamanlar:</span>
-                        ₺{usagePaid.toLocaleString('tr-TR')}
-                    </div>
+              <div className="text-[10px] text-slate-500 font-medium pt-3 border-t border-white/5 mt-auto flex justify-between items-center">
+                 <div>
+                     <span className="block text-slate-400 font-bold mb-0.5">Sistem Taban Ücreti:</span>
+                     ₺{baseMonthlyFee.toLocaleString('tr-TR')} / Ay
+                 </div>
+                 <div className="text-right">
+                     <span className="block text-slate-400 font-bold mb-0.5">Tüm Zamanlar:</span>
+                     ₺{usagePaid.toLocaleString('tr-TR')}
                  </div>
               </div>
+           </div>
             )}
         </div>
       </div>

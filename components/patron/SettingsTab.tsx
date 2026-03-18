@@ -549,7 +549,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
              <div className="flex-shrink-0 bg-white border border-blue-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
                 <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Durum</span>
                 
-                {data?.subscription_status === 'trialing' && (
+                {data?.subscription_status === 'trialing' ? (
                     <>
                         <span className="block text-lg font-black mb-1 text-blue-600">Deneme Sürümü</span>
                         {(() => {
@@ -559,9 +559,12 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
                             return <span className="block text-[10px] font-bold text-blue-500 uppercase">Kalan Süre: {diff} Gün</span>;
                         })()}
                     </>
-                )}
-
-                {data?.subscription_status === 'active' && (
+                ) : data?.subscription_status === 'past_due' || data?.subscription_status === 'canceled' ? (
+                    <>
+                        <span className="block text-lg font-black mb-1 text-rose-600">Ödeme Bekliyor</span>
+                        <span className="block text-[10px] font-bold text-rose-500 uppercase">Hesap Kısıtlandı</span>
+                    </>
+                ) : (
                     <>
                         <span className="block text-lg font-black mb-1 text-emerald-600">Aktif</span>
                         
@@ -574,13 +577,6 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
                                🎁 Bu Ay Fatura Bizden!<br/>(Kalan Hediye: {data.free_months_balance} Ay)
                            </span>
                         )}
-                    </>
-                )}
-
-                {data?.subscription_status === 'past_due' && (
-                    <>
-                        <span className="block text-lg font-black mb-1 text-rose-600">Ödeme Bekliyor</span>
-                        <span className="block text-[10px] font-bold text-rose-500 uppercase">Hesap Kısıtlandı</span>
                     </>
                 )}
              </div>
@@ -605,7 +601,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
                       <input 
                          type="text" 
                          readOnly 
-                         value={data?.referralCode || data?.referral_code || 'Oluşturuluyor...'} 
+                         value={data?.referralCode || data?.referral_code || 'BEKLENİYOR...'} 
                          className="px-4 py-2 font-black text-slate-800 text-sm outline-none bg-transparent w-full sm:w-40 text-center"
                       />
                    </div>
