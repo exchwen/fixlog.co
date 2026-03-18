@@ -435,29 +435,29 @@ const { usagePaid, totalSystemProfit, currentUsageBill, baseMonthlyFee, referral
                 initial={{ opacity: 0, y: -20 }} 
                 animate={{ opacity: 1, y: 0 }} 
                 exit={{ opacity: 0, y: -20 }}
-                className={`w-full rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm border ${daysLeft <= 0 ? 'bg-rose-50 border-rose-200' : 'bg-amber-50 border-amber-200'}`}
+                className={`w-full rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm border ${(daysLeft ?? 0) <= 0 ? 'bg-rose-50 border-rose-200' : 'bg-amber-50 border-amber-200'}`}
             >
                 <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${daysLeft <= 0 ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600 animate-pulse'}`}>
-                        {daysLeft <= 0 ? <Lock size={20} /> : <AlertTriangle size={20} />}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${(daysLeft ?? 0) <= 0 ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600 animate-pulse'}`}>
+                        {(daysLeft ?? 0) <= 0 ? <Lock size={20} /> : <AlertTriangle size={20} />}
                     </div>
                     <div>
-                        <h3 className={`text-sm font-black ${daysLeft <= 0 ? 'text-rose-800' : 'text-amber-800'}`}>
+                        <h3 className={`text-sm font-black ${(daysLeft ?? 0) <= 0 ? 'text-rose-800' : 'text-amber-800'}`}>
                             {warningType === 'trial' 
-                                ? (daysLeft <= 0 ? 'Deneme Süreniz Doldu!' : 'Deneme Süreniz Sona Eriyor')
-                                : (daysLeft <= 0 ? 'Fatura Ödeme Günü!' : 'Fatura Kesim Tarihiniz Yaklaşıyor')}
+                                ? ((daysLeft ?? 0) <= 0 ? 'Deneme Süreniz Doldu!' : 'Deneme Süreniz Sona Eriyor')
+                                : ((daysLeft ?? 0) <= 0 ? 'Fatura Ödeme Günü!' : 'Fatura Kesim Tarihiniz Yaklaşıyor')}
                         </h3>
-                        <p className={`text-xs font-medium mt-0.5 ${daysLeft <= 0 ? 'text-rose-600' : 'text-amber-700'}`}>
-                            {daysLeft <= 0 
+                        <p className={`text-xs font-medium mt-0.5 ${(daysLeft ?? 0) <= 0 ? 'text-rose-600' : 'text-amber-700'}`}>
+                            {(daysLeft ?? 0) <= 0 
                                 ? 'Bugün ödeme için son gün! Ödeme yapmazsanız gün sonunda erişiminiz kısıtlanacaktır fakat verileriniz güvenle korunacaktır.'
-                                : `Ödemenize son ${daysLeft} gün kaldı. Ödeme yapmazsanız erişiminiz kısıtlanacaktır fakat verileriniz güvenle korunacaktır.`}
+                                : `Ödemenize son ${daysLeft ?? 0} gün kaldı. Ödeme yapmazsanız erişiminiz kısıtlanacaktır fakat verileriniz güvenle korunacaktır.`}
                         </p>
                     </div>
                 </div>
                 {userRole === 'Patron' && (
                     <button 
                         onClick={() => { if (setActiveTab) setActiveTab('settings'); }} 
-                        className={`shrink-0 px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 ${daysLeft <= 0 ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-amber-500 hover:bg-amber-600 text-white'}`}
+                        className={`shrink-0 px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 ${(daysLeft ?? 0) <= 0 ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-amber-500 hover:bg-amber-600 text-white'}`}
                     >
                         Ödeme Yap
                     </button>
