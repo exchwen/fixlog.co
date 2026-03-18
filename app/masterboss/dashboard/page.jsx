@@ -83,19 +83,19 @@ const [companyFilter, setCompanyFilter] = useState("all");
     try {
       const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
       const res = await fetch(`${BASE_URL}/masterboss-update-subscription`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ 
-            companySlug: selectedCompany.slug, 
-            subscriptionStatus: manageForm.subscriptionStatus, 
-            freeMonths: manageForm.freeMonths === '' ? null : parseInt(manageForm.freeMonths),
-            customDiscount: manageForm.customDiscount === '' ? null : parseInt(manageForm.customDiscount),
-            cancelTrial: manageForm.cancelTrial
-        })
-      });
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ 
+                    companySlug: selectedCompany.slug, 
+                    subscriptionStatus: manageForm.subscriptionStatus, 
+                    freeMonths: !manageForm.freeMonths ? 0 : parseInt(manageForm.freeMonths),
+                    customDiscount: manageForm.customDiscount === '' || manageForm.customDiscount === null ? null : parseInt(manageForm.customDiscount),
+                    cancelTrial: manageForm.cancelTrial
+                })
+              });
       const result = await res.json();
       
       if (result.success) {
