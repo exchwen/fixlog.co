@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { Building2, Users, Activity, BarChart3, LogOut, TicketCheck, Gift, AlertCircle, CheckCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Building2, Users, Activity, BarChart3, LogOut, TicketCheck, Gift, AlertCircle, CheckCircle, Database, Plus, ShoppingCart, X } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function MasterbossDashboard() {
@@ -12,28 +12,29 @@ export default function MasterbossDashboard() {
   const [activeTab, setActiveTab] = useState("companies");
   const [replyTexts, setReplyTexts] = useState({});
 
-// Subscription Control States
-const [showManageModal, setShowManageModal] = useState(false);
-const [selectedCompany, setSelectedCompany] = useState(null);
-const [manageForm, setManageForm] = useState({ subscriptionStatus: '', freeMonths: '', customDiscount: '', cancelTrial: false, hasMasterbossGift: false });
-const [isSaving, setIsSaving] = useState(false);
+  // Subscription Control States
+  const [showManageModal, setShowManageModal] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [manageForm, setManageForm] = useState({ subscriptionStatus: '', freeMonths: '', customDiscount: '', customAssetPrice: '', cancelTrial: false, hasMasterbossGift: false });
+  const [globalPricingForm, setGlobalPricingForm] = useState({ base: 3000, asset: 50 });
+  const [isSaving, setIsSaving] = useState(false);
 
-// 🚀 YENİ: Başarı Modalı State'i
-const [showSuccessModal, setShowSuccessModal] = useState(false);
-const [successMessage, setSuccessMessage] = useState("");
+  // 🚀 YENİ: Başarı Modalı State'i
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
-// 🚀 YENİ: Bilgi Modalı Stateleri
-const [showInfoModal, setShowInfoModal] = useState(false);
-const [infoCompany, setInfoCompany] = useState(null);
-const [infoTab, setInfoTab] = useState("genel");
-const [infoDetails, setInfoDetails] = useState(null);
-const [infoLoading, setInfoLoading] = useState(false);
+  // 🚀 YENİ: Bilgi Modalı Stateleri
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [infoCompany, setInfoCompany] = useState(null);
+  const [infoTab, setInfoTab] = useState("genel");
+  const [infoDetails, setInfoDetails] = useState(null);
+  const [infoLoading, setInfoLoading] = useState(false);
 
-// 🚀 YENİ: Ticket Modalı State'i
-const [selectedTicket, setSelectedTicket] = useState(null);
+  // 🚀 YENİ: Ticket Modalı State'i
+  const [selectedTicket, setSelectedTicket] = useState(null);
 
-// 🚀 YENİ: Firma Filtreleme State'i
-const [companyFilter, setCompanyFilter] = useState("all");
+  // 🚀 YENİ: Firma Filtreleme State'i
+  const [companyFilter, setCompanyFilter] = useState("all");
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -78,6 +79,13 @@ const [companyFilter, setCompanyFilter] = useState("all");
     router.replace("/masterboss");
   };
 
+  const { companies = [], tickets = [], referrals = [], rewards = [], stats = {}, globalPricing } = data || {};
+
+  // Veri yüklendiğinde globalPricing state'ini senkronize et
+  useEffect(() => {
+      if (globalPricing) setGlobalPricingForm({ base: globalPricing.base, asset: globalPricing.asset });
+  }, [globalPricing]);
+
   const handleUpdateSubscription = async () => {
     const token = localStorage.getItem("masterbossToken");
     if (!token) return toast.error("Yetkisiz işlem!");
@@ -88,14 +96,12 @@ const [companyFilter, setCompanyFilter] = useState("all");
     try {
       const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
       
-      // Payload'u temiz bir obje olarak tanımlayıp görünmez boşluk (NBSP) hatalarının önüne geçiyoruz.
-      // Worker tarafında (hasMasterbossGift === true) şeklinde katı bir kontrol olduğu için 
-      // veriyi 1/0 değil, doğrudan boolean (true/false) olarak göndermeliyiz. Worker DB'ye yazarken kendi 1/0 yapıyor.
       const payload = {
         companySlug: selectedCompany.slug,
         subscriptionStatus: manageForm.subscriptionStatus,
         freeMonths: manageForm.freeMonths === '' ? 0 : parseInt(manageForm.freeMonths, 10),
         customDiscount: manageForm.customDiscount === '' ? null : parseInt(manageForm.customDiscount, 10),
+        customAssetPrice: manageForm.customAssetPrice === '' ? null : parseInt(manageForm.customAssetPrice, 10),
         cancelTrial: manageForm.cancelTrial,
         hasMasterbossGift: manageForm.hasMasterbossGift
       };
@@ -135,35 +141,67 @@ const [companyFilter, setCompanyFilter] = useState("all");
     }
   };
 
-// 🚀 YENİ: Esc ve Mobil Geri Tuşu (PopState) ile Modalları Kapatma
-useEffect(() => {
-  const handleKeyDown = (e) => {
-    if (e.key === "Escape") {
-      setSelectedTicket(null);
-      setShowInfoModal(false);
-      setShowManageModal(false);
-      setShowSuccessModal(false);
+  const handleUpdateGlobalPricing = async () => {
+    const token = localStorage.getItem("masterbossToken");
+    if (!token) return toast.error("Yetkisiz işlem!");
+
+    setIsSaving(true);
+    const toastId = toast.loading("Sistem genel fiyatları güncelleniyor...");
+    
+    try {
+      const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+      const res = await fetch(`${BASE_URL}/masterboss-update-global-pricing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ basePrice: globalPricingForm.base, assetPrice: globalPricingForm.asset })
+      });
+      const result = await res.json();
+      
+      if (result.success) {
+        toast.success("Tüm sistem fiyatları başarıyla güncellendi (Özel fiyatlı firmalar hariç)!", { id: toastId });
+        // Veriyi yenile
+        const resData = await fetch(`${BASE_URL}/masterboss-data`, { headers: { "Authorization": `Bearer ${token}` } });
+        const jsonData = await resData.json();
+        if(jsonData.success) setData(jsonData);
+      } else {
+        toast.error(result.error || "Hata oluştu!", { id: toastId });
+      }
+    } catch (err) {
+      toast.error("Bağlantı hatası", { id: toastId });
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handlePopState = () => {
-    if (selectedTicket) setSelectedTicket(null);
-    if (showInfoModal) setShowInfoModal(false);
-    if (showManageModal) setShowManageModal(false);
-    if (showSuccessModal) setShowSuccessModal(false);
-  };
+  // 🚀 YENİ: Esc ve Mobil Geri Tuşu (PopState) ile Modalları Kapatma
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setSelectedTicket(null);
+        setShowInfoModal(false);
+        setShowManageModal(false);
+        setShowSuccessModal(false);
+      }
+    };
 
-  if (selectedTicket || showInfoModal || showManageModal || showSuccessModal) {
-    window.history.pushState({ modal: "open" }, "");
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("popstate", handlePopState);
-  }
+    const handlePopState = () => {
+      if (selectedTicket) setSelectedTicket(null);
+      if (showInfoModal) setShowInfoModal(false);
+      if (showManageModal) setShowManageModal(false);
+      if (showSuccessModal) setShowSuccessModal(false);
+    };
 
-  return () => {
-    window.removeEventListener("keydown", handleKeyDown);
-    window.removeEventListener("popstate", handlePopState);
-  };
-}, [selectedTicket, showInfoModal, showManageModal, showSuccessModal]);
+    if (selectedTicket || showInfoModal || showManageModal || showSuccessModal) {
+      window.history.pushState({ modal: "open" }, "");
+      window.addEventListener("keydown", handleKeyDown);
+      window.addEventListener("popstate", handlePopState);
+    }
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [selectedTicket, showInfoModal, showManageModal, showSuccessModal]);
 
   // 🚀 YENİ: Artık eylemin (action) türünü de alıyor ('reply' veya 'resolve')
   const handleTicketAction = async (ticket, actionType) => {
@@ -222,8 +260,6 @@ useEffect(() => {
     );
   }
 
-  const { companies = [], tickets = [], referrals = [], rewards = [], stats = {} } = data || {};
-
   const totalAssets = companies.reduce((acc, c) => acc + (c.total_assets || 0), 0);
   const totalStaff = companies.reduce((acc, c) => acc + (c.total_staff || 0), 0);
   const activeCompanies = companies.filter(c => c.subscription_status === 'active').length;
@@ -233,16 +269,18 @@ useEffect(() => {
   // Aylık Gelir (Şu anki tahsilatlar)
   const totalMonthlyRevenue = companies.reduce((acc, c) => {
     if (c.subscription_status === 'active' && c.has_masterboss_gift !== 1) {
-         const basePrice = (c.custom_base_price !== null && c.custom_base_price !== undefined) ? Number(c.custom_base_price) : 3000;
+         const basePrice = (c.custom_base_price !== null && c.custom_base_price !== undefined) ? Number(c.custom_base_price) : (globalPricing?.base || 3000);
+         const assetPrice = (c.custom_per_asset_price !== null && c.custom_per_asset_price !== undefined) ? Number(c.custom_per_asset_price) : (globalPricing?.asset || 50);
+
          const activeBasePrice = (c.free_months_balance && c.free_months_balance > 0) ? 0 : basePrice; 
-         const assetRevenue = (c.total_assets || 0) * 50; 
+         const assetRevenue = (c.total_assets || 0) * assetPrice; 
          return acc + activeBasePrice + assetRevenue;
     }
     return acc;
   }, 0);
 
-  // Yıllık Gelir (Toplam Kesinleşmiş İstatistikler Üzerinden - Varsayımsal hesaplama yapmayacağız, backendden gelen stats.yearlyRevenue kullanılmalı. Eğer yoksa aylık hesabı sabit tutarız ama sen tahmini değil net veri istediğin için stats objesinden okuyacağız. Eğer stats.yearlyRevenue gelmiyorsa, mecburen aktif abonelikleri yıllık faturaya çevirmek en gerçekçi yöntemdir, çünkü "o yıl kazanılan" bilgi backendden gelmiyorsa elimizdeki en net bilgi bu firmaların yıllık planıdır.)
-  const totalYearlyRevenue = stats.yearlyRevenue || (totalMonthlyRevenue * 12); // Backend desteği geldiğinde sadece stats.yearlyRevenue kullanılacak.
+  // Yıllık Gelir 
+  const totalYearlyRevenue = stats.yearlyRevenue || (totalMonthlyRevenue * 12);
 
   // Aylık Gerçek Maliyet
   const monthlyExpectedCost = (
@@ -258,7 +296,7 @@ useEffect(() => {
      (stats.yearlyJobs || 0) * 3 * 0.0003 + 
      (stats.yearlyJobs || 0) * 12 * 0.00005 + 
      (stats.yearlyPhotos || 0) * 15 * 0.0001 + 
-     (stats.totalPhotos || 0) * 2.5 * 0.001 + // Depolama her zaman toplam boyut üzerinden hesaplanır
+     (stats.totalPhotos || 0) * 2.5 * 0.001 + 
      (stats.yearlyJobs || 0) * 15 * 0.00001 
   );
 
@@ -315,6 +353,42 @@ useEffect(() => {
         >
           {activeTab === "companies" && (
             <div className="overflow-x-auto p-4">
+              
+              {/* 🚀 YENİ: Global Sistem Fiyatlandırması (Tek Tuşla Zam) */}
+              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 mb-6 flex flex-col md:flex-row items-center gap-4 justify-between">
+                  <div>
+                      <h4 className="text-white font-bold flex items-center gap-2 mb-1"><Database size={16} className="text-blue-500" /> Sistem Genel Fiyatlandırması (Oto-Zam)</h4>
+                      <p className="text-xs text-neutral-500">Özel fiyat tanımlanmayan tüm firmalara otomatik uygulanacak sabit paket ve varlık başı fiyatı buradan değiştirebilirsiniz.</p>
+                  </div>
+                  <div className="flex items-center gap-3 w-full md:w-auto">
+                      <div className="relative w-full md:w-32">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-xs font-bold">Sabit:</span>
+                          <input 
+                              type="number" 
+                              value={globalPricingForm.base} 
+                              onChange={(e) => setGlobalPricingForm({...globalPricingForm, base: Number(e.target.value)})}
+                              className="w-full bg-neutral-950 border border-neutral-700 text-white rounded-lg py-2 pl-12 pr-3 outline-none focus:border-blue-500 text-sm font-bold"
+                          />
+                      </div>
+                      <div className="relative w-full md:w-32">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-xs font-bold">Varlık:</span>
+                          <input 
+                              type="number" 
+                              value={globalPricingForm.asset} 
+                              onChange={(e) => setGlobalPricingForm({...globalPricingForm, asset: Number(e.target.value)})}
+                              className="w-full bg-neutral-950 border border-neutral-700 text-white rounded-lg py-2 pl-14 pr-3 outline-none focus:border-blue-500 text-sm font-bold"
+                          />
+                      </div>
+                      <button 
+                          onClick={handleUpdateGlobalPricing} 
+                          disabled={isSaving}
+                          className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold text-sm whitespace-nowrap transition-colors"
+                      >
+                          Kaydet (Zam Yap)
+                      </button>
+                  </div>
+              </div>
+
               {/* 🚀 YENİ: Firma Filtreleme Sekmeleri */}
               <div className="flex flex-wrap items-center gap-2 mb-6 border-b border-neutral-800 pb-4">
                  <button onClick={() => setCompanyFilter("all")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "all" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Tümü ({companies.length})</button>
@@ -349,7 +423,12 @@ useEffect(() => {
                         <div className="text-xs text-neutral-500 mt-1">Ref: {c.referral_code}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="font-medium text-white">{c.company_name}</div>
+                        <div className="font-medium text-white flex items-center gap-2">
+                            {c.company_name}
+                            {(c.custom_base_price !== null || c.custom_per_asset_price !== null) && (
+                                <span className="bg-purple-500/20 text-purple-400 border border-purple-500/30 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest" title="Bu firma genel zamlardan etkilenmez">ÖZEL FİYAT</span>
+                            )}
+                        </div>
                         <div className="text-neutral-500">{c.owner_name}</div>
                       </td>
                       <td className="px-6 py-4">
@@ -409,6 +488,7 @@ useEffect(() => {
                               subscriptionStatus: c.subscription_status || 'trialing', 
                               freeMonths: c.free_months_balance !== undefined && c.free_months_balance !== null ? c.free_months_balance : '', 
                               customDiscount: c.custom_base_price !== undefined && c.custom_base_price !== null ? c.custom_base_price : '', 
+                              customAssetPrice: c.custom_per_asset_price !== undefined && c.custom_per_asset_price !== null ? c.custom_per_asset_price : '',
                               cancelTrial: false,
                               hasMasterbossGift: c.has_masterboss_gift === 1
                             }); 
@@ -431,7 +511,7 @@ useEffect(() => {
             </div>
           )}
 
-{activeTab === "tickets" && (
+          {activeTab === "tickets" && (
             <div className="p-6">
               <div className="space-y-4">
                 {tickets.map(t => (
@@ -588,15 +668,28 @@ useEffect(() => {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wider">Özel Fiyat Tanımla (₺)</label>
-                <input 
-                  type="number" 
-                  placeholder="Boş bırakılırsa standart tarife (örn: 3000₺) uygulanır"
-                  value={manageForm.customDiscount} 
-                  onChange={(e) => setManageForm({...manageForm, customDiscount: e.target.value})}
-                  className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-rose-500 transition-colors placeholder-neutral-600"
-                />
+              <div className="grid grid-cols-2 gap-4 border-t border-neutral-800 pt-4">
+                <div className="col-span-2"><label className="block text-xs font-black text-purple-400 uppercase tracking-wider">Özel Fiyatlandırma (Opsiyonel)</label><p className="text-[10px] text-neutral-500 mb-2">Eğer buraya değer girerseniz, sistem genelindeki zamlar bu firmayı etkilemez. Sıfırlamak için içini boş bırakın.</p></div>
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-400 mb-1">Sabit Paket Ücreti (₺)</label>
+                  <input 
+                    type="number" 
+                    placeholder={`Varsayılan: ${globalPricing?.base || 3000}₺`}
+                    value={manageForm.customDiscount} 
+                    onChange={(e) => setManageForm({...manageForm, customDiscount: e.target.value})}
+                    className="w-full bg-neutral-950 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-purple-500 transition-colors placeholder-neutral-600 font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-400 mb-1">Varlık Başı Ücret (₺)</label>
+                  <input 
+                    type="number" 
+                    placeholder={`Varsayılan: ${globalPricing?.asset || 50}₺`}
+                    value={manageForm.customAssetPrice} 
+                    onChange={(e) => setManageForm({...manageForm, customAssetPrice: e.target.value})}
+                    className="w-full bg-neutral-950 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-purple-500 transition-colors placeholder-neutral-600 font-bold"
+                  />
+                </div>
               </div>
 
               {selectedCompany.subscription_status === 'trialing' && selectedCompany.trial_ends_at !== null && (

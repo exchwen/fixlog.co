@@ -318,15 +318,15 @@ const { daysLeft, showWarning, warningType, warningMessage, warningTitle } = use
     const finalMonthsUsed = Math.max(1, calculatedMonths); 
     
     const exemptStatus = data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true;
-    // Veritabanından gelen dinamik değerleri kullan
-    const baseFee = data?.custom_base_price !== undefined && data?.custom_base_price !== null ? Number(data.custom_base_price) : 3000;        
-    const perAssetFee = 50;      
+    // Veritabanından gelen dinamik değerleri kullan (Eğer custom girilmemişse Global'den beslen)
+   const baseFee = data?.custom_base_price !== undefined && data?.custom_base_price !== null ? Number(data.custom_base_price) : Number(data?.global_base_price || 3000);        
+   const perAssetFee = data?.custom_per_asset_price !== undefined && data?.custom_per_asset_price !== null ? Number(data.custom_per_asset_price) : Number(data?.global_asset_price || 50);      
 
-    // Tüm zamanlar ödenen tahmini tutar (sabit fiyat üzerinden hesaplıyoruz)
-    const uPaid = exemptStatus ? 0 : finalMonthsUsed * (baseFee + (totalAssetsCount * perAssetFee));
-    
-    // Bu ayki standart fatura (Masterboss ile birebir aynı)
-    const cUsageBill = exemptStatus ? 0 : baseFee + (totalAssetsCount * perAssetFee);
+   // Tüm zamanlar ödenen tahmini tutar (sabit fiyat üzerinden hesaplıyoruz)
+   const uPaid = exemptStatus ? 0 : finalMonthsUsed * (baseFee + (totalAssetsCount * perAssetFee));
+   
+   // Bu ayki standart fatura (Masterboss ile birebir aynı)
+   const cUsageBill = exemptStatus ? 0 : baseFee + (totalAssetsCount * perAssetFee);
 
     const operationalSavings = totalJobs * 150; 
     const printAndStorageSavings = totalLifetimePhotos * 5; 
@@ -1416,18 +1416,23 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
                       <Users size={18} className="text-indigo-400" /> İş Ortaklığı Merkezi
                   </h3>
                   <div className="flex flex-col sm:flex-row gap-4 relative z-10">
-                      <div className="flex-1 bg-white/10 border border-white/10 rounded-xl p-4 flex flex-col justify-center">
-                          <div className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-1">Kumbaradaki İndirim (Toplam)</div>
-                          <div className="text-2xl font-black text-emerald-400">₺{(activeReferrals * baseMonthlyFee).toLocaleString('tr-TR')}</div>
-                          <div className="text-[10px] text-indigo-100 mt-1 opacity-80">{activeReferrals} ay hediye kullanım hakkınız birikti</div>
-                      </div>
-                      <div className="flex-[2] flex flex-col justify-center">
+                      {userRole === 'Patron' && (
+                          <div className="flex-1 bg-white/10 border border-white/10 rounded-xl p-4 flex flex-col justify-center">
+                              <div className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-1">Kumbaradaki İndirim (Toplam)</div>
+                              <div className="text-2xl font-black text-emerald-400">₺{(activeReferrals * baseMonthlyFee).toLocaleString('tr-TR')}</div>
+                              <div className="text-[10px] text-indigo-100 mt-1 opacity-80">{activeReferrals} ay hediye kullanım hakkınız birikti</div>
+                          </div>
+                      )}
+                      <div className={`${userRole === 'Patron' ? 'flex-[2]' : 'flex-1'} flex flex-col justify-center`}>
                           <p className="text-[11px] text-indigo-100 font-medium leading-relaxed mb-3">
-                              Referans kodunuzla kayıt olan ve ilk ödemesini yapan her işletme için kumbaranıza <strong>+1 aylık ({baseMonthlyFee.toLocaleString('tr-TR')} ₺ değerinde)</strong> indirim eklenir. Sınır yok, getirdiğiniz kadar ay bedava kullanın! (Karşı taraf da 1 ay kazanır).
+                              {userRole === 'Patron' 
+                                  ? `Referans kodunuzla kayıt olan ve ilk ödemesini yapan her işletme için kumbaranıza +1 aylık (${baseMonthlyFee.toLocaleString('tr-TR')} ₺ değerinde) indirim eklenir. Sınır yok, getirdiğiniz kadar ay bedava kullanın! (Karşı taraf da 1 ay kazanır).`
+                                  : `Firma referans kodunuz aşağıdadır. Sisteme davet ettiğiniz firmalar bu kod ile kayıt olabilirler.`
+                              }
                           </p>
-                          <div className="flex items-center gap-2 bg-indigo-950/50 border border-indigo-500/30 rounded-lg p-1.5 pl-3">
+                          <div className="flex items-center gap-2 bg-indigo-950/50 border border-indigo-500/30 rounded-lg p-1.5 pl-3 w-full sm:w-max min-w-[250px]">
                               <span className="text-xs font-black text-indigo-300 tracking-wider flex-1 truncate">{referralCode}</span>
-                              <button 
+                              <button 
                                 onClick={() => {
                                     navigator.clipboard.writeText(referralCode);
                                     setAlertModal({ isOpen: true, message: 'Referans kodunuz kopyalandı!', type: 'success' });
