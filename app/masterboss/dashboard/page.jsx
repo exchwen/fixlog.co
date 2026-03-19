@@ -47,7 +47,7 @@ const [companyFilter, setCompanyFilter] = useState("all");
           }
         });
 
-        if (res.status === 403) {
+        if (res.status === 403 || res.status === 401) {
           localStorage.removeItem("masterbossToken");
           router.replace("/masterboss");
           return;
