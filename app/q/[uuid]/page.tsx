@@ -492,7 +492,7 @@ export default function AssetScanPage() {
       
       <div className="mt-8 mb-4 text-center opacity-70 hover:opacity-100 transition-opacity z-10 relative">
         <a href="https://isdokumu.com" target="_blank" rel="noopener noreferrer" className="text-[11px] text-slate-500 font-bold uppercase tracking-widest block hover:text-slate-800 transition-colors">isdokumu.com</a>
-        <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-1.5">Powered by İş Dökümü</p>
+        <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-1.5">Powered by FixLog.co</p>
       </div>
 
       {showEmergencyConfirm && (

@@ -1,7 +1,7 @@
 {
-  "name": "İş Dökümü",
-  "short_name": "İş Dökümü",
-  "description": "Saha operasyonları, personel ve iş takibi uygulaması.",
+  "name": "FixLog.co",
+  "short_name": "FixLog.co",
+  "description": "Saha operasyonları, personel, varlık, stok, kasa ve iş takibi uygulaması.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",

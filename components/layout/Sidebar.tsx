@@ -115,7 +115,7 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
                <ShieldCheck size={18} />
             </div>
             <div className="flex-col opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex">
-               <span className="font-bold text-white text-sm tracking-tight uppercase whitespace-nowrap">İŞ DÖKÜMÜ</span>
+               <span className="font-bold text-white text-sm tracking-tight uppercase whitespace-nowrap">FixLog.co</span>
                <span className="text-[10px] text-blue-500 font-bold tracking-widest whitespace-nowrap">{userRole || 'Yönetim'}</span>
             </div>
           </div>

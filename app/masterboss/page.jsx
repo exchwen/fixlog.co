@@ -70,7 +70,7 @@ export default function MasterbossLogin() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-12 pr-4 py-4 bg-neutral-950/50 border border-neutral-800/80 rounded-2xl focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 outline-none transition-all text-white placeholder-neutral-600"
-                  placeholder="İş Dökümü"
+                  placeholder="FixLog.co"
                   required
                 />
               </div>
@@ -109,7 +109,7 @@ export default function MasterbossLogin() {
         
         <p className="text-center text-xs text-neutral-600 mt-8">
           İzinsiz giriş denemeleri kayıt altına alınmaktadır.<br/>
-          Copyright © {new Date().getFullYear()} İş Dökümü
+          Copyright © {new Date().getFullYear()} FixLog.co
         </p>
       </motion.div>
     </div>

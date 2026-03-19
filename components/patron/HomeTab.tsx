@@ -1497,7 +1497,7 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
                       <div className="flex flex-col items-center justify-center text-center h-full">
                           <Star size={28} className="text-purple-400 mb-2" />
                           <h4 className="text-base font-black text-white">VIP Muafiyet Aktif</h4>
-                          <p className="text-[10px] text-purple-300 mt-1">Faturanız Masterboss tarafından karşılanıyor.</p>
+                          <p className="text-[10px] text-purple-300 mt-1">Faturanız FixLog.co tarafından karşılanıyor.</p>
                       </div>
                   ) : (
                       <>

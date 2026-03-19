@@ -410,7 +410,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
                   placeholder="05XX XXX XX XX"
                 />
               </div>
-              <p className="text-[10px] font-medium text-slate-400 mt-1.5 leading-snug">İş Dökümü yetkililerinin sizinle iletişime geçebileceği ana irtibat numarasıdır.</p>
+              <p className="text-[10px] font-medium text-slate-400 mt-1.5 leading-snug">FixLog.co yetkililerinin sizinle iletişime geçebileceği ana irtibat numarasıdır.</p>
             </div>
 
             <div>
@@ -557,7 +557,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
                             Ücret: ₺0
                         </span>
                         <span className="block text-[9px] font-black text-purple-600 tracking-widest leading-tight bg-purple-50 py-1.5 px-2 rounded-lg border border-purple-200 shadow-sm">
-                            Faturanız Masterboss tarafından karşılanıyor.
+                            Faturanız FixLog.co tarafından karşılanıyor.
                         </span>
                     </>
                 ) : data?.subscription_status === 'trialing' ? (

@@ -167,7 +167,7 @@ export default function RegisterPage() {
                 <ShieldCheck className="w-6 h-6 text-white" />
               </div>
               <span className="text-xl font-black text-gray-900 tracking-tight hidden sm:block">
-                İş Dökümü
+              FixLog.co
               </span>
             </div>
             <button

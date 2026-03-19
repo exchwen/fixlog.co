@@ -116,8 +116,8 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
         const icon512 = generateIcon(512);
 
         const dynamicManifest = {
-          name: companyName || "İş Dökümü",
-          short_name: companyName || "İş Dökümü",
+          name: companyName || "FixLog.co",
+          short_name: companyName || "FixLog.co",
           description: "Saha operasyonları, personel ve iş takibi uygulaması.",
           // 🚀 KESİN ÇÖZÜM: URL is invalid hatasını önlemek için tam adres veriyoruz.
           start_url: window.location.origin + window.location.pathname,

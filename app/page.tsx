@@ -126,7 +126,7 @@ const FEATURES = [
 ];
 
 const t = {
-  brand: 'İş Dökümü',
+  brand: 'FixLog.co',
   login: 'Giriş Yap',
   tryFree: '14 Gün Ücretsiz Dene',
   heroTitle1: 'İşletmenizi Uçtan Uca,',
@@ -301,7 +301,7 @@ export default function LandingPage() {
                     <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-md shadow-blue-600/30">
                       <ShieldCheck className="w-5 h-5" />
                     </div>
-                    <span className="font-black text-gray-900 text-base tracking-tight">İş Dökümü</span>
+                    <span className="font-black text-gray-900 text-base tracking-tight">FixLog.co</span>
                   </div>
 
                   {[
@@ -807,7 +807,7 @@ export default function LandingPage() {
               <div className="flex items-center gap-2 mb-5">
                 <ShieldCheck className="w-7 h-7 text-blue-600" />
                 <span translate="no" className="notranslate text-xl font-black text-gray-900 tracking-tight">
-                  İş Dökümü
+                FixLog.co
                 </span>
               </div>
               <p className="text-sm text-gray-500 leading-relaxed pr-4 font-medium">
@@ -849,7 +849,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="border-t border-gray-100 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-bold text-gray-400">
-            <p>© {new Date().getFullYear()} İş Dökümü. Tüm hakları saklıdır.</p>
+            <p>© {new Date().getFullYear()} FixLog.co. Tüm hakları saklıdır.</p>
             <div className="flex gap-4">
               <Globe className="w-4 h-4 hover:text-gray-600 cursor-pointer transition-colors" />
               <span>Türkiye / İstanbul</span>

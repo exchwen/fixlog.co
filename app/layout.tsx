@@ -12,7 +12,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'İş Dökümü | Profesyonel İş Takip Sistemi',
+  title: 'FixLog.co | Profesyonel İş Takip Sistemi',
   description:
     'Global, ölçeklenebilir ve sürdürülebilir yeni nesil iş takip SaaS platformu.',
     
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 
   appleWebApp: {
     statusBarStyle: "default",
-    title: "İş Dökümü",
+    title: "FixLog.co",
   },
   other: {
     "mobile-web-app-capable": "yes"

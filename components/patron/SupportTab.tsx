@@ -326,7 +326,7 @@ export default function SupportTab({ handleAction, isSaving }: any) {
             Destek & Geri Bildirim Merkezi
             {isOffline && <span title="Çevrimdışı Mod"><WifiOff size={16} className="text-amber-500" /></span>}
           </h3>
-          <p className="text-[11px] sm:text-xs font-medium text-slate-500 mt-1">İş Dökümü ekibine ulaşın. Fikirleriniz bizim için çok değerli.</p>
+          <p className="text-[11px] sm:text-xs font-medium text-slate-500 mt-1">FixLog.co ekibine ulaşın. Fikirleriniz bizim için çok değerli.</p>
         </div>
       </div>
 
@@ -337,7 +337,7 @@ export default function SupportTab({ handleAction, isSaving }: any) {
             <div>
                 <h4 className="text-lg sm:text-xl font-black mb-3 sm:mb-4">Sizi Dinliyoruz</h4>
                 <p className="text-slate-400 text-xs sm:text-sm leading-relaxed mb-6 font-medium">
-                    İş Dökümü sistemini sizlerin taleplerine göre geliştiriyoruz. Bir özelliğin eksik olduğunu düşünüyorsanız veya teknik bir aksaklık yaşıyorsanız bize anında buradan bildirebilirsiniz.
+                FixLog.co sistemini sizlerin taleplerine göre geliştiriyoruz. Bir özelliğin eksik olduğunu düşünüyorsanız veya teknik bir aksaklık yaşıyorsanız bize anında buradan bildirebilirsiniz.
                 </p>
             </div>
             <div className="bg-white/10 p-4 sm:p-5 rounded-xl border border-white/10 backdrop-blur-sm mt-4 md:mt-0">
@@ -378,7 +378,7 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                         <p className="text-slate-500 font-medium px-4 text-sm">
                           {isOffline 
                             ? 'İnternet bağlantınız yok. Talebiniz cihaza kaydedildi, bağlantı sağlandığında ekibimize iletilecektir.' 
-                            : 'Geri bildiriminiz İş Dökümü ekibine başarıyla iletildi. İlginiz için teşekkür ederiz.'}
+                            : 'Geri bildiriminiz FixLog.co ekibine başarıyla iletildi. İlginiz için teşekkür ederiz.'}
                         </p>
                     </motion.div>
                 ) : modalState === 'error' ? (
@@ -553,7 +553,7 @@ export default function SupportTab({ handleAction, isSaving }: any) {
                                  <div key={idx} className={`w-full max-w-[90%] sm:max-w-[75%] ${isSupport ? 'mr-auto' : 'ml-auto'}`}>
                                     <div className={`flex items-center mb-1 gap-2 ${isSupport ? 'justify-start' : 'justify-end'}`}>
                                         <span className={`text-[10px] font-bold uppercase tracking-wider ${isSupport ? 'text-amber-600' : 'text-slate-400'}`}>
-                                            {isSupport ? 'İş Dökümü Destek Ekibi' : 'Siz'}
+                                            {isSupport ? 'FixLog.co Destek Ekibi' : 'Siz'}
                                         </span>
                                         <span className="text-[9px] font-medium text-slate-400">{new Date(reply.date).toLocaleString('tr-TR')}</span>
                                     </div>
