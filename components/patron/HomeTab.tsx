@@ -69,45 +69,70 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const stock = data?.stock || [];
   const staff = data?.staff || [];
 
-  // 🚀 YENİ: DENEME SÜRÜMÜ VE NORMAL FATURA GERİ SAYIM HESAPLAMASI
-  const { daysLeft, showWarning, warningType } = useMemo(() => {
-    const subStatus = data?.subscription_status;
-    const freeMonths = data?.free_months_balance || 0;
-    let endDateStr = null;
-    let type = 'trial';
+// 🚀 YENİ: DENEME SÜRÜMÜ VE NORMAL FATURA GERİ SAYIM HESAPLAMASI
+const { daysLeft, showWarning, warningType, warningMessage, warningTitle } = useMemo(() => {
+  const subStatus = data?.subscription_status;
+  const freeMonths = data?.free_months_balance || 0;
+  const isExempt = data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true;
+  let endDateStr = null;
+  let type = 'trial';
 
-    if (subStatus === 'trialing' && data?.trial_ends_at) {
-        endDateStr = data.trial_ends_at;
-        type = 'trial';
-    } else if (subStatus === 'active' && data?.billing_cycle_anchor) {
-        endDateStr = data.billing_cycle_anchor;
-        type = 'active';
-    }
+  // Eğer kullanıcı muaf ise (veya zaten iptal/gecikmedeyse) ekstra gün sayımı uyarısına gerek yok.
+  if (isExempt || subStatus === 'past_due' || subStatus === 'canceled') {
+      return { daysLeft: null, showWarning: false, warningType: type, warningMessage: '', warningTitle: '' };
+  }
 
-    if (!endDateStr || subStatus === 'past_due' || subStatus === 'canceled') {
-        return { daysLeft: null, showWarning: false, warningType: type };
-    }
-    
-    const today = new Date();
-    const endDate = new Date(endDateStr);
-    
-    // Saat farklarını sıfırlayarak net gün farkını bulalım
-    today.setHours(0, 0, 0, 0);
-    endDate.setHours(0, 0, 0, 0);
-    
-    const diffTime = endDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    // Eğer firmanın hediye ayı varsa normal fatura ödeme uyarısı gösterme, darlamayalım.
-    const isFree = type === 'active' && freeMonths > 0;
-    const shouldShow = diffDays <= 7 && !isFree;
-    
-    return { 
-        daysLeft: diffDays, 
-        showWarning: shouldShow, 
-        warningType: type
-    };
-  }, [data?.subscription_status, data?.trial_ends_at, data?.billing_cycle_anchor, data?.free_months_balance]);
+  if (subStatus === 'trialing' && data?.trial_ends_at) {
+      endDateStr = data.trial_ends_at;
+      type = 'trial';
+  } else if (subStatus === 'active' && data?.billing_cycle_anchor) {
+      endDateStr = data.billing_cycle_anchor;
+      type = 'active';
+  }
+
+  if (!endDateStr) {
+      return { daysLeft: null, showWarning: false, warningType: type, warningMessage: '', warningTitle: '' };
+  }
+  
+  const today = new Date();
+  const endDate = new Date(endDateStr);
+  
+  // Saat farklarını sıfırlayarak net gün farkını bulalım
+  today.setHours(0, 0, 0, 0);
+  endDate.setHours(0, 0, 0, 0);
+  
+  const diffTime = endDate.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  // Eğer firmanın hediye ayı varsa normal fatura ödeme uyarısı gösterme, darlamayalım.
+  const isFree = type === 'active' && freeMonths > 0;
+  const shouldShow = diffDays <= 7 && !isFree;
+
+  let title = '';
+  let message = '';
+
+  if (shouldShow) {
+      if (type === 'trial') {
+          title = diffDays <= 0 ? 'Deneme Süreniz Doldu!' : 'Deneme Süreniz Sona Eriyor';
+          message = diffDays <= 0 
+              ? 'Bugün ödeme için son gün! Ödeme yapmazsanız gün sonunda hesabınız kısıtlanacaktır fakat verileriniz güvenle korunacaktır.' 
+              : `Ödemenize son ${diffDays} gün kaldı. Deneme sürümü bitince ödeme yapmazsanız hesabınız kısıtlanacaktır.`;
+      } else {
+          title = diffDays <= 0 ? 'Fatura Ödeme Günü!' : 'Fatura Kesim Tarihiniz Yaklaşıyor';
+          message = diffDays <= 0 
+              ? 'Bugün ödeme için son gün! Ödeme yapmazsanız erişiminiz kısıtlanacaktır.' 
+              : `Ödemenize son ${diffDays} gün kaldı. Ödeme yapmazsanız hesabınız kısıtlanacaktır.`;
+      }
+  }
+  
+  return { 
+      daysLeft: diffDays, 
+      showWarning: shouldShow, 
+      warningType: type,
+      warningTitle: title,
+      warningMessage: message
+  };
+}, [data?.subscription_status, data?.trial_ends_at, data?.billing_cycle_anchor, data?.free_months_balance, data?.has_masterboss_gift]);
 
   const totalJobs = jobs.length;
   const completedJobs = jobs.filter((j: any) => j.status === 'Tamamlandı').length;
@@ -285,68 +310,62 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const totalStockTypes = stock.length;
 
   const { usagePaid, totalSystemProfit, currentUsageBill, baseMonthlyFee, referralCredits, finalBill, referralCode, subStatus, nextBillingDate, activeReferrals, isExempt } = useMemo(() => {
-        const earliestDate = jobs.length > 0 
-          ? new Date(Math.min(...jobs.map((j: any) => new Date(j.created_at || new Date()).getTime()))) 
-          : new Date();
-        
-        const calculatedMonths = (new Date().getFullYear() - earliestDate.getFullYear()) * 12 + new Date().getMonth() - earliestDate.getMonth() + 1;
-        const finalMonthsUsed = Math.max(1, calculatedMonths); 
-        
-        const exemptStatus = data?.subscription_status === 'exempt';
-        // Veritabanından gelen dinamik değerleri kullan
-        const baseFee = data?.custom_base_price !== undefined && data?.custom_base_price !== null ? Number(data.custom_base_price) : 3000;        
-        const perAssetFee = 50;      
+    const earliestDate = jobs.length > 0 
+      ? new Date(Math.min(...jobs.map((j: any) => new Date(j.created_at || new Date()).getTime()))) 
+      : new Date();
     
-        // Tüm zamanlar ödenen tahmini tutar (sabit fiyat üzerinden hesaplıyoruz)
-        const uPaid = exemptStatus ? 0 : finalMonthsUsed * (baseFee + (totalAssetsCount * perAssetFee));
-        
-        // Bu ayki standart fatura (Masterboss ile birebir aynı)
-        const cUsageBill = exemptStatus ? 0 : baseFee + (totalAssetsCount * perAssetFee);
+    const calculatedMonths = (new Date().getFullYear() - earliestDate.getFullYear()) * 12 + new Date().getMonth() - earliestDate.getMonth() + 1;
+    const finalMonthsUsed = Math.max(1, calculatedMonths); 
     
-        const operationalSavings = totalJobs * 150; 
-        const printAndStorageSavings = totalLifetimePhotos * 5; 
-        const profit = operationalSavings + printAndStorageSavings;
+    const exemptStatus = data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true;
+    // Veritabanından gelen dinamik değerleri kullan
+    const baseFee = data?.custom_base_price !== undefined && data?.custom_base_price !== null ? Number(data.custom_base_price) : 3000;        
+    const perAssetFee = 50;      
+
+    // Tüm zamanlar ödenen tahmini tutar (sabit fiyat üzerinden hesaplıyoruz)
+    const uPaid = exemptStatus ? 0 : finalMonthsUsed * (baseFee + (totalAssetsCount * perAssetFee));
     
+    // Bu ayki standart fatura (Masterboss ile birebir aynı)
+    const cUsageBill = exemptStatus ? 0 : baseFee + (totalAssetsCount * perAssetFee);
+
+    const operationalSavings = totalJobs * 150; 
+    const printAndStorageSavings = totalLifetimePhotos * 5; 
+    const profit = operationalSavings + printAndStorageSavings;
+
 // 🚀 YENİ: Abonelik ve Referans Hesaplamaları
 const refCode = data?.referralCode || data?.referral_code || 'BEKLENİYOR...';
-const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam hediye ay (Otomatik Referans + Masterboss)
-const hasMasterbossGift = data?.has_masterboss_gift; // Backend'den gelecek yeni alan
-        
-        // Eğer Masterboss hediye ay verdiyse TÜM fatura düşer. Sadece referans ise taban ücreti (baseFee) kadar indirim uygula.
-        let rCredits = 0;
-        let fBill = cUsageBill;
+const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam hediye ay (Otomatik Referans)
     
-        if (exemptStatus) {
-            rCredits = 0;
-            fBill = 0;
-        } else if (aReferrals > 0) {
-            if (hasMasterbossGift) {
-                rCredits = cUsageBill; // Faturanın tamamını sil
-                fBill = 0;
-            } else {
-                rCredits = baseFee; // Sadece taban ücreti sil
-                fBill = Math.max(0, cUsageBill - rCredits);
-            }
-        }
-        
-        const sStatus = exemptStatus ? 'Muaf' : (data?.subscription_status === 'active' ? 'Aktif' : (data?.subscription_status === 'past_due' ? 'Ödeme Bekliyor' : 'Deneme'));
-        const nBillingDate = data?.nextBillingDate || 'Belirlenmedi';
+    // Sadece referans ise taban ücreti (baseFee) kadar indirim uygula.
+    let rCredits = 0;
+    let fBill = cUsageBill;
+
+    if (exemptStatus) {
+        rCredits = 0;
+        fBill = 0;
+    } else if (aReferrals > 0) {
+        rCredits = baseFee; // Sadece taban ücreti sil
+        fBill = Math.max(0, cUsageBill - rCredits);
+    }
     
-        return { 
-            usagePaid: uPaid, 
-            totalSystemProfit: profit, 
-            currentUsageBill: cUsageBill, 
-            baseMonthlyFee: baseFee,
-            referralCredits: rCredits,
-            finalBill: fBill,
-            referralCode: refCode,
-            subStatus: sStatus,
-            nextBillingDate: nBillingDate,
-            activeReferrals: aReferrals,
-            isExempt: exemptStatus,
-            hasMasterbossGift: hasMasterbossGift
-        };
-      }, [jobs, totalJobs, totalLifetimePhotos, totalAssetsCount, monthlyPhotos, currentMonthJobs, data, currentUserId]);
+    const sStatus = exemptStatus ? 'Muaf' : (data?.subscription_status === 'active' ? 'Aktif' : (data?.subscription_status === 'past_due' ? 'Ödeme Bekliyor' : (data?.subscription_status === 'canceled' ? 'İptal' : 'Deneme')));
+    const nBillingDate = data?.nextBillingDate || 'Belirlenmedi';
+
+    return { 
+        usagePaid: uPaid, 
+        totalSystemProfit: profit, 
+        currentUsageBill: cUsageBill, 
+        baseMonthlyFee: baseFee,
+        referralCredits: rCredits,
+        finalBill: fBill,
+        referralCode: refCode,
+        subStatus: sStatus,
+        nextBillingDate: nBillingDate,
+        activeReferrals: aReferrals,
+        isExempt: exemptStatus,
+        hasMasterbossGift: exemptStatus
+    };
+  }, [jobs, totalJobs, totalLifetimePhotos, totalAssetsCount, data]);
 
   const totalIncome = data?.finSummary?.income || 0;
   const totalExpense = data?.finSummary?.expense || 0;
@@ -458,14 +477,10 @@ const hasMasterbossGift = data?.has_masterboss_gift; // Backend'den gelecek yeni
                     </div>
                     <div>
                         <h3 className={`text-sm font-black ${(daysLeft ?? 0) <= 0 ? 'text-rose-800' : 'text-amber-800'}`}>
-                            {warningType === 'trial' 
-                                ? ((daysLeft ?? 0) <= 0 ? 'Deneme Süreniz Doldu!' : 'Deneme Süreniz Sona Eriyor')
-                                : ((daysLeft ?? 0) <= 0 ? 'Fatura Ödeme Günü!' : 'Fatura Kesim Tarihiniz Yaklaşıyor')}
+                            {warningTitle}
                         </h3>
                         <p className={`text-xs font-medium mt-0.5 ${(daysLeft ?? 0) <= 0 ? 'text-rose-600' : 'text-amber-700'}`}>
-                            {(daysLeft ?? 0) <= 0 
-                                ? 'Bugün ödeme için son gün! Ödeme yapmazsanız gün sonunda erişiminiz kısıtlanacaktır fakat verileriniz güvenle korunacaktır.'
-                                : `Ödemenize son ${daysLeft ?? 0} gün kaldı. Ödeme yapmazsanız erişiminiz kısıtlanacaktır fakat verileriniz güvenle korunacaktır.`}
+                            {warningMessage}
                         </p>
                     </div>
                 </div>

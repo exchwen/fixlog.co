@@ -550,14 +550,14 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
              <div className="flex-shrink-0 bg-white border border-blue-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
                 <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Durum</span>
                 
-                {data?.subscription_status === 'exempt' ? (
+                {data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true ? (
                     <>
-                        <span className="block text-lg font-black mb-1 text-purple-600">Muaf (Sınırsız)</span>
+                        <span className="block text-lg font-black mb-1 text-purple-600">Muaf (VIP)</span>
                         <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">
-                            Aylık Ücret: Yok
+                            Ücret: ₺0
                         </span>
-                        <span className="block text-[9px] font-black text-purple-600 uppercase tracking-widest leading-tight bg-purple-50 py-1.5 px-2 rounded-lg border border-purple-200">
-                            💎 Özel Ayrıcalık
+                        <span className="block text-[9px] font-black text-purple-600 tracking-widest leading-tight bg-purple-50 py-1.5 px-2 rounded-lg border border-purple-200">
+                            Tüm faturanız bizim tarafımızdan karşılanıyor.
                         </span>
                     </>
                 ) : data?.subscription_status === 'trialing' ? (
@@ -566,14 +566,19 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
                         {(() => {
                             if (!data?.trial_ends_at) return <span className="block text-[10px] font-bold text-slate-500 uppercase">Aylık: Ücretsiz</span>;
                             const diff = Math.ceil((new Date(data.trial_ends_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-                            if (diff <= 0) return <span className="block text-[10px] font-bold text-rose-500 uppercase">Süreniz Doldu</span>;
-                            return <span className="block text-[10px] font-bold text-blue-500 uppercase">Kalan Süre: {diff} Gün</span>;
+                            if (diff <= 0) return <span className="block text-[9px] font-black text-rose-500 tracking-widest leading-tight bg-rose-50 py-1.5 px-2 rounded-lg border border-rose-200">Süreniz Doldu. Ödeme yapmazsanız hesabınız kısıtlanacaktır.</span>;
+                            return <span className="block text-[9px] font-black text-blue-500 tracking-widest leading-tight bg-blue-50 py-1.5 px-2 rounded-lg border border-blue-200">Kalan Süre: {diff} Gün.<br/>Deneme bitince ödeme yapmazsanız hesabınız kısıtlanacaktır.</span>;
                         })()}
                     </>
-                ) : data?.subscription_status === 'past_due' || data?.subscription_status === 'canceled' ? (
+                ) : data?.subscription_status === 'past_due' ? (
                     <>
-                        <span className="block text-lg font-black mb-1 text-rose-600">Ödeme Bekliyor</span>
-                        <span className="block text-[10px] font-bold text-rose-500 uppercase">Hesap Kısıtlandı</span>
+                        <span className="block text-lg font-black mb-1 text-rose-600">Ödeme Gecikti</span>
+                        <span className="block text-[10px] font-bold text-rose-500 uppercase">Erişim Kısıtlandı</span>
+                    </>
+                ) : data?.subscription_status === 'canceled' ? (
+                    <>
+                        <span className="block text-lg font-black mb-1 text-slate-600">İptal Edildi</span>
+                        <span className="block text-[10px] font-bold text-slate-500 uppercase">Hesabınız askıya alındı</span>
                     </>
                 ) : (
                     <>
@@ -583,9 +588,13 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
                             Aylık: ₺{data?.custom_base_price ? data.custom_base_price : '3000'}
                         </span>
                         
-                        {(data?.free_months_balance || 0) > 0 && (
+                        {(data?.free_months_balance || 0) > 0 ? (
                            <span className="block text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-tight bg-emerald-50 py-1.5 px-2 rounded-lg border border-emerald-200">
                                🎁 Bu Ay İndirimli Kullanım!<br/>(Kalan Hediye: {data.free_months_balance} Ay)
+                           </span>
+                        ) : (
+                           <span className="block text-[9px] font-black text-emerald-600 tracking-widest leading-tight bg-emerald-50 py-1.5 px-2 rounded-lg border border-emerald-200">
+                               Ödeme yaptığınız için teşekkürler!
                            </span>
                         )}
                     </>

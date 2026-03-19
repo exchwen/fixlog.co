@@ -88,21 +88,16 @@ const [companyFilter, setCompanyFilter] = useState("all");
     try {
       const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
       
-      const isExempt = manageForm.subscriptionStatus === 'exempt';
-      const finalStatus = isExempt ? 'active' : manageForm.subscriptionStatus;
-      
+      // Payload'u temiz bir obje olarak tanımlayıp görünmez boşluk (NBSP) hatalarının önüne geçiyoruz.
       // Worker tarafında (hasMasterbossGift === true) şeklinde katı bir kontrol olduğu için 
       // veriyi 1/0 değil, doğrudan boolean (true/false) olarak göndermeliyiz. Worker DB'ye yazarken kendi 1/0 yapıyor.
-      const finalHasGift = isExempt; 
-
-      // Payload'u temiz bir obje olarak tanımlayıp görünmez boşluk (NBSP) hatalarının önüne geçiyoruz.
       const payload = {
         companySlug: selectedCompany.slug,
-        subscriptionStatus: finalStatus,
-        freeMonths: manageForm.freeMonths ? parseInt(manageForm.freeMonths, 10) : 0,
-        customDiscount: manageForm.customDiscount ? parseInt(manageForm.customDiscount, 10) : null,
+        subscriptionStatus: manageForm.subscriptionStatus,
+        freeMonths: manageForm.freeMonths === '' ? 0 : parseInt(manageForm.freeMonths, 10),
+        customDiscount: manageForm.customDiscount === '' ? null : parseInt(manageForm.customDiscount, 10),
         cancelTrial: manageForm.cancelTrial,
-        hasMasterbossGift: finalHasGift
+        hasMasterbossGift: manageForm.hasMasterbossGift
       };
 
       const res = await fetch(`${BASE_URL}/masterboss-update-subscription`, {
@@ -411,7 +406,7 @@ useEffect(() => {
                           onClick={() => { 
                             setSelectedCompany(c); 
                             setManageForm({ 
-                              subscriptionStatus: c.has_masterboss_gift === 1 ? 'exempt' : (c.subscription_status || 'trialing'), 
+                              subscriptionStatus: c.subscription_status || 'trialing', 
                               freeMonths: c.free_months_balance !== undefined && c.free_months_balance !== null ? c.free_months_balance : '', 
                               customDiscount: c.custom_base_price !== undefined && c.custom_base_price !== null ? c.custom_base_price : '', 
                               cancelTrial: false,
@@ -550,35 +545,48 @@ useEffect(() => {
             <div className="text-sm font-mono text-rose-400 mb-6">{selectedCompany.slug} <span className="text-neutral-500 text-xs ml-2">({selectedCompany.company_name})</span></div>
 
             <div className="space-y-4">
-            <div>
+
+              {/* VIP Muafiyet Alanı (Checkbox ile Ayrıldı) */}
+              <div className="flex items-start gap-3 bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl mt-4">
+                <input 
+                  type="checkbox" 
+                  id="vipStatus"
+                  checked={manageForm.hasMasterbossGift} 
+                  onChange={(e) => setManageForm({...manageForm, hasMasterbossGift: e.target.checked})}
+                  className="w-5 h-5 rounded border-emerald-500 text-emerald-500 focus:ring-emerald-500/20 bg-neutral-800 mt-0.5 cursor-pointer"
+                />
+                <label htmlFor="vipStatus" className="text-sm text-emerald-300 font-medium cursor-pointer leading-tight">
+                  VIP Muafiyet Tanımla <br/>
+                  <span className="text-xs text-emerald-500/80 font-normal">Bu firma sistemden tamamen ücretsiz yararlanır ve fatura kesilmez.</span>
+                </label>
+              </div>
+
+              {/* Gerçek Abonelik Durumu */}
+              <div>
                 <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wider">Abonelik Durumu</label>
                 <select 
                   value={manageForm.subscriptionStatus} 
                   onChange={(e) => setManageForm({...manageForm, subscriptionStatus: e.target.value})}
                   className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-rose-500 transition-colors appearance-none"
                 >
-                  <option value="active">Aktif (Kısıtlama Yok)</option>
-                  <option value="exempt">Muaf (Sıfır Fatura / Masterboss Hediyesi)</option>
+                  <option value="active">Aktif (Ödeyen / Kısıtlama Yok)</option>
                   <option value="trialing">Deneme Sürümü (Trial)</option>
                   <option value="past_due">Paywall'a Düşür (Ödeme Gecikti)</option>
                   <option value="canceled">İptal Edildi</option>
                 </select>
               </div>
 
-              {manageForm.subscriptionStatus === 'exempt' && (
-                <div>
-                  <div className="mb-4 mt-2">
-                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wider">Kaç Ay Muaf Olacak?</label>
-                    <input 
-                      type="number" 
-                      placeholder="Firmaya kaç ay hediye edeceksiniz? Örn: 1"
-                      value={manageForm.freeMonths} 
-                      onChange={(e) => setManageForm({...manageForm, freeMonths: e.target.value})}
-                      className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-blue-500 transition-colors placeholder-neutral-600"
-                    />
-                  </div>
-                </div>
-              )}
+              {/* Her Zaman Görünür Hediye Ay Alanı */}
+              <div>
+                <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wider">Tanımlı Hediye Ay Bakiye (Adet)</label>
+                <input 
+                  type="number" 
+                  placeholder="Firmaya kaç ay hediye edeceksiniz? Örn: 1"
+                  value={manageForm.freeMonths} 
+                  onChange={(e) => setManageForm({...manageForm, freeMonths: e.target.value})}
+                  className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-blue-500 transition-colors placeholder-neutral-600"
+                />
+              </div>
 
               <div>
                 <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wider">Özel Fiyat Tanımla (₺)</label>
@@ -604,7 +612,7 @@ useEffect(() => {
                            setManageForm({...manageForm, cancelTrial: false});
                        }
                     }}
-                    className="w-5 h-5 rounded border-rose-500 text-rose-500 focus:ring-rose-500/20 bg-neutral-800"
+                    className="w-5 h-5 rounded border-rose-500 text-rose-500 focus:ring-rose-500/20 bg-neutral-800 cursor-pointer"
                   />
                   <label htmlFor="cancelTrial" className="text-sm text-rose-300 font-medium cursor-pointer">Deneme sürümünü iptal et ve anında ödemeye (Paywall'a) düşür</label>
                 </div>
