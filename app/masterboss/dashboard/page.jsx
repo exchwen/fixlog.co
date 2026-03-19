@@ -15,7 +15,7 @@ export default function MasterbossDashboard() {
 // Subscription Control States
 const [showManageModal, setShowManageModal] = useState(false);
 const [selectedCompany, setSelectedCompany] = useState(null);
-const [manageForm, setManageForm] = useState({ subscriptionStatus: '', freeMonths: '', customDiscount: '', cancelTrial: false });
+const [manageForm, setManageForm] = useState({ subscriptionStatus: '', freeMonths: '', customDiscount: '', cancelTrial: false, hasMasterbossGift: false });
 const [isSaving, setIsSaving] = useState(false);
 
 // 🚀 YENİ: Bilgi Modalı Stateleri
@@ -93,7 +93,8 @@ const [companyFilter, setCompanyFilter] = useState("all");
                     subscriptionStatus: manageForm.subscriptionStatus, 
                     freeMonths: !manageForm.freeMonths ? 0 : parseInt(manageForm.freeMonths),
                     customDiscount: manageForm.customDiscount === '' || manageForm.customDiscount === null ? null : parseInt(manageForm.customDiscount),
-                    cancelTrial: manageForm.cancelTrial
+                    cancelTrial: manageForm.cancelTrial,
+                    hasMasterbossGift: manageForm.hasMasterbossGift
                 })
               });
       const result = await res.json();
@@ -367,7 +368,8 @@ const [companyFilter, setCompanyFilter] = useState("all");
                               subscriptionStatus: c.subscription_status || 'trialing', 
                               freeMonths: c.free_months_balance !== undefined && c.free_months_balance !== null ? c.free_months_balance : '', 
                               customDiscount: c.custom_base_price !== undefined && c.custom_base_price !== null ? c.custom_base_price : '', 
-                              cancelTrial: false 
+                              cancelTrial: false,
+                              hasMasterbossGift: c.has_masterboss_gift === 1
                             }); 
                             setShowManageModal(true); 
                           }} 
@@ -502,7 +504,7 @@ const [companyFilter, setCompanyFilter] = useState("all");
             <div className="text-sm font-mono text-rose-400 mb-6">{selectedCompany.slug} <span className="text-neutral-500 text-xs ml-2">({selectedCompany.company_name})</span></div>
 
             <div className="space-y-4">
-              <div>
+            <div>
                 <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wider">Abonelik Durumu</label>
                 <select 
                   value={manageForm.subscriptionStatus} 
@@ -517,14 +519,32 @@ const [companyFilter, setCompanyFilter] = useState("all");
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wider">Ücretsiz Ay Hediye Et</label>
-                <input 
-                  type="number" 
-                  placeholder="Firmaya kaç ay hediye edeceksiniz? Örn: 3"
-                  value={manageForm.freeMonths} 
-                  onChange={(e) => setManageForm({...manageForm, freeMonths: e.target.value})}
-                  className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-rose-500 transition-colors placeholder-neutral-600"
-                />
+                <div className="flex items-center gap-3 bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl mb-4">
+                  <input 
+                    type="checkbox" 
+                    id="hasMasterbossGift"
+                    checked={manageForm.hasMasterbossGift} 
+                    onChange={(e) => {
+                        const isChecked = e.target.checked;
+                        setManageForm({...manageForm, hasMasterbossGift: isChecked, freeMonths: isChecked ? manageForm.freeMonths : (selectedCompany?.free_months_balance || '')});
+                    }}
+                    className="w-5 h-5 rounded border-blue-500 text-blue-500 focus:ring-blue-500/20 bg-neutral-800"
+                  />
+                  <label htmlFor="hasMasterbossGift" className="text-sm text-blue-300 font-medium cursor-pointer leading-tight">Tam Muafiyet (Masterboss Hediyesi)<br/><span className="text-xs text-blue-400/70 font-normal">Sıfır Fatura - Tüm varlık ve taban ücretleri sıfırlanır.</span></label>
+                </div>
+
+                {manageForm.hasMasterbossGift && (
+                  <div className="mb-4">
+                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wider">Kaç Ay Muaf Olacak?</label>
+                    <input 
+                      type="number" 
+                      placeholder="Firmaya kaç ay hediye edeceksiniz? Örn: 1"
+                      value={manageForm.freeMonths} 
+                      onChange={(e) => setManageForm({...manageForm, freeMonths: e.target.value})}
+                      className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-blue-500 transition-colors placeholder-neutral-600"
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
