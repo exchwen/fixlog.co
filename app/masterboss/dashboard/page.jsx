@@ -75,28 +75,28 @@ const [companyFilter, setCompanyFilter] = useState("all");
   };
 
   const handleUpdateSubscription = async () => {
-        const token = localStorage.getItem("masterbossToken");
-        if (!token) return toast.error("Yetkisiz işlem!");
-    
-        setIsSaving(true);
-        const toastId = toast.loading("Güncelleniyor...");
-        try {
-          const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
-          const res = await fetch(`${BASE_URL}/masterboss-update-subscription`, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ 
-                          companySlug: selectedCompany.slug, 
-                          subscriptionStatus: manageForm.subscriptionStatus, 
-                          freeMonths: manageForm.freeMonths !== '' ? parseInt(manageForm.freeMonths) : 0,
-                          customDiscount: manageForm.customDiscount === '' || manageForm.customDiscount === null ? null : parseInt(manageForm.customDiscount),
-                          cancelTrial: manageForm.cancelTrial,
-                          hasMasterbossGift: manageForm.hasMasterbossGift
-                      })
-                  });
+    const token = localStorage.getItem("masterbossToken");
+    if (!token) return toast.error("Yetkisiz işlem!");
+
+    setIsSaving(true);
+    const toastId = toast.loading("Güncelleniyor...");
+    try {
+      const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+      const res = await fetch(`${BASE_URL}/masterboss-update-subscription`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ 
+                      companySlug: selectedCompany.slug, 
+                      subscriptionStatus: manageForm.subscriptionStatus, 
+                      freeMonths: manageForm.freeMonths !== '' ? parseInt(manageForm.freeMonths) : 0,
+                      customDiscount: manageForm.customDiscount === '' || manageForm.customDiscount === null ? null : parseInt(manageForm.customDiscount),
+                      cancelTrial: manageForm.cancelTrial,
+                      hasMasterbossGift: manageForm.hasMasterbossGift
+                  })
+              });
       const result = await res.json();
       
       if (result.success) {
@@ -209,32 +209,21 @@ const [companyFilter, setCompanyFilter] = useState("all");
   const totalStaff = companies.reduce((acc, c) => acc + (c.total_staff || 0), 0);
   const activeCompanies = companies.filter(c => c.subscription_status === 'active').length;
 
-// 🚀 YENİ: Toplam Platform Gelir ve Gerçek Maliyet Hesaplamaları
-  const totalPlatformRevenue = companies.reduce((acc, c) => {
-        if (c.subscription_status === 'active' && (!c.free_months_balance || c.free_months_balance <= 0) && c.has_masterboss_gift !== 1) {
-             const basePrice = c.custom_base_price !== null && c.custom_base_price !== undefined ? Number(c.custom_base_price) : 3000;
-             const assetRevenue = (c.total_assets || 0) * 50;
-             return acc + basePrice + assetRevenue;
-        }
-        return acc;
-    }, 0);
-  
-    const jobCount = stats.totalJobs || 0;
-    const photoCount = stats.totalPhotos || 0;
-    const customerCount = stats.totalCustomers || 0;
-    const faultCount = stats.totalFaults || 0;
-  
-    const estWorkerRequests = (jobCount * 12) + (photoCount * 5) + (customerCount * 8) + (faultCount * 6) + (totalAssets * 10) + 1000;
-    const estD1Writes = (jobCount * 3) + (customerCount * 2) + faultCount + totalAssets + 50;
-    const estD1Reads = estWorkerRequests * 2;
-    const estR2Requests = photoCount * 15;
-    const estR2StorageMB = photoCount * 2.5;
-  
-    const workerTotalCost = estWorkerRequests * 0.00001;
-    const d1TotalCost = (estD1Writes * 0.0003) + (estD1Reads * 0.00005);
-    const r2TotalCost = (estR2Requests * 0.0001) + (estR2StorageMB * 0.001);
-  
-    const totalRealCost = workerTotalCost + d1TotalCost + r2TotalCost;
+  // 🚀 YENİ: Toplam Platform Gelir ve Maliyet Hesaplamaları
+  const totalPlatformRevenue = companies.reduce((acc, c) => {
+      if (c.subscription_status === 'active' && (!c.free_months_balance || c.free_months_balance <= 0)) {
+           const basePrice = c.custom_base_price ? Number(c.custom_base_price) : 3000;
+           const assetRevenue = (c.total_assets || 0) * 50;
+           return acc + basePrice + assetRevenue;
+      }
+      return acc;
+  }, 0);
+
+  const totalExpectedCost = companies.reduce((acc, c) => {
+       const dataPoints = (c.job_count || 0) + (c.total_assets || 0) * 3;
+       const cost = dataPoints * 0.005 + 10; 
+       return acc + cost;
+  }, 0);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white selection:bg-rose-500/30">
@@ -269,8 +258,8 @@ const [companyFilter, setCompanyFilter] = useState("all");
           
           <MetricCard icon={Activity} label="Aylık İşlem Hacmi" value={stats.monthlyJobs || 0} ext={`Yıllık: ${stats.yearlyJobs || 0} İşlem`} color="from-blue-500 to-cyan-600" />
           <MetricCard icon={BarChart3} label="Aylık Foto Yükü" value={stats.monthlyPhotos || 0} ext={`Yıllık: ${stats.yearlyPhotos || 0} Foto`} color="from-fuchsia-500 to-pink-600" />
-          <MetricCard icon={Activity} label="Aylık Net Fatura Kesimi" value={`₺${totalPlatformRevenue.toLocaleString('tr-TR')}`} ext={`Yıllık: ₺${(totalPlatformRevenue * 12).toLocaleString('tr-TR')}`} color="from-emerald-500 to-teal-600" />
-          <MetricCard icon={AlertCircle} label="Gerçekleşen Sunucu Maliyeti" value={`₺${totalRealCost.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} ext={`Yıllık: ₺${(totalRealCost * 12).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} color="from-rose-500 to-red-600" />
+          <MetricCard icon={Activity} label="Aylık Tahmini Kazanç" value={`₺${totalPlatformRevenue.toLocaleString('tr-TR')}`} ext={`Yıllık: ₺${(totalPlatformRevenue * 12).toLocaleString('tr-TR')}`} color="from-emerald-500 to-teal-600" />
+          <MetricCard icon={AlertCircle} label="Aylık Tahmini Maliyet" value={`₺${totalExpectedCost.toLocaleString('tr-TR')}`} ext={`Yıllık: ₺${(totalExpectedCost * 12).toLocaleString('tr-TR')}`} color="from-rose-500 to-red-600" />
         </div>
 
         {/* Tabs */}
@@ -377,17 +366,17 @@ const [companyFilter, setCompanyFilter] = useState("all");
                         </button>
                         
                         <button
-                          onClick={() => { 
-                            setSelectedCompany(c); 
-                            setManageForm({ 
-                              subscriptionStatus: c.subscription_status || 'trialing', 
-                              freeMonths: c.free_months_balance !== undefined && c.free_months_balance !== null ? c.free_months_balance : '', 
-                              customDiscount: c.custom_base_price !== undefined && c.custom_base_price !== null ? c.custom_base_price : '', 
-                              cancelTrial: false,
-                              hasMasterbossGift: c.has_masterboss_gift === 1
-                            }); 
-                            setShowManageModal(true); 
-                          }}
+                          onClick={() => { 
+                            setSelectedCompany(c); 
+                            setManageForm({ 
+                              subscriptionStatus: c.has_masterboss_gift === 1 ? 'exempt' : (c.subscription_status || 'trialing'), 
+                              freeMonths: c.free_months_balance !== undefined && c.free_months_balance !== null ? c.free_months_balance : '', 
+                              customDiscount: c.custom_base_price !== undefined && c.custom_base_price !== null ? c.custom_base_price : '', 
+                              cancelTrial: false,
+                              hasMasterbossGift: c.has_masterboss_gift === 1
+                            }); 
+                            setShowManageModal(true); 
+                          }} 
                           className="text-rose-500 hover:text-rose-400 text-sm font-medium transition-colors"
                         >
                           Yönet
@@ -520,41 +509,34 @@ const [companyFilter, setCompanyFilter] = useState("all");
 
             <div className="space-y-4">
             <div>
-                <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wider">Abonelik Durumu</label>
-                <select 
-                  value={manageForm.subscriptionStatus} 
-                  onChange={(e) => setManageForm({...manageForm, subscriptionStatus: e.target.value})}
-                  className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-rose-500 transition-colors appearance-none"
-                >
-                  <option value="active">Aktif (Kısıtlama Yok)</option>
-                  <option value="trialing">Deneme Sürümü (Trial)</option>
-                  <option value="past_due">Paywall'a Düşür (Ödeme Gecikti)</option>
-                  <option value="canceled">İptal Edildi</option>
-                </select>
-              </div>
+                <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wider">Abonelik Durumu</label>
+                <select 
+                  value={manageForm.subscriptionStatus} 
+                  onChange={(e) => setManageForm({...manageForm, subscriptionStatus: e.target.value})}
+                  className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-rose-500 transition-colors appearance-none"
+                >
+                  <option value="active">Aktif (Kısıtlama Yok)</option>
+                  <option value="exempt">Muaf (Sıfır Fatura / Masterboss Hediyesi)</option>
+                  <option value="trialing">Deneme Sürümü (Trial)</option>
+                  <option value="past_due">Paywall'a Düşür (Ödeme Gecikti)</option>
+                  <option value="canceled">İptal Edildi</option>
+                </select>
+              </div>
 
-              <div>
-                <div className="mb-4 mt-4">
-                  <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wider">Muafiyet / Hediye Ay Bakiyesi</label>
-                  <input 
-                    type="number" 
-                    placeholder="Ücretsiz kullanılacak ay sayısı"
-                    value={manageForm.freeMonths} 
-                    onChange={(e) => setManageForm({...manageForm, freeMonths: e.target.value})}
-                    className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-blue-500 transition-colors placeholder-neutral-600 mb-3"
-                  />
-                  <div className="flex items-center gap-3 bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl">
-                    <input 
-                      type="checkbox" 
-                      id="masterbossGift"
-                      checked={manageForm.hasMasterbossGift} 
-                      onChange={(e) => setManageForm({...manageForm, hasMasterbossGift: e.target.checked})}
-                      className="w-5 h-5 rounded border-blue-500 text-blue-500 focus:ring-blue-500/20 bg-neutral-800"
-                    />
-                    <label htmlFor="masterbossGift" className="text-sm text-blue-300 font-medium cursor-pointer">Bu bakiye Masterboss tarafından hediye edilmiştir (Referans dışı).</label>
-                  </div>
-                </div>
-              </div>
+              {manageForm.subscriptionStatus === 'exempt' && (
+                <div>
+                  <div className="mb-4 mt-2">
+                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wider">Kaç Ay Muaf Olacak?</label>
+                    <input 
+                      type="number" 
+                      placeholder="Firmaya kaç ay hediye edeceksiniz? Örn: 1"
+                      value={manageForm.freeMonths} 
+                      onChange={(e) => setManageForm({...manageForm, freeMonths: e.target.value})}
+                      className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-blue-500 transition-colors placeholder-neutral-600"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wider">Özel Fiyat Tanımla (₺)</label>
