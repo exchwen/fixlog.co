@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Building2, Users, Activity, BarChart3, LogOut, TicketCheck, Gift, AlertCircle, CheckCircle, Database, Plus, ShoppingCart, X } from "lucide-react";
+import { Building2, Users, Activity, BarChart3, LogOut, TicketCheck, Gift, AlertCircle, CheckCircle, Database, Plus, ShoppingCart, X, TrendingUp, TrendingDown, Clock } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function MasterbossDashboard() {
@@ -13,11 +13,11 @@ export default function MasterbossDashboard() {
   const [replyTexts, setReplyTexts] = useState({});
 
   // Subscription Control States
-  const [showManageModal, setShowManageModal] = useState(false);
-  const [selectedCompany, setSelectedCompany] = useState(null);
-  const [manageForm, setManageForm] = useState({ subscriptionStatus: '', freeMonths: '', customDiscount: '', customAssetPrice: '', cancelTrial: false, hasMasterbossGift: false });
-  const [globalPricingForm, setGlobalPricingForm] = useState({ base: 3000, asset: 50 });
-  const [isSaving, setIsSaving] = useState(false);
+const [showManageModal, setShowManageModal] = useState(false);
+const [selectedCompany, setSelectedCompany] = useState(null);
+const [manageForm, setManageForm] = useState({ subscriptionStatus: '', freeMonths: '', customDiscount: '', customAssetPrice: '', cancelTrial: false, hasMasterbossGift: false });
+const [globalPricingForm, setGlobalPricingForm] = useState({ base: "", asset: "" });
+const [isSaving, setIsSaving] = useState(false);
 
   // 🚀 YENİ: Başarı Modalı State'i
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -271,21 +271,11 @@ export default function MasterbossDashboard() {
 
   // 🚀 YENİ: Toplam Platform Gelir ve Maliyet Hesaplamaları (Gerçek Zamanlı İstatistikler)
   
-  // Aylık Gelir (Şu anki tahsilatlar)
-  const totalMonthlyRevenue = companies.reduce((acc, c) => {
-    if (c.subscription_status === 'active' && c.has_masterboss_gift !== 1) {
-         const basePrice = (c.custom_base_price !== null && c.custom_base_price !== undefined) ? Number(c.custom_base_price) : (globalPricing?.base || 3000);
-         const assetPrice = (c.custom_per_asset_price !== null && c.custom_per_asset_price !== undefined) ? Number(c.custom_per_asset_price) : (globalPricing?.asset || 50);
-
-         const activeBasePrice = (c.free_months_balance && c.free_months_balance > 0) ? 0 : basePrice; 
-         const assetRevenue = (c.total_assets || 0) * assetPrice; 
-         return acc + activeBasePrice + assetRevenue;
-    }
-    return acc;
-  }, 0);
-
-  // Yıllık Gelir 
-  const totalYearlyRevenue = stats.yearlyRevenue || (totalMonthlyRevenue * 12);
+  // Aylık ve Yıllık Gelir (Sadece Gerçekleşen Başarılı Ödemeler)
+  // Not: İyzico entegrasyonu henüz yapılmadığı için sistemde "gerçekleşen ödeme" tablosu (invoices/payments) yok.
+  // Bu nedenle altyapıyı şimdiden hazır tutuyoruz. İyzico eklendiğinde "stats" objesinden gerçek rakamlar gelecek.
+  const totalMonthlyRevenue = stats.monthlyRevenue || 0;
+  const totalYearlyRevenue = stats.yearlyRevenue || 0;
 
   // Aylık Gerçek Maliyet
   const monthlyExpectedCost = (
@@ -304,6 +294,59 @@ export default function MasterbossDashboard() {
      (stats.totalPhotos || 0) * 2.5 * 0.001 + 
      (stats.yearlyJobs || 0) * 15 * 0.00001 
   );
+
+  // 🚀 YENİ BÜYÜME VE PERFORMANS MOTORU (Gidişat Hesaplama)
+  const currentMonthStart = new Date();
+  currentMonthStart.setDate(1);
+  currentMonthStart.setHours(0,0,0,0);
+  
+  const lastMonthStart = new Date(currentMonthStart);
+  lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
+  
+  // Yeni Kayıtlar
+  const currentMonthNewCompanies = companies.filter(c => new Date(c.created_at) >= currentMonthStart).length;
+  const lastMonthNewCompanies = companies.filter(c => {
+      const d = new Date(c.created_at);
+      return d >= lastMonthStart && d < currentMonthStart;
+  }).length;
+
+  // Yeni Varlıklar (Aktif Büyüme Hızı)
+  // Backend'den varlık eklenme tarihi gelmediği için şimdilik iptaller (churn) üzerinden gidişata bakıyoruz.
+  
+  const canceledCompanies = companies.filter(c => c.subscription_status === 'canceled').length;
+  const pastDueCompanies = companies.filter(c => c.subscription_status === 'past_due').length;
+  const trialingCompanies = companies.filter(c => c.subscription_status === 'trialing').length;
+
+  // Büyüme Skoru Hesaplama
+  // Aktif şirketlerin tüm şirketlere oranı
+  const activeRatio = companies.length > 0 ? (activeCompanies / companies.length) * 100 : 0;
+  
+  // Genel Sağlık Durumu Belirleyici
+  let healthStatus = "Nötr";
+  let healthColor = "text-blue-400";
+  let healthBg = "bg-blue-500/10 border-blue-500/20";
+  let healthIcon = <Activity size={24} className="text-blue-500" />;
+  let healthMessage = "Sistem dengede ilerliyor.";
+
+  if (activeRatio > 70 && currentMonthNewCompanies > 0) {
+      healthStatus = "Büyüme Eğiliminde";
+      healthColor = "text-emerald-400";
+      healthBg = "bg-emerald-500/10 border-emerald-500/20";
+      healthIcon = <TrendingUp size={24} className="text-emerald-500" />;
+      healthMessage = "Harika! Aktif müşteri oranınız yüksek ve sistem yeni kullanıcı kazanıyor.";
+  } else if (canceledCompanies + pastDueCompanies > activeCompanies) {
+      healthStatus = "Riskli Durum (Kayıp Yüksek)";
+      healthColor = "text-rose-400";
+      healthBg = "bg-rose-500/10 border-rose-500/20";
+      healthIcon = <TrendingDown size={24} className="text-rose-500" />;
+      healthMessage = "Dikkat! İptal edilen veya ödemesi geciken hesap sayısı, aktif hesaplardan daha fazla. Müşteri memnuniyetini artırmalısınız.";
+  } else if (trialingCompanies > activeCompanies) {
+      healthStatus = "Potansiyel Büyüme (Dönüşüm Bekleniyor)";
+      healthColor = "text-amber-400";
+      healthBg = "bg-amber-500/10 border-amber-500/20";
+      healthIcon = <Clock size={24} className="text-amber-500" />;
+      healthMessage = "Sistemde çok sayıda deneme sürümünde olan kullanıcı var. Bunları ödeyen müşteriye dönüştürmek için iletişime geçin.";
+  }
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white selection:bg-rose-500/30">
@@ -358,6 +401,40 @@ export default function MasterbossDashboard() {
         >
           {activeTab === "companies" && (
             <div className="overflow-x-auto p-4">
+
+              {/* 🚀 YENİ: GENEL GİDİŞAT VE BÜYÜME (PERFORMANS ÖZETİ) */}
+              <div className={`border rounded-2xl p-5 mb-6 flex flex-col md:flex-row items-center gap-6 justify-between ${healthBg}`}>
+                  <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 bg-black/20 rounded-full flex items-center justify-center shrink-0">
+                          {healthIcon}
+                      </div>
+                      <div>
+                          <h4 className={`text-lg font-black tracking-tight mb-1 ${healthColor}`}>
+                              {healthStatus}
+                          </h4>
+                          <p className="text-xs text-neutral-400 max-w-xl">
+                              {healthMessage}
+                          </p>
+                      </div>
+                  </div>
+                  <div className="flex items-center gap-4 w-full md:w-auto overflow-x-auto scrollbar-hide shrink-0 pb-2 md:pb-0">
+                      <div className="bg-black/20 border border-black/20 rounded-xl p-3 text-center min-w-[100px]">
+                          <div className="text-xs text-neutral-500 font-bold mb-1 uppercase tracking-wider">Aktif Oranı</div>
+                          <div className="text-xl font-black text-white">%{activeRatio.toFixed(1)}</div>
+                      </div>
+                      <div className="bg-black/20 border border-black/20 rounded-xl p-3 text-center min-w-[100px]">
+                          <div className="text-xs text-neutral-500 font-bold mb-1 uppercase tracking-wider">Bu Ay Yeni</div>
+                          <div className="text-xl font-black text-white flex items-center justify-center gap-1">
+                              {currentMonthNewCompanies} 
+                              {currentMonthNewCompanies > lastMonthNewCompanies ? <TrendingUp size={14} className="text-emerald-400" /> : currentMonthNewCompanies < lastMonthNewCompanies ? <TrendingDown size={14} className="text-rose-400" /> : null}
+                          </div>
+                      </div>
+                      <div className="bg-black/20 border border-black/20 rounded-xl p-3 text-center min-w-[100px]">
+                          <div className="text-xs text-neutral-500 font-bold mb-1 uppercase tracking-wider">İptal / Borçlu</div>
+                          <div className="text-xl font-black text-rose-400">{canceledCompanies + pastDueCompanies}</div>
+                      </div>
+                  </div>
+              </div>
               
               {/* 🚀 YENİ: Global Sistem Fiyatlandırması (Tek Tuşla Zam) */}
               <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 mb-6 flex flex-col md:flex-row items-center gap-4 justify-between">
@@ -946,12 +1023,14 @@ export default function MasterbossDashboard() {
                     <div className="space-y-6">
                       {(() => {
                         // 1. GELİR HESAPLAMASI
-                        const basePrice = infoCompany.custom_base_price ? Number(infoCompany.custom_base_price) : 3000;
+                        const basePrice = infoCompany.custom_base_price ? Number(infoCompany.custom_base_price) : (globalPricing?.base || 3000);
+                        const assetPrice = infoCompany.custom_per_asset_price ? Number(infoCompany.custom_per_asset_price) : (globalPricing?.asset || 50);
+
                         const hasFreeMonth = infoCompany.free_months_balance && Number(infoCompany.free_months_balance) > 0;
                         const activeBasePrice = hasFreeMonth ? 0 : basePrice;
                         
                         const assetCount = infoDetails.assets || 0;
-                        const assetRevenue = assetCount * 50; // Varlık başı 50 TL
+                        const assetRevenue = assetCount * assetPrice; 
                         const totalRevenue = activeBasePrice + assetRevenue;
 
                         // 2. DETAYLI GİDER (D1 & R2 & WORKER MALİYET) HESAPLAMASI
@@ -968,7 +1047,7 @@ export default function MasterbossDashboard() {
                         const R2_REQ_COST = 0.0001;
                         const WORKER_REQ_COST = 0.00001;
 
-                        // Gerçek İşlem Kullanım Sayıları (Sabit ve tahmini eklemeler çıkarıldı, sadece net veri işleniyor)
+                        // Gerçek İşlem Kullanım Sayıları
                         const realWorkerRequests = (jobCount * 15) + (photoCount * 5) + (customerCount * 8) + (faultCount * 6) + (assetCountReq * 10);
                         const realD1Writes = (jobCount * 3) + (customerCount * 2) + faultCount + assetCountReq;
                         const realD1Reads = realWorkerRequests * 2;
@@ -1043,7 +1122,7 @@ export default function MasterbossDashboard() {
                                   {hasFreeMonth && <div className="text-[10px] text-rose-400 font-bold uppercase mt-1">Referans İndirimi Aktif</div>}
                                 </div>
                                 <div>
-                                  <div className="text-xs text-neutral-500 mb-1">Varlık Başı Kazanç (50₺)</div>
+                                  <div className="text-xs text-neutral-500 mb-1">Varlık Başı Kazanç ({assetPrice}₺)</div>
                                   <div className="text-lg font-bold text-blue-400">₺{assetRevenue}</div>
                                   <div className="text-[10px] text-neutral-500 uppercase mt-1">{assetCount} Kayıtlı Cihaz</div>
                                 </div>
@@ -1115,7 +1194,11 @@ export default function MasterbossDashboard() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-neutral-700/50 pt-4">
                          <div>
                            <div className="text-xs text-neutral-500 mb-1">Özel Tanımlı Fiyat (Aylık)</div>
-                           <div className="text-sm font-medium text-amber-400">{infoCompany.custom_base_price ? `₺${infoCompany.custom_base_price}` : 'Standart Tarife (Örn: 3000₺)'}</div>
+                           <div className="text-sm font-medium text-amber-400">{infoCompany.custom_base_price ? `₺${infoCompany.custom_base_price}` : `Standart Tarife (${globalPricing?.base || 3000}₺)`}</div>
+                         </div>
+                         <div>
+                           <div className="text-xs text-neutral-500 mb-1">Özel Varlık Ücreti</div>
+                           <div className="text-sm font-medium text-amber-400">{infoCompany.custom_per_asset_price ? `₺${infoCompany.custom_per_asset_price}` : `Standart Tarife (${globalPricing?.asset || 50}₺)`}</div>
                          </div>
                          <div>
                            <div className="text-xs text-neutral-500 mb-1">Tanımlı Hediye / Ücretsiz Ay</div>
