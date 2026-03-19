@@ -134,7 +134,7 @@ export default function PatronDashboard() {
     { supplier_id: '', item_name: '', quantity: '', unit: 'Adet' }
   ]);
 
-  const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', landlinePhone: '', emergencyPhone: '', whatsappPhone: '', website: '', logo: '' });
+  const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', landlinePhone: '', emergencyPhone: '', whatsappPhone: '', website: '', logo: '', referralCode: '' });
   
   // Personel Düzenleme
   const [isEditingStaff, setIsEditingStaff] = useState(false);
@@ -211,7 +211,8 @@ export default function PatronDashboard() {
             companyName: result.name || '', ownerName: result.ownerName || '', sector: result.sector || '', 
             address: result.address || '', taxInfo: result.taxInfo || '', phone: result.phone || '',
             landlinePhone: result.landlinePhone || '', emergencyPhone: result.emergencyPhone || '',
-            whatsappPhone: result.whatsappPhone || '', website: result.website || '', logo: result.logo || ''
+            whatsappPhone: result.whatsappPhone || '', website: result.website || '', logo: result.logo || '',
+            referralCode: result.referral_code || ''
         });
       }
     } catch (err) { 

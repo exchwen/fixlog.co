@@ -591,9 +591,9 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
            <div className="bg-emerald-50/50 border border-emerald-200 p-5 rounded-2xl flex flex-col md:flex-row gap-6 items-center md:items-start shadow-sm">
              
              <div className="flex-1 space-y-3 w-full">
-                <h4 className="font-black text-emerald-800 text-sm">Tavsiye Et, Ücretsiz Kullan!</h4>
+                <h4 className="font-black text-emerald-800 text-sm">Tavsiye Et, Kumbaranda Biriksin!</h4>
                 <p className="text-xs text-emerald-700/80 font-medium leading-relaxed">
-                  Referans kodunuz ile kayıt olan ve ilk ödemesini gerçekleştiren <strong>her firma için +1 ay ücretsiz kullanım (3000 ₺ değerinde)</strong> kazanırsınız. Referans olduğunuz firma da +1 ay kazanır.
+                  Referans kodunuz ile kayıt olan ve ilk ödemesini gerçekleştiren <strong> her firma için kumbaranıza +1 ay ücretsiz kullanım (Sistem taban ücreti değerinde)</strong> eklenir. Sınır yok, kaç firma getirirseniz o kadar ay faturadan muaf olursunuz! (Kayıt olan firma da hoş geldin hediyesi olarak 1 ay kazanır).
                 </p>
                 <div className="mt-4 flex flex-col sm:flex-row items-center gap-3">
                    <div className="flex bg-white border border-emerald-200 rounded-xl overflow-hidden w-full sm:w-auto shadow-sm">
@@ -620,7 +620,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
              </div>
 
              <div className="flex-shrink-0 bg-white border border-emerald-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
-                <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Kazanılan</span>
+                <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Kumbarada Biriken</span>
                 <span className="block text-4xl font-black text-emerald-600 mb-1">{data?.free_months_balance || data?.freeMonths || 0}</span>
                 <span className="block text-xs font-bold text-slate-600">Ücretsiz Ay</span>
              </div>
