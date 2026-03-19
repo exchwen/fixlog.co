@@ -158,7 +158,12 @@ export default function MasterbossDashboard() {
       const result = await res.json();
       
       if (result.success) {
-        toast.success("Tüm sistem fiyatları başarıyla güncellendi (Özel fiyatlı firmalar hariç)!", { id: toastId });
+        toast.success("Fiyatlar güncellendi!", { id: toastId });
+        
+        // 🚀 BİLDİRİM MODALINI TETİKLİYORUZ
+        setSuccessMessage("Sistem genel fiyatları başarıyla güncellendi. Özel fiyat tanımlanmayan tüm firmalara yeni tarife uygulanacaktır.");
+        setShowSuccessModal(true);
+
         // Veriyi yenile
         const resData = await fetch(`${BASE_URL}/masterboss-data`, { headers: { "Authorization": `Bearer ${token}` } });
         const jsonData = await resData.json();
@@ -1180,7 +1185,6 @@ function TabButton({ active, onClick, icon: Icon, label }) {
   );
 }
 
-// 🚀 YENİ EKLENEN: InfoBox Bileşeni
 function InfoBox({ label, value, fullWidth = false }) {
   return (
     <div className={`bg-neutral-800/30 border border-neutral-800/50 p-4 rounded-xl ${fullWidth ? 'col-span-1 md:col-span-2' : ''}`}>
