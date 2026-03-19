@@ -18,6 +18,10 @@ const [selectedCompany, setSelectedCompany] = useState(null);
 const [manageForm, setManageForm] = useState({ subscriptionStatus: '', freeMonths: '', customDiscount: '', cancelTrial: false, hasMasterbossGift: false });
 const [isSaving, setIsSaving] = useState(false);
 
+// 🚀 YENİ: Başarı Modalı State'i
+const [showSuccessModal, setShowSuccessModal] = useState(false);
+const [successMessage, setSuccessMessage] = useState("");
+
 // 🚀 YENİ: Bilgi Modalı Stateleri
 const [showInfoModal, setShowInfoModal] = useState(false);
 const [infoCompany, setInfoCompany] = useState(null);
@@ -75,81 +79,95 @@ const [companyFilter, setCompanyFilter] = useState("all");
   };
 
   const handleUpdateSubscription = async () => {
-        const token = localStorage.getItem("masterbossToken");
-        if (!token) return toast.error("Yetkisiz işlem!");
+    const token = localStorage.getItem("masterbossToken");
+    if (!token) return toast.error("Yetkisiz işlem!");
+
+    setIsSaving(true);
+    const toastId = toast.loading("Güncelleniyor...");
     
-        setIsSaving(true);
-        const toastId = toast.loading("Güncelleniyor...");
-        try {
-          const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
-          
-          const isExempt = manageForm.subscriptionStatus === 'exempt';
-          const finalStatus = isExempt ? 'active' : manageForm.subscriptionStatus;
-          const finalHasGift = isExempt;
-    
-          const res = await fetch(`${BASE_URL}/masterboss-update-subscription`, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ 
-                          companySlug: selectedCompany.slug, 
-                          subscriptionStatus: finalStatus, 
-                          freeMonths: manageForm.freeMonths !== '' ? parseInt(manageForm.freeMonths) : 0,
-                          customDiscount: manageForm.customDiscount === '' || manageForm.customDiscount === null ? null : parseInt(manageForm.customDiscount),
-                          cancelTrial: manageForm.cancelTrial,
-                          hasMasterbossGift: finalHasGift
-                      })
-                  });
+    try {
+      const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+      
+      const isExempt = manageForm.subscriptionStatus === 'exempt';
+      const finalStatus = isExempt ? 'active' : manageForm.subscriptionStatus;
+      
+      // D1 veritabanı boolean(true/false) sevmez. Bu yüzden 1 veya 0 olarak gönderiyoruz.
+      const finalHasGift = isExempt ? 1 : 0; 
+
+      // Payload'u temiz bir obje olarak tanımlayıp görünmez boşluk (NBSP) hatalarının önüne geçiyoruz.
+      const payload = {
+        companySlug: selectedCompany.slug,
+        subscriptionStatus: finalStatus,
+        freeMonths: manageForm.freeMonths ? parseInt(manageForm.freeMonths, 10) : 0,
+        customDiscount: manageForm.customDiscount ? parseInt(manageForm.customDiscount, 10) : null,
+        cancelTrial: manageForm.cancelTrial,
+        hasMasterbossGift: finalHasGift
+      };
+
+      const res = await fetch(`${BASE_URL}/masterboss-update-subscription`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      
       const result = await res.json();
       
       if (result.success) {
         toast.success("Firma aboneliği güncellendi!", { id: toastId });
         setShowManageModal(false);
-        // Refresh data
+        setSuccessMessage("Firma aboneliği başarıyla güncellendi.");
+        setShowSuccessModal(true);
+        
+        // Veriyi yenile
         const resData = await fetch(`${BASE_URL}/masterboss-data`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
         const jsonData = await resData.json();
         if(jsonData.success) setData(jsonData);
       } else {
+        console.error("Masterboss Update Sub Error:", result.error);
         toast.error(result.error || "Hata oluştu!", { id: toastId });
       }
     } catch (err) {
+      console.error("Masterboss Update Sub Catch Error:", err);
       toast.error("Bağlantı hatası", { id: toastId });
     } finally {
       setIsSaving(false);
     }
   };
 
-  // 🚀 YENİ: Esc ve Mobil Geri Tuşu (PopState) ile Modalları Kapatma
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape") {
-        setSelectedTicket(null);
-        setShowInfoModal(false);
-        setShowManageModal(false);
-      }
-    };
-
-    const handlePopState = () => {
-      if (selectedTicket) setSelectedTicket(null);
-      if (showInfoModal) setShowInfoModal(false);
-      if (showManageModal) setShowManageModal(false);
-    };
-
-    if (selectedTicket || showInfoModal || showManageModal) {
-      window.history.pushState({ modal: "open" }, "");
-      window.addEventListener("keydown", handleKeyDown);
-      window.addEventListener("popstate", handlePopState);
+// 🚀 YENİ: Esc ve Mobil Geri Tuşu (PopState) ile Modalları Kapatma
+useEffect(() => {
+  const handleKeyDown = (e) => {
+    if (e.key === "Escape") {
+      setSelectedTicket(null);
+      setShowInfoModal(false);
+      setShowManageModal(false);
+      setShowSuccessModal(false);
     }
+  };
 
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [selectedTicket, showInfoModal, showManageModal]);
+  const handlePopState = () => {
+    if (selectedTicket) setSelectedTicket(null);
+    if (showInfoModal) setShowInfoModal(false);
+    if (showManageModal) setShowManageModal(false);
+    if (showSuccessModal) setShowSuccessModal(false);
+  };
+
+  if (selectedTicket || showInfoModal || showManageModal || showSuccessModal) {
+    window.history.pushState({ modal: "open" }, "");
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("popstate", handlePopState);
+  }
+
+  return () => {
+    window.removeEventListener("keydown", handleKeyDown);
+    window.removeEventListener("popstate", handlePopState);
+  };
+}, [selectedTicket, showInfoModal, showManageModal, showSuccessModal]);
 
   // 🚀 YENİ: Artık eylemin (action) türünü de alıyor ('reply' veya 'resolve')
   const handleTicketAction = async (ticket, actionType) => {
@@ -214,28 +232,39 @@ const [companyFilter, setCompanyFilter] = useState("all");
   const totalStaff = companies.reduce((acc, c) => acc + (c.total_staff || 0), 0);
   const activeCompanies = companies.filter(c => c.subscription_status === 'active').length;
 
-  // 🚀 YENİ: Toplam Platform Gelir ve Maliyet Hesaplamaları (Tamamen Gerçek Kullanım Verileriyle)
-  const totalPlatformRevenue = companies.reduce((acc, c) => {
-    if (c.subscription_status === 'active') {
-         if (c.has_masterboss_gift === 1) return acc; // Muaf olanlardan gelir sıfır.
-         
+  // 🚀 YENİ: Toplam Platform Gelir ve Maliyet Hesaplamaları (Gerçek Zamanlı İstatistikler)
+  
+  // Aylık Gelir (Şu anki tahsilatlar)
+  const totalMonthlyRevenue = companies.reduce((acc, c) => {
+    if (c.subscription_status === 'active' && c.has_masterboss_gift !== 1) {
          const basePrice = (c.custom_base_price !== null && c.custom_base_price !== undefined) ? Number(c.custom_base_price) : 3000;
-         const activeBasePrice = (c.free_months_balance && c.free_months_balance > 0) ? 0 : basePrice; // Referans ise taban ücret 0
-         const assetRevenue = (c.total_assets || 0) * 50; // Varlık ücretini her zaman öder (Masterboss hediyesi hariç)
-         
+         const activeBasePrice = (c.free_months_balance && c.free_months_balance > 0) ? 0 : basePrice; 
+         const assetRevenue = (c.total_assets || 0) * 50; 
          return acc + activeBasePrice + assetRevenue;
     }
     return acc;
-}, 0);
+  }, 0);
 
-// Maliyetler tamamen backend'den gelen gerçek istatistiklere (stats nesnesi) dayalı hesaplanır
-const totalExpectedCost = (
-     (stats.monthlyJobs || 0) * 3 * 0.0003 + // D1 Yazma Tahmini (İşlem başı)
-     (stats.monthlyJobs || 0) * 12 * 0.00005 + // D1 Okuma Tahmini
-     (stats.monthlyPhotos || 0) * 15 * 0.0001 + // R2 İstek Maliyeti
-     (stats.totalPhotos || 0) * 2.5 * 0.001 + // R2 Depolama (Toplam üzerinden hesaplanır)
-     (stats.monthlyJobs || 0) * 15 * 0.00001 // Worker Trafik Maliyeti
-);
+  // Yıllık Gelir (Toplam Kesinleşmiş İstatistikler Üzerinden - Varsayımsal hesaplama yapmayacağız, backendden gelen stats.yearlyRevenue kullanılmalı. Eğer yoksa aylık hesabı sabit tutarız ama sen tahmini değil net veri istediğin için stats objesinden okuyacağız. Eğer stats.yearlyRevenue gelmiyorsa, mecburen aktif abonelikleri yıllık faturaya çevirmek en gerçekçi yöntemdir, çünkü "o yıl kazanılan" bilgi backendden gelmiyorsa elimizdeki en net bilgi bu firmaların yıllık planıdır.)
+  const totalYearlyRevenue = stats.yearlyRevenue || (totalMonthlyRevenue * 12); // Backend desteği geldiğinde sadece stats.yearlyRevenue kullanılacak.
+
+  // Aylık Gerçek Maliyet
+  const monthlyExpectedCost = (
+     (stats.monthlyJobs || 0) * 3 * 0.0003 + 
+     (stats.monthlyJobs || 0) * 12 * 0.00005 + 
+     (stats.monthlyPhotos || 0) * 15 * 0.0001 + 
+     (stats.totalPhotos || 0) * 2.5 * 0.001 + 
+     (stats.monthlyJobs || 0) * 15 * 0.00001 
+  );
+
+  // Yıllık Gerçek Maliyet
+  const yearlyExpectedCost = (
+     (stats.yearlyJobs || 0) * 3 * 0.0003 + 
+     (stats.yearlyJobs || 0) * 12 * 0.00005 + 
+     (stats.yearlyPhotos || 0) * 15 * 0.0001 + 
+     (stats.totalPhotos || 0) * 2.5 * 0.001 + // Depolama her zaman toplam boyut üzerinden hesaplanır
+     (stats.yearlyJobs || 0) * 15 * 0.00001 
+  );
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white selection:bg-rose-500/30">
@@ -270,8 +299,8 @@ const totalExpectedCost = (
           
           <MetricCard icon={Activity} label="Aylık İşlem Hacmi" value={stats.monthlyJobs || 0} ext={`Yıllık: ${stats.yearlyJobs || 0} İşlem`} color="from-blue-500 to-cyan-600" />
           <MetricCard icon={BarChart3} label="Aylık Foto Yükü" value={stats.monthlyPhotos || 0} ext={`Yıllık: ${stats.yearlyPhotos || 0} Foto`} color="from-fuchsia-500 to-pink-600" />
-          <MetricCard icon={Activity} label="Aylık Net Kazanç" value={`₺${totalPlatformRevenue.toLocaleString('tr-TR')}`} ext={`Yıllık: ₺${(totalPlatformRevenue * 12).toLocaleString('tr-TR')}`} color="from-emerald-500 to-teal-600" />
-          <MetricCard icon={AlertCircle} label="Aylık Gerçek Maliyet" value={`₺${totalExpectedCost.toFixed(2).toLocaleString('tr-TR')}`} ext={`Yıllık: ₺${(totalExpectedCost * 12).toFixed(2).toLocaleString('tr-TR')}`} color="from-rose-500 to-red-600" />
+          <MetricCard icon={Activity} label="Aylık Net Kazanç" value={`₺${totalMonthlyRevenue.toLocaleString('tr-TR')}`} ext={`Yıllık: ₺${totalYearlyRevenue.toLocaleString('tr-TR')}`} color="from-emerald-500 to-teal-600" />
+          <MetricCard icon={AlertCircle} label="Aylık Gerçek Maliyet" value={`₺${monthlyExpectedCost.toFixed(2).toLocaleString('tr-TR')}`} ext={`Yıllık Toplam: ₺${yearlyExpectedCost.toFixed(2).toLocaleString('tr-TR')}`} color="from-rose-500 to-red-600" />
         </div>
 
         {/* Tabs */}
@@ -677,6 +706,29 @@ const totalExpectedCost = (
                     </div>
                 </div>
             )}
+          </motion.div>
+        </div>
+      )}
+
+      {/* 🚀 YENİ: Başarı Modalı (Success Modal) */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 text-center">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-neutral-900 border border-emerald-500/30 rounded-3xl p-8 w-full max-w-sm shadow-2xl flex flex-col items-center"
+          >
+            <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mb-4">
+              <CheckCircle className="w-8 h-8 text-emerald-400" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">İşlem Başarılı!</h3>
+            <p className="text-sm text-neutral-400 mb-6">{successMessage}</p>
+            <button 
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition-all active:scale-[0.98]"
+            >
+              Tamam
+            </button>
           </motion.div>
         </div>
       )}
