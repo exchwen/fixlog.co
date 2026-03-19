@@ -482,7 +482,7 @@ useEffect(() => {
                 </thead>
                 <tbody className="divide-y divide-neutral-800/50">
                   {referrals.map((r) => {
-                    const referrerReward = rewards.find(rew => rew.company_slug === r.referrer_company_slug);
+                    const referrerCompany = companies.find(c => c.slug === r.referrer_company_slug);
                     return (
                       <tr key={r.id} className="hover:bg-neutral-800/20 transition-colors">
                         <td className="px-6 py-4">
@@ -503,9 +503,9 @@ useEffect(() => {
                           )}
                         </td>
                         <td className="px-6 py-4">
-                          {referrerReward ? (
+                          {referrerCompany && referrerCompany.free_months_balance > 0 ? (
                              <div className="inline-flex items-center gap-2 bg-rose-500/10 text-rose-400 px-3 py-1 rounded-full border border-rose-500/20 font-bold">
-                               <Gift className="w-4 h-4" /> {referrerReward.free_months_balance} Ay
+                               <Gift className="w-4 h-4" /> {referrerCompany.free_months_balance} Ay
                              </div>
                           ) : (
                              <div className="text-neutral-500">-</div>
