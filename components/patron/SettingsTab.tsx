@@ -550,14 +550,14 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
              <div className="flex-shrink-0 bg-white border border-blue-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
                 <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Durum</span>
                 
-                {data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true ? (
+                {Number(data?.has_masterboss_gift) === 1 ? (
                     <>
-                        <span className="block text-lg font-black mb-1 text-purple-600">Muaf (VIP)</span>
+                        <span className="block text-lg font-black mb-1 text-purple-600">VIP (Muaf)</span>
                         <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">
                             Ücret: ₺0
                         </span>
-                        <span className="block text-[9px] font-black text-purple-600 tracking-widest leading-tight bg-purple-50 py-1.5 px-2 rounded-lg border border-purple-200">
-                            Tüm faturanız bizim tarafımızdan karşılanıyor.
+                        <span className="block text-[9px] font-black text-purple-600 tracking-widest leading-tight bg-purple-50 py-1.5 px-2 rounded-lg border border-purple-200 shadow-sm">
+                            Faturanız Masterboss tarafından karşılanıyor.
                         </span>
                     </>
                 ) : data?.subscription_status === 'trialing' ? (

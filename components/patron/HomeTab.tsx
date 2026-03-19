@@ -1380,32 +1380,34 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
         </div>
       </div>
 
-      {/* 🚀 YENİ: ABONELİK VE REFERANS KONTROL MERKEZİ */}
-      {userRole === 'Patron' && !isMyJobsTab && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-8">
-              {/* Abonelik Durumu */}
-              <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200 flex flex-col relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2 mb-4 relative z-10">
-                      <CreditCard size={18} className="text-blue-600" /> Abonelik ve Fatura Durumu
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4 relative z-10">
-                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
-                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Durum</div>
-                          <div className={`text-lg font-black ${subStatus === 'Aktif' ? 'text-emerald-600' : subStatus === 'Muaf' ? 'text-purple-600' : 'text-amber-600'}`}>
-                              {subStatus}
+      {/* 🚀 YENİ: ABONELİK VE REFERANS KONTROL MERKEZİ (Yönetici sadece Referansı görür) */}
+      {(userRole === 'Patron' || userRole === 'Yönetici') && !isMyJobsTab && (
+          <div className={`grid grid-cols-1 gap-4 sm:gap-6 mt-8 ${userRole === 'Patron' ? 'lg:grid-cols-2' : ''}`}>
+              {/* Abonelik Durumu - Sadece Patron */}
+              {userRole === 'Patron' && (
+                  <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200 flex flex-col relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                      <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2 mb-4 relative z-10">
+                          <CreditCard size={18} className="text-blue-600" /> Abonelik ve Fatura Durumu
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4 relative z-10">
+                          <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Durum</div>
+                              <div className={`text-lg font-black ${isExempt ? 'text-purple-600' : subStatus === 'Aktif' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                  {isExempt ? 'VIP Muaf' : subStatus}
+                              </div>
                           </div>
-                      </div>
-                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
-                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Sonraki Fatura</div>
-                          <div className="text-sm font-bold text-slate-700 mt-1">
-                              {nextBillingDate}
+                          <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Sonraki Fatura</div>
+                              <div className={`text-sm font-bold mt-1 ${isExempt ? 'text-purple-600' : 'text-slate-700'}`}>
+                                  {isExempt ? 'Ücretsiz Kullanım' : nextBillingDate}
+                              </div>
                           </div>
                       </div>
                   </div>
-              </div>
+              )}
 
-              {/* Referans Merkezi */}
+              {/* Referans Merkezi - Yönetici ve Patron */}
               <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-2xl p-5 sm:p-6 shadow-lg border border-indigo-800/50 flex flex-col relative overflow-hidden text-white">
                   <div className="absolute top-0 right-0 opacity-10 pointer-events-none translate-x-4 -translate-y-4">
                       <Gift size={100} />
@@ -1414,7 +1416,7 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
                       <Users size={18} className="text-indigo-400" /> İş Ortaklığı Merkezi
                   </h3>
                   <div className="flex flex-col sm:flex-row gap-4 relative z-10">
-                  <div className="flex-1 bg-white/10 border border-white/10 rounded-xl p-4 flex flex-col justify-center">
+                      <div className="flex-1 bg-white/10 border border-white/10 rounded-xl p-4 flex flex-col justify-center">
                           <div className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-1">Kumbaradaki İndirim (Toplam)</div>
                           <div className="text-2xl font-black text-emerald-400">₺{(activeReferrals * baseMonthlyFee).toLocaleString('tr-TR')}</div>
                           <div className="text-[10px] text-indigo-100 mt-1 opacity-80">{activeReferrals} ay hediye kullanım hakkınız birikti</div>
@@ -1425,7 +1427,7 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
                           </p>
                           <div className="flex items-center gap-2 bg-indigo-950/50 border border-indigo-500/30 rounded-lg p-1.5 pl-3">
                               <span className="text-xs font-black text-indigo-300 tracking-wider flex-1 truncate">{referralCode}</span>
-                              <button 
+                              <button 
                                 onClick={() => {
                                     navigator.clipboard.writeText(referralCode);
                                     setAlertModal({ isOpen: true, message: 'Referans kodunuz kopyalandı!', type: 'success' });
@@ -1442,96 +1444,97 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
           </div>
       )}
 
-      <div className="bg-slate-900 rounded-2xl p-5 sm:p-6 shadow-xl border border-slate-800 relative overflow-hidden finance-block mt-8">
+<div className="bg-slate-900 rounded-2xl p-4 sm:p-5 shadow-xl border border-slate-800 relative overflow-hidden finance-block mt-8">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-emerald-500 to-amber-500"></div>
         
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
             <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
                 <Database size={16} className="text-blue-400" /> Başlangıçtan Bugüne Sistem Verileri
             </h3>
-            
-            {userRole === 'Patron' && (
-              <div className="bg-blue-500/10 border border-blue-500/20 px-3 py-2 rounded-lg flex items-center gap-2">
-                  <ShieldCheck size={14} className="text-blue-400" />
-                  <div className="flex flex-col">
-                      <span className="text-[9px] text-blue-400/80 font-black uppercase tracking-widest">Altyapı & Lisans</span>
-                      <span className="text-xs font-bold text-white leading-none mt-0.5">₺{baseMonthlyFee.toLocaleString('tr-TR')} <span className="text-[10px] text-slate-400 font-normal">/ Ay</span></span>
-                  </div>
-              </div>
-            )}
+            {/* Tekrarlanan "Altyapı & Lisans" kısmı silindi */}
         </div>
         
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 mb-6">
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center">
-               <div className="text-2xl font-black text-white mb-1">{totalJobs}</div>
-               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Toplam İş Kaydı</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-5">
+            <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex flex-col items-center justify-center text-center">
+               <div className="text-xl font-black text-white mb-1">{totalJobs}</div>
+               <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Toplam İş Kaydı</div>
             </div>
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center">
-               <div className="text-2xl font-black text-emerald-400 mb-1">{totalLifetimePhotos}</div>
-               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Saha Fotoğrafı</div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex flex-col items-center justify-center text-center">
+               <div className="text-xl font-black text-emerald-400 mb-1">{totalLifetimePhotos}</div>
+               <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Saha Fotoğrafı</div>
             </div>
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center">
-               <div className="text-2xl font-black text-blue-400 mb-1">{totalCustomersCount}</div>
-               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Kayıtlı Müşteri</div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex flex-col items-center justify-center text-center">
+               <div className="text-xl font-black text-blue-400 mb-1">{totalCustomersCount}</div>
+               <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Kayıtlı Müşteri</div>
             </div>
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center">
-               <div className="text-2xl font-black text-amber-400 mb-1">{totalAssetsCount}</div>
-               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Cihaz / Varlık</div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex flex-col items-center justify-center text-center">
+               <div className="text-xl font-black text-amber-400 mb-1">{totalAssetsCount}</div>
+               <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Cihaz / Varlık</div>
             </div>
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center sm:col-span-3 md:col-span-1">
-               <div className="text-2xl font-black text-purple-400 mb-1">{totalStockTypes}</div>
-               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Farklı Stok Kalemi</div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex flex-col items-center justify-center text-center sm:col-span-3 md:col-span-1">
+               <div className="text-xl font-black text-purple-400 mb-1">{totalStockTypes}</div>
+               <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Farklı Stok Kalemi</div>
             </div>
         </div>
 
-        <div className={`grid grid-cols-1 gap-3 sm:gap-4 pt-5 border-t border-white/10 ${userRole === 'Patron' ? 'lg:grid-cols-3' : ''}`}>
+        <div className={`grid grid-cols-1 gap-3 sm:gap-4 pt-4 border-t border-white/10 ${userRole === 'Patron' ? 'lg:grid-cols-3' : ''}`}>
             
-            <div className={`${userRole === 'Patron' ? 'lg:col-span-2' : ''} bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-5 sm:p-6 flex flex-col justify-center relative overflow-hidden`}>
-               <div className="absolute right-0 bottom-0 opacity-10 translate-x-4 translate-y-4"><TrendingUp size={120} /></div>
-               <div className="text-xs text-emerald-400 font-black uppercase tracking-widest mb-1 flex items-center gap-1.5 z-10"><TrendingUp size={16}/> Önlenen Gizli Operasyon Maliyeti (Tüm Zamanlar)</div>
-               <div className="text-4xl sm:text-5xl font-black text-emerald-500 mt-1 mb-2 z-10">₺{totalSystemProfit.toLocaleString('tr-TR')}</div>
-               <div className="text-[10px] sm:text-xs text-emerald-400/70 font-medium z-10 max-w-lg">Kasa haricinde; tüm zamanlar boyunca zaman, kağıt, telefon trafiği ve personel mesaisinden elde edilen tahmini tasarruf miktarıdır.</div>
+            <div className={`${userRole === 'Patron' ? 'lg:col-span-2' : ''} bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 sm:p-5 flex flex-col justify-center relative overflow-hidden`}>
+               <div className="absolute right-0 bottom-0 opacity-10 translate-x-4 translate-y-4"><TrendingUp size={80} /></div>
+               <div className="text-[10px] sm:text-xs text-emerald-400 font-black uppercase tracking-widest mb-1 flex items-center gap-1.5 z-10"><TrendingUp size={14}/> Önlenen Gizli Operasyon Maliyeti</div>
+               <div className="text-3xl sm:text-4xl font-black text-emerald-500 mt-1 mb-1 z-10">₺{totalSystemProfit.toLocaleString('tr-TR')}</div>
+               <div className="text-[9px] sm:text-[10px] text-emerald-400/70 font-medium z-10 max-w-lg">Kasa haricinde; tüm zamanlar boyunca zaman, kağıt, telefon trafiği ve personel mesaisinden elde edilen tahmini tasarruf miktarıdır.</div>
             </div>
             
             {userRole === 'Patron' && (
-              <div className="bg-white/5 border border-white/10 rounded-xl p-5 sm:p-6 flex flex-col justify-center relative overflow-hidden">
-              {referralCredits > 0 && (
-                  <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl shadow-md flex items-center gap-1">
-                      <Star size={10} className="fill-white" /> HEDİYE KULLANIM AKTİF
-                  </div>
-              )}
-              <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1 flex items-center gap-1.5"><Activity size={14}/> Bu Ayki İşlem (Kullanım) Ücreti</div>
-              
-              {referralCredits > 0 ? (
-                  <div className="flex items-end gap-3 mt-1 mb-2">
-                      <div className="text-3xl sm:text-4xl font-black text-emerald-400">₺{finalBill.toLocaleString('tr-TR')}</div>
-                      <div className="text-lg font-bold text-slate-500 line-through mb-1">₺{currentUsageBill.toLocaleString('tr-TR')}</div>
-                  </div>
-              ) : (
-                  <div className="text-3xl sm:text-4xl font-black text-white mt-1 mb-2">₺{currentUsageBill.toLocaleString('tr-TR')}</div>
-              )}
+              <div className="bg-white/5 border border-white/10 rounded-xl p-4 sm:p-5 flex flex-col justify-center relative overflow-hidden">
+                  {isExempt ? (
+                      <div className="flex flex-col items-center justify-center text-center h-full">
+                          <Star size={28} className="text-purple-400 mb-2" />
+                          <h4 className="text-base font-black text-white">VIP Muafiyet Aktif</h4>
+                          <p className="text-[10px] text-purple-300 mt-1">Faturanız Masterboss tarafından karşılanıyor.</p>
+                      </div>
+                  ) : (
+                      <>
+                          {referralCredits > 0 && (
+                              <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl shadow-md flex items-center gap-1">
+                                  <Star size={10} className="fill-white" /> HEDİYE KULLANIM
+                              </div>
+                          )}
+                          <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1 flex items-center gap-1.5"><Activity size={14}/> Bu Ayki Kullanım Ücreti</div>
+                          
+                          {referralCredits > 0 ? (
+                              <div className="flex items-end gap-2 mt-1 mb-2">
+                                  <div className="text-2xl sm:text-3xl font-black text-emerald-400">₺{finalBill.toLocaleString('tr-TR')}</div>
+                                  <div className="text-base font-bold text-slate-500 line-through mb-0.5">₺{currentUsageBill.toLocaleString('tr-TR')}</div>
+                              </div>
+                          ) : (
+                              <div className="text-2xl sm:text-3xl font-black text-white mt-1 mb-2">₺{currentUsageBill.toLocaleString('tr-TR')}</div>
+                          )}
 
-              {referralCredits > 0 && (
-                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 mt-2 mb-3">
-                      <p className="text-[10px] text-emerald-400 font-medium leading-relaxed flex items-start gap-1.5">
-                          <Gift size={14} className="shrink-0 mt-0.5" />
-                          <span>Sistemimizde tanımlı <strong>ücretsiz kullanım hakkınız ({activeReferrals} Ay)</strong> bulunmaktadır. Bu ayki faturanızdan <strong className="text-white">₺{referralCredits.toLocaleString('tr-TR')}</strong> tutarında indirim sağlanmıştır. {data?.has_masterboss_gift ? 'İyi çalışmalar dileriz! 🚀' : 'Birlikte daha güçlüyüz! 🚀'}</span>
-                         </p>
-                      </div>
-              )}
+                          {referralCredits > 0 && (
+                              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2.5 mt-1 mb-2">
+                                  <p className="text-[9px] sm:text-[10px] text-emerald-400 font-medium leading-relaxed flex items-start gap-1.5">
+                                      <Gift size={12} className="shrink-0 mt-0.5" />
+                                      <span>Tanımlı <strong>ücretsiz kullanım hakkınız ({activeReferrals} Ay)</strong> ile faturanızdan <strong>₺{referralCredits.toLocaleString('tr-TR')}</strong> indirim uygulandı.</span>
+                                  </p>
+                              </div>
+                          )}
 
-              <div className="text-[10px] text-slate-500 font-medium pt-3 border-t border-white/5 mt-auto flex justify-between items-center">
-                 <div>
-                     <span className="block text-slate-400 font-bold mb-0.5">Sistem Taban Ücreti:</span>
-                     ₺{baseMonthlyFee.toLocaleString('tr-TR')} / Ay
-                 </div>
-                 <div className="text-right">
-                     <span className="block text-slate-400 font-bold mb-0.5">Tüm Zamanlar:</span>
-                     ₺{usagePaid.toLocaleString('tr-TR')}
-                 </div>
-              </div>
-           </div>
-            )}
+                          <div className="text-[9px] text-slate-500 font-medium pt-2 border-t border-white/5 mt-auto flex justify-between items-center">
+                             <div>
+                                 <span className="block text-slate-400 font-bold mb-0.5">Sistem Taban Ücreti:</span>
+                                 ₺{baseMonthlyFee.toLocaleString('tr-TR')} / Ay
+                             </div>
+                             <div className="text-right">
+                                 <span className="block text-slate-400 font-bold mb-0.5">Ödenen Toplam:</span>
+                                 ₺{usagePaid.toLocaleString('tr-TR')}
+                             </div>
+                          </div>
+                      </>
+                  )}
+              </div>
+            )}
         </div>
       </div>
 
