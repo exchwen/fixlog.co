@@ -13,11 +13,11 @@ export default function MasterbossDashboard() {
   const [replyTexts, setReplyTexts] = useState({});
 
   // Subscription Control States
-const [showManageModal, setShowManageModal] = useState(false);
-const [selectedCompany, setSelectedCompany] = useState(null);
-const [manageForm, setManageForm] = useState({ subscriptionStatus: '', freeMonths: '', customDiscount: '', customAssetPrice: '', cancelTrial: false, hasMasterbossGift: false });
-const [globalPricingForm, setGlobalPricingForm] = useState({ base: "", asset: "" });
-const [isSaving, setIsSaving] = useState(false);
+  const [showManageModal, setShowManageModal] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [manageForm, setManageForm] = useState({ subscriptionStatus: '', freeMonths: '', customDiscount: '', customAssetPrice: '', cancelTrial: false, hasMasterbossGift: false });
+  const [globalPricingForm, setGlobalPricingForm] = useState({ base: "", asset: "" });
+  const [isSaving, setIsSaving] = useState(false);
 
   // 🚀 YENİ: Başarı Modalı State'i
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -751,28 +751,28 @@ const [isSaving, setIsSaving] = useState(false);
               </div>
 
               <div className="grid grid-cols-2 gap-4 border-t border-neutral-800 pt-4">
-                <div className="col-span-2"><label className="block text-xs font-black text-purple-400 uppercase tracking-wider">Özel Fiyatlandırma (Opsiyonel)</label><p className="text-[10px] text-neutral-500 mb-2">Eğer buraya değer girerseniz, sistem genelindeki zamlar bu firmayı etkilemez. Sıfırlamak için içini boş bırakın.</p></div>
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-400 mb-1">Sabit Paket Ücreti (₺)</label>
-                  <input 
-                    type="number" 
-                    placeholder={`Varsayılan: ${globalPricing?.base || 3000}₺`}
-                    value={manageForm.customDiscount} 
-                    onChange={(e) => setManageForm({...manageForm, customDiscount: e.target.value})}
-                    className="w-full bg-neutral-950 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-purple-500 transition-colors placeholder-neutral-600 font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-400 mb-1">Varlık Başı Ücret (₺)</label>
-                  <input 
-                    type="number" 
-                    placeholder={`Varsayılan: ${globalPricing?.asset || 50}₺`}
-                    value={manageForm.customAssetPrice} 
-                    onChange={(e) => setManageForm({...manageForm, customAssetPrice: e.target.value})}
-                    className="w-full bg-neutral-950 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-purple-500 transition-colors placeholder-neutral-600 font-bold"
-                  />
-                </div>
-              </div>
+                <div className="col-span-2"><label className="block text-xs font-black text-purple-400 uppercase tracking-wider">Özel Fiyatlandırma (Opsiyonel)</label><p className="text-[10px] text-neutral-500 mb-2">Eğer buraya değer girerseniz, sistem genelindeki zamlar bu firmayı etkilemez. Sıfırlamak için içini boş bırakın.</p></div>
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-400 mb-1">Sabit Paket Ücreti (₺)</label>
+                  <input 
+                    type="number" 
+                    placeholder={`Sistem Geneli: ${globalPricing?.base || 0}₺`}
+                    value={manageForm.customDiscount} 
+                    onChange={(e) => setManageForm({...manageForm, customDiscount: e.target.value})}
+                    className="w-full bg-neutral-950 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-purple-500 transition-colors placeholder-neutral-600 font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-400 mb-1">Varlık Başı Ücret (₺)</label>
+                  <input 
+                    type="number" 
+                    placeholder={`Sistem Geneli: ${globalPricing?.asset || 0}₺`}
+                    value={manageForm.customAssetPrice} 
+                    onChange={(e) => setManageForm({...manageForm, customAssetPrice: e.target.value})}
+                    className="w-full bg-neutral-950 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-purple-500 transition-colors placeholder-neutral-600 font-bold"
+                  />
+                </div>
+              </div>
 
               {selectedCompany.subscription_status === 'trialing' && selectedCompany.trial_ends_at !== null && (
                 <div className="flex items-center gap-3 bg-rose-500/10 border border-rose-500/20 p-4 rounded-xl mt-4">
@@ -1022,12 +1022,12 @@ const [isSaving, setIsSaving] = useState(false);
                   ) : infoDetails ? (
                     <div className="space-y-6">
                       {(() => {
-                        // 1. GELİR HESAPLAMASI
-                        const basePrice = infoCompany.custom_base_price ? Number(infoCompany.custom_base_price) : (globalPricing?.base || 3000);
-                        const assetPrice = infoCompany.custom_per_asset_price ? Number(infoCompany.custom_per_asset_price) : (globalPricing?.asset || 50);
+                        // 1. GELİR HESAPLAMASI
+                        const basePrice = (infoCompany.custom_base_price !== null && infoCompany.custom_base_price !== undefined) ? Number(infoCompany.custom_base_price) : Number(globalPricing?.base || 0);
+                        const assetPrice = (infoCompany.custom_per_asset_price !== null && infoCompany.custom_per_asset_price !== undefined) ? Number(infoCompany.custom_per_asset_price) : Number(globalPricing?.asset || 0);
 
-                        const hasFreeMonth = infoCompany.free_months_balance && Number(infoCompany.free_months_balance) > 0;
-                        const activeBasePrice = hasFreeMonth ? 0 : basePrice;
+                        const hasFreeMonth = infoCompany.free_months_balance && Number(infoCompany.free_months_balance) > 0;
+                        const activeBasePrice = hasFreeMonth ? 0 : basePrice;
                         
                         const assetCount = infoDetails.assets || 0;
                         const assetRevenue = assetCount * assetPrice; 
@@ -1192,14 +1192,14 @@ const [isSaving, setIsSaving] = useState(false);
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-neutral-700/50 pt-4">
-                         <div>
-                           <div className="text-xs text-neutral-500 mb-1">Özel Tanımlı Fiyat (Aylık)</div>
-                           <div className="text-sm font-medium text-amber-400">{infoCompany.custom_base_price ? `₺${infoCompany.custom_base_price}` : `Standart Tarife (${globalPricing?.base || 3000}₺)`}</div>
-                         </div>
-                         <div>
-                           <div className="text-xs text-neutral-500 mb-1">Özel Varlık Ücreti</div>
-                           <div className="text-sm font-medium text-amber-400">{infoCompany.custom_per_asset_price ? `₺${infoCompany.custom_per_asset_price}` : `Standart Tarife (${globalPricing?.asset || 50}₺)`}</div>
-                         </div>
+                         <div>
+                           <div className="text-xs text-neutral-500 mb-1">Özel Tanımlı Fiyat (Aylık)</div>
+                           <div className="text-sm font-medium text-amber-400">{(infoCompany.custom_base_price !== null && infoCompany.custom_base_price !== undefined) ? `₺${infoCompany.custom_base_price}` : `Sistem Geneli (${globalPricing?.base || 0}₺)`}</div>
+                         </div>
+                         <div>
+                           <div className="text-xs text-neutral-500 mb-1">Özel Varlık Ücreti</div>
+                           <div className="text-sm font-medium text-amber-400">{(infoCompany.custom_per_asset_price !== null && infoCompany.custom_per_asset_price !== undefined) ? `₺${infoCompany.custom_per_asset_price}` : `Sistem Geneli (${globalPricing?.asset || 0}₺)`}</div>
+                         </div>
                          <div>
                            <div className="text-xs text-neutral-500 mb-1">Tanımlı Hediye / Ücretsiz Ay</div>
                            <div className="text-sm font-medium text-blue-400">{infoCompany.free_months_balance || 0} Ay</div>
