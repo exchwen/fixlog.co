@@ -89,13 +89,13 @@ const [companyFilter, setCompanyFilter] = useState("all");
                   'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ 
-                    companySlug: selectedCompany.slug, 
-                    subscriptionStatus: manageForm.subscriptionStatus, 
-                    freeMonths: !manageForm.freeMonths ? 0 : parseInt(manageForm.freeMonths),
-                    customDiscount: manageForm.customDiscount === '' || manageForm.customDiscount === null ? null : parseInt(manageForm.customDiscount),
-                    cancelTrial: manageForm.cancelTrial,
-                    hasMasterbossGift: manageForm.hasMasterbossGift
-                })
+                      companySlug: selectedCompany.slug, 
+                      subscriptionStatus: manageForm.subscriptionStatus === 'exempt' ? 'active' : manageForm.subscriptionStatus, 
+                      freeMonths: manageForm.subscriptionStatus === 'exempt' ? parseInt(manageForm.freeMonths || 0) : null,
+                      customDiscount: manageForm.customDiscount === '' || manageForm.customDiscount === null ? null : parseInt(manageForm.customDiscount),
+                      cancelTrial: manageForm.cancelTrial,
+                      hasMasterbossGift: manageForm.subscriptionStatus === 'exempt'
+                  })
               });
       const result = await res.json();
       
@@ -314,11 +314,12 @@ const [companyFilter, setCompanyFilter] = useState("all");
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
+                          c.has_masterboss_gift === 1 ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
                           c.subscription_status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
-                          c.subscription_status === 'trialing' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 
+                          c.subscription_status === 'trialing' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 
                           'bg-rose-500/10 text-rose-400 border-rose-500/20'
                         }`}>
-                          {c.subscription_status?.toUpperCase() || 'BİLİNMİYOR'}
+                          {c.has_masterboss_gift === 1 ? 'MUAF (HEDİYE)' : c.subscription_status?.toUpperCase() || 'BİLİNMİYOR'}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-neutral-400">
@@ -365,7 +366,7 @@ const [companyFilter, setCompanyFilter] = useState("all");
                           onClick={() => { 
                             setSelectedCompany(c); 
                             setManageForm({ 
-                              subscriptionStatus: c.subscription_status || 'trialing', 
+                              subscriptionStatus: c.has_masterboss_gift === 1 ? 'exempt' : (c.subscription_status || 'trialing'), 
                               freeMonths: c.free_months_balance !== undefined && c.free_months_balance !== null ? c.free_months_balance : '', 
                               customDiscount: c.custom_base_price !== undefined && c.custom_base_price !== null ? c.custom_base_price : '', 
                               cancelTrial: false,
@@ -512,29 +513,16 @@ const [companyFilter, setCompanyFilter] = useState("all");
                   className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-rose-500 transition-colors appearance-none"
                 >
                   <option value="active">Aktif (Kısıtlama Yok)</option>
+                  <option value="exempt">Muaf (Sıfır Fatura / Masterboss Hediyesi)</option>
                   <option value="trialing">Deneme Sürümü (Trial)</option>
                   <option value="past_due">Paywall'a Düşür (Ödeme Gecikti)</option>
                   <option value="canceled">İptal Edildi</option>
                 </select>
               </div>
 
-              <div>
-                <div className="flex items-center gap-3 bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl mb-4">
-                  <input 
-                    type="checkbox" 
-                    id="hasMasterbossGift"
-                    checked={manageForm.hasMasterbossGift} 
-                    onChange={(e) => {
-                        const isChecked = e.target.checked;
-                        setManageForm({...manageForm, hasMasterbossGift: isChecked, freeMonths: isChecked ? manageForm.freeMonths : (selectedCompany?.free_months_balance || '')});
-                    }}
-                    className="w-5 h-5 rounded border-blue-500 text-blue-500 focus:ring-blue-500/20 bg-neutral-800"
-                  />
-                  <label htmlFor="hasMasterbossGift" className="text-sm text-blue-300 font-medium cursor-pointer leading-tight">Tam Muafiyet (Masterboss Hediyesi)<br/><span className="text-xs text-blue-400/70 font-normal">Sıfır Fatura - Tüm varlık ve taban ücretleri sıfırlanır.</span></label>
-                </div>
-
-                {manageForm.hasMasterbossGift && (
-                  <div className="mb-4">
+              {manageForm.subscriptionStatus === 'exempt' && (
+                <div>
+                  <div className="mb-4 mt-2">
                     <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wider">Kaç Ay Muaf Olacak?</label>
                     <input 
                       type="number" 
@@ -544,8 +532,8 @@ const [companyFilter, setCompanyFilter] = useState("all");
                       className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-blue-500 transition-colors placeholder-neutral-600"
                     />
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wider">Özel Fiyat Tanımla (₺)</label>
