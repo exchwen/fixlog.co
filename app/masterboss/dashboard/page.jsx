@@ -293,10 +293,10 @@ const totalExpectedCost = (
               {/* 🚀 YENİ: Firma Filtreleme Sekmeleri */}
               <div className="flex flex-wrap items-center gap-2 mb-6 border-b border-neutral-800 pb-4">
                  <button onClick={() => setCompanyFilter("all")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "all" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Tümü ({companies.length})</button>
-                 <button onClick={() => setCompanyFilter("active")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "active" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Ödeyenler ({companies.filter(c => c.subscription_status === 'active' && (!c.free_months_balance || c.free_months_balance <= 0)).length})</button>
-                 <button onClick={() => setCompanyFilter("trialing")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "trialing" ? "bg-blue-500/20 text-blue-400 border border-blue-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Deneme Sürümü ({companies.filter(c => c.subscription_status === 'trialing').length})</button>
-                 <button onClick={() => setCompanyFilter("past_due")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "past_due" ? "bg-rose-500/20 text-rose-400 border border-rose-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Paywall / Gecikmede ({companies.filter(c => c.subscription_status === 'past_due' || c.subscription_status === 'canceled').length})</button>
-                 <button onClick={() => setCompanyFilter("free_month")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "free_month" ? "bg-amber-500/20 text-amber-400 border border-amber-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>1 Ay Muaf ({companies.filter(c => c.free_months_balance > 0).length})</button>
+                 <button onClick={() => setCompanyFilter("active")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "active" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Aktif Ödeyenler ({companies.filter(c => c.subscription_status === 'active' && c.has_masterboss_gift !== 1).length})</button>
+                 <button onClick={() => setCompanyFilter("trialing")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "trialing" ? "bg-blue-500/20 text-blue-400 border border-blue-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Deneme Sürümü ({companies.filter(c => c.subscription_status === 'trialing' && c.has_masterboss_gift !== 1).length})</button>
+                 <button onClick={() => setCompanyFilter("past_due")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "past_due" ? "bg-rose-500/20 text-rose-400 border border-rose-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Paywall / Gecikmede ({companies.filter(c => (c.subscription_status === 'past_due' || c.subscription_status === 'canceled') && c.has_masterboss_gift !== 1).length})</button>
+                 <button onClick={() => setCompanyFilter("exempt")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "exempt" ? "bg-amber-500/20 text-amber-400 border border-amber-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Muaf (VIP) ({companies.filter(c => c.has_masterboss_gift === 1).length})</button>
               </div>
 
               <table className="w-full text-left text-sm whitespace-nowrap">
@@ -312,10 +312,10 @@ const totalExpectedCost = (
                 </thead>
                 <tbody className="divide-y divide-neutral-800/50">
                   {companies.filter(c => {
-                      if (companyFilter === "active") return c.subscription_status === 'active' && (!c.free_months_balance || c.free_months_balance <= 0);
-                      if (companyFilter === "trialing") return c.subscription_status === 'trialing';
-                      if (companyFilter === "past_due") return c.subscription_status === 'past_due' || c.subscription_status === 'canceled';
-                      if (companyFilter === "free_month") return c.free_months_balance > 0;
+                      if (companyFilter === "active") return c.subscription_status === 'active' && c.has_masterboss_gift !== 1;
+                      if (companyFilter === "trialing") return c.subscription_status === 'trialing' && c.has_masterboss_gift !== 1;
+                      if (companyFilter === "past_due") return (c.subscription_status === 'past_due' || c.subscription_status === 'canceled') && c.has_masterboss_gift !== 1;
+                      if (companyFilter === "exempt") return c.has_masterboss_gift === 1;
                       return true;
                   }).map((c) => (
                     <tr key={c.slug} className="hover:bg-neutral-800/20 transition-colors">
