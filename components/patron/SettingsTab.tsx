@@ -98,15 +98,15 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
       
       try {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
+        const imgData = imageData.data;
         let r = 0, g = 0, b = 0, count = 0;
         
-        for (let i = 0; i < data.length; i += 4) {
+        for (let i = 0; i < imgData.length; i += 4) {
           // Saydam pikselleri atla
-          if (data[i + 3] < 128) continue; 
-          r += data[i];
-          g += data[i + 1];
-          b += data[i + 2];
+          if (imgData[i + 3] < 128) continue; 
+          r += imgData[i];
+          g += imgData[i + 1];
+          b += imgData[i + 2];
           count++;
         }
         
@@ -205,7 +205,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
        console.warn("İnternet bağlantısı yok. Ayarlarınız kuyruğa alındı.");
        const activeSlug = localStorage.getItem('companySlug') || ''; 
        const pending = JSON.parse(localStorage.getItem(`offline_actions_${activeSlug}`) || '[]');
-       pending.push({ endpoint: 'update-settings', body: finalForm, timestamp: new Date().toISOString() }); // 🚀 finalForm gönderildi
+       pending.push({ endpoint: 'update-settings', body: finalForm, timestamp: new Date().toISOString() }); 
        localStorage.setItem(`offline_actions_${activeSlug}`, JSON.stringify(pending));
        
        setModalState('success');
@@ -213,7 +213,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
        return;
     }
 
-    const success = await handleAction('update-settings', finalForm); // 🚀 finalForm gönderildi
+    const success = await handleAction('update-settings', finalForm); 
     if (success) {
       setModalState('success');
       setTimeout(() => setModalState('idle'), 3000);
@@ -230,6 +230,9 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
     settingsForm?.emergencyPhone?.trim() &&
     settingsForm?.address?.trim() &&
     settingsForm?.taxInfo?.trim();
+
+  // 🚀 DÜZELTME: Referans kodunu hem settingsForm hem de data içinden çekiyoruz.
+  const refCode = settingsForm?.referralCode || settingsForm?.referral_code || data?.referralCode || data?.referral_code || 'BEKLENİYOR...';
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 relative pb-20 sm:pb-6">
@@ -307,7 +310,6 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-center sm:items-start bg-slate-50 p-4 border border-slate-200 rounded-xl">
           <div 
              className="w-20 h-20 rounded-xl flex items-center justify-center overflow-hidden shrink-0 shadow-sm border border-slate-200 transition-colors duration-300"
-             // 🚀 BURASI SİHİRLİ ALAN: Renk analizi sonucunu arka plana atarız
              style={{ backgroundColor: settingsForm?.logo ? logoBgColor : '#ffffff' }}
           >
             {settingsForm?.logo ? (
@@ -536,7 +538,6 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
                 <div className="mt-4 flex flex-col sm:flex-row items-center gap-3">
                    <button 
                      onClick={() => {
-                        // İleride İyzico Checkout formunu tetikleyecek kod
                         alert('Güvenli Iyzico ödeme altyapısı entegre edildiğinde kart giriş ekranı burada açılacaktır.');
                      }}
                      className="bg-blue-600 text-white font-bold text-xs px-5 py-3 rounded-xl hover:bg-blue-700 shadow-sm active:scale-95 transition-all w-full sm:w-auto flex justify-center items-center gap-2"
@@ -549,7 +550,17 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
              <div className="flex-shrink-0 bg-white border border-blue-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
                 <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Durum</span>
                 
-                {data?.subscription_status === 'trialing' ? (
+                {data?.subscription_status === 'exempt' ? (
+                    <>
+                        <span className="block text-lg font-black mb-1 text-purple-600">Muaf (Sınırsız)</span>
+                        <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">
+                            Aylık Ücret: Yok
+                        </span>
+                        <span className="block text-[9px] font-black text-purple-600 uppercase tracking-widest leading-tight bg-purple-50 py-1.5 px-2 rounded-lg border border-purple-200">
+                            💎 Özel Ayrıcalık
+                        </span>
+                    </>
+                ) : data?.subscription_status === 'trialing' ? (
                     <>
                         <span className="block text-lg font-black mb-1 text-blue-600">Deneme Sürümü</span>
                         {(() => {
@@ -601,14 +612,14 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
                       <input 
                          type="text" 
                          readOnly 
-                         value={data?.referralCode || data?.referral_code || 'BEKLENİYOR...'} 
+                         value={refCode} 
                          className="px-4 py-2 font-black text-slate-800 text-sm outline-none bg-transparent w-full sm:w-40 text-center"
                       />
                    </div>
                    <button 
-                     disabled={!(data?.referralCode || data?.referral_code)}
+                     disabled={refCode === 'BEKLENİYOR...'}
                      onClick={() => {
-                       navigator.clipboard.writeText(data?.referralCode || data?.referral_code || '');
+                       navigator.clipboard.writeText(refCode);
                        setModalState('success');
                        setTimeout(()=> setModalState('idle'), 2000);
                      }}
@@ -621,7 +632,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
 
              <div className="flex-shrink-0 bg-white border border-emerald-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
                 <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Kumbarada Biriken</span>
-                <span className="block text-4xl font-black text-emerald-600 mb-1">{data?.free_months_balance || data?.freeMonths || 0}</span>
+                <span className="block text-4xl font-black text-emerald-600 mb-1">{settingsForm?.free_months_balance || data?.free_months_balance || data?.freeMonths || 0}</span>
                 <span className="block text-xs font-bold text-slate-600">Ücretsiz Ay</span>
              </div>
 
@@ -641,7 +652,6 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
               { id: 1, label: 'Pazartesi' }, { id: 2, label: 'Salı' }, { id: 3, label: 'Çarşamba' },
               { id: 4, label: 'Perşembe' }, { id: 5, label: 'Cuma' }, { id: 6, label: 'Cumartesi' }, { id: 7, label: 'Pazar' }
             ].map((day) => {
-              // Varsayılan olarak Pzt-Cmt seçili gelsin
               const currentDays = settingsForm?.work_days ? (typeof settingsForm.work_days === 'string' ? JSON.parse(settingsForm.work_days) : settingsForm.work_days) : [1,2,3,4,5,6];
               const isSelected = currentDays.includes(day.id);
               
@@ -656,7 +666,6 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
                         newDays.push(day.id);
                         newDays.sort();
                     }
-                    // En az 1 gün seçili olmak zorunda, hepsini silemez
                     if (newDays.length > 0) {
                         setSettingsForm({ ...settingsForm, work_days: newDays });
                     }

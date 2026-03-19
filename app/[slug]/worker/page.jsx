@@ -1499,6 +1499,11 @@ const handleStatusUpdate = async (newStatus) => {
           companyName={data?.name || 'İşletme'} 
           companyLogo={data?.logo}
           assets={data?.assets}
+
+          /* İletişim bilgilerini aktaran yeni satırlar */
+          landlinePhone={data?.landlinePhone}
+          whatsappPhone={data?.whatsappPhone}
+          companyWebsite={data?.website}
         />
 
         {/* 🚀 YENİ STOK SEÇİM MODALI (Tam Ekran, Arama ve Kategorili) */}
