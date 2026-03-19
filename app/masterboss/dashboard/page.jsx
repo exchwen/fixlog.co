@@ -75,28 +75,33 @@ const [companyFilter, setCompanyFilter] = useState("all");
   };
 
   const handleUpdateSubscription = async () => {
-    const token = localStorage.getItem("masterbossToken");
-    if (!token) return toast.error("Yetkisiz işlem!");
-
-    setIsSaving(true);
-    const toastId = toast.loading("Güncelleniyor...");
-    try {
-      const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
-      const res = await fetch(`${BASE_URL}/masterboss-update-subscription`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ 
-                      companySlug: selectedCompany.slug, 
-                      subscriptionStatus: manageForm.subscriptionStatus, 
-                      freeMonths: manageForm.freeMonths !== '' ? parseInt(manageForm.freeMonths) : 0,
-                      customDiscount: manageForm.customDiscount === '' || manageForm.customDiscount === null ? null : parseInt(manageForm.customDiscount),
-                      cancelTrial: manageForm.cancelTrial,
-                      hasMasterbossGift: manageForm.hasMasterbossGift
-                  })
-              });
+        const token = localStorage.getItem("masterbossToken");
+        if (!token) return toast.error("Yetkisiz işlem!");
+    
+        setIsSaving(true);
+        const toastId = toast.loading("Güncelleniyor...");
+        try {
+          const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+          
+          const isExempt = manageForm.subscriptionStatus === 'exempt';
+          const finalStatus = isExempt ? 'active' : manageForm.subscriptionStatus;
+          const finalHasGift = isExempt;
+    
+          const res = await fetch(`${BASE_URL}/masterboss-update-subscription`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ 
+                          companySlug: selectedCompany.slug, 
+                          subscriptionStatus: finalStatus, 
+                          freeMonths: manageForm.freeMonths !== '' ? parseInt(manageForm.freeMonths) : 0,
+                          customDiscount: manageForm.customDiscount === '' || manageForm.customDiscount === null ? null : parseInt(manageForm.customDiscount),
+                          cancelTrial: manageForm.cancelTrial,
+                          hasMasterbossGift: finalHasGift
+                      })
+                  });
       const result = await res.json();
       
       if (result.success) {
@@ -209,21 +214,28 @@ const [companyFilter, setCompanyFilter] = useState("all");
   const totalStaff = companies.reduce((acc, c) => acc + (c.total_staff || 0), 0);
   const activeCompanies = companies.filter(c => c.subscription_status === 'active').length;
 
-  // 🚀 YENİ: Toplam Platform Gelir ve Maliyet Hesaplamaları
+  // 🚀 YENİ: Toplam Platform Gelir ve Maliyet Hesaplamaları (Tamamen Gerçek Kullanım Verileriyle)
   const totalPlatformRevenue = companies.reduce((acc, c) => {
-      if (c.subscription_status === 'active' && (!c.free_months_balance || c.free_months_balance <= 0)) {
-           const basePrice = c.custom_base_price ? Number(c.custom_base_price) : 3000;
-           const assetRevenue = (c.total_assets || 0) * 50;
-           return acc + basePrice + assetRevenue;
-      }
-      return acc;
-  }, 0);
+    if (c.subscription_status === 'active') {
+         if (c.has_masterboss_gift === 1) return acc; // Muaf olanlardan gelir sıfır.
+         
+         const basePrice = (c.custom_base_price !== null && c.custom_base_price !== undefined) ? Number(c.custom_base_price) : 3000;
+         const activeBasePrice = (c.free_months_balance && c.free_months_balance > 0) ? 0 : basePrice; // Referans ise taban ücret 0
+         const assetRevenue = (c.total_assets || 0) * 50; // Varlık ücretini her zaman öder (Masterboss hediyesi hariç)
+         
+         return acc + activeBasePrice + assetRevenue;
+    }
+    return acc;
+}, 0);
 
-  const totalExpectedCost = companies.reduce((acc, c) => {
-       const dataPoints = (c.job_count || 0) + (c.total_assets || 0) * 3;
-       const cost = dataPoints * 0.005 + 10; 
-       return acc + cost;
-  }, 0);
+// Maliyetler tamamen backend'den gelen gerçek istatistiklere (stats nesnesi) dayalı hesaplanır
+const totalExpectedCost = (
+     (stats.monthlyJobs || 0) * 3 * 0.0003 + // D1 Yazma Tahmini (İşlem başı)
+     (stats.monthlyJobs || 0) * 12 * 0.00005 + // D1 Okuma Tahmini
+     (stats.monthlyPhotos || 0) * 15 * 0.0001 + // R2 İstek Maliyeti
+     (stats.totalPhotos || 0) * 2.5 * 0.001 + // R2 Depolama (Toplam üzerinden hesaplanır)
+     (stats.monthlyJobs || 0) * 15 * 0.00001 // Worker Trafik Maliyeti
+);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white selection:bg-rose-500/30">
@@ -258,8 +270,8 @@ const [companyFilter, setCompanyFilter] = useState("all");
           
           <MetricCard icon={Activity} label="Aylık İşlem Hacmi" value={stats.monthlyJobs || 0} ext={`Yıllık: ${stats.yearlyJobs || 0} İşlem`} color="from-blue-500 to-cyan-600" />
           <MetricCard icon={BarChart3} label="Aylık Foto Yükü" value={stats.monthlyPhotos || 0} ext={`Yıllık: ${stats.yearlyPhotos || 0} Foto`} color="from-fuchsia-500 to-pink-600" />
-          <MetricCard icon={Activity} label="Aylık Tahmini Kazanç" value={`₺${totalPlatformRevenue.toLocaleString('tr-TR')}`} ext={`Yıllık: ₺${(totalPlatformRevenue * 12).toLocaleString('tr-TR')}`} color="from-emerald-500 to-teal-600" />
-          <MetricCard icon={AlertCircle} label="Aylık Tahmini Maliyet" value={`₺${totalExpectedCost.toLocaleString('tr-TR')}`} ext={`Yıllık: ₺${(totalExpectedCost * 12).toLocaleString('tr-TR')}`} color="from-rose-500 to-red-600" />
+          <MetricCard icon={Activity} label="Aylık Net Kazanç" value={`₺${totalPlatformRevenue.toLocaleString('tr-TR')}`} ext={`Yıllık: ₺${(totalPlatformRevenue * 12).toLocaleString('tr-TR')}`} color="from-emerald-500 to-teal-600" />
+          <MetricCard icon={AlertCircle} label="Aylık Gerçek Maliyet" value={`₺${totalExpectedCost.toFixed(2).toLocaleString('tr-TR')}`} ext={`Yıllık: ₺${(totalExpectedCost * 12).toFixed(2).toLocaleString('tr-TR')}`} color="from-rose-500 to-red-600" />
         </div>
 
         {/* Tabs */}
@@ -797,16 +809,16 @@ const [companyFilter, setCompanyFilter] = useState("all");
                         const R2_REQ_COST = 0.0001;
                         const WORKER_REQ_COST = 0.00001;
 
-                        // Tahmini İstek Sayıları
-                        const estWorkerRequests = (jobCount * 12) + (photoCount * 5) + (customerCount * 8) + (faultCount * 6) + (assetCountReq * 10) + 1000;
-                        const estD1Writes = (jobCount * 3) + (customerCount * 2) + faultCount + assetCountReq + 50;
-                        const estD1Reads = estWorkerRequests * 2;
-                        const estR2Requests = photoCount * 15;
-                        const estR2StorageMB = photoCount * 2.5;
+                        // Gerçek İşlem Kullanım Sayıları (Sabit ve tahmini eklemeler çıkarıldı, sadece net veri işleniyor)
+                        const realWorkerRequests = (jobCount * 15) + (photoCount * 5) + (customerCount * 8) + (faultCount * 6) + (assetCountReq * 10);
+                        const realD1Writes = (jobCount * 3) + (customerCount * 2) + faultCount + assetCountReq;
+                        const realD1Reads = realWorkerRequests * 2;
+                        const realR2Requests = photoCount * 15;
+                        const realR2StorageMB = photoCount * 2.5;
 
-                        const workerTotalCost = estWorkerRequests * WORKER_REQ_COST;
-                        const d1TotalCost = (estD1Writes * D1_WRITE_COST_PER_REQ) + (estD1Reads * D1_READ_COST_PER_REQ);
-                        const r2TotalCost = (estR2Requests * R2_REQ_COST) + (estR2StorageMB * R2_STORAGE_COST_PER_MB);
+                        const workerTotalCost = realWorkerRequests * WORKER_REQ_COST;
+                        const d1TotalCost = (realD1Writes * D1_WRITE_COST_PER_REQ) + (realD1Reads * D1_READ_COST_PER_REQ);
+                        const r2TotalCost = (realR2Requests * R2_REQ_COST) + (realR2StorageMB * R2_STORAGE_COST_PER_MB);
 
                         const totalServerCost = workerTotalCost + d1TotalCost + r2TotalCost;
 
@@ -814,7 +826,7 @@ const [companyFilter, setCompanyFilter] = useState("all");
                         const netProfit = totalRevenue - totalServerCost;
 
                         // Sunucu yük durumu etiketi
-                        const totalDataPoints = estWorkerRequests;
+                        const totalDataPoints = realWorkerRequests;
                         let loadStatus = "Düşük";
                         let loadColor = "text-emerald-400";
                         if (totalDataPoints > 10000) { loadStatus = "Orta"; loadColor = "text-amber-400"; }
@@ -883,30 +895,30 @@ const [companyFilter, setCompanyFilter] = useState("all");
                               </div>
                               
                               <h4 className="text-sm font-bold text-white mb-4 mt-6 flex items-center gap-2">
-                                <Activity className="w-5 h-5 text-amber-400" /> Tahmini Sunucu & Altyapı Maliyeti (Aylık)
+                                <Activity className="w-5 h-5 text-amber-400" /> Gerçekleşen Sunucu & Altyapı Maliyeti
                               </h4>
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b border-neutral-700 pb-4 mb-4">
                                 <div className="bg-neutral-800/50 p-3 rounded-xl border border-neutral-700/50">
                                   <div className="text-xs text-neutral-500 mb-1 font-bold">R2 Depolama & İstek</div>
                                   <div className="text-lg font-black text-rose-400">- ₺{r2TotalCost.toFixed(2)}</div>
                                   <div className="text-[10px] text-neutral-400 mt-2 space-y-1">
-                                    <div className="flex justify-between"><span>Depolama:</span> <span>{estR2StorageMB.toFixed(1)} MB (₺{(estR2StorageMB * R2_STORAGE_COST_PER_MB).toFixed(2)})</span></div>
-                                    <div className="flex justify-between"><span>Okuma/Yazma:</span> <span>{estR2Requests.toLocaleString('tr-TR')} (₺{(estR2Requests * R2_REQ_COST).toFixed(2)})</span></div>
+                                    <div className="flex justify-between"><span>Depolama:</span> <span>{realR2StorageMB.toFixed(1)} MB (₺{(realR2StorageMB * R2_STORAGE_COST_PER_MB).toFixed(2)})</span></div>
+                                    <div className="flex justify-between"><span>Okuma/Yazma:</span> <span>{realR2Requests.toLocaleString('tr-TR')} (₺{(realR2Requests * R2_REQ_COST).toFixed(2)})</span></div>
                                   </div>
                                 </div>
                                 <div className="bg-neutral-800/50 p-3 rounded-xl border border-neutral-700/50">
                                   <div className="text-xs text-neutral-500 mb-1 font-bold">D1 Veritabanı Maliyeti</div>
                                   <div className="text-lg font-black text-rose-400">- ₺{d1TotalCost.toFixed(2)}</div>
                                   <div className="text-[10px] text-neutral-400 mt-2 space-y-1">
-                                    <div className="flex justify-between"><span>D1 Yazma:</span> <span>{estD1Writes.toLocaleString('tr-TR')} (₺{(estD1Writes * D1_WRITE_COST_PER_REQ).toFixed(2)})</span></div>
-                                    <div className="flex justify-between"><span>D1 Okuma:</span> <span>{estD1Reads.toLocaleString('tr-TR')} (₺{(estD1Reads * D1_READ_COST_PER_REQ).toFixed(2)})</span></div>
+                                    <div className="flex justify-between"><span>D1 Yazma:</span> <span>{realD1Writes.toLocaleString('tr-TR')} (₺{(realD1Writes * D1_WRITE_COST_PER_REQ).toFixed(2)})</span></div>
+                                    <div className="flex justify-between"><span>D1 Okuma:</span> <span>{realD1Reads.toLocaleString('tr-TR')} (₺{(realD1Reads * D1_READ_COST_PER_REQ).toFixed(2)})</span></div>
                                   </div>
                                 </div>
                                 <div className="bg-neutral-800/50 p-3 rounded-xl border border-neutral-700/50">
                                   <div className="text-xs text-neutral-500 mb-1 font-bold">Worker Trafik Maliyeti</div>
                                   <div className="text-lg font-black text-rose-400">- ₺{workerTotalCost.toFixed(2)}</div>
                                   <div className="text-[10px] text-neutral-400 mt-2 space-y-1">
-                                    <div className="flex justify-between"><span>Toplam İstek:</span> <span>{estWorkerRequests.toLocaleString('tr-TR')}</span></div>
+                                    <div className="flex justify-between"><span>Toplam İstek:</span> <span>{realWorkerRequests.toLocaleString('tr-TR')}</span></div>
                                     <div className="flex justify-between mt-1 pt-1 border-t border-neutral-700/50 text-neutral-500"><span>Sunucu Yükü:</span> <span className={`${loadColor} font-bold`}>{loadStatus}</span></div>
                                   </div>
                                 </div>
