@@ -203,7 +203,7 @@ const [companyFilter, setCompanyFilter] = useState("all");
     );
   }
 
-  const { companies = [], tickets = [], referrals = [], rewards = [] } = data || {};
+  const { companies = [], tickets = [], referrals = [], rewards = [], stats = {} } = data || {};
 
   const totalAssets = companies.reduce((acc, c) => acc + (c.total_assets || 0), 0);
   const totalStaff = companies.reduce((acc, c) => acc + (c.total_staff || 0), 0);
@@ -250,13 +250,16 @@ const [companyFilter, setCompanyFilter] = useState("all");
       <div className="max-w-7xl mx-auto px-4 py-8">
         
         {/* Metric Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-4 mb-8">
           <MetricCard icon={Building2} label="Toplam Firma" value={companies.length} ext={`${activeCompanies} Aktif Üye`} color="from-blue-500 to-indigo-600" />
-          <MetricCard icon={BarChart3} label="Sistem Varlığı" value={totalAssets} ext="Global Varlık Hacmi" color="from-rose-500 to-red-600" />
+          <MetricCard icon={BarChart3} label="Toplam QR (Varlık)" value={totalAssets} ext="Sistemdeki Tüm Cihazlar" color="from-indigo-500 to-purple-600" />
           <MetricCard icon={Users} label="Sistem Personeli" value={totalStaff} ext="Kayıtlı Saha Çalışanı" color="from-emerald-500 to-teal-600" />
           <MetricCard icon={Gift} label="Referans Havuzu" value={referrals.filter(r=>r.is_verified===1).length} ext="Başarılı Davet Sayısı" color="from-amber-500 to-orange-600" />
-          <MetricCard icon={Activity} label="Tahmini Kazanç" value={`₺${totalPlatformRevenue.toLocaleString('tr-TR')}`} ext="Aylık Brüt Ciro" color="from-emerald-500 to-teal-600" />
-          <MetricCard icon={AlertCircle} label="Tahmini Maliyet" value={`₺${totalExpectedCost.toLocaleString('tr-TR')}`} ext="Aylık Sunucu Gideri" color="from-rose-500 to-red-600" />
+          
+          <MetricCard icon={Activity} label="Aylık İşlem Hacmi" value={stats.monthlyJobs || 0} ext={`Yıllık: ${stats.yearlyJobs || 0} İşlem`} color="from-blue-500 to-cyan-600" />
+          <MetricCard icon={BarChart3} label="Aylık Foto Yükü" value={stats.monthlyPhotos || 0} ext={`Yıllık: ${stats.yearlyPhotos || 0} Foto`} color="from-fuchsia-500 to-pink-600" />
+          <MetricCard icon={Activity} label="Aylık Tahmini Kazanç" value={`₺${totalPlatformRevenue.toLocaleString('tr-TR')}`} ext={`Yıllık: ₺${(totalPlatformRevenue * 12).toLocaleString('tr-TR')}`} color="from-emerald-500 to-teal-600" />
+          <MetricCard icon={AlertCircle} label="Aylık Tahmini Maliyet" value={`₺${totalExpectedCost.toLocaleString('tr-TR')}`} ext={`Yıllık: ₺${(totalExpectedCost * 12).toLocaleString('tr-TR')}`} color="from-rose-500 to-red-600" />
         </div>
 
         {/* Tabs */}
