@@ -695,27 +695,29 @@ export default function MasterbossDashboard() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 w-full max-w-lg shadow-2xl relative"
+            className="bg-neutral-900 border border-neutral-800 rounded-3xl p-4 md:p-6 w-full max-w-lg shadow-2xl relative max-h-[90vh] flex flex-col"
           >
-            <button 
-              onClick={() => setShowManageModal(false)}
-              className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors text-sm font-medium"
-            >
-              Kapat
-            </button>
-            <h3 className="text-xl font-bold text-white mb-2 tracking-tight">Firma Abonelik Yönetimi</h3>
-            <div className="text-sm font-mono text-rose-400 mb-6">{selectedCompany.slug} <span className="text-neutral-500 text-xs ml-2">({selectedCompany.company_name})</span></div>
+            <div className="shrink-0 mb-4 md:mb-6 relative">
+              <button 
+                onClick={() => setShowManageModal(false)}
+                className="absolute top-0 right-0 text-neutral-500 hover:text-white transition-colors text-sm font-medium z-10"
+              >
+                Kapat
+              </button>
+              <h3 className="text-lg md:text-xl font-bold text-white mb-1 md:mb-2 tracking-tight pr-12">Firma Abonelik Yönetimi</h3>
+              <div className="text-xs md:text-sm font-mono text-rose-400">{selectedCompany.slug} <span className="text-neutral-500 text-[10px] md:text-xs ml-1 md:ml-2">({selectedCompany.company_name})</span></div>
+            </div>
 
-            <div className="space-y-4">
+            <div className="overflow-y-auto pr-1 md:pr-2 scrollbar-hide flex-1 space-y-4">
 
               {/* VIP Muafiyet Alanı (Checkbox ile Ayrıldı) */}
-              <div className="flex items-start gap-3 bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl mt-4">
+              <div className="flex items-start gap-3 bg-emerald-500/10 border border-emerald-500/20 p-3 md:p-4 rounded-xl mt-2 md:mt-4">
                 <input 
                   type="checkbox" 
                   id="vipStatus"
                   checked={manageForm.hasMasterbossGift} 
                   onChange={(e) => setManageForm({...manageForm, hasMasterbossGift: e.target.checked})}
-                  className="w-5 h-5 rounded border-emerald-500 text-emerald-500 focus:ring-emerald-500/20 bg-neutral-800 mt-0.5 cursor-pointer"
+                  className="w-5 h-5 rounded border-emerald-500 text-emerald-500 focus:ring-emerald-500/20 bg-neutral-800 mt-0.5 cursor-pointer shrink-0"
                 />
                 <label htmlFor="vipStatus" className="text-sm text-emerald-300 font-medium cursor-pointer leading-tight">
                   VIP Muafiyet Tanımla <br/>
@@ -729,7 +731,7 @@ export default function MasterbossDashboard() {
                 <select 
                   value={manageForm.subscriptionStatus} 
                   onChange={(e) => setManageForm({...manageForm, subscriptionStatus: e.target.value})}
-                  className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-rose-500 transition-colors appearance-none"
+                  className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-rose-500 transition-colors appearance-none text-sm md:text-base"
                 >
                   <option value="active">Aktif (Ödeyen / Kısıtlama Yok)</option>
                   <option value="trialing">Deneme Sürümü (Trial)</option>
@@ -746,36 +748,36 @@ export default function MasterbossDashboard() {
                   placeholder="Firmaya kaç ay hediye edeceksiniz? Örn: 1"
                   value={manageForm.freeMonths} 
                   onChange={(e) => setManageForm({...manageForm, freeMonths: e.target.value})}
-                  className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-blue-500 transition-colors placeholder-neutral-600"
+                  className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-blue-500 transition-colors placeholder-neutral-600 text-sm md:text-base"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 border-t border-neutral-800 pt-4">
-                <div className="col-span-2"><label className="block text-xs font-black text-purple-400 uppercase tracking-wider">Özel Fiyatlandırma (Opsiyonel)</label><p className="text-[10px] text-neutral-500 mb-2">Eğer buraya değer girerseniz, sistem genelindeki zamlar bu firmayı etkilemez. Sıfırlamak için içini boş bırakın.</p></div>
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-400 mb-1">Sabit Paket Ücreti (₺)</label>
-                  <input 
-                    type="number" 
-                    placeholder={`Sistem Geneli: ${globalPricing?.base || 0}₺`}
-                    value={manageForm.customDiscount} 
-                    onChange={(e) => setManageForm({...manageForm, customDiscount: e.target.value})}
-                    className="w-full bg-neutral-950 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-purple-500 transition-colors placeholder-neutral-600 font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-400 mb-1">Varlık Başı Ücret (₺)</label>
-                  <input 
-                    type="number" 
-                    placeholder={`Sistem Geneli: ${globalPricing?.asset || 0}₺`}
-                    value={manageForm.customAssetPrice} 
-                    onChange={(e) => setManageForm({...manageForm, customAssetPrice: e.target.value})}
-                    className="w-full bg-neutral-950 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-purple-500 transition-colors placeholder-neutral-600 font-bold"
-                  />
-                </div>
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-neutral-800 pt-4">
+                <div className="col-span-1 md:col-span-2"><label className="block text-xs font-black text-purple-400 uppercase tracking-wider">Özel Fiyatlandırma (Opsiyonel)</label><p className="text-[10px] text-neutral-500 mb-2">Eğer buraya değer girerseniz, sistem genelindeki zamlar bu firmayı etkilemez. Sıfırlamak için içini boş bırakın.</p></div>
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-400 mb-1">Sabit Paket Ücreti (₺)</label>
+                  <input 
+                    type="number" 
+                    placeholder={`Sistem Geneli: ${globalPricing?.base || 0}₺`}
+                    value={manageForm.customDiscount} 
+                    onChange={(e) => setManageForm({...manageForm, customDiscount: e.target.value})}
+                    className="w-full bg-neutral-950 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-purple-500 transition-colors placeholder-neutral-600 font-bold text-sm md:text-base"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-400 mb-1">Varlık Başı Ücret (₺)</label>
+                  <input 
+                    type="number" 
+                    placeholder={`Sistem Geneli: ${globalPricing?.asset || 0}₺`}
+                    value={manageForm.customAssetPrice} 
+                    onChange={(e) => setManageForm({...manageForm, customAssetPrice: e.target.value})}
+                    className="w-full bg-neutral-950 border border-neutral-700 text-white rounded-xl py-3 px-4 outline-none focus:border-purple-500 transition-colors placeholder-neutral-600 font-bold text-sm md:text-base"
+                  />
+                </div>
+              </div>
 
               {selectedCompany.subscription_status === 'trialing' && selectedCompany.trial_ends_at !== null && (
-                <div className="flex items-center gap-3 bg-rose-500/10 border border-rose-500/20 p-4 rounded-xl mt-4">
+                <div className="flex items-center gap-3 bg-rose-500/10 border border-rose-500/20 p-3 md:p-4 rounded-xl mt-4">
                   <input 
                     type="checkbox" 
                     id="cancelTrial"
@@ -787,20 +789,22 @@ export default function MasterbossDashboard() {
                            setManageForm({...manageForm, cancelTrial: false});
                        }
                     }}
-                    className="w-5 h-5 rounded border-rose-500 text-rose-500 focus:ring-rose-500/20 bg-neutral-800 cursor-pointer"
+                    className="w-5 h-5 rounded border-rose-500 text-rose-500 focus:ring-rose-500/20 bg-neutral-800 cursor-pointer shrink-0"
                   />
                   <label htmlFor="cancelTrial" className="text-sm text-rose-300 font-medium cursor-pointer">Deneme sürümünü iptal et ve anında ödemeye (Paywall'a) düşür</label>
                 </div>
               )}
             </div>
 
-            <button
-              onClick={handleUpdateSubscription}
-              disabled={isSaving}
-              className="mt-8 w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-rose-600/20 transition-all active:scale-[0.98] disabled:opacity-50"
-            >
-              {isSaving ? "Değişiklikler Kaydediliyor..." : "Ayarları Kaydet ve Uygula"}
-            </button>
+            <div className="shrink-0 mt-4 md:mt-6 pt-4 border-t border-neutral-800">
+              <button
+                onClick={handleUpdateSubscription}
+                disabled={isSaving}
+                className="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 md:py-4 rounded-xl shadow-lg shadow-rose-600/20 transition-all active:scale-[0.98] disabled:opacity-50 text-sm md:text-base"
+              >
+                {isSaving ? "Değişiklikler Kaydediliyor..." : "Ayarları Kaydet ve Uygula"}
+              </button>
+            </div>
           </motion.div>
         </div>
       )}
