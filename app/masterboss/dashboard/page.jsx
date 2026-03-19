@@ -91,8 +91,9 @@ const [companyFilter, setCompanyFilter] = useState("all");
       const isExempt = manageForm.subscriptionStatus === 'exempt';
       const finalStatus = isExempt ? 'active' : manageForm.subscriptionStatus;
       
-      // D1 veritabanı boolean(true/false) sevmez. Bu yüzden 1 veya 0 olarak gönderiyoruz.
-      const finalHasGift = isExempt ? 1 : 0; 
+      // Worker tarafında (hasMasterbossGift === true) şeklinde katı bir kontrol olduğu için 
+      // veriyi 1/0 değil, doğrudan boolean (true/false) olarak göndermeliyiz. Worker DB'ye yazarken kendi 1/0 yapıyor.
+      const finalHasGift = isExempt; 
 
       // Payload'u temiz bir obje olarak tanımlayıp görünmez boşluk (NBSP) hatalarının önüne geçiyoruz.
       const payload = {
