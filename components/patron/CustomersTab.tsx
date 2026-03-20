@@ -32,9 +32,15 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
     <div className="space-y-4">
       {/* BAŞLIK VE ARAMA KONTROLLERİ */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
-        <div className="w-full sm:w-auto">
-          <h3 className="text-lg font-black text-slate-800 tracking-tight">Müşteri Rehberi & Cihazlar</h3>
-          <p className="text-xs text-slate-500 font-medium mt-0.5 hidden sm:block">Müşterilerinizi ve atanan varlıkları yönetin.</p>
+        <div className="w-full sm:w-auto flex items-center gap-4">
+          <div>
+            <h3 className="text-lg font-black text-slate-800 tracking-tight">Müşteri Rehberi & Cihazlar</h3>
+            <p className="text-xs text-slate-500 font-medium mt-0.5 hidden sm:block">Müşterilerinizi ve atanan varlıkları yönetin.</p>
+          </div>
+          <div className="hidden sm:flex flex-col items-center bg-blue-50 border border-blue-100 rounded-xl px-4 py-1.5 shadow-inner">
+             <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Toplam</span>
+             <span className="text-lg font-black text-blue-700 leading-none">{data?.customers?.length || 0}</span>
+          </div>
         </div>
         
         <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2.5">
