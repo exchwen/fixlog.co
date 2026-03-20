@@ -236,22 +236,20 @@ const refCode = settingsForm?.referralCode || settingsForm?.referral_code || dat
 
 // 🚀 YENİ: Hometab ile birebir aynı dinamik fatura hesaplaması
 const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferrals, isExempt, finalBill, subStatus, trialEndsAt } = React.useMemo(() => {
-  const assetsCount = data?.stats?.assets || data?.assets?.length || 0;
+  const assetsCount = data?.assets?.length || 0;
   
-  const exemptStatus = 
-      data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true || String(data?.has_masterboss_gift) === 'true' ||
-      settingsForm?.has_masterboss_gift === 1 || settingsForm?.has_masterboss_gift === true || String(settingsForm?.has_masterboss_gift) === 'true';
+  const exemptStatus = data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true || String(data?.has_masterboss_gift) === 'true';
   
-  const bFee = data?.custom_base_price !== undefined && data?.custom_base_price !== null ? Number(data.custom_base_price) : 
-               (settingsForm?.custom_base_price !== undefined && settingsForm?.custom_base_price !== null ? Number(settingsForm.custom_base_price) : 
-               Number(data?.global_base_price || 3000));
+  const bFee = data?.custom_base_price !== undefined && data?.custom_base_price !== null 
+               ? Number(data.custom_base_price) 
+               : Number(data?.global_base_price || 3000);
                
-  const pAssetFee = data?.custom_per_asset_price !== undefined && data?.custom_per_asset_price !== null ? Number(data.custom_per_asset_price) : 
-                    (settingsForm?.custom_per_asset_price !== undefined && settingsForm?.custom_per_asset_price !== null ? Number(settingsForm.custom_per_asset_price) : 
-                    Number(data?.global_asset_price || 50));
+  const pAssetFee = data?.custom_per_asset_price !== undefined && data?.custom_per_asset_price !== null 
+                    ? Number(data.custom_per_asset_price) 
+                    : Number(data?.global_asset_price || 50);
 
   const cUsageBill = exemptStatus ? 0 : bFee + (assetsCount * pAssetFee);
-  const aReferrals = Number(settingsForm?.free_months_balance || data?.free_months_balance || data?.freeMonths || 0);
+  const aReferrals = Number(data?.free_months_balance || 0);
 
   let fBill = cUsageBill;
   let rCredits = 0;
@@ -263,8 +261,8 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
       fBill = Math.max(0, cUsageBill - rCredits);
   }
   
-  const sStatus = settingsForm?.subscription_status || data?.subscription_status || 'active';
-  const tEndsAt = settingsForm?.trial_ends_at || data?.trial_ends_at;
+  const sStatus = data?.subscription_status || 'active';
+  const tEndsAt = data?.trial_ends_at;
 
   return {
       totalAssetsCount: assetsCount,
@@ -277,7 +275,7 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
       subStatus: sStatus,
       trialEndsAt: tEndsAt
   };
-}, [data, settingsForm]);
+}, [data]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 relative pb-20 sm:pb-6">
@@ -620,10 +618,10 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
                         })()}
                     </>
                 ) : subStatus === 'past_due' ? (
-                    <>
-                        <span className="block text-lg font-black mb-1 text-rose-600">Ödeme Gecikti</span>
-                        <span className="block text-[10px] font-bold text-rose-500 uppercase">Erişim Kısıtlandı</span>
-                    </>
+                  <>
+                      <span className="block text-lg font-black mb-1 text-rose-600">Ödeme Bekliyor</span>
+                      <span className="block text-[10px] font-bold text-rose-500 uppercase">Erişim Kısıtlandı</span>
+                  </>
                 ) : subStatus === 'canceled' ? (
                     <>
                         <span className="block text-lg font-black mb-1 text-slate-600">İptal Edildi</span>

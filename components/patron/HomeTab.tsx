@@ -348,7 +348,7 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
         fBill = Math.max(0, cUsageBill - rCredits);
     }
     
-    const sStatus = exemptStatus ? 'Muaf' : (data?.subscription_status === 'active' ? 'Aktif' : (data?.subscription_status === 'past_due' ? 'Ödeme Bekliyor' : (data?.subscription_status === 'canceled' ? 'İptal' : 'Deneme')));
+    const sStatus = exemptStatus ? 'VIP Muaf' : (data?.subscription_status === 'active' ? 'Aktif' : (data?.subscription_status === 'past_due' ? 'Ödeme Bekliyor' : (data?.subscription_status === 'canceled' ? 'İptal Edildi' : 'Deneme Sürümü')));
     const nBillingDate = data?.nextBillingDate || 'Belirlenmedi';
 
     return { 
