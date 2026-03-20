@@ -503,12 +503,33 @@ return (
 
       <AnimatePresence>
         {hasFault && !hasEmergency && (
-           <motion.div className="fixed inset-0 z-[99998] bg-slate-900/80 flex items-center justify-center p-4">
-              <div className="bg-amber-400 w-full max-w-md rounded-3xl p-6 text-amber-950 text-center">
-                  <AlertTriangle size={48} className="mx-auto mb-4" /><h2 className="text-2xl font-black mb-2">ARIZA BİLDİRİMİ</h2><p className="font-bold mb-4">{pendingFaults[0]?.asset_name} - {pendingFaults[0]?.description}</p>
-                  <button onClick={() => handleResolveFault(pendingFaults[0]?.id)} className="bg-slate-900 text-white w-full py-3 rounded-xl font-bold">Tamam, Gördüm</button>
-              </div>
-           </motion.div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[99998] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-6">
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-amber-400 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden text-amber-950 flex flex-col">
+               <div className="p-6 md:p-8 flex flex-col items-center text-center border-b border-amber-500/30"><AlertTriangle size={56} className="mb-4 animate-bounce md:w-[64px] md:h-[64px]" /><h2 className="text-2xl md:text-3xl font-black mb-2 uppercase tracking-tight">Arıza Bildirimi!</h2><p className="font-bold opacity-80 text-amber-900 text-sm md:text-base">Müşterinizden yeni bir arıza kaydı ulaştı.</p></div>
+               <div className="bg-white p-6 md:p-8 flex flex-col gap-4">
+                  <div className="bg-slate-50 p-4 md:p-5 rounded-2xl border border-slate-100">
+                      <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">İlgili Varlık & Konum</div>
+                      <div className="font-black text-lg md:text-xl text-slate-800 leading-none mb-2">
+                          {pendingFaults[0]?.asset_apartment || pendingFaults[0]?.customer_name || pendingFaults[0]?.asset_name || 'Bilinmeyen Varlık'}
+                      </div>
+                      <div className="text-slate-600 font-semibold flex items-start md:items-center gap-1.5 text-xs md:text-sm">
+                          <MapPin size={16} className="text-slate-400 mt-0.5 md:mt-0 flex-shrink-0"/> 
+                          <span>{pendingFaults[0]?.asset_location ? pendingFaults[0].asset_location.replace(pendingFaults[0].asset_apartment || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : 'Konum belirtilmemiş'}</span>
+                      </div>
+                  </div>
+                  <div className="bg-slate-50 p-4 md:p-5 rounded-2xl border border-slate-100">
+                      <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Bildiren Kişi & Şikayet Detayı</div>
+                      <div className="font-bold text-slate-800 text-sm md:text-base">
+                          {pendingFaults[0]?.reporter_name || 'İsimsiz'} - {pendingFaults[0]?.reporter_phone || 'Belirtilmemiş'}
+                      </div>
+                      <div className="text-slate-600 mt-3 text-xs md:text-sm italic border-l-4 border-amber-300 pl-3">
+                          "{pendingFaults[0]?.description || 'Açıklama girilmemiş'}"
+                      </div>
+                  </div>
+                  <button onClick={() => handleResolveFault(pendingFaults[0]?.id)} disabled={isSaving} className="mt-2 md:mt-4 w-full bg-slate-900 hover:bg-slate-800 text-amber-400 py-3.5 md:py-4.5 rounded-2xl font-black text-base md:text-lg flex flex-col sm:flex-row items-center justify-center gap-2 transition-all shadow-xl disabled:opacity-50 active:scale-95"><Check size={24} /> {isSaving ? 'Kapatılıyor...' : 'GÖRÜLDÜ / BİLDİRİMİ KAPAT'}</button>
+               </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 
