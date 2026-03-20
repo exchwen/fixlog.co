@@ -236,20 +236,24 @@ const refCode = settingsForm?.referralCode || settingsForm?.referral_code || dat
 
 // 🚀 YENİ: Hometab ile birebir aynı dinamik fatura hesaplaması
 const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferrals, isExempt, finalBill, subStatus, trialEndsAt } = React.useMemo(() => {
-  const assetsCount = data?.assets?.length || 0;
+  // Hometab'deki gibi hem stats hem de assets.length kontrol ediliyor. Ayrıca form state'inden de (settingsForm) gelebilir.
+  const assetsCount = data?.stats?.assets || data?.assets?.length || settingsForm?.stats?.assets || settingsForm?.assets?.length || 0;
   
-  const exemptStatus = data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true || String(data?.has_masterboss_gift) === 'true';
+  const rawExempt = data?.has_masterboss_gift ?? settingsForm?.has_masterboss_gift;
+  const exemptStatus = rawExempt === 1 || rawExempt === true || String(rawExempt) === 'true';
   
-  const bFee = data?.custom_base_price !== undefined && data?.custom_base_price !== null 
-               ? Number(data.custom_base_price) 
-               : Number(data?.global_base_price || 3000);
+  const rawBasePrice = data?.custom_base_price ?? settingsForm?.custom_base_price;
+  const bFee = rawBasePrice !== undefined && rawBasePrice !== null 
+               ? Number(rawBasePrice) 
+               : Number(data?.global_base_price || settingsForm?.global_base_price || 3000);
                
-  const pAssetFee = data?.custom_per_asset_price !== undefined && data?.custom_per_asset_price !== null 
-                    ? Number(data.custom_per_asset_price) 
-                    : Number(data?.global_asset_price || 50);
+  const rawAssetPrice = data?.custom_per_asset_price ?? settingsForm?.custom_per_asset_price;
+  const pAssetFee = rawAssetPrice !== undefined && rawAssetPrice !== null 
+                    ? Number(rawAssetPrice) 
+                    : Number(data?.global_asset_price || settingsForm?.global_asset_price || 50);
 
   const cUsageBill = exemptStatus ? 0 : bFee + (assetsCount * pAssetFee);
-  const aReferrals = Number(data?.free_months_balance || 0);
+  const aReferrals = Number(data?.free_months_balance ?? settingsForm?.free_months_balance ?? 0);
 
   let fBill = cUsageBill;
   let rCredits = 0;
@@ -261,8 +265,8 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
       fBill = Math.max(0, cUsageBill - rCredits);
   }
   
-  const sStatus = data?.subscription_status || 'active';
-  const tEndsAt = data?.trial_ends_at;
+  const sStatus = data?.subscription_status || settingsForm?.subscription_status || 'active';
+  const tEndsAt = data?.trial_ends_at || settingsForm?.trial_ends_at;
 
   return {
       totalAssetsCount: assetsCount,
@@ -275,7 +279,7 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
       subStatus: sStatus,
       trialEndsAt: tEndsAt
   };
-}, [data]);
+}, [data, settingsForm]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 relative pb-20 sm:pb-6">
