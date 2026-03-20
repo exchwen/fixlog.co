@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
-import { Plus, Calendar, ArrowRight, Clock, MapPin, ClipboardList, ShieldCheck, Wrench, UserPlus, UserCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Calendar, ArrowRight, Clock, MapPin, ClipboardList, ShieldCheck, Wrench, UserPlus, UserCheck, Search } from 'lucide-react';
 
 export default function JobsTab({ data, setShowJobModal, statusColors, setSelectedJob, setJobModalType, handleAction }: any) {
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Tarih Formatlayıcı
   const formatFullDate = (dateString: string) => {
@@ -40,26 +41,61 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
             label = 'Gecikti';
             colorClass = 'bg-rose-100 text-rose-700 border-rose-200';
         }
-    }
-    return { label, colorClass };
-  };
-
-  return (
-    <div className="space-y-4 sm:space-y-6">
+      }
+      return { label, colorClass };
+    };
+  
+    // Arama Filtresi
+    const filteredJobs = data?.jobs?.filter((j: any) => {
+      if (!searchTerm) return true;
+      
+      const searchLower = searchTerm.toLowerCase();
+      const currentAsset = data?.assets?.find((a: any) => String(a.id) === String(j.asset_id));
+      const aptName = currentAsset?.apartmentName || currentAsset?.apartment_name || '';
+      const assetName = currentAsset?.name || '';
+      const location = currentAsset?.location || '';
+      
+      return (
+        j.customer_name?.toLowerCase().includes(searchLower) ||
+        j.work_type?.toLowerCase().includes(searchLower) ||
+        aptName.toLowerCase().includes(searchLower) ||
+        assetName.toLowerCase().includes(searchLower) ||
+        location.toLowerCase().includes(searchLower)
+      );
+    }) || [];
+  
+    return (
+      <div className="space-y-4 sm:space-y-6">
       
       {/* BAŞLIK */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
-        <div className="w-full sm:w-auto">
-          <h3 className="text-lg font-black text-slate-800 tracking-tight">Tüm İş Emirleri (Genel Arşiv)</h3>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="w-full md:w-auto">
+          <h3 className="text-lg font-black text-slate-800 tracking-tight">Tüm İş Emirleri</h3>
           <p className="text-xs text-slate-500 font-medium mt-0.5 hidden sm:block">Filtresiz tüm iş kayıtları ve güncel durumları.</p>
         </div>
         
-        <button 
-          onClick={() => setShowJobModal(true)} 
-          className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2.5 sm:py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all whitespace-nowrap"
-        >
-          <Plus size={16} strokeWidth={3} /> Yeni Görev Ata
-        </button>
+        <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3 items-center">
+          {/* Arama Kutusu */}
+          <div className="relative w-full sm:w-64">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search size={16} className="text-slate-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Müşteri, Varlık veya İş Türü..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 sm:py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            />
+          </div>
+
+          <button 
+            onClick={() => setShowJobModal(true)} 
+            className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2.5 sm:py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all whitespace-nowrap shrink-0"
+          >
+            <Plus size={16} strokeWidth={3} /> Yeni Görev Ata
+          </button>
+        </div>
       </div>
 
       {/* MASAÜSTÜ TABLO */}
@@ -76,7 +112,7 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
              </tr>
            </thead>
            <tbody className="divide-y divide-slate-100">
-             {data?.jobs?.length > 0 ? data.jobs.map((j: any) => {
+             {filteredJobs?.length > 0 ? filteredJobs.map((j: any) => {
                
                // 🚀 HİYERARŞİ HESAPLAMASI (GÜVENLİ & GERİYE DÖNÜK UYUMLU)
                const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
@@ -237,7 +273,7 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
 
       {/* MOBİL GÖRÜNÜM */}
       <div className="md:hidden flex flex-col gap-3">
-        {data?.jobs?.length > 0 ? data.jobs.map((j: any) => {
+        {filteredJobs?.length > 0 ? filteredJobs.map((j: any) => {
           
           // 🚀 HİYERARŞİ HESAPLAMASI (MOBİL İÇİN AYNI GÜVENLİ MANTIK)
           const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';

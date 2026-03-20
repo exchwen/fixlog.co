@@ -155,14 +155,14 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
       </div>
 
       {/* MOBİL GÖRÜNÜM: DİKEY KARTLAR (Masaüstünde gizlenir) */}
-      <div className="md:hidden grid grid-cols-1 gap-4">
+      <div className="md:hidden grid grid-cols-1 gap-6">
         {filteredCustomers.length > 0 ? filteredCustomers.map((c: any) => {
           const customerAssets = data?.assets?.filter((a: any) => a.customer_id === c.id) || [];
           return (
             <div 
               key={c.id}
               onClick={() => setSelectedCustomer && setSelectedCustomer(c)}
-              className="bg-white rounded-3xl border border-slate-100 p-5 shadow-sm hover:shadow-md active:bg-slate-50 transition-all flex flex-col gap-5 cursor-pointer"
+              className="bg-white rounded-[2rem] border border-slate-200/80 p-6 shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] hover:border-blue-200 active:scale-[0.98] transition-all duration-300 flex flex-col gap-6 cursor-pointer relative"
             >
               {/* İsim ve Vergi No */}
               <div className="flex justify-between items-start gap-3">
