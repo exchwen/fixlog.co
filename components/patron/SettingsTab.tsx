@@ -234,14 +234,18 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
 // 🚀 DÜZELTME: Referans kodunu hem settingsForm hem de data içinden çekiyoruz.
 const refCode = settingsForm?.referralCode || settingsForm?.referral_code || data?.referralCode || data?.referral_code || 'BEKLENİYOR...';
 
-// 🚀 YENİ: Hometab ile birebir aynı dinamik fatura hesaplaması
+// 🚀 YENİ: Hometab ile birebir aynı dinamik fatura hesaplaması (Tamamen Agresif Veri Arama)
 const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferrals, isExempt, finalBill, subStatus, trialEndsAt } = React.useMemo(() => {
-  // Hometab'deki gibi hem stats hem de assets.length kontrol ediliyor. Ayrıca form state'inden de (settingsForm) gelebilir.
-  const assetsCount = data?.stats?.assets || data?.assets?.length || settingsForm?.stats?.assets || settingsForm?.assets?.length || 0;
   
+  // 1. Varlık Sayısı: Undefined veya string gelme ihtimaline karşı Number() ile zorluyoruz
+  const rawAssets = data?.stats?.assets ?? data?.assets?.length ?? settingsForm?.stats?.assets ?? settingsForm?.assets?.length ?? 0;
+  const assetsCount = Number(rawAssets) || 0;
+  
+  // 2. Muafiyet (VIP): API'den "1" (string) gelme riskine karşı Number() === 1 veya text === 'true' kontrolü
   const rawExempt = data?.has_masterboss_gift ?? settingsForm?.has_masterboss_gift;
-  const exemptStatus = rawExempt === 1 || rawExempt === true || String(rawExempt) === 'true';
+  const exemptStatus = Number(rawExempt) === 1 || String(rawExempt).toLowerCase() === 'true';
   
+  // 3. Fiyatlandırma
   const rawBasePrice = data?.custom_base_price ?? settingsForm?.custom_base_price;
   const bFee = rawBasePrice !== undefined && rawBasePrice !== null 
                ? Number(rawBasePrice) 
@@ -252,6 +256,7 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
                     ? Number(rawAssetPrice) 
                     : Number(data?.global_asset_price || settingsForm?.global_asset_price || 50);
 
+  // 4. Güncel Kullanım Faturası
   const cUsageBill = exemptStatus ? 0 : bFee + (assetsCount * pAssetFee);
   const aReferrals = Number(data?.free_months_balance ?? settingsForm?.free_months_balance ?? 0);
 
@@ -261,10 +266,11 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
   if (exemptStatus) {
       fBill = 0;
   } else if (aReferrals > 0) {
-      rCredits = bFee;
+      rCredits = bFee; // Sadece taban ücreti düşer
       fBill = Math.max(0, cUsageBill - rCredits);
   }
   
+  // 5. Abonelik Durumu
   const sStatus = data?.subscription_status || settingsForm?.subscription_status || 'active';
   const tEndsAt = data?.trial_ends_at || settingsForm?.trial_ends_at;
 
