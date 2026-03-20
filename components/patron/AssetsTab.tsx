@@ -279,14 +279,8 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
                 onClick={() => setSelectedAsset && setSelectedAsset(a)}
                 className={`rounded-2xl border-2 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col group overflow-hidden relative ${borderClass}`}
               >
-                {latestColor && badgeClass !== 'hidden' && (
-                  <div className={`absolute top-4 right-4 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border flex items-center gap-1 shadow-sm z-10 ${badgeClass}`}>
-                    <Tag size={10} /> {latestColor}
-                  </div>
-                )}
-
                 <div className="p-5 flex-1 flex flex-col">
-                  <div className="flex items-start justify-between mb-4 gap-3 flex-wrap sm:flex-nowrap">
+                  <div className="flex items-start justify-between mb-4 gap-3">
                     <div 
                       className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center border border-slate-100 shadow-sm overflow-hidden shrink-0 transition-transform duration-500 group-hover:scale-105 relative z-10"
                       style={{ backgroundColor: data?.logo ? logoBgColor : '#ffffff' }}
@@ -303,8 +297,15 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
                       )}
                     </div>
 
-                    <div className="bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 shrink-0 shadow-sm mt-0.5">
-                      <Users size={12}/> <span className="truncate max-w-[100px] sm:max-w-[120px]">{data?.customers?.find((c: any) => c.id === a.customer_id)?.name || 'Genel Müşteri'}</span>
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      {latestColor && badgeClass !== 'hidden' && (
+                        <div className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border flex items-center gap-1 shadow-sm ${badgeClass}`}>
+                          <Tag size={10} /> {latestColor}
+                        </div>
+                      )}
+                      <div className="bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 shadow-sm">
+                        <Users size={12}/> <span className="truncate max-w-[90px] sm:max-w-[120px]">{data?.customers?.find((c: any) => c.id === a.customer_id)?.name || 'Genel Müşteri'}</span>
+                      </div>
                     </div>
                   </div>
 
