@@ -71,9 +71,9 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
 
 // 🚀 YENİ: DENEME SÜRÜMÜ VE NORMAL FATURA GERİ SAYIM HESAPLAMASI
 const { daysLeft, showWarning, warningType, warningMessage, warningTitle } = useMemo(() => {
-  const subStatus = data?.subscription_status;
-  const freeMonths = data?.free_months_balance || 0;
-  const isExempt = data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true;
+    const subStatus = data?.subscription_status;
+    const freeMonths = data?.free_months_balance || 0;
+    const isExempt = data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true || String(data?.has_masterboss_gift) === 'true';
   let endDateStr = null;
   let type = 'trial';
 
@@ -305,19 +305,19 @@ const { daysLeft, showWarning, warningType, warningMessage, warningTitle } = use
   }, [jobs]);
 
   const totalLifetimePhotos = jobs.reduce((sum: number, j: any) => sum + (j.photos?.length || 0), 0);
-  const totalCustomersCount = data?.customers?.length || 0;
-  const totalAssetsCount = data?.assets?.length || 0;
-  const totalStockTypes = stock.length;
+  const totalCustomersCount = data?.stats?.customers || data?.customers?.length || 0;
+  const totalAssetsCount = data?.stats?.assets || data?.assets?.length || 0;
+  const totalStockTypes = data?.stats?.stock || stock.length;
 
   const { usagePaid, totalSystemProfit, currentUsageBill, baseMonthlyFee, referralCredits, finalBill, referralCode, subStatus, nextBillingDate, activeReferrals, isExempt } = useMemo(() => {
     const earliestDate = jobs.length > 0 
       ? new Date(Math.min(...jobs.map((j: any) => new Date(j.created_at || new Date()).getTime()))) 
       : new Date();
     
-    const calculatedMonths = (new Date().getFullYear() - earliestDate.getFullYear()) * 12 + new Date().getMonth() - earliestDate.getMonth() + 1;
-    const finalMonthsUsed = Math.max(1, calculatedMonths); 
-    
-    const exemptStatus = data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true;
+      const calculatedMonths = (new Date().getFullYear() - earliestDate.getFullYear()) * 12 + new Date().getMonth() - earliestDate.getMonth() + 1;
+          const finalMonthsUsed = Math.max(1, calculatedMonths); 
+          
+          const exemptStatus = data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true || String(data?.has_masterboss_gift) === 'true';
     // Veritabanından gelen dinamik değerleri kullan (Eğer custom girilmemişse Global'den beslen)
    const baseFee = data?.custom_base_price !== undefined && data?.custom_base_price !== null ? Number(data.custom_base_price) : Number(data?.global_base_price || 3000);        
    const perAssetFee = data?.custom_per_asset_price !== undefined && data?.custom_per_asset_price !== null ? Number(data.custom_per_asset_price) : Number(data?.global_asset_price || 50);      

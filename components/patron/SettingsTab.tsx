@@ -234,9 +234,9 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
   // 🚀 DÜZELTME: Referans kodunu hem settingsForm hem de data içinden çekiyoruz.
   const refCode = settingsForm?.referralCode || settingsForm?.referral_code || data?.referralCode || data?.referral_code || 'BEKLENİYOR...';
 
-  // 🚀 YENİ: Hometab ile birebir aynı dinamik fatura hesaplaması
-  const totalAssetsCount = data?.assets?.length || 0;
-  const isExempt = Number(data?.has_masterboss_gift) === 1 || Number(settingsForm?.has_masterboss_gift) === 1;
+ // 🚀 YENİ: Hometab ile birebir aynı dinamik fatura hesaplaması
+   const totalAssetsCount = data?.stats?.assets || data?.assets?.length || 0;
+   const isExempt = data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true || String(data?.has_masterboss_gift) === 'true' || settingsForm?.has_masterboss_gift === 1 || settingsForm?.has_masterboss_gift === true || String(settingsForm?.has_masterboss_gift) === 'true';
   const baseFee = data?.custom_base_price !== undefined && data?.custom_base_price !== null ? Number(data.custom_base_price) : Number(data?.global_base_price || 3000);
   const perAssetFee = data?.custom_per_asset_price !== undefined && data?.custom_per_asset_price !== null ? Number(data.custom_per_asset_price) : Number(data?.global_asset_price || 50);
   
