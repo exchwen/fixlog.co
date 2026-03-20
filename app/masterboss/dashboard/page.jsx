@@ -205,10 +205,9 @@ export default function MasterbossDashboard() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("popstate", handlePopState);
-    };
+    }
   }, [selectedTicket, showInfoModal, showManageModal, showSuccessModal]);
 
-  // 🚀 YENİ: Artık eylemin (action) türünü de alıyor ('reply' veya 'resolve')
   const handleTicketAction = async (ticket, actionType) => {
     const token = localStorage.getItem("masterbossToken");
     if (!token) return toast.error("Yetkisiz işlem!");
@@ -269,15 +268,9 @@ export default function MasterbossDashboard() {
   const totalStaff = companies.reduce((acc, c) => acc + (c.total_staff || 0), 0);
   const activeCompanies = companies.filter(c => c.subscription_status === 'active').length;
 
-  // 🚀 YENİ: Toplam Platform Gelir ve Maliyet Hesaplamaları (Gerçek Zamanlı İstatistikler)
-  
-  // Aylık ve Yıllık Gelir (Sadece Gerçekleşen Başarılı Ödemeler)
-  // Not: İyzico entegrasyonu henüz yapılmadığı için sistemde "gerçekleşen ödeme" tablosu (invoices/payments) yok.
-  // Bu nedenle altyapıyı şimdiden hazır tutuyoruz. İyzico eklendiğinde "stats" objesinden gerçek rakamlar gelecek.
   const totalMonthlyRevenue = stats.monthlyRevenue || 0;
   const totalYearlyRevenue = stats.yearlyRevenue || 0;
 
-  // Aylık Gerçek Maliyet
   const monthlyExpectedCost = (
      (stats.monthlyJobs || 0) * 3 * 0.0003 + 
      (stats.monthlyJobs || 0) * 12 * 0.00005 + 
@@ -286,7 +279,6 @@ export default function MasterbossDashboard() {
      (stats.monthlyJobs || 0) * 15 * 0.00001 
   );
 
-  // Yıllık Gerçek Maliyet
   const yearlyExpectedCost = (
      (stats.yearlyJobs || 0) * 3 * 0.0003 + 
      (stats.yearlyJobs || 0) * 12 * 0.00005 + 
@@ -295,7 +287,6 @@ export default function MasterbossDashboard() {
      (stats.yearlyJobs || 0) * 15 * 0.00001 
   );
 
-  // 🚀 YENİ BÜYÜME VE PERFORMANS MOTORU (Gidişat Hesaplama)
   const currentMonthStart = new Date();
   currentMonthStart.setDate(1);
   currentMonthStart.setHours(0,0,0,0);
@@ -303,25 +294,18 @@ export default function MasterbossDashboard() {
   const lastMonthStart = new Date(currentMonthStart);
   lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
   
-  // Yeni Kayıtlar
   const currentMonthNewCompanies = companies.filter(c => new Date(c.created_at) >= currentMonthStart).length;
   const lastMonthNewCompanies = companies.filter(c => {
       const d = new Date(c.created_at);
       return d >= lastMonthStart && d < currentMonthStart;
   }).length;
 
-  // Yeni Varlıklar (Aktif Büyüme Hızı)
-  // Backend'den varlık eklenme tarihi gelmediği için şimdilik iptaller (churn) üzerinden gidişata bakıyoruz.
-  
   const canceledCompanies = companies.filter(c => c.subscription_status === 'canceled').length;
   const pastDueCompanies = companies.filter(c => c.subscription_status === 'past_due').length;
   const trialingCompanies = companies.filter(c => c.subscription_status === 'trialing').length;
 
-  // Büyüme Skoru Hesaplama
-  // Aktif şirketlerin tüm şirketlere oranı
   const activeRatio = companies.length > 0 ? (activeCompanies / companies.length) * 100 : 0;
   
-  // Genel Sağlık Durumu Belirleyici
   let healthStatus = "Nötr";
   let healthColor = "text-blue-400";
   let healthBg = "bg-blue-500/10 border-blue-500/20";
@@ -402,9 +386,9 @@ export default function MasterbossDashboard() {
           {activeTab === "companies" && (
             <div className="overflow-x-auto p-4">
 
-              {/* 🚀 YENİ: GENEL GİDİŞAT VE BÜYÜME (PERFORMANS ÖZETİ) */}
+              {/* PERFORMANS ÖZETİ */}
               <div className={`border rounded-2xl p-5 mb-6 flex flex-col md:flex-row items-center gap-6 justify-between ${healthBg}`}>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 w-full md:w-auto">
                       <div className="w-14 h-14 bg-black/20 rounded-full flex items-center justify-center shrink-0">
                           {healthIcon}
                       </div>
@@ -436,14 +420,14 @@ export default function MasterbossDashboard() {
                   </div>
               </div>
               
-              {/* 🚀 YENİ: Global Sistem Fiyatlandırması (Tek Tuşla Zam) */}
+              {/* Sistem Genel Fiyatlandırması */}
               <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 mb-6 flex flex-col md:flex-row items-center gap-4 justify-between">
-                  <div>
+                  <div className="w-full md:w-auto">
                       <h4 className="text-white font-bold flex items-center gap-2 mb-1"><Database size={16} className="text-blue-500" /> Sistem Genel Fiyatlandırması (Oto-Zam)</h4>
                       <p className="text-xs text-neutral-500">Özel fiyat tanımlanmayan tüm firmalara otomatik uygulanacak sabit paket ve varlık başı fiyatı buradan değiştirebilirsiniz.</p>
                   </div>
-                  <div className="flex items-center gap-3 w-full md:w-auto">
-                      <div className="relative w-full md:w-32">
+                  <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                      <div className="relative w-full sm:w-32">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-xs font-bold">Sabit:</span>
                           <input 
                               type="number" 
@@ -452,7 +436,7 @@ export default function MasterbossDashboard() {
                               className="w-full bg-neutral-950 border border-neutral-700 text-white rounded-lg py-2 pl-12 pr-3 outline-none focus:border-blue-500 text-sm font-bold"
                           />
                       </div>
-                      <div className="relative w-full md:w-32">
+                      <div className="relative w-full sm:w-32">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-xs font-bold">Varlık:</span>
                           <input 
                               type="number" 
@@ -464,159 +448,161 @@ export default function MasterbossDashboard() {
                       <button 
                           onClick={handleUpdateGlobalPricing} 
                           disabled={isSaving}
-                          className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold text-sm whitespace-nowrap transition-colors"
+                          className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold text-sm whitespace-nowrap transition-colors"
                       >
                           Kaydet (Zam Yap)
                       </button>
                   </div>
               </div>
 
-              {/* 🚀 YENİ: Firma Filtreleme Sekmeleri */}
-              <div className="flex flex-wrap items-center gap-2 mb-6 border-b border-neutral-800 pb-4">
-                 <button onClick={() => setCompanyFilter("all")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "all" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Tümü ({companies.length})</button>
-                 <button onClick={() => setCompanyFilter("active")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "active" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Aktif Ödeyenler ({companies.filter(c => c.subscription_status === 'active' && c.has_masterboss_gift !== 1).length})</button>
-                 <button onClick={() => setCompanyFilter("trialing")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "trialing" ? "bg-blue-500/20 text-blue-400 border border-blue-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Deneme Sürümü ({companies.filter(c => c.subscription_status === 'trialing' && c.has_masterboss_gift !== 1).length})</button>
-                 <button onClick={() => setCompanyFilter("past_due")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "past_due" ? "bg-rose-500/20 text-rose-400 border border-rose-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Paywall / Gecikmede ({companies.filter(c => (c.subscription_status === 'past_due' || c.subscription_status === 'canceled') && c.has_masterboss_gift !== 1).length})</button>
-                 <button onClick={() => setCompanyFilter("exempt")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "exempt" ? "bg-amber-500/20 text-amber-400 border border-amber-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Muaf (VIP) ({companies.filter(c => c.has_masterboss_gift === 1).length})</button>
+              {/* Firma Filtreleme Sekmeleri */}
+              <div className="flex overflow-x-auto scrollbar-hide items-center gap-2 mb-6 border-b border-neutral-800 pb-4">
+                 <button onClick={() => setCompanyFilter("all")} className={`shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "all" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Tümü ({companies.length})</button>
+                 <button onClick={() => setCompanyFilter("active")} className={`shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "active" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Aktif Ödeyenler ({companies.filter(c => c.subscription_status === 'active' && c.has_masterboss_gift !== 1).length})</button>
+                 <button onClick={() => setCompanyFilter("trialing")} className={`shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "trialing" ? "bg-blue-500/20 text-blue-400 border border-blue-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Deneme Sürümü ({companies.filter(c => c.subscription_status === 'trialing' && c.has_masterboss_gift !== 1).length})</button>
+                 <button onClick={() => setCompanyFilter("past_due")} className={`shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "past_due" ? "bg-rose-500/20 text-rose-400 border border-rose-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Paywall / Gecikmede ({companies.filter(c => (c.subscription_status === 'past_due' || c.subscription_status === 'canceled') && c.has_masterboss_gift !== 1).length})</button>
+                 <button onClick={() => setCompanyFilter("exempt")} className={`shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all ${companyFilter === "exempt" ? "bg-amber-500/20 text-amber-400 border border-amber-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Muaf (VIP) ({companies.filter(c => c.has_masterboss_gift === 1).length})</button>
               </div>
 
-              <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-neutral-900 border-b border-neutral-800 text-neutral-400">
-                  <tr>
-                    <th className="px-6 py-4 font-medium">Firma Kodu (Slug)</th>
-                    <th className="px-6 py-4 font-medium">Firma Adı / Sahibi</th>
-                    <th className="px-6 py-4 font-medium">Abonelik Türü</th>
-                    <th className="px-6 py-4 font-medium">Bitiş/Kesim Tarihi</th>
-                    <th className="px-6 py-4 font-medium">Kurulum</th>
-                    <th className="px-6 py-4 font-medium text-right">Eylemler</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-800/50">
-                  {companies.filter(c => {
-                      if (companyFilter === "active") return c.subscription_status === 'active' && c.has_masterboss_gift !== 1;
-                      if (companyFilter === "trialing") return c.subscription_status === 'trialing' && c.has_masterboss_gift !== 1;
-                      if (companyFilter === "past_due") return (c.subscription_status === 'past_due' || c.subscription_status === 'canceled') && c.has_masterboss_gift !== 1;
-                      if (companyFilter === "exempt") return c.has_masterboss_gift === 1;
-                      return true;
-                  }).map((c) => (
-                    <tr key={c.slug} className="hover:bg-neutral-800/20 transition-colors">
-                      <td className="px-6 py-4 font-mono text-neutral-300">
-                        {c.slug}
-                        <div className="text-xs text-neutral-500 mt-1">Ref: {c.referral_code}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-white flex items-center gap-2">
-                            {c.company_name}
-                            {(c.custom_base_price !== null || c.custom_per_asset_price !== null) && (
-                                <span className="bg-purple-500/20 text-purple-400 border border-purple-500/30 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest" title="Bu firma genel zamlardan etkilenmez">ÖZEL FİYAT</span>
-                            )}
-                        </div>
-                        <div className="text-neutral-500">{c.owner_name}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                          c.has_masterboss_gift === 1 ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                          c.subscription_status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
-                          c.subscription_status === 'trialing' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 
-                          'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                        }`}>
-                          {c.has_masterboss_gift === 1 ? 'MUAF (HEDİYE)' : c.subscription_status?.toUpperCase() || 'BİLİNMİYOR'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-neutral-400">
-                        {c.subscription_status === 'trialing' ? (
-                          c.trial_ends_at ? new Date(c.trial_ends_at).toLocaleDateString("tr-TR") : '-'
-                        ) : (
-                          c.billing_cycle_anchor ? new Date(c.billing_cycle_anchor).toLocaleDateString("tr-TR") : '-'
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-neutral-400">
-                        <div>Varlık: <span className="text-white">{c.total_assets}</span></div>
-                        <div>Personel: <span className="text-white">{c.total_staff}</span></div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        {/* 🚀 YENİ: BİLGİ BUTONU */}
-                        <button 
-                          onClick={async () => { 
-                            setInfoCompany(c); 
-                            setInfoTab("genel");
-                            setInfoDetails(null);
-                            setShowInfoModal(true); 
-                            
-                            setInfoLoading(true);
-                            try {
-                              const token = localStorage.getItem("masterbossToken");
-                              const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
-                              const res = await fetch(`${BASE_URL}/masterboss-company-details?slug=${c.slug}`, {
-                                headers: { "Authorization": `Bearer ${token}` }
-                              });
-                              const json = await res.json();
-                              if(json.success) setInfoDetails(json.stats);
-                            } catch(e) {
-                              toast.error("Detaylar alınamadı");
-                            } finally {
-                              setInfoLoading(false);
-                            }
-                          }}
-                          className="text-blue-500 hover:text-blue-400 text-sm font-medium transition-colors mr-4"
-                        >
-                          Bilgi
-                        </button>
-                        
-                        <button
-                          onClick={() => { 
-                            setSelectedCompany(c); 
-                            setManageForm({ 
-                              subscriptionStatus: c.subscription_status || 'trialing', 
-                              freeMonths: c.free_months_balance !== undefined && c.free_months_balance !== null ? c.free_months_balance : '', 
-                              customDiscount: c.custom_base_price !== undefined && c.custom_base_price !== null ? c.custom_base_price : '', 
-                              customAssetPrice: c.custom_per_asset_price !== undefined && c.custom_per_asset_price !== null ? c.custom_per_asset_price : '',
-                              cancelTrial: false,
-                              hasMasterbossGift: c.has_masterboss_gift === 1
-                            }); 
-                            setShowManageModal(true); 
-                          }} 
-                          className="text-rose-500 hover:text-rose-400 text-sm font-medium transition-colors"
-                        >
-                          Yönet
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {companies.length === 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                  <thead className="bg-neutral-900 border-b border-neutral-800 text-neutral-400">
                     <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-neutral-500">Henüz kayıtlı firma yok.</td>
+                      <th className="px-6 py-4 font-medium">Firma Kodu (Slug)</th>
+                      <th className="px-6 py-4 font-medium">Firma Adı / Sahibi</th>
+                      <th className="px-6 py-4 font-medium">Abonelik Türü</th>
+                      <th className="px-6 py-4 font-medium">Bitiş/Kesim Tarihi</th>
+                      <th className="px-6 py-4 font-medium">Kurulum</th>
+                      <th className="px-6 py-4 font-medium text-right">Eylemler</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-800/50">
+                    {companies.filter(c => {
+                        if (companyFilter === "active") return c.subscription_status === 'active' && c.has_masterboss_gift !== 1;
+                        if (companyFilter === "trialing") return c.subscription_status === 'trialing' && c.has_masterboss_gift !== 1;
+                        if (companyFilter === "past_due") return (c.subscription_status === 'past_due' || c.subscription_status === 'canceled') && c.has_masterboss_gift !== 1;
+                        if (companyFilter === "exempt") return c.has_masterboss_gift === 1;
+                        return true;
+                    }).map((c) => (
+                      <tr key={c.slug} className="hover:bg-neutral-800/20 transition-colors">
+                        <td className="px-6 py-4 font-mono text-neutral-300">
+                          {c.slug}
+                          <div className="text-xs text-neutral-500 mt-1">Ref: {c.referral_code}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="font-medium text-white flex items-center gap-2">
+                              {c.company_name}
+                              {(c.custom_base_price !== null || c.custom_per_asset_price !== null) && (
+                                  <span className="bg-purple-500/20 text-purple-400 border border-purple-500/30 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest" title="Bu firma genel zamlardan etkilenmez">ÖZEL FİYAT</span>
+                              )}
+                          </div>
+                          <div className="text-neutral-500">{c.owner_name}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
+                            c.has_masterboss_gift === 1 ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                            c.subscription_status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                            c.subscription_status === 'trialing' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 
+                            'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                          }`}>
+                            {c.has_masterboss_gift === 1 ? 'MUAF (HEDİYE)' : c.subscription_status?.toUpperCase() || 'BİLİNMİYOR'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-neutral-400">
+                          {c.subscription_status === 'trialing' ? (
+                            c.trial_ends_at ? new Date(c.trial_ends_at).toLocaleDateString("tr-TR") : '-'
+                          ) : (
+                            c.billing_cycle_anchor ? new Date(c.billing_cycle_anchor).toLocaleDateString("tr-TR") : '-'
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-neutral-400">
+                          <div>Varlık: <span className="text-white">{c.total_assets}</span></div>
+                          <div>Personel: <span className="text-white">{c.total_staff}</span></div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button 
+                            onClick={async () => { 
+                              setInfoCompany(c); 
+                              setInfoTab("genel");
+                              setInfoDetails(null);
+                              setShowInfoModal(true); 
+                              
+                              setInfoLoading(true);
+                              try {
+                                const token = localStorage.getItem("masterbossToken");
+                                const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+                                const res = await fetch(`${BASE_URL}/masterboss-company-details?slug=${c.slug}`, {
+                                  headers: { "Authorization": `Bearer ${token}` }
+                                });
+                                const json = await res.json();
+                                if(json.success) setInfoDetails(json.stats);
+                              } catch(e) {
+                                toast.error("Detaylar alınamadı");
+                              } finally {
+                                setInfoLoading(false);
+                              }
+                            }}
+                            className="text-blue-500 hover:text-blue-400 text-sm font-medium transition-colors mr-4"
+                          >
+                            Bilgi
+                          </button>
+                          
+                          <button
+                            onClick={() => { 
+                              setSelectedCompany(c); 
+                              setManageForm({ 
+                                subscriptionStatus: c.subscription_status || 'trialing', 
+                                freeMonths: c.free_months_balance !== undefined && c.free_months_balance !== null ? c.free_months_balance : '', 
+                                customDiscount: c.custom_base_price !== undefined && c.custom_base_price !== null ? c.custom_base_price : '', 
+                                customAssetPrice: c.custom_per_asset_price !== undefined && c.custom_per_asset_price !== null ? c.custom_per_asset_price : '',
+                                cancelTrial: false,
+                                hasMasterbossGift: c.has_masterboss_gift === 1
+                              }); 
+                              setShowManageModal(true); 
+                            }} 
+                            className="text-rose-500 hover:text-rose-400 text-sm font-medium transition-colors"
+                          >
+                            Yönet
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {companies.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-12 text-center text-neutral-500">Henüz kayıtlı firma yok.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
           {activeTab === "tickets" && (
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="space-y-4">
                 {tickets.map(t => (
-                  <div key={t.id} className="bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-2xl p-4 flex gap-4 transition-colors items-center">
-                    <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center shrink-0">
-                      <AlertCircle className="w-5 h-5 text-neutral-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="font-medium text-white truncate">
-                          {t.company_name || t.company_slug} 
-                          <span className="text-neutral-400 text-xs ml-2">- {t.sender_name || 'Bilinmiyor'}</span>
-                          <span className="text-neutral-500 text-sm ml-2">({t.type})</span>
+                  <div key={t.id} className="bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors">
+                    <div className="flex gap-4 items-start sm:items-center flex-1 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center shrink-0">
+                          <AlertCircle className="w-5 h-5 text-neutral-400" />
                         </div>
-                        <span className={`shrink-0 ml-2 text-xs px-2 py-1 rounded-full ${t.status === 'Çözüldü' || t.status === 'Resolved' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
-                          {t.status === 'Çözüldü' || t.status === 'Resolved' ? 'Çözüldü' : 'Açık'}
-                        </span>
-                      </div>
-                      <p className="text-sm text-neutral-400 truncate">{t.message}</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <div className="font-medium text-white truncate max-w-full">
+                              {t.company_name || t.company_slug} 
+                              <span className="text-neutral-400 text-xs ml-2">- {t.sender_name || 'Bilinmiyor'}</span>
+                            </div>
+                            <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wider ${t.status === 'Çözüldü' || t.status === 'Resolved' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                              {t.status === 'Çözüldü' || t.status === 'Resolved' ? 'Çözüldü' : 'Açık'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-neutral-400 truncate">{t.message}</p>
+                        </div>
                     </div>
                     <button 
                         onClick={() => setSelectedTicket(t)}
-                        className="bg-neutral-800 hover:bg-neutral-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors shrink-0"
+                        className="w-full sm:w-auto bg-neutral-800 hover:bg-neutral-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors shrink-0"
                     >
                         Bileti İncele
                     </button>
@@ -689,18 +675,20 @@ export default function MasterbossDashboard() {
 
       </div>
 
-      {/* Subscription Manage Modalı */}
+      {/* 🚀 MOBİL UYUM GÜNCELLEMESİ: Subscription Manage Modalı */}
+      <AnimatePresence>
       {showManageModal && selectedCompany && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 text-left">
+        <div className="fixed inset-0 z-[100] flex flex-col sm:items-center sm:justify-center bg-black/80 backdrop-blur-sm sm:p-4 text-left overscroll-none">
           <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-neutral-900 border border-neutral-800 rounded-3xl p-4 md:p-6 w-full max-w-lg shadow-2xl relative max-h-[90vh] flex flex-col"
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="bg-neutral-900 border border-neutral-800 rounded-none sm:rounded-3xl w-full h-full sm:h-auto sm:w-[95%] sm:max-w-lg shadow-2xl relative flex flex-col overflow-hidden"
           >
-            <div className="shrink-0 mb-4 md:mb-6 relative">
+            <div className="shrink-0 p-4 md:p-6 border-b border-neutral-800 relative bg-neutral-900">
               <button 
                 onClick={() => setShowManageModal(false)}
-                className="absolute top-0 right-0 text-neutral-500 hover:text-white transition-colors text-sm font-medium z-10"
+                className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors text-sm font-medium z-10"
               >
                 Kapat
               </button>
@@ -708,8 +696,7 @@ export default function MasterbossDashboard() {
               <div className="text-xs md:text-sm font-mono text-rose-400">{selectedCompany.slug} <span className="text-neutral-500 text-[10px] md:text-xs ml-1 md:ml-2">({selectedCompany.company_name})</span></div>
             </div>
 
-            <div className="overflow-y-auto pr-1 md:pr-2 scrollbar-hide flex-1 space-y-4">
-
+            <div className="overflow-y-auto flex-1 p-4 md:p-6 space-y-4 overscroll-contain">
               {/* VIP Muafiyet Alanı (Checkbox ile Ayrıldı) */}
               <div className="flex items-start gap-3 bg-emerald-500/10 border border-emerald-500/20 p-3 md:p-4 rounded-xl mt-2 md:mt-4">
                 <input 
@@ -796,7 +783,7 @@ export default function MasterbossDashboard() {
               )}
             </div>
 
-            <div className="shrink-0 mt-4 md:mt-6 pt-4 border-t border-neutral-800">
+            <div className="shrink-0 p-4 md:p-6 border-t border-neutral-800 bg-neutral-900 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <button
                 onClick={handleUpdateSubscription}
                 disabled={isSaving}
@@ -808,35 +795,38 @@ export default function MasterbossDashboard() {
           </motion.div>
         </div>
       )}
+      </AnimatePresence>
 
-      {/* 🚀 YENİ: Ticket Sohbet Modalı */}
+      {/* 🚀 MOBİL UYUM GÜNCELLEMESİ: Ticket Sohbet Modalı */}
+      <AnimatePresence>
       {selectedTicket && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 text-left">
+        <div className="fixed inset-0 z-[100] flex flex-col sm:items-center sm:justify-center bg-black/80 backdrop-blur-sm sm:p-4 text-left overscroll-none">
           <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-neutral-900 border border-neutral-800 rounded-3xl w-full max-w-2xl shadow-2xl relative flex flex-col h-[85vh]"
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="bg-neutral-900 border border-neutral-800 rounded-none sm:rounded-3xl w-full h-full sm:h-auto sm:max-w-2xl sm:max-h-[85vh] shadow-2xl relative flex flex-col overflow-hidden"
           >
-            <div className="p-6 border-b border-neutral-800 flex justify-between items-start shrink-0">
+            <div className="p-4 sm:p-6 border-b border-neutral-800 flex justify-between items-start shrink-0 bg-neutral-900">
                 <div>
-                    <h3 className="text-xl font-bold text-white tracking-tight flex items-center gap-2 mb-2">
+                    <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight flex flex-wrap items-center gap-2 mb-2 pr-12">
                         {selectedTicket.company_name || selectedTicket.company_slug}
                         <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${selectedTicket.status === 'Çözüldü' || selectedTicket.status === 'Resolved' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
                            {selectedTicket.status === 'Çözüldü' || selectedTicket.status === 'Resolved' ? 'Çözüldü' : 'Açık'}
                         </span>
                     </h3>
-                    <div className="text-sm text-neutral-400 font-medium flex items-center gap-2 mb-1">
+                    <div className="text-xs sm:text-sm text-neutral-400 font-medium flex flex-wrap items-center gap-2 mb-1">
                         <span>Slug: <span className="text-blue-400">{selectedTicket.company_slug}</span></span>
                         <span className="opacity-50">•</span>
                         <span>Açan: <span className="text-amber-400">{selectedTicket.sender_name || 'Bilinmiyor'}</span></span>
                     </div>
-                    <div className="text-sm text-neutral-500">{selectedTicket.type} • {new Date(selectedTicket.created_at).toLocaleString('tr-TR')}</div>
+                    <div className="text-xs sm:text-sm text-neutral-500">{selectedTicket.type} • {new Date(selectedTicket.created_at).toLocaleString('tr-TR')}</div>
                 </div>
-                <button onClick={() => setSelectedTicket(null)} className="text-neutral-500 hover:text-white transition-colors text-sm font-medium mt-1">Kapat</button>
+                <button onClick={() => setSelectedTicket(null)} className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors text-sm font-medium">Kapat</button>
             </div>
 
             {/* Mesaj Alanı (Scrollable) */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 scrollbar-hide overscroll-contain">
                 {/* Orijinal Mesaj */}
                 <div className="bg-neutral-800/50 p-4 rounded-2xl border border-neutral-800/50">
                     <div className="text-[10px] text-neutral-500 uppercase tracking-wider mb-2 font-bold">İlk Talep Mesajı</div>
@@ -849,7 +839,7 @@ export default function MasterbossDashboard() {
                     try { replies = JSON.parse(selectedTicket.replies || '[]'); } catch(e) {}
                     
                     return replies.map((reply, idx) => (
-                        <div key={idx} className={`p-4 rounded-2xl text-sm max-w-[85%] ${reply.sender === 'masterboss' ? 'bg-blue-600/20 border border-blue-500/30 text-blue-50 ml-auto rounded-tr-sm' : 'bg-neutral-800/80 text-neutral-200 mr-auto rounded-tl-sm'}`}>
+                        <div key={idx} className={`p-4 rounded-2xl text-sm max-w-[90%] sm:max-w-[85%] ${reply.sender === 'masterboss' ? 'bg-blue-600/20 border border-blue-500/30 text-blue-50 ml-auto rounded-tr-sm' : 'bg-neutral-800/80 text-neutral-200 mr-auto rounded-tl-sm'}`}>
                             <div className="flex justify-between items-center mb-2 gap-4">
                                 <span className={`text-[10px] font-black uppercase tracking-wider ${reply.sender === 'masterboss' ? 'text-blue-400' : 'text-neutral-500'}`}>
                                     {reply.sender === 'masterboss' ? 'Siz (Masterboss)' : selectedTicket.company_slug}
@@ -864,31 +854,31 @@ export default function MasterbossDashboard() {
 
             {/* Yanıt Gönderme Alanı */}
             {selectedTicket.status !== 'Çözüldü' && selectedTicket.status !== 'Resolved' ? (
-                <div className="p-6 border-t border-neutral-800 bg-neutral-900/50 rounded-b-3xl shrink-0">
+                <div className="p-4 sm:p-6 border-t border-neutral-800 bg-neutral-900 sm:rounded-b-3xl shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
                     <textarea
                         value={replyTexts[selectedTicket.id] || ""}
                         onChange={(e) => setReplyTexts(prev => ({ ...prev, [selectedTicket.id]: e.target.value }))}
                         placeholder="Yanıtınızı buraya yazın..."
-                        className="w-full bg-neutral-950 border border-neutral-700 text-white text-sm rounded-xl p-4 focus:border-blue-500 outline-none resize-none transition-colors mb-3"
+                        className="w-full bg-neutral-950 border border-neutral-700 text-white text-sm rounded-xl p-3 sm:p-4 focus:border-blue-500 outline-none resize-none transition-colors mb-3"
                         rows="3"
                     />
-                    <div className="flex justify-end gap-3">
-                        <button 
-                            onClick={() => handleTicketAction(selectedTicket, 'reply')}
-                            className="bg-neutral-800 hover:bg-neutral-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors"
-                        >
-                            Gönder
-                        </button>
+                    <div className="flex flex-col sm:flex-row justify-end gap-3">
                         <button 
                             onClick={() => handleTicketAction(selectedTicket, 'resolve')}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors shadow-lg shadow-emerald-600/20"
+                            className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold px-6 py-3 sm:py-2.5 rounded-xl transition-colors shadow-lg shadow-emerald-600/20 order-2 sm:order-1"
                         >
                             Çözüldü İşaretle
+                        </button>
+                        <button 
+                            onClick={() => handleTicketAction(selectedTicket, 'reply')}
+                            className="w-full sm:w-auto bg-neutral-800 hover:bg-neutral-700 text-white text-sm font-bold px-6 py-3 sm:py-2.5 rounded-xl transition-colors order-1 sm:order-2"
+                        >
+                            Gönder
                         </button>
                     </div>
                 </div>
             ) : (
-                <div className="p-6 border-t border-neutral-800 bg-emerald-500/5 rounded-b-3xl text-center shrink-0">
+                <div className="p-4 sm:p-6 border-t border-neutral-800 bg-emerald-500/5 sm:rounded-b-3xl text-center shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
                     <div className="text-sm font-bold text-emerald-500 flex items-center justify-center gap-2">
                         <CheckCircle size={18} /> Bu talep çözülmüş olarak kapatıldı.
                     </div>
@@ -897,14 +887,17 @@ export default function MasterbossDashboard() {
           </motion.div>
         </div>
       )}
+      </AnimatePresence>
 
-      {/* 🚀 YENİ: Başarı Modalı (Success Modal) */}
+      {/* Başarı Modalı (Success Modal) */}
+      <AnimatePresence>
       {showSuccessModal && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 text-center">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 text-center overscroll-none">
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-neutral-900 border border-emerald-500/30 rounded-3xl p-8 w-full max-w-sm shadow-2xl flex flex-col items-center"
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="bg-neutral-900 border border-emerald-500/30 rounded-3xl p-6 md:p-8 w-full max-w-sm shadow-2xl flex flex-col items-center"
           >
             <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mb-4">
               <CheckCircle className="w-8 h-8 text-emerald-400" />
@@ -920,44 +913,49 @@ export default function MasterbossDashboard() {
           </motion.div>
         </div>
       )}
+      </AnimatePresence>
 
-      {/* 🚀 YENİ: Company Info Modal */}
+      {/* 🚀 MOBİL UYUM GÜNCELLEMESİ: Company Info Modal */}
+      <AnimatePresence>
       {showInfoModal && infoCompany && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 text-left">
+        <div className="fixed inset-0 z-[100] flex flex-col sm:items-center sm:justify-center bg-black/80 backdrop-blur-sm sm:p-4 text-left overscroll-none">
           <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 w-full max-w-3xl shadow-2xl relative max-h-[90vh] flex flex-col"
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="bg-neutral-900 border border-neutral-800 rounded-none sm:rounded-3xl w-full h-full sm:h-auto sm:w-[95%] sm:max-w-3xl shadow-2xl relative flex flex-col overflow-hidden"
           >
-            <button 
-              onClick={() => setShowInfoModal(false)}
-              className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors text-sm font-medium z-10"
-            >
-              Kapat
-            </button>
-            <div className="flex items-center gap-4 mb-6 shrink-0">
-              {infoCompany.logo ? (
-                <img src={infoCompany.logo} alt="Logo" className="w-16 h-16 rounded-xl object-cover bg-neutral-800" />
-              ) : (
-                <div className="w-16 h-16 rounded-xl bg-neutral-800 flex items-center justify-center"><Building2 className="w-8 h-8 text-neutral-500"/></div>
-              )}
-              <div>
-                <h3 className="text-xl font-bold text-white tracking-tight">{infoCompany.company_name}</h3>
-                <div className="text-sm font-mono text-blue-400">{infoCompany.slug}</div>
+            <div className="p-4 sm:p-6 border-b border-neutral-800 bg-neutral-900 shrink-0">
+              <button 
+                onClick={() => setShowInfoModal(false)}
+                className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors text-sm font-medium z-10"
+              >
+                Kapat
+              </button>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pr-10">
+                {infoCompany.logo ? (
+                  <img src={infoCompany.logo} alt="Logo" className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover bg-neutral-800 shrink-0" />
+                ) : (
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-neutral-800 flex items-center justify-center shrink-0"><Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-neutral-500"/></div>
+                )}
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight truncate max-w-full">{infoCompany.company_name}</h3>
+                  <div className="text-xs sm:text-sm font-mono text-blue-400 truncate">{infoCompany.slug}</div>
+                </div>
               </div>
             </div>
 
             {/* Modal Tabs */}
-            <div className="flex items-center gap-2 mb-4 border-b border-neutral-800 pb-4 shrink-0 overflow-x-auto scrollbar-hide">
-              <button onClick={() => setInfoTab("genel")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${infoTab === "genel" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Genel Bilgiler</button>
-              <button onClick={() => setInfoTab("istatistik")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${infoTab === "istatistik" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Sistem & Kasa Kullanımı</button>
-              <button onClick={() => setInfoTab("abonelik")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${infoTab === "abonelik" ? "bg-rose-500 text-white" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Abonelik & Gelir</button>
-              <button onClick={() => setInfoTab("karlilik")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${infoTab === "karlilik" ? "bg-emerald-500 text-white" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}><Activity size={16} /> Karlılık & Veri Yükü</button>
+            <div className="flex items-center gap-2 p-4 sm:px-6 sm:pt-4 sm:pb-4 border-b border-neutral-800 shrink-0 overflow-x-auto scrollbar-hide bg-neutral-900">
+              <button onClick={() => setInfoTab("genel")} className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${infoTab === "genel" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Genel Bilgiler</button>
+              <button onClick={() => setInfoTab("istatistik")} className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${infoTab === "istatistik" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Sistem & Kasa Kullanımı</button>
+              <button onClick={() => setInfoTab("abonelik")} className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${infoTab === "abonelik" ? "bg-rose-500 text-white" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Abonelik & Gelir</button>
+              <button onClick={() => setInfoTab("karlilik")} className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${infoTab === "karlilik" ? "bg-emerald-500 text-white" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}><Activity size={16} /> Karlılık & Veri Yükü</button>
             </div>
 
-            <div className="overflow-y-auto pr-2 scrollbar-hide flex-1">
+            <div className="overflow-y-auto flex-1 p-4 sm:p-6 overscroll-contain pb-[max(1rem,env(safe-area-inset-bottom))]">
               {infoTab === "genel" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <InfoBox label="Sahibi / Yetkili" value={infoCompany.owner_name} />
                   <InfoBox label="Sektör" value={infoCompany.sector} />
                   <InfoBox label="Kayıt Tarihi" value={new Date(infoCompany.created_at).toLocaleDateString('tr-TR')} />
@@ -1026,12 +1024,12 @@ export default function MasterbossDashboard() {
                   ) : infoDetails ? (
                     <div className="space-y-6">
                       {(() => {
-                        // 1. GELİR HESAPLAMASI
-                        const basePrice = (infoCompany.custom_base_price !== null && infoCompany.custom_base_price !== undefined) ? Number(infoCompany.custom_base_price) : Number(globalPricing?.base || 0);
-                        const assetPrice = (infoCompany.custom_per_asset_price !== null && infoCompany.custom_per_asset_price !== undefined) ? Number(infoCompany.custom_per_asset_price) : Number(globalPricing?.asset || 0);
+                        // 1. GELİR HESAPLAMASI
+                        const basePrice = (infoCompany.custom_base_price !== null && infoCompany.custom_base_price !== undefined) ? Number(infoCompany.custom_base_price) : Number(globalPricing?.base || 0);
+                        const assetPrice = (infoCompany.custom_per_asset_price !== null && infoCompany.custom_per_asset_price !== undefined) ? Number(infoCompany.custom_per_asset_price) : Number(globalPricing?.asset || 0);
 
-                        const hasFreeMonth = infoCompany.free_months_balance && Number(infoCompany.free_months_balance) > 0;
-                        const activeBasePrice = hasFreeMonth ? 0 : basePrice;
+                        const hasFreeMonth = infoCompany.free_months_balance && Number(infoCompany.free_months_balance) > 0;
+                        const activeBasePrice = hasFreeMonth ? 0 : basePrice;
                         
                         const assetCount = infoDetails.assets || 0;
                         const assetRevenue = assetCount * assetPrice; 
@@ -1100,17 +1098,17 @@ export default function MasterbossDashboard() {
                         return (
                           <>
                             {/* ÖDEME DURUMU KARTI */}
-                            <div className={`p-5 rounded-2xl border ${paymentBgColor} flex items-center justify-between`}>
+                            <div className={`p-4 sm:p-5 rounded-2xl border ${paymentBgColor} flex items-center justify-between`}>
                                <div>
                                   <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Fatura & Ödeme Durumu</div>
-                                  <div className={`text-lg font-black ${paymentStatusColor}`}>{paymentStatusText}</div>
+                                  <div className={`text-sm sm:text-lg font-black ${paymentStatusColor}`}>{paymentStatusText}</div>
                                </div>
-                               <div className="w-12 h-12 rounded-full bg-black/20 flex items-center justify-center">
-                                  {infoCompany.subscription_status === 'active' ? <CheckCircle className={`w-6 h-6 ${paymentStatusColor}`} /> : <AlertCircle className={`w-6 h-6 ${paymentStatusColor}`} />}
+                               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/20 flex items-center justify-center shrink-0">
+                                  {infoCompany.subscription_status === 'active' ? <CheckCircle className={`w-5 h-5 sm:w-6 sm:h-6 ${paymentStatusColor}`} /> : <AlertCircle className={`w-5 h-5 sm:w-6 sm:h-6 ${paymentStatusColor}`} />}
                                </div>
                             </div>
 
-                            <div className="bg-neutral-800/50 p-6 rounded-2xl border border-neutral-800">
+                            <div className="bg-neutral-800/50 p-4 sm:p-6 rounded-2xl border border-neutral-800">
                               <h4 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
                                 <Activity className="w-5 h-5 text-emerald-400" /> Platform Gelir Analizi (Aylık)
                               </h4>
@@ -1139,7 +1137,7 @@ export default function MasterbossDashboard() {
                               <h4 className="text-sm font-bold text-white mb-4 mt-6 flex items-center gap-2">
                                 <Activity className="w-5 h-5 text-amber-400" /> Gerçekleşen Sunucu & Altyapı Maliyeti
                               </h4>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b border-neutral-700 pb-4 mb-4">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 border-b border-neutral-700 pb-4 mb-4">
                                 <div className="bg-neutral-800/50 p-3 rounded-xl border border-neutral-700/50">
                                   <div className="text-xs text-neutral-500 mb-1 font-bold">R2 Depolama & İstek</div>
                                   <div className="text-lg font-black text-rose-400">- ₺{r2TotalCost.toFixed(2)}</div>
@@ -1167,12 +1165,12 @@ export default function MasterbossDashboard() {
                               </div>
 
                               {/* NET KÂR GÖSTERGESİ */}
-                              <div className="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20 flex items-center justify-between">
+                              <div className="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                                   <div>
                                     <div className="text-xs font-bold text-emerald-500 mb-1 uppercase tracking-wider">Net Platform Karı</div>
                                     <div className="text-[10px] text-emerald-500/70">Cirodan sunucu ve veritabanı masrafları düşüldükten sonra</div>
                                   </div>
-                                  <div className="text-2xl font-black text-emerald-400">₺{netProfit.toFixed(2).toLocaleString('tr-TR')}</div>
+                                  <div className="text-xl sm:text-2xl font-black text-emerald-400">₺{netProfit.toFixed(2).toLocaleString('tr-TR')}</div>
                               </div>
 
                             </div>
@@ -1188,7 +1186,7 @@ export default function MasterbossDashboard() {
 
               {infoTab === "abonelik" && (
                 <div className="space-y-4">
-                   <div className="bg-neutral-800/50 p-5 rounded-2xl border border-neutral-800">
+                   <div className="bg-neutral-800/50 p-4 sm:p-5 rounded-2xl border border-neutral-800">
                       <div className="text-sm text-neutral-400 mb-1">Abonelik Durumu</div>
                       <div className="text-lg font-bold text-white mb-4">
                         {infoCompany.subscription_status === 'active' ? 'Aktif Üye' : 
@@ -1196,14 +1194,14 @@ export default function MasterbossDashboard() {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-neutral-700/50 pt-4">
-                         <div>
-                           <div className="text-xs text-neutral-500 mb-1">Özel Tanımlı Fiyat (Aylık)</div>
-                           <div className="text-sm font-medium text-amber-400">{(infoCompany.custom_base_price !== null && infoCompany.custom_base_price !== undefined) ? `₺${infoCompany.custom_base_price}` : `Sistem Geneli (${globalPricing?.base || 0}₺)`}</div>
-                         </div>
-                         <div>
-                           <div className="text-xs text-neutral-500 mb-1">Özel Varlık Ücreti</div>
-                           <div className="text-sm font-medium text-amber-400">{(infoCompany.custom_per_asset_price !== null && infoCompany.custom_per_asset_price !== undefined) ? `₺${infoCompany.custom_per_asset_price}` : `Sistem Geneli (${globalPricing?.asset || 0}₺)`}</div>
-                         </div>
+                         <div>
+                           <div className="text-xs text-neutral-500 mb-1">Özel Tanımlı Fiyat (Aylık)</div>
+                           <div className="text-sm font-medium text-amber-400">{(infoCompany.custom_base_price !== null && infoCompany.custom_base_price !== undefined) ? `₺${infoCompany.custom_base_price}` : `Sistem Geneli (${globalPricing?.base || 0}₺)`}</div>
+                         </div>
+                         <div>
+                           <div className="text-xs text-neutral-500 mb-1">Özel Varlık Ücreti</div>
+                           <div className="text-sm font-medium text-amber-400">{(infoCompany.custom_per_asset_price !== null && infoCompany.custom_per_asset_price !== undefined) ? `₺${infoCompany.custom_per_asset_price}` : `Sistem Geneli (${globalPricing?.asset || 0}₺)`}</div>
+                         </div>
                          <div>
                            <div className="text-xs text-neutral-500 mb-1">Tanımlı Hediye / Ücretsiz Ay</div>
                            <div className="text-sm font-medium text-blue-400">{infoCompany.free_months_balance || 0} Ay</div>
@@ -1220,8 +1218,8 @@ export default function MasterbossDashboard() {
                    </div>
 
                    <div className="bg-rose-500/5 p-4 rounded-xl border border-rose-500/20">
-                     <div className="flex items-center gap-3">
-                       <BarChart3 className="w-5 h-5 text-rose-400" />
+                     <div className="flex items-start sm:items-center gap-3">
+                       <BarChart3 className="w-5 h-5 text-rose-400 shrink-0 mt-0.5 sm:mt-0" />
                        <div className="text-sm text-rose-200">Tahmini Toplam Masterboss Ödemesi özelliği sonraki güncellemelerde PayTR/Iyzico entegrasyonu ile otomatik hesaplanacaktır. Şu an firmaların kendi kasaları izlenmektedir. Detaylar "Karlılık & Veri Yükü" sekmesine taşınmıştır.</div>
                      </div>
                    </div>
@@ -1231,6 +1229,7 @@ export default function MasterbossDashboard() {
           </motion.div>
         </div>
       )}
+      </AnimatePresence>
 
     </div>
   );
@@ -1260,7 +1259,7 @@ function TabButton({ active, onClick, icon: Icon, label }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-medium transition-all whitespace-nowrap ${
+      className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-sm font-medium transition-all whitespace-nowrap shrink-0 ${
         active 
           ? "bg-white text-neutral-950 shadow-lg" 
           : "bg-neutral-900/50 text-neutral-400 hover:bg-neutral-800 hover:text-white border border-neutral-800"
