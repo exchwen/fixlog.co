@@ -156,8 +156,12 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
                   setAlertModal({ isOpen: true, message: "Şu anda sisteme eklenecek yeni bir arşiv kaydı bulunamadı.", type: 'info' });
               }
             } catch (error) {
-              // İnternet kopması gibi hatalarda bilgi veriyor
-              setAlertModal({ isOpen: true, message: "Arşiv taranırken bir bağlantı sorunu oluştu. Lütfen tekrar deneyin.", type: 'error' });
+              // Hata durumunda, sıcak-soğuk mimariyi ve R2 aktarımını açıklayan kullanıcı dostu mesaj
+              setAlertModal({ 
+                  isOpen: true, 
+                  message: "Geçmiş kayıtlara şu an ulaşılamıyor. Sistemimiz yüksek performans için sıcak/soğuk veri mimarisi kullanmaktadır. Arşiviniz R2 (soğuk depo) sunucularına aktarım aşamasında olabilir. Lütfen bir süre sonra tekrar deneyin.", 
+                  type: 'warning' 
+              });
             } finally {
                  setIsScanning(false); // İşlem bitince yüklenme ekranını kapat
                }
