@@ -99,12 +99,17 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
     const term = searchTerm.toLowerCase();
     const customerName = data?.customers?.find((c: any) => c.id === a.customer_id)?.name || '';
     const aptName = a.apartmentName || a.apartment_name || '';
+    // 🚀 YENİ: Varlığın ID ve varsa UUID bilgisini arama havuzuna dahil ediyoruz
+    const assetIdStr = a.id ? a.id.toString().toLowerCase() : '';
+    const assetUuidStr = a.uuid ? a.uuid.toString().toLowerCase() : '';
 
     return (
       a.name?.toLowerCase().includes(term) ||
       a.location?.toLowerCase().includes(term) ||
       customerName.toLowerCase().includes(term) ||
-      aptName.toLowerCase().includes(term)
+      aptName.toLowerCase().includes(term) ||
+      assetIdStr.includes(term) ||
+      assetUuidStr.includes(term)
     );
   }) || [];
 
@@ -121,7 +126,7 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input 
               type="text" 
-              placeholder="Cihaz, konum veya müşteri ara..." 
+              placeholder="Cihaz, konum, müşteri veya QR ID ara..." 
               className="w-full pl-9 pr-4 py-2.5 sm:py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-slate-50 hover:bg-white transition-all placeholder:text-slate-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -195,10 +200,23 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
             
             const latestColor = (() => {
               const assetJobs = (data?.jobs || [])
-                .filter((j: any) => String(j.asset_id) === String(a.id) && j.work_type === 'Periyodik Bakım' && j.details && (j.details.label_color || j.details['Mevcut Etiket']))
+                .filter((j: any) => String(j.asset_id) === String(a.id) && j.work_type === 'Periyodik Bakım')
+                .map((j: any) => {
+                    let parsed = j.details || {};
+                    if (typeof parsed === 'string') {
+                        try { parsed = JSON.parse(parsed); } catch(e) { parsed = {}; }
+                    }
+                    return { ...j, parsedDetails: parsed };
+                })
+                .filter((j: any) => j.parsedDetails.label_color || j.parsedDetails['Mevcut Etiket'] || j.parsedDetails.etiket)
                 .sort((j1: any, j2: any) => new Date(j2.created_at || 0).getTime() - new Date(j1.created_at || 0).getTime());
               
-              return assetJobs[0]?.details?.label_color || assetJobs[0]?.details?.['Mevcut Etiket'] || a.label_color || a.labelColor || null;
+              if (assetJobs.length > 0) {
+                 const details = assetJobs[0].parsedDetails;
+                 return details.label_color || details['Mevcut Etiket'] || details.etiket;
+              }
+
+              return a.label_color || a.labelColor || a.etiket_rengi || null;
             })();
 
             const checkArchiveForColor = async (assetId: string) => {
@@ -214,23 +232,23 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
             };
 
             const getBorderClass = (color: string) => {
-              switch(color?.toLowerCase()) {
-                case 'kırmızı': return 'border-rose-500 hover:border-rose-600 shadow-rose-100/50 bg-rose-50/10';
-                case 'sarı': return 'border-amber-400 hover:border-amber-500 shadow-amber-100/50 bg-amber-50/10';
-                case 'mavi': return 'border-blue-500 hover:border-blue-600 shadow-blue-100/50 bg-blue-50/10';
-                case 'yeşil': return 'border-emerald-500 hover:border-emerald-600 shadow-emerald-100/50 bg-emerald-50/10';
-                default: return 'border-slate-200 hover:border-blue-300 shadow-slate-100/50 bg-white';
-              }
+              if (!color) return 'border-slate-200 hover:border-blue-300 shadow-slate-100/50 bg-white';
+              const c = color.toLowerCase();
+              if (c.includes('kırmızı') || c.includes('red')) return 'border-rose-500 hover:border-rose-600 shadow-rose-100/50 bg-rose-50/10';
+              if (c.includes('sarı') || c.includes('yellow')) return 'border-amber-400 hover:border-amber-500 shadow-amber-100/50 bg-amber-50/10';
+              if (c.includes('mavi') || c.includes('blue')) return 'border-blue-500 hover:border-blue-600 shadow-blue-100/50 bg-blue-50/10';
+              if (c.includes('yeşil') || c.includes('green')) return 'border-emerald-500 hover:border-emerald-600 shadow-emerald-100/50 bg-emerald-50/10';
+              return 'border-slate-200 hover:border-blue-300 shadow-slate-100/50 bg-white';
             };
 
             const getBadgeClass = (color: string) => {
-              switch(color?.toLowerCase()) {
-                case 'kırmızı': return 'bg-rose-100 text-rose-700 border-rose-200';
-                case 'sarı': return 'bg-amber-100 text-amber-800 border-amber-200';
-                case 'mavi': return 'bg-blue-100 text-blue-700 border-blue-200';
-                case 'yeşil': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-                default: return 'hidden';
-              }
+              if (!color) return 'hidden';
+              const c = color.toLowerCase();
+              if (c.includes('kırmızı') || c.includes('red')) return 'bg-rose-100 text-rose-700 border-rose-200';
+              if (c.includes('sarı') || c.includes('yellow')) return 'bg-amber-100 text-amber-800 border-amber-200';
+              if (c.includes('mavi') || c.includes('blue')) return 'bg-blue-100 text-blue-700 border-blue-200';
+              if (c.includes('yeşil') || c.includes('green')) return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+              return 'hidden';
             };
 
             const borderClass = getBorderClass(latestColor);

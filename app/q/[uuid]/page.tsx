@@ -473,7 +473,7 @@ export default function AssetScanPage() {
             </button>
             
             <a 
-                href={asset?.whatsapp_phone ? `https://wa.me/${asset.whatsapp_phone.replace(/\D/g, '').length >= 10 ? '90' + asset.whatsapp_phone.replace(/\D/g, '').slice(-10) : asset.whatsapp_phone.replace(/\D/g, '')}?text=${encodeURIComponent('Merhaba, ' + (aptName ? aptName + ' (' + asset?.name + ')' : asset?.name) + ' cihazı için destek almak istiyorum.' + (asset?.location ? '\n📍 Konum: ' + asset.location.replace(aptName || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : ''))}` : '#'} 
+                href={asset?.whatsapp_phone ? `https://wa.me/${asset.whatsapp_phone.replace(/\D/g, '').length >= 10 ? '90' + asset.whatsapp_phone.replace(/\D/g, '').slice(-10) : asset.whatsapp_phone.replace(/\D/g, '')}?text=${encodeURIComponent('Merhaba, ' + (aptName ? aptName + ' (' + asset?.name + ')' : asset?.name) + ' cihazı için destek almak istiyorum.' + (asset?.location ? '\n📍 Konum: ' + asset.location.replace(aptName || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : '') + '\n🆔 Cihaz ID: ' + (asset?.id || uuid))}` : '#'} 
                 target={asset?.whatsapp_phone ? "_blank" : undefined} rel={asset?.whatsapp_phone ? "noopener noreferrer" : undefined} onClick={(e) => !asset?.whatsapp_phone && e.preventDefault()}
                 className={`w-full flex items-center justify-center gap-3 py-4 rounded-xl font-bold text-lg shadow-lg transition-all active:scale-95 text-white
                     ${asset?.whatsapp_phone ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200/50 cursor-pointer' : 'bg-slate-300 cursor-not-allowed'}
