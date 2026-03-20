@@ -937,7 +937,7 @@ useEffect(() => {
         {selectedJob && jobModalType !== 'APPROVAL' && (
           <motion.div 
              key="job-modal-backdrop"
-             className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[110]' : 'z-[130]'}`}
+             className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[80]' : 'z-[130]'}`}
              initial={{ opacity: 0 }} 
              animate={{ opacity: 1 }} 
              exit={{ opacity: 0, pointerEvents: "none" }} 
