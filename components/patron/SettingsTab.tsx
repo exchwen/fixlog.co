@@ -550,7 +550,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
              <div className="flex-shrink-0 bg-white border border-blue-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
                 <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Durum</span>
                 
-                {Number(data?.has_masterboss_gift) === 1 ? (
+                {data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true ? (
                     <>
                         <span className="block text-lg font-black mb-1 text-purple-600">VIP (Muaf)</span>
                         <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">
@@ -565,7 +565,11 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
                         <span className="block text-lg font-black mb-1 text-blue-600">Deneme Sürümü</span>
                         {(() => {
                             if (!data?.trial_ends_at) return <span className="block text-[10px] font-bold text-slate-500 uppercase">Aylık: Ücretsiz</span>;
-                            const diff = Math.ceil((new Date(data.trial_ends_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                            const today = new Date();
+                            const endDate = new Date(data.trial_ends_at);
+                            today.setHours(0, 0, 0, 0);
+                            endDate.setHours(0, 0, 0, 0);
+                            const diff = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
                             if (diff <= 0) return <span className="block text-[9px] font-black text-rose-500 tracking-widest leading-tight bg-rose-50 py-1.5 px-2 rounded-lg border border-rose-200">Süreniz Doldu. Ödeme yapmazsanız hesabınız kısıtlanacaktır.</span>;
                             return <span className="block text-[9px] font-black text-blue-500 tracking-widest leading-tight bg-blue-50 py-1.5 px-2 rounded-lg border border-blue-200">Kalan Süre: {diff} Gün.<br/>Deneme bitince ödeme yapmazsanız hesabınız kısıtlanacaktır.</span>;
                         })()}
@@ -585,7 +589,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
                         <span className="block text-lg font-black mb-1 text-emerald-600">Aktif</span>
                         
                         <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">
-                            Aylık: ₺{data?.custom_base_price ? data.custom_base_price : '3000'}
+                            Aylık: ₺{data?.custom_base_price !== undefined && data?.custom_base_price !== null ? data.custom_base_price : (data?.global_base_price || 3000)}
                         </span>
                         
                         {(data?.free_months_balance || 0) > 0 ? (
@@ -613,7 +617,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
              <div className="flex-1 space-y-3 w-full">
                 <h4 className="font-black text-emerald-800 text-sm">Tavsiye Et, Kumbaranda Biriksin!</h4>
                 <p className="text-xs text-emerald-700/80 font-medium leading-relaxed">
-                  Referans kodunuz ile kayıt olan ve ilk ödemesini gerçekleştiren <strong> her firma için kumbaranıza +1 ay ücretsiz kullanım (Sistem taban ücreti değerinde)</strong> eklenir. Sınır yok, kaç firma getirirseniz o kadar ay faturadan muaf olursunuz! (Kayıt olan firma da hoş geldin hediyesi olarak 1 ay kazanır).
+                  Referans kodunuz ile kayıt olan ve ilk ödemesini gerçekleştiren <strong> her firma için kumbaranıza + 1 ay 3000 TL değerinde indirim kazanılır.</strong> Sınır yok, kaç firma getirirseniz o kadar ay indirim kazanırsınız! (Kayıt olan firma da hoş geldin hediyesi olarak 1 ay indirim kazanır).
                 </p>
                 <div className="mt-4 flex flex-col sm:flex-row items-center gap-3">
                    <div className="flex bg-white border border-emerald-200 rounded-xl overflow-hidden w-full sm:w-auto shadow-sm">

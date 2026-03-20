@@ -67,6 +67,7 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
   }, [isMobileMenuOpen, setIsMobileMenuOpen, isDesktop]);
 
   const handleLogout = () => {
+    const isPatron = userRole === 'Patron';
     localStorage.clear();
     sessionStorage.clear();
     document.cookie.split(";").forEach((c) => {
@@ -74,7 +75,12 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
         .replace(/^ +/, "")
         .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
     });
-    window.location.replace(`/${slug}/login`); 
+    
+    if (isPatron) {
+      window.location.replace('/'); 
+    } else {
+      window.location.replace(`/${slug}/login`); 
+    }
   };
 
   const navItems = [

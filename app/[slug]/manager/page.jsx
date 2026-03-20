@@ -171,6 +171,7 @@ export default function ManagerDashboard() {
   // Yardımcı Arama
   const [searchCust, setSearchCust] = useState('');
   const [searchAsset, setSearchAsset] = useState('');
+  const [hideChatBubble, setHideChatBubble] = useState(false);
 
   // =================================================================================
   // PWA ve Fetching
@@ -665,7 +666,7 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
           {activeTab === 'alerts' && <AlertsTab data={data} handleAction={handleAction} />} 
           {activeTab === 'team' && <TeamTab data={data} setShowAddStaff={setShowAddStaff} setShowJobModal={setShowAddJob} setSelectedStaff={setSelectedStaff} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} setSelectedJob={setSelectedJob} setJobModalType={setJobModalType} handleAction={handleAction} />}
           {activeTab === 'customers' && <CustomersTab data={data} setShowAddCustomer={setShowAddCustomer} setSelectedCustomer={setSelectedCustomer} handleAction={handleAction} />}
-          {activeTab === 'support' && <SupportTab handleAction={handleAction} isSaving={isSaving} />} 
+          {activeTab === 'support' && <SupportTab handleAction={handleAction} isSaving={isSaving} setHideChatBubble={setHideChatBubble} />} 
           {activeTab === 'periodic' && <PeriodicTab data={data} handleAction={handleAction} statusColors={statusColors} setSelectedAsset={setSelectedAsset} handleGenerateMonthlyMaintenance={handleGenerateMonthlyMaintenance} isGenerating={isGeneratingMaintenance} />}
           
           {activeTab === 'stock' && (
@@ -704,7 +705,7 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
         </div>
       </main>
 
-      <ChatPanel isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} activeChatId={activeChatId} setActiveChatId={setActiveChatId} data={data} messages={messages} setMessages={setMessages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} />
+      <ChatPanel hideBubble={hideChatBubble} isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} activeChatId={activeChatId} setActiveChatId={setActiveChatId} data={data} messages={messages} setMessages={setMessages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} />
 
       {data && <DynamicPWA companyName={data?.name} companyLogo={data?.logo} />}
 

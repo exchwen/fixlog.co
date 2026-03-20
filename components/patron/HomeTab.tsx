@@ -655,11 +655,11 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
                     return (
                         <div key={f.id} className="bg-rose-950/40 border border-rose-400/30 rounded-2xl p-4 flex flex-col justify-between hover:bg-rose-950/60 transition-colors">
                             <div className="mb-2">
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-white/20 text-white flex items-center gap-1">
-                                        <User size={10} /> {f.added_by}
+                                <div className="flex justify-between items-start gap-2 mb-2">
+                                    <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-white/20 text-white flex items-center gap-1 min-w-0">
+                                        <User size={10} className="shrink-0" /> <span className="truncate">{f.added_by}</span>
                                     </span>
-                                    <span className={`text-[11px] font-black ${isIncome ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                    <span className={`text-[11px] font-black shrink-0 ${isIncome ? 'text-emerald-400' : 'text-amber-400'}`}>
                                         {isIncome ? '+' : '-'}₺{f.amount.toLocaleString('tr-TR')}
                                     </span>
                                 </div>
@@ -935,14 +935,19 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
               <div className="lg:col-span-2 bg-slate-900 rounded-2xl p-5 sm:p-6 shadow-lg border border-slate-800 flex flex-col relative overflow-hidden finance-block">
                  <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 blur-3xl rounded-full pointer-events-none"></div>
                  
-                 <div className="flex justify-between items-start mb-6 z-10 relative">
-                   <div>
+                 <div className="flex justify-between items-start mb-6 z-10 relative gap-3">
+                   <div className="min-w-0 flex-1">
                      <div className="flex items-center gap-2 mb-1">
-                       <Wallet size={16} className="text-blue-400" />
-                       <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Kasa Özeti</span>
+                       <Wallet size={16} className="text-blue-400 shrink-0" />
+                       <span className="text-xs font-bold text-slate-300 uppercase tracking-wider truncate">Kasa Özeti</span>
                      </div>
                      <div className="text-[10px] text-slate-500 mb-1 font-semibold">Net Bakiye</div>
-                     <div className="text-2xl sm:text-3xl font-black text-white tracking-tight break-all">₺{netCash.toLocaleString('tr-TR')}</div>
+                     <div 
+                        className="text-2xl sm:text-3xl font-black text-white tracking-tight truncate w-full"
+                        title={`₺${netCash.toLocaleString('tr-TR')}`}
+                     >
+                         ₺{netCash.toLocaleString('tr-TR')}
+                     </div>
                    </div>
                    
                    <div className="h-10 sm:h-12 w-20 sm:w-32 opacity-80 flex items-center justify-end shrink-0">

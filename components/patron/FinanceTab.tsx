@@ -478,14 +478,10 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
             const dateObj = new Date(f.created_at);
 
             return (
-              <div key={f.id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col gap-3 relative">
+              <div key={f.id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col gap-3">
                 
-                <div className="absolute top-4 right-4 flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
-                    <User size={10} /> {f.added_by || 'Sistem / Patron'}
-                </div>
-
-                <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3 pr-24">
-                  <div className="flex flex-col gap-1">
+                <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
+                  <div className="flex flex-col gap-1.5">
                     <span className={`px-2 py-1 w-max rounded-md text-[9px] font-black border uppercase tracking-wider ${f.type === 'Gelir' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
                       {f.type}
                     </span>
@@ -493,9 +489,14 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
                       <Calendar size={10} /> {dateObj.toLocaleDateString('tr-TR')} • <Clock size={10} /> {dateObj.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
-                  <div className={`font-black text-lg flex items-center gap-1 ${f.type === 'Gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    {f.type === 'Gelir' ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}
-                    ₺{f.amount.toLocaleString('tr-TR')}
+                  <div className="flex flex-col items-end gap-1.5">
+                    <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
+                        <User size={10} /> {f.added_by || 'Sistem / Patron'}
+                    </div>
+                    <div className={`font-black text-lg flex items-center gap-1 mt-0.5 ${f.type === 'Gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {f.type === 'Gelir' ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                      ₺{f.amount.toLocaleString('tr-TR')}
+                    </div>
                   </div>
                 </div>
 

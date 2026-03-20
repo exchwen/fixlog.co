@@ -143,17 +143,20 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
       </div>
 
       {/* MOBİL GÖRÜNÜM: DİKEY KARTLAR (Masaüstünde gizlenir) */}
-      <div className="md:hidden grid grid-cols-1 gap-3">
+      <div className="md:hidden grid grid-cols-1 gap-4">
         {filteredCustomers.length > 0 ? filteredCustomers.map((c: any) => {
           const customerAssets = data?.assets?.filter((a: any) => a.customer_id === c.id) || [];
           return (
             <div 
               key={c.id}
               onClick={() => setSelectedCustomer && setSelectedCustomer(c)}
-              className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm active:bg-blue-50 transition-colors flex flex-col gap-3 cursor-pointer"
+              className="bg-white rounded-2xl border-2 border-slate-200/80 p-4 shadow-md active:bg-blue-50 transition-colors flex flex-col gap-3 cursor-pointer relative overflow-hidden"
             >
+              {/* Sol Kenar Vurgusu */}
+              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500"></div>
+
               {/* İsim ve Vergi No */}
-              <div className="flex justify-between items-start gap-2">
+              <div className="flex justify-between items-start gap-2 pl-2">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                     <Users size={16} />
@@ -161,29 +164,39 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
                   <h4 className="font-bold text-slate-800 text-sm leading-tight line-clamp-2">{c.name}</h4>
                 </div>
                 {c.tax_info && (
-                  <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-100 shrink-0">
+                  <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-100 shrink-0 mt-1">
                     {c.tax_info}
                   </div>
                 )}
               </div>
 
               {/* İletişim */}
-              <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+              <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-200 ml-2">
                 <div className="flex items-center gap-2">
                   <Phone size={14} className="text-slate-400" />
-                  <span className="text-xs font-bold text-slate-600">{c.contact || 'Telefon Yok'}</span>
+                  <span className="text-xs font-black text-slate-700 tracking-wide">{c.contact || 'Telefon Yok'}</span>
                 </div>
                 {c.contact && (
-                  <a 
-                    href={`https://wa.me/${c.contact.replace(/\D/g, '').length >= 10 ? '90' + c.contact.replace(/\D/g, '').slice(-10) : c.contact.replace(/\D/g, '')}?text=${encodeURIComponent('Merhaba ' + c.name + ',')}`}
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="p-2 bg-emerald-500 text-white hover:bg-emerald-600 rounded-lg transition-all active:scale-95 shadow-sm shadow-emerald-200"
-                    title="WhatsApp Mesajı Gönder"
-                    onClick={handleWAClick}
-                  >
-                    <MessageCircle size={14} />
-                  </a>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                      <a 
+                        href={`tel:${c.contact.replace(/\D/g, '')}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg transition-all active:scale-95 shadow-sm border border-blue-200"
+                        title="Telefonla Ara"
+                      >
+                        <Phone size={14} />
+                      </a>
+                      <a 
+                        href={`https://wa.me/${c.contact.replace(/\D/g, '').length >= 10 ? '90' + c.contact.replace(/\D/g, '').slice(-10) : c.contact.replace(/\D/g, '')}?text=${encodeURIComponent('Merhaba ' + c.name + ',')}`}
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="p-2 bg-emerald-500 text-white hover:bg-emerald-600 rounded-lg transition-all active:scale-95 shadow-sm shadow-emerald-200 border border-emerald-600"
+                        title="WhatsApp Mesajı Gönder"
+                        onClick={handleWAClick}
+                      >
+                        <MessageCircle size={14} />
+                      </a>
+                  </div>
                 )}
               </div>
 

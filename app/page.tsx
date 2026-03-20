@@ -179,15 +179,22 @@ export default function LandingPage() {
     const staffToken = localStorage.getItem('staff_authToken');
     const staffSlug = localStorage.getItem('staff_userSlug');
 
-    // 1. Patron ise ve token GÜNCELSE direkt Manager paneline fırlat
+    // 1. Patron ise ve token GÜNCELSE direkt Dashboard paneline fırlat
     if (isTokenValid(patronToken) && patronSlug && patronSlug !== 'null' && patronSlug !== 'undefined') {
-      router.replace(`/${patronSlug}/manager`);
+      router.replace(`/${patronSlug}/dashboard`);
       return;
     }
 
-    // 2. Personel (Usta) ise ve token GÜNCELSE direkt Dashboard'a fırlat
+    // 2. Personel ise ve token GÜNCELSE role göre fırlat
     if (isTokenValid(staffToken) && staffSlug && staffSlug !== 'null' && staffSlug !== 'undefined') {
-      router.replace(`/${staffSlug}/dashboard`);
+      const staffRole = localStorage.getItem('staff_userRole');
+      if (staffRole === 'Yönetici') {
+        router.replace(`/${staffSlug}/manager`);
+      } else if (staffRole === 'Usta') {
+        router.replace(`/${staffSlug}/worker`);
+      } else {
+        router.replace(`/${staffSlug}/login`);
+      }
       return;
     }
 
@@ -228,21 +235,27 @@ export default function LandingPage() {
       
       {/* HEADER */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-lg border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-7 h-7 text-blue-600" />
             <span translate="no" className="notranslate text-xl font-black tracking-tight text-gray-900">
               {t.brand}
             </span>
           </div>
-          <div className="flex items-center gap-4">
-            <button onClick={handleLogin} className="hidden md:flex items-center gap-1.5 text-gray-600 hover:text-blue-600 text-sm font-bold transition-all active:scale-95">
-              <LogIn className="w-4 h-4" /> {t.login}
+          <div className="flex items-center gap-2 sm:gap-4">
+            <button onClick={handleLogin} className="flex items-center gap-1.5 text-gray-600 hover:text-blue-600 text-sm font-bold transition-all active:scale-95">
+              <LogIn className="w-4 h-4" /> <span className="hidden sm:inline">Patron Girişi</span><span className="sm:hidden">Giriş</span>
+            </button>
+            <button onClick={() => { 
+                const slugPrompt = window.prompt('Lütfen firma kodunuzu (slug) girin:');
+                if (slugPrompt) router.push(`/${slugPrompt.trim().toLowerCase()}/login`);
+            }} className="hidden md:flex items-center gap-1.5 text-gray-600 hover:text-blue-600 text-sm font-bold transition-all active:scale-95">
+              <Users className="w-4 h-4" /> Personel Girişi
             </button>
             <button onClick={handleRegister} className="hidden md:flex bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-md shadow-blue-600/20 items-center gap-2 hover:scale-105 active:scale-95">
               {t.tryFree}
             </button>
-            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors active:scale-95">
+            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors active:scale-95 ml-1">
               {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
@@ -253,7 +266,14 @@ export default function LandingPage() {
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="md:hidden border-b border-gray-100 bg-white absolute w-full overflow-hidden shadow-2xl">
               <div className="px-4 pt-4 pb-6 flex flex-col gap-3">
                 <button onClick={() => { setIsMobileMenuOpen(false); handleLogin(); }} className="w-full flex items-center justify-center gap-2 bg-gray-50 text-gray-700 hover:bg-gray-100 px-4 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95">
-                  <LogIn className="w-4 h-4" /> {t.login}
+                  <LogIn className="w-4 h-4" /> Patron Girişi
+                </button>
+                <button onClick={() => { 
+                    setIsMobileMenuOpen(false); 
+                    const slugPrompt = window.prompt('Lütfen firma kodunuzu (slug) girin:');
+                    if (slugPrompt) router.push(`/${slugPrompt.trim().toLowerCase()}/login`);
+                }} className="w-full flex items-center justify-center gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 px-4 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95">
+                  <Users className="w-4 h-4" /> Personel Girişi
                 </button>
                 <button onClick={() => { setIsMobileMenuOpen(false); handleRegister(); }} className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 active:scale-95">
                   {t.tryFree}

@@ -7,7 +7,7 @@ import Pusher from 'pusher-js';
 
 import * as PusherPushNotifications from '@pusher/push-notifications-web';
 
-export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, setActiveChatId, data, messages, setMessages, messageInput, setMessageInput, sendMessage }: any) {
+export default function ChatPanel({ hideBubble, isChatOpen, setIsChatOpen, activeChatId, setActiveChatId, data, messages, setMessages, messageInput, setMessageInput, sendMessage }: any) {
   const chatEndRef = useRef<HTMLDivElement>(null);
   
   const [isOffline, setIsOffline] = useState(false);
@@ -555,7 +555,7 @@ export default function ChatPanel({ isChatOpen, setIsChatOpen, activeChatId, set
   }, [allMessages, activeChatId, currentUserId, currentUserRole]);
 
   return (
-    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[100] flex flex-col items-end gap-3 pointer-events-none">
+    <div className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[100] flex flex-col items-end gap-3 pointer-events-none ${hideBubble ? 'hidden md:flex' : ''}`}>
       
       <AnimatePresence>
         {msgToast.show && !isChatOpen && (

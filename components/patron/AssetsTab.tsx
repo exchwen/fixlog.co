@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Box, MapPin, Users, Search, QrCode, ExternalLink, Tag, Archive, Loader2 } from 'lucide-react';
+import { Plus, Box, MapPin, Users, Search, QrCode, ExternalLink, Tag, Archive, Loader2, AlertCircle, CheckCircle, Info, AlertTriangle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, setShowQRModal, setSelectedQRAsset, setShowSmartExcelModal }: any) {
   const [searchTerm, setSearchTerm] = useState('');
   const [logoBgColor, setLogoBgColor] = useState<string>('#f8fafc');
   // 🚀 YENİ: Arşiv taranırken butonun durumunu takip edecek sistem eklendi
   const [isScanning, setIsScanning] = useState(false);
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '', type: 'info' });
 
   // 🚀 GÜVENLİ LİNK DÖNÜŞÜTÜRÜCÜ (PROXY)
   const getSafeImageUrl = (url: string | undefined) => {
@@ -89,7 +91,7 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
     e.stopPropagation();
     if (typeof window !== 'undefined' && !navigator.onLine) {
       e.preventDefault();
-      alert("Haritayı açabilmek için internet bağlantısına ihtiyacınız var.");
+      setAlertModal({ isOpen: true, message: "Haritayı açabilmek için internet bağlantısına ihtiyacınız var.", type: 'warning' });
     }
   };
 
@@ -146,17 +148,17 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
                  const archived = await res.json();
                  
                  if(archived.length > 0) {
-                     data.jobs = [...archived, ...data.jobs];
-                     setSearchTerm(searchTerm + ' '); // Arayüzü yenilemek için küçük bir taktik
-                     alert("Cihazların tüm arşiv dökümleri başarıyla yüklendi. Etiket renkleri ve geçmiş veriler güncellendi.");
-                 } else {
-                     // Eskiden sessiz kaldığı yer burasıydı, artık kullanıcıya bilgi veriyor
-                     alert("Şu anda sisteme eklenecek yeni bir arşiv kaydı bulunamadı.");
-                 }
-               } catch (error) {
-                 // İnternet kopması gibi hatalarda bilgi veriyor
-                 alert("Arşiv taranırken bir bağlantı sorunu oluştu. Lütfen tekrar deneyin.");
-               } finally {
+                  data.jobs = [...archived, ...(data.jobs || [])];
+                  setSearchTerm(searchTerm + ' '); // Arayüzü yenilemek için küçük bir taktik
+                  setAlertModal({ isOpen: true, message: "Cihazların tüm arşiv dökümleri başarıyla yüklendi. Etiket renkleri ve geçmiş veriler güncellendi.", type: 'success' });
+              } else {
+                  // Eskiden sessiz kaldığı yer burasıydı, artık kullanıcıya bilgi veriyor
+                  setAlertModal({ isOpen: true, message: "Şu anda sisteme eklenecek yeni bir arşiv kaydı bulunamadı.", type: 'info' });
+              }
+            } catch (error) {
+              // İnternet kopması gibi hatalarda bilgi veriyor
+              setAlertModal({ isOpen: true, message: "Arşiv taranırken bir bağlantı sorunu oluştu. Lütfen tekrar deneyin.", type: 'error' });
+            } finally {
                  setIsScanning(false); // İşlem bitince yüklenme ekranını kapat
                }
             }}
@@ -327,9 +329,57 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
                    'Henüz sisteme kayıtlı bir varlık bulunmuyor.'
                 )}
             </div>
-          </div>
+            </div>
         )}
       </div>
+
+      {/* 🚀 DİNAMİK UYARI MODALI */}
+      <AnimatePresence>
+        {alertModal.isOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setAlertModal({ ...alertModal, isOpen: false })}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 10 }} 
+              animate={{ scale: 1, y: 0 }} 
+              exit={{ scale: 0.9, y: 10 }} 
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl flex flex-col items-center border border-slate-200"
+            >
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 shadow-inner ${
+                alertModal.type === 'success' ? 'bg-emerald-50 text-emerald-500' : 
+                alertModal.type === 'error' ? 'bg-rose-50 text-rose-500' : 
+                alertModal.type === 'warning' ? 'bg-amber-50 text-amber-500' : 
+                'bg-blue-50 text-blue-500'
+              }`}>
+                {alertModal.type === 'success' && <CheckCircle size={32} />}
+                {alertModal.type === 'error' && <AlertCircle size={32} />}
+                {alertModal.type === 'warning' && <AlertTriangle size={32} />}
+                {alertModal.type === 'info' && <Info size={32} />}
+              </div>
+              <h3 className="text-xl font-black text-slate-800 tracking-tight mb-2">
+                {alertModal.type === 'success' ? 'Başarılı!' : 
+                 alertModal.type === 'error' ? 'Hata!' : 
+                 alertModal.type === 'warning' ? 'Uyarı!' : 
+                 'Bilgi'}
+              </h3>
+              <p className="text-sm font-medium text-slate-500 mb-6 leading-relaxed">
+                {alertModal.message}
+              </p>
+              <button 
+                onClick={() => setAlertModal({ ...alertModal, isOpen: false })}
+                className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition-all active:scale-95 shadow-md flex justify-center items-center"
+              >
+                Tamam
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

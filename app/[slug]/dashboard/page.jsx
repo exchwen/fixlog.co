@@ -168,6 +168,7 @@ export default function PatronDashboard() {
   // Yardımcı Arama
   const [searchCust, setSearchCust] = useState('');
   const [searchAsset, setSearchAsset] = useState('');
+  const [hideChatBubble, setHideChatBubble] = useState(false);
 
   // =================================================================================
   // PWA ve Fetching
@@ -195,11 +196,11 @@ export default function PatronDashboard() {
 
   const fetchData = async (isInitial = false) => {
     const token = localStorage.getItem('patron_authToken'); 
-    if (!token) { window.location.href = `/${slug}/login`; return; }
+    if (!token) { window.location.href = `/`; return; }
 
     try {
       const res = await fetch(`${API_URL}/dashboard-data?slug=${slug}`, { headers: { 'Authorization': `Bearer ${token}` } });
-      if (res.status === 401) { localStorage.removeItem('patron_authToken'); window.location.href = `/${slug}/login`; return; }
+      if (res.status === 401) { localStorage.removeItem('patron_authToken'); window.location.href = `/`; return; }
       const result = await res.json();
       
       localStorage.setItem(`dashboard_cache_${slug}`, JSON.stringify(result));
@@ -527,7 +528,7 @@ return (
           {activeTab === 'alerts' && <AlertsTab data={data} handleAction={handleAction} />} 
           {activeTab === 'team' && <TeamTab data={data} setShowAddStaff={setShowAddStaff} setShowJobModal={setShowAddJob} setSelectedStaff={setSelectedStaff} setEditStaffForm={setEditStaffForm} setIsEditingStaff={setIsEditingStaff} setActiveChatId={setActiveChatId} setIsChatOpen={setIsChatOpen} setSelectedJob={setSelectedJob} setJobModalType={setJobModalType} handleAction={handleAction} />}
           {activeTab === 'customers' && <CustomersTab data={data} setShowAddCustomer={setShowAddCustomer} setSelectedCustomer={setSelectedCustomer} handleAction={handleAction} />}
-          {activeTab === 'support' && <SupportTab handleAction={handleAction} isSaving={isSaving} />} 
+          {activeTab === 'support' && <SupportTab handleAction={handleAction} isSaving={isSaving} setHideChatBubble={setHideChatBubble} />} 
           {activeTab === 'periodic' && <PeriodicTab data={data} handleAction={handleAction} statusColors={statusColors} setSelectedAsset={setSelectedAsset} handleGenerateMonthlyMaintenance={handleGenerateMonthlyMaintenance} isGenerating={isGeneratingMaintenance} />}
           
           {activeTab === 'stock' && (
@@ -565,7 +566,7 @@ return (
         </div>
       </main>
 
-      <ChatPanel isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} activeChatId={activeChatId} setActiveChatId={setActiveChatId} data={data} messages={messages} setMessages={setMessages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} />
+      <ChatPanel hideBubble={hideChatBubble} isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} activeChatId={activeChatId} setActiveChatId={setActiveChatId} data={data} messages={messages} setMessages={setMessages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} />
       {data && <DynamicPWA companyName={data?.name} companyLogo={data?.logo} />}
 
       <DashboardModals 

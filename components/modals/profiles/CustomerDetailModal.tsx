@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MapPin, Box, Calendar, Clock, ArrowRight, Settings, Trash2, Loader2, Building2 } from 'lucide-react';
+import { X, MapPin, Box, Calendar, Clock, ArrowRight, Settings, Trash2, Loader2, Building2, Phone, MessageCircle } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
 import sectorsData from '@/lib/data/sectors.json'; // 🚀 EKLENDİ
 
@@ -258,7 +258,34 @@ export default function CustomerDetailModal({
                   {!isEditingCustomer ? (
                       <div className="space-y-6">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm"><div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">İletişim / Telefon</div><div className="text-sm font-bold text-slate-800 mt-1.5">{selectedCustomer?.contact || '-'}</div></div>
+                          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">İletişim / Telefon</div>
+                              <div className="flex items-center justify-between mt-1.5">
+                                  <div className="text-sm font-bold text-slate-800 truncate pr-2">{selectedCustomer?.contact || '-'}</div>
+                                  {selectedCustomer?.contact && (
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                          <a 
+                                              href={`tel:${selectedCustomer.contact.replace(/\D/g, '')}`} 
+                                              onClick={(e) => e.stopPropagation()}
+                                              className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white rounded-lg transition-all active:scale-95 shadow-sm border border-blue-100"
+                                              title="Telefonla Ara"
+                                          >
+                                              <Phone size={14} />
+                                          </a>
+                                          <a 
+                                              href={`https://wa.me/${selectedCustomer.contact.replace(/\D/g, '').length >= 10 ? '90' + selectedCustomer.contact.replace(/\D/g, '').slice(-10) : selectedCustomer.contact.replace(/\D/g, '')}?text=${encodeURIComponent('Merhaba ' + selectedCustomer.name + ',')}`}
+                                              target="_blank" 
+                                              rel="noopener noreferrer" 
+                                              onClick={(e) => e.stopPropagation()}
+                                              className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-all active:scale-95 shadow-sm border border-emerald-100"
+                                              title="WhatsApp Mesajı Gönder"
+                                          >
+                                              <MessageCircle size={14} />
+                                          </a>
+                                      </div>
+                                  )}
+                              </div>
+                          </div>
                           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm"><div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vergi No / T.C.</div><div className="text-sm font-bold text-slate-800 mt-1.5">{selectedCustomer?.tax_info || '-'}</div></div>
                           <div className="sm:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
                               <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Açık Adres</div>

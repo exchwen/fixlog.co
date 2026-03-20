@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Lightbulb, Wrench, Send, Loader2, CheckCircle, AlertTriangle, WifiOff, History, Clock, X } from 'lucide-react';
 
-export default function SupportTab({ handleAction, isSaving }: any) {
+export default function SupportTab({ handleAction, isSaving, setHideChatBubble }: any) {
   const [ticketType, setTicketType] = useState('Öneri/İstek');
   const [message, setMessage] = useState('');
   const [modalState, setModalState] = useState<'idle' | 'success' | 'error'>('idle');
@@ -19,6 +19,15 @@ export default function SupportTab({ handleAction, isSaving }: any) {
   const [isReplying, setIsReplying] = useState(false);
   
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (setHideChatBubble) {
+        setHideChatBubble(!!selectedTicket);
+    }
+    return () => {
+        if (setHideChatBubble) setHideChatBubble(false);
+    };
+  }, [selectedTicket, setHideChatBubble]);
 
   const handleCloseModal = () => {
     setSelectedTicket(null);

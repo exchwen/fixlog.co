@@ -81,9 +81,9 @@ export default function StaffLoginPage() {
         return;
     }
 
-    if (patronRole === 'Patron' || staffRole === 'Yönetici') {
-        setHasPatronSession(true);
-    }
+    if (patronRole === 'Patron' || staffRole === 'Yönetici' || staffRole === 'Usta') {
+      setHasPatronSession(true);
+  }
 
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     if (isStandalone) return;
@@ -239,6 +239,13 @@ export default function StaffLoginPage() {
   return (
     <div className="min-h-[100dvh] bg-[#F8FAFC] flex flex-col items-center justify-center p-4 sm:p-6 relative font-sans selection:bg-blue-100">
       
+      <button
+        onClick={() => router.push('/')}
+        className="absolute top-4 sm:top-6 left-4 sm:left-6 flex items-center gap-2 text-[11px] font-bold text-slate-500 hover:text-blue-600 transition-all uppercase tracking-widest bg-white hover:bg-slate-50 px-4 py-2.5 rounded-xl shadow-sm border border-slate-100 active:scale-95 z-50"
+      >
+        <ArrowLeft className="w-3.5 h-3.5" /> Ana Sayfa
+      </button>
+
       <DynamicPWA 
         companyName={companyData.name !== fallbackName ? companyData.name : undefined} 
         companyLogo={companyData.logo} 
@@ -254,11 +261,12 @@ export default function StaffLoginPage() {
                 
                 if(patronRole === 'Patron') router.push(`/${actualSlug}/dashboard`);
                 else if(staffRole === 'Yönetici') router.push(`/${actualSlug}/manager`);
-                else router.push(`/login`);
+                else if(staffRole === 'Usta') router.push(`/${actualSlug}/worker`);
+                else router.push(`/`);
             }}
-              className="absolute top-6 right-6 flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-lg hover:bg-slate-800 transition-all active:scale-95 z-50"
+              className="absolute top-4 sm:top-6 right-4 sm:right-6 flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-[11px] font-bold shadow-lg hover:bg-slate-800 transition-all uppercase tracking-widest active:scale-95 z-50"
             >
-               <ArrowLeft size={16} /> Panele Dön
+               Panele Dön <ArrowRight className="w-3.5 h-3.5" />
             </motion.button>
          )}
       </AnimatePresence>
