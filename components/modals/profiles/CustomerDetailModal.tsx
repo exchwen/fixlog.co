@@ -226,7 +226,7 @@ export default function CustomerDetailModal({
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }} 
             transition={{ duration: 0.15 }}
-            className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[10]' : 'z-[120]'}`}
+            className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[70]' : 'z-[140]'}`}
           >
             <div 
                className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isStacked ? 'opacity-0' : 'opacity-100'} cursor-pointer`} 

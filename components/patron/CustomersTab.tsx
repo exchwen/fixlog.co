@@ -78,34 +78,44 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
                  >
                    <td className="px-5 py-4 font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{c.name}</td>
                    <td className="px-5 py-4">
-                     <div className="flex items-center gap-2.5">
-                       <span className="text-slate-600 font-medium">{c.contact || '-'}</span>
+                     <div className="flex items-center justify-between gap-3">
+                       <span className="text-slate-800 font-bold">{c.contact || '-'}</span>
                        {c.contact && (
-                         <a 
-                           href={`https://wa.me/${c.contact.replace(/\D/g, '').length >= 10 ? '90' + c.contact.replace(/\D/g, '').slice(-10) : c.contact.replace(/\D/g, '')}?text=${encodeURIComponent('Merhaba ' + c.name + ',')}`}
-                           target="_blank" 
-                           rel="noopener noreferrer" 
-                           className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-all active:scale-95 inline-flex items-center justify-center shadow-sm"
-                           title="WhatsApp Mesajı Gönder"
-                           onClick={handleWAClick}
-                         >
-                           <MessageCircle size={14} />
-                         </a>
+                         <div className="flex items-center gap-1.5 shrink-0">
+                           <a 
+                             href={`tel:${c.contact.replace(/\D/g, '')}`}
+                             onClick={(e) => e.stopPropagation()}
+                             className="w-8 h-8 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg transition-all active:scale-95 flex items-center justify-center shadow-sm"
+                             title="Telefonla Ara"
+                           >
+                             <Phone size={14} />
+                           </a>
+                           <a 
+                             href={`https://wa.me/${c.contact.replace(/\D/g, '').length >= 10 ? '90' + c.contact.replace(/\D/g, '').slice(-10) : c.contact.replace(/\D/g, '')}?text=${encodeURIComponent('Merhaba ' + c.name + ',')}`}
+                             target="_blank" 
+                             rel="noopener noreferrer" 
+                             className="w-8 h-8 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-all active:scale-95 flex items-center justify-center shadow-sm"
+                             title="WhatsApp Mesajı Gönder"
+                             onClick={handleWAClick}
+                           >
+                             <MessageCircle size={14} />
+                           </a>
+                         </div>
                        )}
                      </div>
                    </td>
                    <td className="px-5 py-4">
                      {customerAssets.length > 0 ? (
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                       <div className="flex flex-wrap gap-2">
                          {customerAssets.map((a: any) => {
                            const aptName = a.apartmentName || a.apartment_name;
                            return (
-                             <div key={a.id} className="flex flex-col bg-slate-50 border border-slate-200 rounded-lg p-2.5 min-h-[56px] justify-center shadow-sm w-full">
-                                <div className="flex items-center gap-1.5 text-blue-700 font-black text-[11px] mb-1">
-                                    <Building2 size={12} className="shrink-0" />
+                             <div key={a.id} className="inline-flex flex-col bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm min-w-[150px] max-w-[220px]">
+                                <div className="flex items-center gap-1.5 text-slate-800 font-bold text-[11px] mb-0.5 truncate">
+                                    <Building2 size={12} className="text-blue-500 shrink-0" />
                                     <span className="truncate" title={aptName || 'Bağımsız Adres'}>{aptName || 'Bağımsız Adres'}</span>
                                 </div>
-                                <div className="flex items-center gap-1.5 text-slate-500 font-semibold text-[10px]">
+                                <div className="flex items-center gap-1.5 text-slate-500 font-medium text-[10px] truncate">
                                     <Box size={10} className="shrink-0" />
                                     <span className="truncate" title={a.name}>{a.name}</span>
                                 </div>
@@ -146,40 +156,41 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
             <div 
               key={c.id}
               onClick={() => setSelectedCustomer && setSelectedCustomer(c)}
-              className="bg-white rounded-2xl border-2 border-slate-200/80 p-4 shadow-md active:bg-blue-50 transition-colors flex flex-col gap-3 cursor-pointer relative overflow-hidden"
+              className="bg-white rounded-3xl border border-slate-100 p-5 shadow-sm hover:shadow-md active:bg-slate-50 transition-all flex flex-col gap-5 cursor-pointer"
             >
-              {/* Sol Kenar Vurgusu */}
-              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500"></div>
-
               {/* İsim ve Vergi No */}
-              <div className="flex justify-between items-start gap-2 pl-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                    <Users size={16} />
+              <div className="flex justify-between items-start gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-sm">
+                    <Users size={20} />
                   </div>
-                  <h4 className="font-bold text-slate-800 text-sm leading-tight line-clamp-2">{c.name}</h4>
+                  <div>
+                    <h4 className="font-black text-slate-800 text-base leading-tight line-clamp-2">{c.name}</h4>
+                    {c.tax_info && (
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">
+                        VKN: {c.tax_info}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                {c.tax_info && (
-                  <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-100 shrink-0 mt-1">
-                    {c.tax_info}
-                  </div>
-                )}
               </div>
 
-              {/* İletişim */}
-              <div className="flex flex-col gap-2 mt-1">
+              {/* İletişim ve Adres (İç İçe Kutu Karmaşası Kaldırıldı) */}
+              <div className="bg-slate-50/80 rounded-2xl p-4 flex flex-col gap-4 border border-slate-100">
                  {/* Telefon ve Arama Butonları */}
-                 <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-200 w-full">
-                    <div className="flex items-center gap-2 min-w-0 pr-2">
-                      <Phone size={14} className="text-slate-400 shrink-0" />
-                      <span className="text-xs font-black text-slate-700 tracking-wide truncate">{c.contact || 'Telefon Yok'}</span>
+                 <div className="flex justify-between items-center w-full">
+                    <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                      <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-slate-200 shrink-0">
+                        <Phone size={14} className="text-slate-500" />
+                      </div>
+                      <span className="text-sm font-bold text-slate-700 tracking-wide truncate">{c.contact || 'Telefon Yok'}</span>
                     </div>
                     {c.contact && (
                       <div className="flex items-center gap-2 shrink-0">
                           <a 
                             href={`tel:${c.contact.replace(/\D/g, '')}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-8 h-8 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg transition-all active:scale-95 flex items-center justify-center shadow-sm border border-blue-200"
+                            className="w-9 h-9 bg-white text-slate-600 hover:text-blue-600 rounded-full transition-all active:scale-95 flex items-center justify-center shadow-sm border border-slate-200"
                             title="Telefonla Ara"
                           >
                             <Phone size={14} />
@@ -188,7 +199,7 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
                             href={`https://wa.me/${c.contact.replace(/\D/g, '').length >= 10 ? '90' + c.contact.replace(/\D/g, '').slice(-10) : c.contact.replace(/\D/g, '')}?text=${encodeURIComponent('Merhaba ' + c.name + ',')}`}
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            className="w-8 h-8 bg-emerald-500 text-white hover:bg-emerald-600 rounded-lg transition-all active:scale-95 flex items-center justify-center shadow-sm shadow-emerald-200 border border-emerald-600"
+                            className="w-9 h-9 bg-emerald-500 text-white hover:bg-emerald-600 rounded-full transition-all active:scale-95 flex items-center justify-center shadow-sm shadow-emerald-200 border border-emerald-600"
                             title="WhatsApp Mesajı Gönder"
                             onClick={handleWAClick}
                           >
@@ -199,27 +210,31 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
                  </div>
 
                  {/* Adres */}
-                 <div className="flex items-start gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200 w-full">
-                   <MapPin size={14} className="text-slate-400 shrink-0 mt-0.5" />
-                   <span className="text-[11px] font-medium text-slate-500 line-clamp-2 w-full">{c.address || 'Adres bilgisi eklenmemiş.'}</span>
+                 <div className="flex items-start gap-2.5 w-full pt-3 border-t border-slate-200/70">
+                   <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-slate-200 shrink-0 mt-0.5">
+                     <MapPin size={14} className="text-slate-500" />
+                   </div>
+                   <span className="text-xs font-medium text-slate-600 leading-relaxed pt-1.5 line-clamp-2 w-full">{c.address || 'Adres bilgisi eklenmemiş.'}</span>
                  </div>
               </div>
 
-              {/* Cihazlar */}
+              {/* Cihazlar (Sadeleştirilmiş Şık Liste) */}
               {customerAssets.length > 0 && (
-                <div className="pt-3 mt-1 border-t border-slate-100 w-full">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+                <div className="flex flex-col gap-2.5">
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Kayıtlı Varlıklar ({customerAssets.length})</div>
+                  <div className="flex flex-col gap-2 w-full">
                     {customerAssets.map((a: any) => {
                        const aptName = a.apartmentName || a.apartment_name;
                        return (
-                         <div key={a.id} className="bg-blue-50/50 border border-blue-100 rounded-lg p-3 flex flex-col justify-center min-h-[60px] shadow-sm w-full">
-                            <div className="flex items-center gap-2 text-blue-700 font-black text-xs mb-1 w-full min-w-0">
-                               <Building2 size={14} className="shrink-0" />
-                               <span className="truncate w-full block">{aptName || 'Bağımsız Adres'}</span>
+                         <div key={a.id} className="bg-white border border-slate-100 rounded-xl p-3.5 flex items-center gap-3 shadow-sm w-full">
+                            <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
+                               <Building2 size={16} />
                             </div>
-                            <div className="flex items-center gap-1.5 text-slate-500 font-semibold text-[11px] ml-[22px] w-full min-w-0">
-                               <Box size={12} className="shrink-0" /> 
-                               <span className="truncate w-full block">{a.name}</span>
+                            <div className="flex flex-col min-w-0">
+                               <span className="font-bold text-slate-800 text-xs truncate">{aptName || 'Bağımsız Adres'}</span>
+                               <span className="text-[10px] font-medium text-slate-500 truncate flex items-center gap-1.5 mt-1">
+                                  <Box size={10} className="text-slate-400" /> {a.name}
+                               </span>
                             </div>
                          </div>
                        );
