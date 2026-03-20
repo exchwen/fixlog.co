@@ -234,6 +234,22 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
   // 🚀 DÜZELTME: Referans kodunu hem settingsForm hem de data içinden çekiyoruz.
   const refCode = settingsForm?.referralCode || settingsForm?.referral_code || data?.referralCode || data?.referral_code || 'BEKLENİYOR...';
 
+  // 🚀 YENİ: Hometab ile birebir aynı dinamik fatura hesaplaması
+  const totalAssetsCount = data?.assets?.length || 0;
+  const isExempt = Number(data?.has_masterboss_gift) === 1 || Number(settingsForm?.has_masterboss_gift) === 1;
+  const baseFee = data?.custom_base_price !== undefined && data?.custom_base_price !== null ? Number(data.custom_base_price) : Number(data?.global_base_price || 3000);
+  const perAssetFee = data?.custom_per_asset_price !== undefined && data?.custom_per_asset_price !== null ? Number(data.custom_per_asset_price) : Number(data?.global_asset_price || 50);
+  
+  const currentUsageBill = isExempt ? 0 : baseFee + (totalAssetsCount * perAssetFee);
+  const activeReferrals = Number(settingsForm?.free_months_balance || data?.free_months_balance || data?.freeMonths || 0);
+  
+  let finalBill = currentUsageBill;
+  if (isExempt) {
+      finalBill = 0;
+  } else if (activeReferrals > 0) {
+      finalBill = Math.max(0, currentUsageBill - baseFee);
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-6 relative pb-20 sm:pb-6">
       
@@ -550,8 +566,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
              <div className="flex-shrink-0 bg-white border border-blue-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
                 <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Durum</span>
                 
-                {/* 🚀 DÜZELTME: Hem data.has_masterboss_gift hem de settingsForm içinden kontrol sağlıyoruz */}
-                {data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true || settingsForm?.has_masterboss_gift === 1 || settingsForm?.has_masterboss_gift === true ? (
+                {isExempt ? (
                     <>
                         <span className="block text-lg font-black mb-1 text-purple-600">VIP (Muaf)</span>
                         <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">
@@ -590,12 +605,12 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
                         <span className="block text-lg font-black mb-1 text-emerald-600">Aktif</span>
                         
                         <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">
-                            Aylık: ₺{data?.custom_base_price !== undefined && data?.custom_base_price !== null ? data.custom_base_price : (data?.global_base_price || 3000)}
+                            Aylık: ₺{finalBill.toLocaleString('tr-TR')}
                         </span>
                         
-                        {(data?.free_months_balance || 0) > 0 ? (
+                        {activeReferrals > 0 ? (
                            <span className="block text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-tight bg-emerald-50 py-1.5 px-2 rounded-lg border border-emerald-200">
-                               🎁 Bu Ay İndirimli Kullanım!<br/>(Kalan Hediye: {data.free_months_balance} Ay)
+                               🎁 Bu Ay İndirimli Kullanım!<br/>(Kalan Hediye: {activeReferrals} Ay)
                            </span>
                         ) : (
                            <span className="block text-[9px] font-black text-emerald-600 tracking-widest leading-tight bg-emerald-50 py-1.5 px-2 rounded-lg border border-emerald-200">
