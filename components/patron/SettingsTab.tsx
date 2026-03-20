@@ -231,24 +231,40 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
     settingsForm?.address?.trim() &&
     settingsForm?.taxInfo?.trim();
 
-  // 🚀 DÜZELTME: Referans kodunu hem settingsForm hem de data içinden çekiyoruz.
-  const refCode = settingsForm?.referralCode || settingsForm?.referral_code || data?.referralCode || data?.referral_code || 'BEKLENİYOR...';
+// 🚀 DÜZELTME: Referans kodunu hem settingsForm hem de data içinden çekiyoruz.
+const refCode = settingsForm?.referralCode || settingsForm?.referral_code || data?.referralCode || data?.referral_code || 'BEKLENİYOR...';
 
- // 🚀 YENİ: Hometab ile birebir aynı dinamik fatura hesaplaması
-   const totalAssetsCount = data?.stats?.assets || data?.assets?.length || 0;
-   const isExempt = data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true || String(data?.has_masterboss_gift) === 'true' || settingsForm?.has_masterboss_gift === 1 || settingsForm?.has_masterboss_gift === true || String(settingsForm?.has_masterboss_gift) === 'true';
-  const baseFee = data?.custom_base_price !== undefined && data?.custom_base_price !== null ? Number(data.custom_base_price) : Number(data?.global_base_price || 3000);
-  const perAssetFee = data?.custom_per_asset_price !== undefined && data?.custom_per_asset_price !== null ? Number(data.custom_per_asset_price) : Number(data?.global_asset_price || 50);
-  
-  const currentUsageBill = isExempt ? 0 : baseFee + (totalAssetsCount * perAssetFee);
-  const activeReferrals = Number(settingsForm?.free_months_balance || data?.free_months_balance || data?.freeMonths || 0);
-  
-  let finalBill = currentUsageBill;
-  if (isExempt) {
-      finalBill = 0;
-  } else if (activeReferrals > 0) {
-      finalBill = Math.max(0, currentUsageBill - baseFee);
-  }
+// 🚀 YENİ: Hometab ile birebir aynı dinamik fatura hesaplaması
+const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferrals, isExempt, finalBill } = React.useMemo(() => {
+   const assetsCount = data?.assets?.length || 0;
+   const exemptStatus = data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true || String(data?.has_masterboss_gift) === 'true';
+   
+   const bFee = data?.custom_base_price !== undefined && data?.custom_base_price !== null ? Number(data.custom_base_price) : Number(data?.global_base_price || 3000);
+   const pAssetFee = data?.custom_per_asset_price !== undefined && data?.custom_per_asset_price !== null ? Number(data.custom_per_asset_price) : Number(data?.global_asset_price || 50);
+
+   const cUsageBill = exemptStatus ? 0 : bFee + (assetsCount * pAssetFee);
+   const aReferrals = Number(settingsForm?.free_months_balance || data?.free_months_balance || data?.freeMonths || 0);
+
+   let fBill = cUsageBill;
+   let rCredits = 0;
+
+   if (exemptStatus) {
+       fBill = 0;
+   } else if (aReferrals > 0) {
+       rCredits = bFee;
+       fBill = Math.max(0, cUsageBill - rCredits);
+   }
+
+   return {
+       totalAssetsCount: assetsCount,
+       baseFee: bFee,
+       perAssetFee: pAssetFee,
+       currentUsageBill: cUsageBill,
+       activeReferrals: aReferrals,
+       isExempt: exemptStatus,
+       finalBill: fBill
+   };
+}, [data, settingsForm?.free_months_balance]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 relative pb-20 sm:pb-6">
@@ -606,6 +622,9 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
                         
                         <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">
                             Aylık: ₺{finalBill.toLocaleString('tr-TR')}
+                            {activeReferrals > 0 && (
+                                <span className="line-through text-slate-400 ml-1">₺{currentUsageBill.toLocaleString('tr-TR')}</span>
+                            )}
                         </span>
                         
                         {activeReferrals > 0 ? (
@@ -662,7 +681,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
              <div className="flex-shrink-0 bg-white border border-emerald-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
                 <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Kumbarada Biriken</span>
                 {/* 🚀 DÜZELTME: Verinin gelmediği anlarda veya string "0" geldiği durumlarda hata vermemesi için Number() sarmalaması eklendi. */}
-                <span className="block text-4xl font-black text-emerald-600 mb-1">{Number(settingsForm?.free_months_balance || data?.free_months_balance || data?.freeMonths || 0)}</span>
+                <span className="block text-4xl font-black text-emerald-600 mb-1">{activeReferrals}</span>
                 <span className="block text-xs font-bold text-slate-600">Ücretsiz Ay</span>
              </div>
 
