@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, Phone, ShieldCheck, Box, MapPin, History, X, ShieldAlert, ChevronRight, User, MessageCircle, WifiOff, Check, ArrowLeft, PenTool, ClipboardList, Wrench, Calendar, Tag, CheckCircle, Image as ImageIcon } from 'lucide-react';
+import { AlertTriangle, Phone, ShieldCheck, Box, MapPin, History, X, ShieldAlert, ChevronRight, User, MessageCircle, WifiOff, Check, ArrowLeft, PenTool, ClipboardList, Wrench, Calendar, Tag, CheckCircle, Image as ImageIcon, CheckSquare } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -269,12 +269,10 @@ export default function AssetScanPage() {
         body: JSON.stringify(body)
       });
       if (res.ok) {
-        // 🚀 Alert yerine şık başarı modalını aç
         setShowSuccessAlert(true);
         setShowFaultModal(false);
         setFaultForm({ name: '', phone: '', description: '' });
       } else {
-        // 🚀 Alert yerine şık hata modalını aç
         setShowErrorAlert({ show: true, message: "Bir sorun oluştu. Lütfen doğrudan arama butonunu kullanınız." });
       }
     } catch (err) {
@@ -285,7 +283,6 @@ export default function AssetScanPage() {
       setPendingSyncCount(pending.length);
       setIsOffline(true);
       
-      // 🚀 Alert yerine şık hata (bilgi) modalını aç
       setShowErrorAlert({ show: true, message: "İnternet bağlantınız yok. Talebiniz sıraya alındı, bağlantı geldiğinde otomatik iletilecektir." });
       setShowFaultModal(false);
       setFaultForm({ name: '', phone: '', description: '' });
@@ -404,7 +401,7 @@ export default function AssetScanPage() {
                  className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg ring-4 ring-white/5 p-2 overflow-hidden"
                  style={{ backgroundColor: logoBgColor }}
                >
-                 <img src={asset.logo} crossOrigin="anonymous" alt="Logo" className="w-full h-full object-contain drop-shadow-md" />
+                 <img src={getSafeImageUrl(asset.logo)} crossOrigin="anonymous" alt="Logo" className="w-full h-full object-contain drop-shadow-md" />
                </div>
             ) : (
                <div className="w-20 h-20 bg-white/10 ring-4 ring-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md shadow-lg">
@@ -673,192 +670,228 @@ export default function AssetScanPage() {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30">
-                    
-                    {/* Tipi ve Tarihi */}
-                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500"></div>
-                        <h2 className="text-xl font-black text-slate-800 mb-1">{selectedHistoryJob.work_type}</h2>
-                        <div className="text-sm font-semibold text-slate-500 flex items-center gap-1.5">
-                            <Calendar size={14} className="text-blue-500"/>
-                            {selectedHistoryJob.scheduled_date 
-                                ? new Date(selectedHistoryJob.scheduled_date).toLocaleDateString('tr-TR') 
-                                : new Date(selectedHistoryJob.created_at).toLocaleDateString('tr-TR')}
-                        </div>
-                    </div>
-
-                    {/* Görevli Bilgisi */}
-                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
-                        <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shrink-0">
-                            <PenTool size={20} />
-                        </div>
-                        <div>
-                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Saha Görevlisi</div>
-                            <div className="text-sm font-bold text-slate-800">{selectedHistoryJob.staff_name || 'Bilinmeyen Personel'}</div>
-                        </div>
-                    </div>
-
-                    {/* Detaylı Saha Raporu */}
-                    {selectedHistoryJob.details && (() => {
-                        let parsedDetails: any = {};
-                        try {
-                            parsedDetails = typeof selectedHistoryJob.details === 'string' ? JSON.parse(selectedHistoryJob.details) : selectedHistoryJob.details;
-                        } catch(e) {}
-
-                        let rawNote = parsedDetails.note || '';
-                        let extractedChecklist: { key: string, val: string }[] = [];
-                        let cleanNote = '';
-
-                        if (rawNote.includes('---') && rawNote.includes('Saha Formu')) {
-                            const lines = rawNote.split('\n');
-                            let inForm = false;
-                            for (const line of lines) {
-                                if (line.includes('---') && line.includes('Saha Formu')) {
-                                    inForm = true;
-                                    continue;
-                                }
-                                if (inForm && line.includes('----------------------------------')) {
-                                    inForm = false;
-                                    continue;
-                                }
-                                if (inForm && line.includes(':')) {
-                                    const [key, ...valArr] = line.split(':');
-                                    extractedChecklist.push({ key: key.trim(), val: valArr.join(':').trim() });
-                                } else if (!inForm && line.trim() !== '') {
-                                    cleanNote += line + '\n';
-                                }
-                            }
-                        } else {
-                            cleanNote = rawNote;
-                            const excludeKeys = ['note', 'price', 'lastEditedBy', 'lastEditedAt', 'managerName', 'managerId', 'createdBy', 'worker_id', 'assetName', 'usedMaterials'];
-                            Object.entries(parsedDetails).forEach(([k, v]) => {
-                                if (!excludeKeys.includes(k) && typeof v === 'string') {
-                                    extractedChecklist.push({ key: k, val: v });
-                                }
-                            });
-                        }
-
-                        cleanNote = cleanNote.replace(/\[Usta Notu\]:/g, '').replace(/\[📍 Konum Kaydı\].*/g, '').trim();
-
-                        const hasChecklist = extractedChecklist.length > 0;
-                        const hasCleanNote = !!cleanNote;
-                        const hasMaterials = parsedDetails.usedMaterials && parsedDetails.usedMaterials.length > 0;
-                        const hasPhotos = selectedHistoryJob.photos && selectedHistoryJob.photos.length > 0;
-                        const hasSignature = !!selectedHistoryJob.signature_url;
-
-                        if (!hasChecklist && !hasCleanNote && !hasMaterials && !hasPhotos && !hasSignature) {
-                             return <div className="p-5 text-center text-slate-500 italic text-sm border border-slate-200 rounded-2xl border-dashed">Kayıtlı detay bulunamadı.</div>;
-                        }
-
-                        return (
-                            <div className="space-y-6">
-                                {hasChecklist && (
-                                 <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                                     <div className="bg-slate-50/80 px-5 py-3.5 border-b border-slate-200">
-                                         <div className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><ShieldCheck size={14}/> Doldurulan Saha Formu</div>
-                                     </div>
-                                     <div className="flex flex-col">
-                                         {extractedChecklist.map((item, idx) => {
-                                             const valStr = item.val.toLowerCase().trim();
-                                             const isPositive = ['evet', 'var', 'true', 'ok', 'uygun', 'sorunsuz', 'yapıldı'].some(v => valStr === v || valStr.includes(v));
-                                             const isNegative = ['hayır', 'hayir', 'yok', 'false', 'uygun değil', 'değil', 'sorunlu', 'kötü'].some(v => valStr === v || valStr.includes(v));
-                                             const isBooleanType = isPositive || isNegative;
-
-                                             let colorClass = 'text-slate-900';
-                                             let bgColorClass = 'bg-slate-900';
-
-                                             if (isPositive) {
-                                                 colorClass = 'text-emerald-600';
-                                                 bgColorClass = 'bg-emerald-500';
-                                             } else if (isNegative) {
-                                                 colorClass = 'text-rose-600';
-                                                 bgColorClass = 'bg-rose-500';
-                                             } else if (valStr.includes('mavi')) colorClass = 'text-blue-600';
-                                             else if (valStr.includes('yeşil') || valStr.includes('yesil')) colorClass = 'text-emerald-600';
-                                             else if (valStr.includes('kırmızı') || valStr.includes('kirmizi')) colorClass = 'text-rose-600';
-                                             else if (valStr.includes('sarı') || valStr.includes('sari')) colorClass = 'text-amber-500';
-                                             else if (valStr.includes('turuncu')) colorClass = 'text-orange-500';
-                                             else if (valStr.includes('mor')) colorClass = 'text-purple-600';
-
-                                             return (
-                                                 <div key={idx} className={`flex justify-between items-center py-3.5 px-5 border-b border-slate-100 last:border-0 ${idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}`}>
-                                                     <span className="text-[13px] font-bold text-slate-700">{item.key}</span>
-                                                     <div className="shrink-0 flex items-center gap-3">
-                                                         {isBooleanType && <span className={`text-[11px] font-black uppercase tracking-widest ${colorClass}`}>{item.val}</span>}
-                                                         {isBooleanType ? (
-                                                             isPositive ? (
-                                                                 <div className={`w-5 h-5 flex items-center justify-center rounded shadow-sm ${bgColorClass}`}>
-                                                                     <Check size={14} className="text-white" strokeWidth={3} />
-                                                                 </div>
-                                                             ) : (
-                                                                 <div className={`w-5 h-5 flex items-center justify-center rounded shadow-sm ${bgColorClass}`}>
-                                                                     <X size={14} className="text-white" strokeWidth={4} />
-                                                                 </div>
-                                                             )
-                                                         ) : (
-                                                             <span className={`text-[12px] font-black uppercase ${colorClass}`}>{item.val}</span>
-                                                         )}
-                                                     </div>
-                                                 </div>
-                                             );
-                                         })}
-                                     </div>
-                                 </div>
-                                )}
-
-                                {hasCleanNote && (
-                                    <div>
-                                        <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                            <ClipboardList size={14} /> İşlem Detayları & Notlar
-                                        </h3>
-                                        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-wrap">
-                                            {cleanNote}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {hasMaterials && (
-                                    <div className="bg-amber-50/50 p-5 rounded-2xl border border-amber-100">
-                                        <div className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-3 flex items-center gap-1.5"><Box size={14}/> Kullanılan Malzemeler</div>
-                                        <div className="space-y-2">
-                                            {parsedDetails.usedMaterials.map((mat:any, i:number) => (
-                                                <div key={i} className="flex justify-between items-center bg-white p-3 rounded-lg border border-amber-200 shadow-sm">
-                                                    <span className="text-xs font-bold text-slate-800">{mat.name}</span>
-                                                    <span className="text-xs font-black text-amber-600 bg-amber-100 px-2 py-1 rounded">{mat.quantity} {mat.unit}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {hasPhotos && (
-                                    <div>
-                                        <div className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest flex items-center gap-1.5">
-                                            <ImageIcon size={14} /> Saha Fotoğrafları
-                                        </div>
-                                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                            {selectedHistoryJob.photos.map((photoUrl: string, idx: number) => (
-                                                <div key={idx} className="aspect-square rounded-xl overflow-hidden border border-slate-200 shadow-sm">
-                                                    <img src={getSafeImageUrl(photoUrl)} alt="Saha" className="w-full h-full object-cover" />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {hasSignature && (
-                                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 text-center">
-                                        <p className="text-xs text-slate-500 mb-4 italic">Bu form müşteri nezaretinde elektronik imza ile onaylanmıştır.</p>
-                                        <div className="inline-block bg-white p-4 rounded-xl shadow-sm border border-slate-100 w-full max-w-xs">
-                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">İmzalayan: <span className="text-slate-800">{selectedHistoryJob.customer_signature_name || 'Bilinmiyor'}</span></div>
-                                            <img src={getSafeImageUrl(selectedHistoryJob.signature_url)} alt="Müşteri İmzası" className="h-24 mx-auto object-contain mix-blend-multiply" />
-                                        </div>
-                                    </div>
-                                )}
+                <div className="p-6 sm:p-10 overflow-y-auto custom-scrollbar bg-white text-black flex-1 relative">
+                   <div className="flex flex-col items-center justify-center mb-6 text-center">
+                        {asset?.logo && (
+                            <div 
+                                className="w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center mb-4 overflow-hidden shadow-sm border-2 border-slate-100 p-2"
+                                style={{ backgroundColor: logoBgColor }}
+                            >
+                                <img 
+                                    src={getSafeImageUrl(asset.logo)} 
+                                    alt="Firma Logosu" 
+                                    crossOrigin="anonymous"
+                                    className="w-full h-full object-contain" 
+                                />
                             </div>
-                        );
-                    })()}
+                        )}
+                        <h1 className="text-2xl font-black uppercase tracking-widest">{asset?.company_name || 'Firma Adı'}</h1>
+                        <h2 className="text-lg font-bold mt-1 text-slate-800">{selectedHistoryJob.work_type === 'Periyodik Bakım' ? 'Bakım Fişi' : 'Servis Raporu'}</h2>
+                    </div>
 
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm font-medium border-y-4 border-slate-900 py-5 mb-8 bg-slate-50/50 px-2 sm:px-4 rounded-xl">
+                        <div className="flex flex-col">
+                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Fiş Numarası</div>
+                            <div className="font-black text-slate-900 text-base">#{selectedHistoryJob.id || '-'}</div>
+                        </div>
+                        <div className="flex flex-col">
+                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Tarih</div>
+                            <div className="font-black text-slate-900 text-base">{selectedHistoryJob.scheduled_date ? new Date(selectedHistoryJob.scheduled_date).toLocaleDateString('tr-TR') : new Date(selectedHistoryJob.created_at || Date.now()).toLocaleDateString('tr-TR')}</div>
+                        </div>
+                        <div className="flex flex-col">
+                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">İlgili Personel</div>
+                            <div className="font-black text-slate-900 text-base truncate">{selectedHistoryJob.staff_name || selectedHistoryJob.worker_name || 'Belirtilmedi'}</div>
+                        </div>
+                        <div className="flex flex-col">
+                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Tesis Adı / Adres</div>
+                            <div className="font-black text-slate-900 leading-tight text-base">
+                                <div>{asset?.apartmentName || asset?.apartment_name || asset?.name || 'Bilinmiyor'}</div>
+                                {asset?.location && <div className="text-[11px] font-semibold text-slate-500 mt-1 whitespace-normal">{asset.location.replace(asset?.apartmentName || asset?.apartment_name || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim()}</div>}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mb-8">
+                        <div className="bg-slate-50/50 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                            
+                            <div className="flex flex-col">
+                                {(() => {
+                                    let parsedDetails: any = {};
+                                    try {
+                                        parsedDetails = typeof selectedHistoryJob.details === 'string' ? JSON.parse(selectedHistoryJob.details) : selectedHistoryJob.details;
+                                    } catch(e) {}
+
+                                    let rawNote = parsedDetails.note || '';
+                                    let extractedChecklist: { key: string, val: string }[] = [];
+                                    let cleanNote = '';
+
+                                    if (rawNote.includes('---') && rawNote.includes('Saha Formu')) {
+                                        const lines = rawNote.split('\n');
+                                        let inForm = false;
+                                        
+                                        for (const line of lines) {
+                                            if (line.includes('---') && line.includes('Saha Formu')) {
+                                                inForm = true;
+                                                continue;
+                                            }
+                                            if (inForm && line.includes('----------------------------------')) {
+                                                inForm = false;
+                                                continue;
+                                            }
+
+                                            if (inForm && line.includes(':')) {
+                                                const [key, ...valArr] = line.split(':');
+                                                extractedChecklist.push({ key: key.trim(), val: valArr.join(':').trim() });
+                                            } else if (!inForm && line.trim() !== '') {
+                                                cleanNote += line + '\n';
+                                            }
+                                        }
+                                    } else {
+                                        cleanNote = rawNote;
+                                        if (parsedDetails) {
+                                            const excludeKeys = ['note', 'price', 'lastEditedBy', 'lastEditedAt', 'managerName', 'managerId', 'createdBy', 'worker_id', 'assetName', 'usedMaterials'];
+                                            Object.entries(parsedDetails).forEach(([k, v]) => {
+                                                if (!excludeKeys.includes(k) && typeof v === 'string') {
+                                                    extractedChecklist.push({ key: k, val: v });
+                                                }
+                                            });
+                                        }
+                                    }
+
+                                    cleanNote = cleanNote.replace(/\[Usta Notu\]:/g, '').replace(/\[📍 Konum Kaydı\].*/g, '').trim();
+                                    
+                                    if (extractedChecklist.length === 0 && !cleanNote && (!parsedDetails.usedMaterials || parsedDetails.usedMaterials.length === 0)) return <div className="p-5 text-slate-500 italic text-center">Detaylı rapor girilmemiş.</div>;
+                                    
+                                    return (
+                                        <>
+                                            {extractedChecklist.length > 0 && (
+                                                <div className="flex flex-col bg-white">
+                                                    {extractedChecklist.map((item, idx) => {
+                                                        const valStr = item.val.toLowerCase().trim();
+                                                        
+                                                        const isPositive = ['evet', 'var', 'true', 'ok', 'uygun', 'sorunsuz', 'yapıldı'].some(v => valStr === v || valStr.includes(v));
+                                                        const isNegative = ['hayır', 'hayir', 'yok', 'false', 'uygun değil', 'değil', 'sorunlu', 'kötü'].some(v => valStr === v || valStr.includes(v));
+                                                        const isBooleanType = isPositive || isNegative;
+                                                        
+                                                        let colorClass = 'text-slate-900';
+                                                        let bgColorClass = 'bg-slate-900';
+                                                        let borderColorClass = 'border-slate-900';
+                                                        
+                                                        if (isPositive) {
+                                                            colorClass = 'text-emerald-600';
+                                                            bgColorClass = 'bg-emerald-500';
+                                                            borderColorClass = 'border-emerald-500';
+                                                        } else if (isNegative) {
+                                                            colorClass = 'text-rose-600';
+                                                            bgColorClass = 'bg-rose-500';
+                                                            borderColorClass = 'border-rose-500';
+                                                        } else if (valStr.includes('mavi')) colorClass = 'text-blue-600';
+                                                        else if (valStr.includes('yeşil') || valStr.includes('yesil')) colorClass = 'text-emerald-600';
+                                                        else if (valStr.includes('kırmızı') || valStr.includes('kirmizi')) colorClass = 'text-rose-600';
+                                                        else if (valStr.includes('sarı') || valStr.includes('sari')) colorClass = 'text-amber-500';
+                                                        else if (valStr.includes('turuncu')) colorClass = 'text-orange-500';
+                                                        else if (valStr.includes('mor')) colorClass = 'text-purple-600';
+
+                                                        return (
+                                                            <div key={idx} className={`flex justify-between items-center py-3.5 px-5 border-b border-slate-200/80 last:border-b-0 ${idx % 2 === 0 ? 'bg-slate-50/80' : 'bg-white'}`}>
+                                                                <div className="flex flex-col pr-4">
+                                                                    <span className="text-[14px] font-bold leading-tight text-slate-900">{item.key}</span>
+                                                                </div>
+                                                                
+                                                                <div className="shrink-0 flex items-center gap-3">
+                                                                    {isBooleanType && (
+                                                                        <span className={`text-[12px] font-black uppercase tracking-widest ${colorClass}`}>{item.val}</span>
+                                                                    )}
+                                                                    {isBooleanType ? (
+                                                                        isPositive ? (
+                                                                            <div className={`w-6 h-6 flex items-center justify-center rounded shadow-sm ${bgColorClass}`}>
+                                                                                <CheckSquare size={16} className="text-white" strokeWidth={3} />
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className={`w-6 h-6 flex items-center justify-center rounded shadow-sm ${bgColorClass}`}>
+                                                                                <X size={16} className="text-white" strokeWidth={4} />
+                                                                            </div>
+                                                                        )
+                                                                    ) : (
+                                                                        <span className={`text-[13px] font-black uppercase ${colorClass} ${colorClass === 'text-slate-900' ? `border-b-2 ${borderColorClass}` : ''}`}>{item.val}</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                            
+                                            {parsedDetails.usedMaterials && parsedDetails.usedMaterials.length > 0 && (
+                                                <div className="p-5 border-t border-slate-200 bg-white">
+                                                    <span className="block text-[11px] font-black text-slate-800 uppercase tracking-widest mb-3">KULLANILAN MALZEMELER:</span>
+                                                    <div className="space-y-1.5 text-sm font-semibold text-slate-700">
+                                                        {parsedDetails.usedMaterials.map((m: any, idx: number) => (
+                                                            <div key={idx} className="flex justify-between items-center">
+                                                                <span>• {m.name}</span>
+                                                                <span className="font-black text-slate-900">{m.quantity} {m.unit}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {cleanNote && (
+                                                <div className="p-5 border-t border-slate-200 bg-slate-50/50">
+                                                    <span className="block text-[11px] font-black text-slate-800 uppercase tracking-widest mb-2">BAKIM / SERVİS NOTU:</span>
+                                                    <div className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                                        {cleanNote}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </>
+                                    );
+                                })()}
+                            </div>
+                            
+                            {selectedHistoryJob.details?.price && (
+                                <div className="p-5 border-t border-slate-200 bg-slate-100/50 flex justify-between items-center">
+                                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Toplam Tutar</span>
+                                    <span className="text-2xl font-black text-slate-900">{selectedHistoryJob.details.price}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {selectedHistoryJob.photos && selectedHistoryJob.photos.length > 0 && (
+                       <div className="mb-8">
+                          <div className="text-xs font-black text-slate-800 uppercase pb-4">Saha Kayıt Fotoğrafları</div>
+                          <div className="grid grid-cols-2 gap-4">
+                             {selectedHistoryJob.photos.map((p: string, i: number) => (
+                               <div key={i} className="w-full">
+                                  <img src={getSafeImageUrl(p)} alt="Saha" className="w-full h-auto max-h-64 object-contain rounded-lg border border-slate-300" crossOrigin="anonymous" />
+                               </div>
+                             ))}
+                          </div>
+                       </div>
+                    )}
+
+                    {selectedHistoryJob.signature_url && (
+                        <div className="mt-8 pt-6 border-t-2 border-slate-800 text-center flex flex-col items-center">
+                            <p className="text-xs text-slate-500 mb-6 italic max-w-md">
+                                Bu form <strong className="text-slate-700">{selectedHistoryJob.staff_name || selectedHistoryJob.worker_name || 'personelimiz'}</strong> tarafından, {selectedHistoryJob.scheduled_date ? new Date(selectedHistoryJob.scheduled_date).toLocaleDateString('tr-TR') : new Date(selectedHistoryJob.created_at || Date.now()).toLocaleDateString('tr-TR')} tarihinde müşteri nezaretinde elektronik imza ile imza altına alınmıştır.
+                            </p>
+                            <div className="flex flex-col items-center justify-center">
+                                <div className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">İmzalayan:</span> 
+                                    {selectedHistoryJob.customer_signature_name || 'Bilinmiyor'}
+                                </div>
+                                <img 
+                                    src={getSafeImageUrl(selectedHistoryJob.signature_url)} 
+                                    alt="Müşteri İmzası" 
+                                    className="h-24 object-contain mix-blend-multiply" 
+                                />
+                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-4">
+                                    {asset?.company_name || 'Firma Adı'}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </motion.div>
         )}
