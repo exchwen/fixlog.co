@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, Phone, ShieldCheck, Box, MapPin, History, X, ShieldAlert, ChevronRight, User, MessageCircle, WifiOff, Check, ArrowLeft, PenTool, ClipboardList, Wrench, Calendar, Tag } from 'lucide-react';
+import { AlertTriangle, Phone, ShieldCheck, Box, MapPin, History, X, ShieldAlert, ChevronRight, User, MessageCircle, WifiOff, Check, ArrowLeft, PenTool, ClipboardList, Wrench, Calendar, Tag, CheckCircle } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -17,6 +17,10 @@ export default function AssetScanPage() {
   const [selectedHistoryJob, setSelectedHistoryJob] = useState<any>(null); 
   const [showEmergencyConfirm, setShowEmergencyConfirm] = useState(false);
   const [showFaultModal, setShowFaultModal] = useState(false);
+
+  // 🚀 YENİ: Şık Bildirim Modalları İçin State'ler
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState({ show: false, message: '' });
 
   // Form ve İstek State'leri
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -194,6 +198,8 @@ export default function AssetScanPage() {
       if (showHistory) { setShowHistory(false); return true; }
       if (showEmergencyConfirm) { setShowEmergencyConfirm(false); return true; }
       if (showFaultModal) { setShowFaultModal(false); return true; }
+      if (showSuccessAlert) { setShowSuccessAlert(false); return true; }
+      if (showErrorAlert.show) { setShowErrorAlert({show: false, message: ''}); return true; }
       return false; 
     };
 
@@ -221,7 +227,7 @@ export default function AssetScanPage() {
       window.removeEventListener('keydown', handleKeyDown as EventListener);
       window.removeEventListener('popstate', handlePopState as EventListener);
     };
-  }, [showHistory, showEmergencyConfirm, showFaultModal, selectedHistoryJob]);
+  }, [showHistory, showEmergencyConfirm, showFaultModal, selectedHistoryJob, showSuccessAlert, showErrorAlert.show]);
 
   const handleEmergencyConfirm = async () => {
     setIsSubmitting(true);
@@ -263,11 +269,13 @@ export default function AssetScanPage() {
         body: JSON.stringify(body)
       });
       if (res.ok) {
-        alert("Arıza kaydınız başarıyla iletildi. En kısa sürede sizinle iletişime geçilecektir.");
+        // 🚀 Alert yerine şık başarı modalını aç
+        setShowSuccessAlert(true);
         setShowFaultModal(false);
         setFaultForm({ name: '', phone: '', description: '' });
       } else {
-        alert("Bir sorun oluştu. Lütfen doğrudan arama butonunu kullanınız.");
+        // 🚀 Alert yerine şık hata modalını aç
+        setShowErrorAlert({ show: true, message: "Bir sorun oluştu. Lütfen doğrudan arama butonunu kullanınız." });
       }
     } catch (err) {
       console.warn("İnternet bağlantısı yok. Arıza bildirimi kuyruğa alındı.");
@@ -277,7 +285,8 @@ export default function AssetScanPage() {
       setPendingSyncCount(pending.length);
       setIsOffline(true);
       
-      alert("İnternet bağlantınız yok. Talebiniz sıraya alındı, bağlantı geldiğinde iletilecektir.");
+      // 🚀 Alert yerine şık hata (bilgi) modalını aç
+      setShowErrorAlert({ show: true, message: "İnternet bağlantınız yok. Talebiniz sıraya alındı, bağlantı geldiğinde otomatik iletilecektir." });
       setShowFaultModal(false);
       setFaultForm({ name: '', phone: '', description: '' });
     } finally {
@@ -713,6 +722,80 @@ export default function AssetScanPage() {
 
                 </div>
             </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 🚀 BAŞARI MODALI */}
+      <AnimatePresence>
+        {showSuccessAlert && (
+          <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm pointer-events-auto"
+          >
+              <motion.div 
+                  initial={{ scale: 0.9, y: 10 }}
+                  animate={{ scale: 1, y: 0 }}
+                  exit={{ scale: 0.9, y: 10 }}
+                  className="bg-white max-w-sm w-full rounded-2xl shadow-2xl overflow-hidden border border-emerald-100 flex flex-col"
+              >
+                  <div className="bg-emerald-50 border-b border-emerald-100 p-6 flex flex-col items-center justify-center text-center">
+                      <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-3 shadow-inner">
+                          <CheckCircle size={32} />
+                      </div>
+                      <h3 className="text-xl font-black text-emerald-900">İşlem Başarılı!</h3>
+                  </div>
+                  <div className="p-6 text-center text-slate-600 font-medium leading-relaxed">
+                      Arıza kaydınız başarıyla iletildi. En kısa sürede sizinle iletişime geçilecektir.
+                  </div>
+                  <div className="p-4 bg-slate-50 border-t border-slate-100">
+                      <button 
+                          onClick={() => setShowSuccessAlert(false)}
+                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 shadow-md"
+                      >
+                          Tamam
+                      </button>
+                  </div>
+              </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 🚀 HATA MODALI */}
+      <AnimatePresence>
+        {showErrorAlert.show && (
+          <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm pointer-events-auto"
+          >
+              <motion.div 
+                  initial={{ scale: 0.9, y: 10 }}
+                  animate={{ scale: 1, y: 0 }}
+                  exit={{ scale: 0.9, y: 10 }}
+                  className="bg-white max-w-sm w-full rounded-2xl shadow-2xl overflow-hidden border border-rose-100 flex flex-col"
+              >
+                  <div className="bg-rose-50 border-b border-rose-100 p-6 flex flex-col items-center justify-center text-center">
+                      <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-3 shadow-inner">
+                          <AlertTriangle size={32} />
+                      </div>
+                      <h3 className="text-xl font-black text-rose-900">Bilgi / Uyarı</h3>
+                  </div>
+                  <div className="p-6 text-center text-slate-600 font-medium leading-relaxed">
+                      {showErrorAlert.message}
+                  </div>
+                  <div className="p-4 bg-slate-50 border-t border-slate-100">
+                      <button 
+                          onClick={() => setShowErrorAlert({ show: false, message: '' })}
+                          className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 shadow-md"
+                      >
+                          Anladım
+                      </button>
+                  </div>
+              </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 
