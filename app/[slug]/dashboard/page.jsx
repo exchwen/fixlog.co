@@ -562,7 +562,7 @@ return (
 
           {activeTab === 'finance' && <FinanceTab data={data} />}
           {activeTab === 'assets' && <AssetsTab data={data} setShowAddAsset={setShowAddAsset} setSelectedAsset={setSelectedAsset} setShowQRModal={setShowQRModal} setSelectedQRAsset={setSelectedQRAsset} setShowSmartExcelModal={setShowSmartExcelModal} />}
-          {activeTab === 'settings' && <SettingsTab settingsForm={settingsForm} setSettingsForm={setSettingsForm} handleAction={handleAction} isSaving={isSaving} />}
+          {activeTab === 'settings' && <SettingsTab data={data} settingsForm={settingsForm} setSettingsForm={setSettingsForm} handleAction={handleAction} isSaving={isSaving} />}
         </div>
       </main>
 
