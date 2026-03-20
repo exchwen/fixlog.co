@@ -99,7 +99,6 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
     const term = searchTerm.toLowerCase();
     const customerName = data?.customers?.find((c: any) => c.id === a.customer_id)?.name || '';
     const aptName = a.apartmentName || a.apartment_name || '';
-    // 🚀 YENİ: Varlığın ID ve varsa UUID bilgisini arama havuzuna dahil ediyoruz
     const assetIdStr = a.id ? a.id.toString().toLowerCase() : '';
     const assetUuidStr = a.uuid ? a.uuid.toString().toLowerCase() : '';
 
@@ -137,11 +136,10 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
             <Box size={16} /> Akıllı Excel Yükle
           </button>
 
-          {/* 🚀 YENİ: Akıllandırılmış Arşiv Tarama Butonu */}
           <button 
             disabled={isScanning}
             onClick={async () => {
-               setIsScanning(true); // Yüklenme ekranını başlat
+               setIsScanning(true);
                try {
                  const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
                  const res = await fetch(`https://backend.isdokumu.workers.dev/get-archived-jobs?slug=${data.slug}`, {
@@ -154,21 +152,19 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
                  
                  if(archived.length > 0) {
                   data.jobs = [...archived, ...(data.jobs || [])];
-                  setSearchTerm(searchTerm + ' '); // Arayüzü yenilemek için küçük bir taktik
+                  setSearchTerm(searchTerm + ' ');
                   setAlertModal({ isOpen: true, message: "Cihazların tüm arşiv dökümleri başarıyla yüklendi. Etiket renkleri ve geçmiş veriler güncellendi.", type: 'success' });
               } else {
-                  // Eskiden sessiz kaldığı yer burasıydı, artık kullanıcıya bilgi veriyor
                   setAlertModal({ isOpen: true, message: "Şu anda sisteme eklenecek yeni bir arşiv kaydı bulunamadı.", type: 'info' });
               }
             } catch (error) {
-              // Hata durumunda, sıcak-soğuk mimariyi ve R2 aktarımını açıklayan kullanıcı dostu mesaj
               setAlertModal({ 
                   isOpen: true, 
                   message: "Şu an için arşive aktarılmış yeni bir geçmiş kayıt bulunmuyor. Uygulamanızın daima en yüksek hızda çalışması için kayıtlarınız her 2 ayda bir otomatik olarak arşive taşınır. İşlemleriniz henüz taze olduğu için aktif ekranlarınızda yer alıyor olabilir. Daha eski kayıtlarınız için ilerleyen dönemlerde tekrar kontrol edebilirsiniz.", 
                   type: 'warning' 
               });
             } finally {
-                 setIsScanning(false); // İşlem bitince yüklenme ekranını kapat
+                 setIsScanning(false);
                }
             }}
             className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border transition-all whitespace-nowrap ${
@@ -198,22 +194,45 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
         {filteredAssets.length > 0 ? filteredAssets.map((a: any) => {
             const aptName = a.apartmentName || a.apartment_name;
             
+            // 🚀 YENİ: Hem String Metin, Hem de JSON içi arama yapabilen akıllı renk çıkarıcı
             const latestColor = (() => {
               const assetJobs = (data?.jobs || [])
                 .filter((j: any) => String(j.asset_id) === String(a.id) && j.work_type === 'Periyodik Bakım')
-                .map((j: any) => {
-                    let parsed = j.details || {};
-                    if (typeof parsed === 'string') {
-                        try { parsed = JSON.parse(parsed); } catch(e) { parsed = {}; }
-                    }
-                    return { ...j, parsedDetails: parsed };
-                })
-                .filter((j: any) => j.parsedDetails.label_color || j.parsedDetails['Mevcut Etiket'] || j.parsedDetails.etiket)
                 .sort((j1: any, j2: any) => new Date(j2.created_at || 0).getTime() - new Date(j1.created_at || 0).getTime());
               
-              if (assetJobs.length > 0) {
-                 const details = assetJobs[0].parsedDetails;
-                 return details.label_color || details['Mevcut Etiket'] || details.etiket;
+              for (const job of assetJobs) {
+                  let parsed = job.details || {};
+                  if (typeof parsed === 'string') {
+                      try { parsed = JSON.parse(parsed); } catch(e) { parsed = {}; }
+                  }
+                  
+                  // 1. JSON Objesi ise içindeki key'leri tara
+                  for (const [key, val] of Object.entries(parsed)) {
+                      const k = String(key).toLowerCase();
+                      const v = String(val).toLowerCase();
+                      if (k.includes('etiket')) {
+                          if (v.includes('kırmızı') || v.includes('red') || v.includes('kirmizi')) return 'Kırmızı';
+                          if (v.includes('sarı') || v.includes('yellow') || v.includes('sari')) return 'Sarı';
+                          if (v.includes('mavi') || v.includes('blue')) return 'Mavi';
+                          if (v.includes('yeşil') || v.includes('green') || v.includes('yesil')) return 'Yeşil';
+                          return String(val); // Rengi bulamazsa direkt kendi adını dönsün
+                      }
+                  }
+
+                  // 2. Metin İçine Gömülü "Saha Formu" varsa satır satır tara (Referans koddaki yapı)
+                  const rawNote = parsed.note || job.taskNote || '';
+                  if (rawNote && typeof rawNote === 'string') {
+                      const lines = rawNote.split('\n');
+                      for (const line of lines) {
+                          const lowerLine = line.toLowerCase();
+                          if (lowerLine.includes('etiket') && lowerLine.includes(':')) {
+                              if (lowerLine.includes('kırmızı') || lowerLine.includes('red') || lowerLine.includes('kirmizi')) return 'Kırmızı';
+                              if (lowerLine.includes('sarı') || lowerLine.includes('yellow') || lowerLine.includes('sari')) return 'Sarı';
+                              if (lowerLine.includes('mavi') || lowerLine.includes('blue')) return 'Mavi';
+                              if (lowerLine.includes('yeşil') || lowerLine.includes('green') || lowerLine.includes('yesil')) return 'Yeşil';
+                          }
+                      }
+                  }
               }
 
               return a.label_color || a.labelColor || a.etiket_rengi || null;
@@ -233,21 +252,21 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
 
             const getBorderClass = (color: string) => {
               if (!color) return 'border-slate-200 hover:border-blue-300 shadow-slate-100/50 bg-white';
-              const c = color.toLowerCase();
-              if (c.includes('kırmızı') || c.includes('red')) return 'border-rose-500 hover:border-rose-600 shadow-rose-100/50 bg-rose-50/10';
-              if (c.includes('sarı') || c.includes('yellow')) return 'border-amber-400 hover:border-amber-500 shadow-amber-100/50 bg-amber-50/10';
+              const c = String(color).toLowerCase();
+              if (c.includes('kırmızı') || c.includes('red') || c.includes('kirmizi')) return 'border-rose-500 hover:border-rose-600 shadow-rose-100/50 bg-rose-50/10';
+              if (c.includes('sarı') || c.includes('yellow') || c.includes('sari')) return 'border-amber-400 hover:border-amber-500 shadow-amber-100/50 bg-amber-50/10';
               if (c.includes('mavi') || c.includes('blue')) return 'border-blue-500 hover:border-blue-600 shadow-blue-100/50 bg-blue-50/10';
-              if (c.includes('yeşil') || c.includes('green')) return 'border-emerald-500 hover:border-emerald-600 shadow-emerald-100/50 bg-emerald-50/10';
+              if (c.includes('yeşil') || c.includes('green') || c.includes('yesil')) return 'border-emerald-500 hover:border-emerald-600 shadow-emerald-100/50 bg-emerald-50/10';
               return 'border-slate-200 hover:border-blue-300 shadow-slate-100/50 bg-white';
             };
 
             const getBadgeClass = (color: string) => {
               if (!color) return 'hidden';
-              const c = color.toLowerCase();
-              if (c.includes('kırmızı') || c.includes('red')) return 'bg-rose-100 text-rose-700 border-rose-200';
-              if (c.includes('sarı') || c.includes('yellow')) return 'bg-amber-100 text-amber-800 border-amber-200';
+              const c = String(color).toLowerCase();
+              if (c.includes('kırmızı') || c.includes('red') || c.includes('kirmizi')) return 'bg-rose-100 text-rose-700 border-rose-200';
+              if (c.includes('sarı') || c.includes('yellow') || c.includes('sari')) return 'bg-amber-100 text-amber-800 border-amber-200';
               if (c.includes('mavi') || c.includes('blue')) return 'bg-blue-100 text-blue-700 border-blue-200';
-              if (c.includes('yeşil') || c.includes('green')) return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+              if (c.includes('yeşil') || c.includes('green') || c.includes('yesil')) return 'bg-emerald-100 text-emerald-700 border-emerald-200';
               return 'hidden';
             };
 
@@ -261,7 +280,7 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
                 className={`rounded-2xl border-2 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col group overflow-hidden relative ${borderClass}`}
               >
                 {latestColor && badgeClass !== 'hidden' && (
-                  <div className={`absolute top-4 right-4 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border flex items-center gap-1 shadow-sm ${badgeClass}`}>
+                  <div className={`absolute top-4 right-4 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border flex items-center gap-1 shadow-sm z-10 ${badgeClass}`}>
                     <Tag size={10} /> {latestColor}
                   </div>
                 )}
@@ -269,7 +288,7 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
                 <div className="p-5 flex-1 flex flex-col">
                   <div className="flex items-start justify-between mb-4 gap-3 flex-wrap sm:flex-nowrap">
                     <div 
-                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center border border-slate-100 shadow-sm overflow-hidden shrink-0 transition-transform duration-500 group-hover:scale-105"
+                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center border border-slate-100 shadow-sm overflow-hidden shrink-0 transition-transform duration-500 group-hover:scale-105 relative z-10"
                       style={{ backgroundColor: data?.logo ? logoBgColor : '#ffffff' }}
                     >
                       {data?.logo ? (
@@ -284,13 +303,13 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
                       )}
                     </div>
 
-                    <div className="bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 shrink-0 shadow-sm">
+                    <div className="bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 shrink-0 shadow-sm mt-0.5">
                       <Users size={12}/> <span className="truncate max-w-[100px] sm:max-w-[120px]">{data?.customers?.find((c: any) => c.id === a.customer_id)?.name || 'Genel Müşteri'}</span>
                     </div>
                   </div>
 
                   <div className="flex-1 mt-1">
-                    <div className="font-bold text-slate-800 text-lg sm:text-base leading-tight mb-1 group-hover:text-blue-600 transition-colors line-clamp-2">
+                    <div className="font-bold text-slate-800 text-lg sm:text-base leading-tight mb-1 group-hover:text-blue-600 transition-colors line-clamp-2 pr-16">
                       {aptName || a.name}
                     </div>
 
