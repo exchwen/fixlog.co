@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, Phone, ShieldCheck, Box, MapPin, History, X, ShieldAlert, ChevronRight, User, MessageCircle, WifiOff, Check, ArrowLeft, PenTool, ClipboardList, Wrench, Calendar, Tag, CheckCircle } from 'lucide-react';
+import { AlertTriangle, Phone, ShieldCheck, Box, MapPin, History, X, ShieldAlert, ChevronRight, User, MessageCircle, WifiOff, Check, ArrowLeft, PenTool, ClipboardList, Wrench, Calendar, Tag, CheckCircle, Image as ImageIcon } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -698,26 +698,165 @@ export default function AssetScanPage() {
                         </div>
                     </div>
 
-                    {/* Usta/Görev Notu */}
+                    {/* Detaylı Saha Raporu */}
                     {selectedHistoryJob.details && (() => {
                         let parsedDetails: any = {};
                         try {
                             parsedDetails = typeof selectedHistoryJob.details === 'string' ? JSON.parse(selectedHistoryJob.details) : selectedHistoryJob.details;
                         } catch(e) {}
 
-                        if (parsedDetails.note) {
-                            return (
-                                <div>
-                                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                        <ClipboardList size={14} /> İşlem Detayları & Notlar
-                                    </h3>
-                                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-wrap">
-                                        {parsedDetails.note}
-                                    </div>
-                                </div>
-                            );
+                        let rawNote = parsedDetails.note || '';
+                        let extractedChecklist: { key: string, val: string }[] = [];
+                        let cleanNote = '';
+
+                        if (rawNote.includes('---') && rawNote.includes('Saha Formu')) {
+                            const lines = rawNote.split('\n');
+                            let inForm = false;
+                            for (const line of lines) {
+                                if (line.includes('---') && line.includes('Saha Formu')) {
+                                    inForm = true;
+                                    continue;
+                                }
+                                if (inForm && line.includes('----------------------------------')) {
+                                    inForm = false;
+                                    continue;
+                                }
+                                if (inForm && line.includes(':')) {
+                                    const [key, ...valArr] = line.split(':');
+                                    extractedChecklist.push({ key: key.trim(), val: valArr.join(':').trim() });
+                                } else if (!inForm && line.trim() !== '') {
+                                    cleanNote += line + '\n';
+                                }
+                            }
+                        } else {
+                            cleanNote = rawNote;
+                            const excludeKeys = ['note', 'price', 'lastEditedBy', 'lastEditedAt', 'managerName', 'managerId', 'createdBy', 'worker_id', 'assetName', 'usedMaterials'];
+                            Object.entries(parsedDetails).forEach(([k, v]) => {
+                                if (!excludeKeys.includes(k) && typeof v === 'string') {
+                                    extractedChecklist.push({ key: k, val: v });
+                                }
+                            });
                         }
-                        return null;
+
+                        cleanNote = cleanNote.replace(/\[Usta Notu\]:/g, '').replace(/\[📍 Konum Kaydı\].*/g, '').trim();
+
+                        const hasChecklist = extractedChecklist.length > 0;
+                        const hasCleanNote = !!cleanNote;
+                        const hasMaterials = parsedDetails.usedMaterials && parsedDetails.usedMaterials.length > 0;
+                        const hasPhotos = selectedHistoryJob.photos && selectedHistoryJob.photos.length > 0;
+                        const hasSignature = !!selectedHistoryJob.signature_url;
+
+                        if (!hasChecklist && !hasCleanNote && !hasMaterials && !hasPhotos && !hasSignature) {
+                             return <div className="p-5 text-center text-slate-500 italic text-sm border border-slate-200 rounded-2xl border-dashed">Kayıtlı detay bulunamadı.</div>;
+                        }
+
+                        return (
+                            <div className="space-y-6">
+                                {hasChecklist && (
+                                 <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                     <div className="bg-slate-50/80 px-5 py-3.5 border-b border-slate-200">
+                                         <div className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><ShieldCheck size={14}/> Doldurulan Saha Formu</div>
+                                     </div>
+                                     <div className="flex flex-col">
+                                         {extractedChecklist.map((item, idx) => {
+                                             const valStr = item.val.toLowerCase().trim();
+                                             const isPositive = ['evet', 'var', 'true', 'ok', 'uygun', 'sorunsuz', 'yapıldı'].some(v => valStr === v || valStr.includes(v));
+                                             const isNegative = ['hayır', 'hayir', 'yok', 'false', 'uygun değil', 'değil', 'sorunlu', 'kötü'].some(v => valStr === v || valStr.includes(v));
+                                             const isBooleanType = isPositive || isNegative;
+
+                                             let colorClass = 'text-slate-900';
+                                             let bgColorClass = 'bg-slate-900';
+
+                                             if (isPositive) {
+                                                 colorClass = 'text-emerald-600';
+                                                 bgColorClass = 'bg-emerald-500';
+                                             } else if (isNegative) {
+                                                 colorClass = 'text-rose-600';
+                                                 bgColorClass = 'bg-rose-500';
+                                             } else if (valStr.includes('mavi')) colorClass = 'text-blue-600';
+                                             else if (valStr.includes('yeşil') || valStr.includes('yesil')) colorClass = 'text-emerald-600';
+                                             else if (valStr.includes('kırmızı') || valStr.includes('kirmizi')) colorClass = 'text-rose-600';
+                                             else if (valStr.includes('sarı') || valStr.includes('sari')) colorClass = 'text-amber-500';
+                                             else if (valStr.includes('turuncu')) colorClass = 'text-orange-500';
+                                             else if (valStr.includes('mor')) colorClass = 'text-purple-600';
+
+                                             return (
+                                                 <div key={idx} className={`flex justify-between items-center py-3.5 px-5 border-b border-slate-100 last:border-0 ${idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}`}>
+                                                     <span className="text-[13px] font-bold text-slate-700">{item.key}</span>
+                                                     <div className="shrink-0 flex items-center gap-3">
+                                                         {isBooleanType && <span className={`text-[11px] font-black uppercase tracking-widest ${colorClass}`}>{item.val}</span>}
+                                                         {isBooleanType ? (
+                                                             isPositive ? (
+                                                                 <div className={`w-5 h-5 flex items-center justify-center rounded shadow-sm ${bgColorClass}`}>
+                                                                     <Check size={14} className="text-white" strokeWidth={3} />
+                                                                 </div>
+                                                             ) : (
+                                                                 <div className={`w-5 h-5 flex items-center justify-center rounded shadow-sm ${bgColorClass}`}>
+                                                                     <X size={14} className="text-white" strokeWidth={4} />
+                                                                 </div>
+                                                             )
+                                                         ) : (
+                                                             <span className={`text-[12px] font-black uppercase ${colorClass}`}>{item.val}</span>
+                                                         )}
+                                                     </div>
+                                                 </div>
+                                             );
+                                         })}
+                                     </div>
+                                 </div>
+                                )}
+
+                                {hasCleanNote && (
+                                    <div>
+                                        <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                            <ClipboardList size={14} /> İşlem Detayları & Notlar
+                                        </h3>
+                                        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                            {cleanNote}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {hasMaterials && (
+                                    <div className="bg-amber-50/50 p-5 rounded-2xl border border-amber-100">
+                                        <div className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-3 flex items-center gap-1.5"><Box size={14}/> Kullanılan Malzemeler</div>
+                                        <div className="space-y-2">
+                                            {parsedDetails.usedMaterials.map((mat:any, i:number) => (
+                                                <div key={i} className="flex justify-between items-center bg-white p-3 rounded-lg border border-amber-200 shadow-sm">
+                                                    <span className="text-xs font-bold text-slate-800">{mat.name}</span>
+                                                    <span className="text-xs font-black text-amber-600 bg-amber-100 px-2 py-1 rounded">{mat.quantity} {mat.unit}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {hasPhotos && (
+                                    <div>
+                                        <div className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest flex items-center gap-1.5">
+                                            <ImageIcon size={14} /> Saha Fotoğrafları
+                                        </div>
+                                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                            {selectedHistoryJob.photos.map((photoUrl: string, idx: number) => (
+                                                <div key={idx} className="aspect-square rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                                                    <img src={getSafeImageUrl(photoUrl)} alt="Saha" className="w-full h-full object-cover" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {hasSignature && (
+                                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 text-center">
+                                        <p className="text-xs text-slate-500 mb-4 italic">Bu form müşteri nezaretinde elektronik imza ile onaylanmıştır.</p>
+                                        <div className="inline-block bg-white p-4 rounded-xl shadow-sm border border-slate-100 w-full max-w-xs">
+                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">İmzalayan: <span className="text-slate-800">{selectedHistoryJob.customer_signature_name || 'Bilinmiyor'}</span></div>
+                                            <img src={getSafeImageUrl(selectedHistoryJob.signature_url)} alt="Müşteri İmzası" className="h-24 mx-auto object-contain mix-blend-multiply" />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
                     })()}
 
                 </div>
