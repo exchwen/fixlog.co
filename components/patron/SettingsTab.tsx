@@ -235,36 +235,49 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
 const refCode = settingsForm?.referralCode || settingsForm?.referral_code || data?.referralCode || data?.referral_code || 'BEKLENİYOR...';
 
 // 🚀 YENİ: Hometab ile birebir aynı dinamik fatura hesaplaması
-const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferrals, isExempt, finalBill } = React.useMemo(() => {
-   const assetsCount = data?.assets?.length || 0;
-   const exemptStatus = data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true || String(data?.has_masterboss_gift) === 'true';
-   
-   const bFee = data?.custom_base_price !== undefined && data?.custom_base_price !== null ? Number(data.custom_base_price) : Number(data?.global_base_price || 3000);
-   const pAssetFee = data?.custom_per_asset_price !== undefined && data?.custom_per_asset_price !== null ? Number(data.custom_per_asset_price) : Number(data?.global_asset_price || 50);
+const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferrals, isExempt, finalBill, subStatus, trialEndsAt } = React.useMemo(() => {
+  const assetsCount = data?.stats?.assets || data?.assets?.length || 0;
+  
+  const exemptStatus = 
+      data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true || String(data?.has_masterboss_gift) === 'true' ||
+      settingsForm?.has_masterboss_gift === 1 || settingsForm?.has_masterboss_gift === true || String(settingsForm?.has_masterboss_gift) === 'true';
+  
+  const bFee = data?.custom_base_price !== undefined && data?.custom_base_price !== null ? Number(data.custom_base_price) : 
+               (settingsForm?.custom_base_price !== undefined && settingsForm?.custom_base_price !== null ? Number(settingsForm.custom_base_price) : 
+               Number(data?.global_base_price || 3000));
+               
+  const pAssetFee = data?.custom_per_asset_price !== undefined && data?.custom_per_asset_price !== null ? Number(data.custom_per_asset_price) : 
+                    (settingsForm?.custom_per_asset_price !== undefined && settingsForm?.custom_per_asset_price !== null ? Number(settingsForm.custom_per_asset_price) : 
+                    Number(data?.global_asset_price || 50));
 
-   const cUsageBill = exemptStatus ? 0 : bFee + (assetsCount * pAssetFee);
-   const aReferrals = Number(settingsForm?.free_months_balance || data?.free_months_balance || data?.freeMonths || 0);
+  const cUsageBill = exemptStatus ? 0 : bFee + (assetsCount * pAssetFee);
+  const aReferrals = Number(settingsForm?.free_months_balance || data?.free_months_balance || data?.freeMonths || 0);
 
-   let fBill = cUsageBill;
-   let rCredits = 0;
+  let fBill = cUsageBill;
+  let rCredits = 0;
 
-   if (exemptStatus) {
-       fBill = 0;
-   } else if (aReferrals > 0) {
-       rCredits = bFee;
-       fBill = Math.max(0, cUsageBill - rCredits);
-   }
+  if (exemptStatus) {
+      fBill = 0;
+  } else if (aReferrals > 0) {
+      rCredits = bFee;
+      fBill = Math.max(0, cUsageBill - rCredits);
+  }
+  
+  const sStatus = settingsForm?.subscription_status || data?.subscription_status || 'active';
+  const tEndsAt = settingsForm?.trial_ends_at || data?.trial_ends_at;
 
-   return {
-       totalAssetsCount: assetsCount,
-       baseFee: bFee,
-       perAssetFee: pAssetFee,
-       currentUsageBill: cUsageBill,
-       activeReferrals: aReferrals,
-       isExempt: exemptStatus,
-       finalBill: fBill
-   };
-}, [data, settingsForm?.free_months_balance]);
+  return {
+      totalAssetsCount: assetsCount,
+      baseFee: bFee,
+      perAssetFee: pAssetFee,
+      currentUsageBill: cUsageBill,
+      activeReferrals: aReferrals,
+      isExempt: exemptStatus,
+      finalBill: fBill,
+      subStatus: sStatus,
+      trialEndsAt: tEndsAt
+  };
+}, [data, settingsForm]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 relative pb-20 sm:pb-6">
@@ -592,13 +605,13 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
                             Faturanız FixLog.co tarafından karşılanıyor.
                         </span>
                     </>
-                ) : data?.subscription_status === 'trialing' ? (
+                ) : subStatus === 'trialing' ? (
                     <>
                         <span className="block text-lg font-black mb-1 text-blue-600">Deneme Sürümü</span>
                         {(() => {
-                            if (!data?.trial_ends_at) return <span className="block text-[10px] font-bold text-slate-500 uppercase">Aylık: Ücretsiz</span>;
+                            if (!trialEndsAt) return <span className="block text-[10px] font-bold text-slate-500 uppercase">Aylık: Ücretsiz</span>;
                             const today = new Date();
-                            const endDate = new Date(data.trial_ends_at);
+                            const endDate = new Date(trialEndsAt);
                             today.setHours(0, 0, 0, 0);
                             endDate.setHours(0, 0, 0, 0);
                             const diff = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -606,12 +619,12 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
                             return <span className="block text-[9px] font-black text-blue-500 tracking-widest leading-tight bg-blue-50 py-1.5 px-2 rounded-lg border border-blue-200">Kalan Süre: {diff} Gün.<br/>Deneme bitince ödeme yapmazsanız hesabınız kısıtlanacaktır.</span>;
                         })()}
                     </>
-                ) : data?.subscription_status === 'past_due' ? (
+                ) : subStatus === 'past_due' ? (
                     <>
                         <span className="block text-lg font-black mb-1 text-rose-600">Ödeme Gecikti</span>
                         <span className="block text-[10px] font-bold text-rose-500 uppercase">Erişim Kısıtlandı</span>
                     </>
-                ) : data?.subscription_status === 'canceled' ? (
+                ) : subStatus === 'canceled' ? (
                     <>
                         <span className="block text-lg font-black mb-1 text-slate-600">İptal Edildi</span>
                         <span className="block text-[10px] font-bold text-slate-500 uppercase">Hesabınız askıya alındı</span>
@@ -680,7 +693,6 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
 
              <div className="flex-shrink-0 bg-white border border-emerald-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
                 <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Kumbarada Biriken</span>
-                {/* 🚀 DÜZELTME: Verinin gelmediği anlarda veya string "0" geldiği durumlarda hata vermemesi için Number() sarmalaması eklendi. */}
                 <span className="block text-4xl font-black text-emerald-600 mb-1">{activeReferrals}</span>
                 <span className="block text-xs font-bold text-slate-600">Ücretsiz Ay</span>
              </div>
