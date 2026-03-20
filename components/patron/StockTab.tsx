@@ -118,6 +118,10 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
         messageText += `- ${item.item_name}: *${qty} ${item.unit_name}*\n`;
     });
 
+    if (data?.address) {
+        messageText += `\nTeslimat Adresi:\n${data.address}\n`;
+    }
+
     messageText += `\nİyi çalışmalar.`;
 
     let phone = selectedSupplierForOrder.phone.replace(/[^0-9]/g, '');
@@ -151,6 +155,10 @@ const openWhatsappForSupplier = (supplier: any) => {
       const qty = orderQuantities[item.id];
       messageText += `- ${item.item_name}: *${qty} ${item.unit_name}*\n`;
   });
+
+  if (data?.address) {
+      messageText += `\nTeslimat Adresi:\n${data.address}\n`;
+  }
 
   messageText += `\nİyi çalışmalar.`;
 

@@ -57,7 +57,18 @@ export default function StockEntryModal({
     };
 
     // 🚀 DÜZELTME: resetFn eklenerek işlem sonrası input içi temizlendi.
-    await handleAction('update-stock', payload, () => setShowStockEntryModal(false), () => setAddedQuantity(''));
+    const success = await handleAction('update-stock', payload, () => setShowStockEntryModal(false), () => setAddedQuantity(''));
+
+    if (success && Number(selectedItemData.unit_price) > 0) {
+        const totalCost = Number(addedQuantity) * Number(selectedItemData.unit_price);
+        const currentUserName = data?.ownerName || data?.staffName || 'Sistem / Otomatik';
+        await handleAction('add-expense', {
+            description: `${addedQuantity}x ${selectedItemData.item_name} (Stok Alımı)`,
+            amount: totalCost,
+            addedBy: currentUserName,
+            status: 'Onaylandı'
+        }, null, null);
+    }
   };
 
   return (
