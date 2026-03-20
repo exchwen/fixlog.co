@@ -273,7 +273,7 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
            </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-[350px] overflow-y-auto content-start custom-scrollbar pr-2 pb-2">
           {pendingFinances.map((f: any) => {
              const dateObj = new Date(f.created_at);
              const isGelir = f.type === 'Gelir';
@@ -379,8 +379,8 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
           </div>
         </div>
         
-        <div className="hidden md:flex bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex-col">
-          <div className="overflow-x-auto overflow-y-auto max-h-[400px] custom-scrollbar">
+        <div className="hidden md:flex bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex-col h-[450px]">
+          <div className="overflow-x-auto overflow-y-auto h-full custom-scrollbar">
             <table className="w-full text-left text-xs relative border-collapse min-w-[700px]">
               <thead className="bg-slate-50 text-slate-600 font-black border-b border-slate-200 sticky top-0 z-10 shadow-sm uppercase tracking-wider text-[10px]">
                 <tr>
@@ -463,7 +463,7 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
           </div>
         </div>
 
-        <div className="md:hidden flex flex-col gap-3">
+        <div className="md:hidden flex flex-col gap-3 h-[450px] overflow-y-auto content-start custom-scrollbar pr-1 pb-2">
           {filteredData.length > 0 ? filteredData.map((f: any) => {
 
             const relatedJob = f.description?.startsWith('İş Geliri:') 

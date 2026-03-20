@@ -159,7 +159,7 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
               // Hata durumunda, sıcak-soğuk mimariyi ve R2 aktarımını açıklayan kullanıcı dostu mesaj
               setAlertModal({ 
                   isOpen: true, 
-                  message: "Geçmiş kayıtlara şu an ulaşılamıyor. Sistemimiz yüksek performans için sıcak/soğuk veri mimarisi kullanmaktadır. Arşiviniz R2 (soğuk depo) sunucularına aktarım aşamasında olabilir. Lütfen bir süre sonra tekrar deneyin.", 
+                  message: "Şu an için arşive aktarılmış yeni bir geçmiş kayıt bulunmuyor. Uygulamanızın daima en yüksek hızda çalışması için kayıtlarınız her 2 ayda bir otomatik olarak arşive taşınır. İşlemleriniz henüz taze olduğu için aktif ekranlarınızda yer alıyor olabilir. Daha eski kayıtlarınız için ilerleyen dönemlerde tekrar kontrol edebilirsiniz.", 
                   type: 'warning' 
               });
             } finally {
