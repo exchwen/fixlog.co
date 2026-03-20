@@ -550,7 +550,8 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
              <div className="flex-shrink-0 bg-white border border-blue-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
                 <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Durum</span>
                 
-                {data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true ? (
+                {/* 🚀 DÜZELTME: Hem data.has_masterboss_gift hem de settingsForm içinden kontrol sağlıyoruz */}
+                {data?.has_masterboss_gift === 1 || data?.has_masterboss_gift === true || settingsForm?.has_masterboss_gift === 1 || settingsForm?.has_masterboss_gift === true ? (
                     <>
                         <span className="block text-lg font-black mb-1 text-purple-600">VIP (Muaf)</span>
                         <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">
@@ -645,7 +646,8 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
 
              <div className="flex-shrink-0 bg-white border border-emerald-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
                 <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Kumbarada Biriken</span>
-                <span className="block text-4xl font-black text-emerald-600 mb-1">{settingsForm?.free_months_balance || data?.free_months_balance || data?.freeMonths || 0}</span>
+                {/* 🚀 DÜZELTME: Verinin gelmediği anlarda veya string "0" geldiği durumlarda hata vermemesi için Number() sarmalaması eklendi. */}
+                <span className="block text-4xl font-black text-emerald-600 mb-1">{Number(settingsForm?.free_months_balance || data?.free_months_balance || data?.freeMonths || 0)}</span>
                 <span className="block text-xs font-bold text-slate-600">Ücretsiz Ay</span>
              </div>
 
