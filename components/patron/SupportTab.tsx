@@ -509,7 +509,8 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed top-0 left-0 w-full h-[100dvh] z-[100] flex flex-col sm:items-center sm:justify-center sm:p-4 bg-slate-900/60 backdrop-blur-sm overscroll-none"
+              // 🚀 1. DEĞİŞİKLİK: h-[100dvh] yerine 'inset-0' kullandık. Klavye açıldığında boyut patlamaz.
+              className="fixed inset-0 z-[100] flex flex-col sm:items-center sm:justify-center bg-slate-900/60 backdrop-blur-sm sm:p-4"
               onClick={handleCloseModal}
             >
                <motion.div
@@ -517,7 +518,8 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
                  animate={{ scale: 1, opacity: 1, y: 0 }}
                  exit={{ scale: 0.95, opacity: 0, y: 10 }}
                  onClick={(e) => e.stopPropagation()} 
-                 className="bg-white w-full h-full sm:flex-none sm:w-[95%] sm:max-w-4xl sm:h-[85vh] rounded-none sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+                 // 🚀 2. DEĞİŞİKLİK: mobilde h-full ile ekranı tam kapsıyor, maxHeight ile sınırlandırıldı.
+                 className="bg-white w-full h-full sm:flex-none sm:w-[95%] sm:max-w-4xl sm:max-h-[85vh] rounded-none sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
                >
                  {/* Modal Üst Bilgi (Sabit) */}
                  <div className="flex justify-between items-center p-4 sm:p-5 border-b border-slate-100 bg-slate-50 shrink-0">
@@ -538,7 +540,8 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
                  </div>
 
                  {/* Modal İçerik / Sohbet Akışı (Scrollable) */}
-                 <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6 bg-slate-50/50 flex flex-col scrollbar-hide">
+                 {/* 🚀 3. DEĞİŞİKLİK: overscroll-contain eklendi, böylece mesajlarda kaydırırken sayfa arkada hareket etmez. */}
+                 <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6 bg-slate-50/50 flex flex-col scrollbar-hide overscroll-contain">
                    
                    {/* İlk Mesaj (Sağda - Kullanıcı) - Geniş ekranlarda mesaj balonu çok uzamasın diye max-w limiti var */}
                    <div className="w-full max-w-[90%] sm:max-w-[75%] ml-auto">
@@ -579,7 +582,8 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
 
                  {/* Modal Alt Kısmı / Yanıt Yazma Alanı (Sabit) */}
                  {selectedTicket.status !== 'Çözüldü' && selectedTicket.status !== 'Resolved' && !selectedTicket.id.startsWith('sistem-hatasi') && (
-                     <div className="p-4 sm:p-5 bg-white border-t border-slate-200 shrink-0">
+                     // 🚀 4. DEĞİŞİKLİK: pb-[max(0.75rem,env(safe-area-inset-bottom))] eklendi. (iPhone home bar ile klavyenin çakışmasını engeller)
+                     <div className="p-3 sm:p-5 bg-white border-t border-slate-200 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                        <div className="flex gap-2 sm:gap-3 items-center max-w-4xl mx-auto">
                            <input
                               type="text"
