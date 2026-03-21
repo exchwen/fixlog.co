@@ -82,7 +82,7 @@ const handleDownloadTemplate = (e: React.MouseEvent) => {
         "30",
         "1500",
         "Ahmet Yılmaz",
-        "0555 123 45 67",
+        "05xx",
         "12345678901"
     ];
 
@@ -107,26 +107,24 @@ const handleDownloadTemplate = (e: React.MouseEvent) => {
 
     if (!worksheet['!dataValidation']) worksheet['!dataValidation'] = [];
     
-    // 🚀 GARANTİ ÇÖZÜM: Formül (Ref) yerine doğrudan virgülle ayrılmış liste veriyoruz.
-    // Xlsx kütüphanesi formülleri bozabiliyor, ancak text listelerini her Excel versiyonu okur.
-    const assetTypesString = `"${assetTypesList.join(',')}"`;
-    const citiesString = `"${citiesList.join(',')}"`;
-
-    // B Sütunu (Varlık Türü) 
+    // 🚀 KESİN VE NİHAİ ÇÖZÜM: SheetJS'in formülleri doğru algılaması için "Veriler" sayfasını direkt formülle bağladık.
+    // Excel, bu referansları gizli de olsa sayfa içinden çekip List Validation olarak uygulayacaktır.
+    
+    // B Sütunu (Varlık Türü) - Veriler sayfası A6'dan itibaren başlar
     worksheet['!dataValidation'].push({
       sqref: 'B2:B1000', 
       type: 'list', 
-      formula1: assetTypesString,
+      formula1: `Veriler!$A$6:$A$${assetTypesList.length + 5}`, // 🚀 Tırnakları kaldırdık, saf referans kullanıyoruz
       showErrorMessage: true,
       errorTitle: 'Hatalı Tür Seçimi',
       error: 'Lütfen açılır listeden tanımlı bir asansör türü seçiniz.'
     });
 
-    // C Sütunu (İl) 
+    // C Sütunu (İl) - Veriler sayfası B6'dan itibaren başlar
     worksheet['!dataValidation'].push({
       sqref: 'C2:C1000', 
       type: 'list', 
-      formula1: citiesString,
+      formula1: `Veriler!$B$6:$B$${citiesList.length + 5}`, // 🚀 Tırnakları kaldırdık, saf referans kullanıyoruz
       showErrorMessage: true,
       errorTitle: 'Hatalı İl Seçimi',
       error: 'Lütfen açılır listeden geçerli bir İl seçiniz.'
