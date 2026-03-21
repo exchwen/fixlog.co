@@ -84,7 +84,7 @@ const handleDownloadTemplate = (e: React.MouseEvent) => {
       processFileLocally(uploadedFile);
   };
 
-  // 🚀 Sürükle - Bırak (Drag & Drop) Olayları Geliştirildi
+  // 🚀 Sürükle - Bırak (Drag & Drop) Olayları
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault(); e.stopPropagation(); setIsDragging(true);
   };
@@ -221,16 +221,45 @@ const handleDownloadTemplate = (e: React.MouseEvent) => {
     setStep(4);
   };
 
-  // 🚀 TAM DÜZENLENEBİLİRLİK (HER ŞEY DÜZENLENEBİLİR)
+  // 🚀 TAM DÜZENLENEBİLİRLİK + İL / İLÇE AKILLI GÜNCELLEME MOTORU
   const handleDraftChange = (id: number, field: string, value: string) => {
     setDraftData(prev => prev.map(row => {
         if (row._id === id) {
             const updatedRow = { ...row, [field]: value };
             
-            // Eğer müşteri konumu elle düzeltirse il/ilçe hatasını otomatik baypas et (UX İyileştirmesi)
+            // Kullanıcı konumu doğrudan yazıyla ezerse hatayı yoksay
             if (field === 'location') {
                 updatedRow.isCityValid = true;
                 updatedRow.isDistrictValid = true;
+            }
+
+            // İl Dropdown Değişimi
+            if (field === 'city') {
+                updatedRow.isCityValid = value === "" || citiesList.includes(value);
+                // Eğer il değişirse ve eski ilçe yeni ile uymuyorsa ilçeyi sıfırla
+                if (value !== "" && updatedRow.district && !CITY_DATA[value]?.includes(updatedRow.district)) {
+                    updatedRow.district = "";
+                    updatedRow.isDistrictValid = false;
+                }
+            }
+
+            // İlçe Dropdown Değişimi
+            if (field === 'district') {
+                updatedRow.isDistrictValid = value === "" || (updatedRow.city !== "" && CITY_DATA[updatedRow.city]?.includes(value));
+            }
+
+            // İl veya İlçe değiştiğinde Location metnini dinamik olarak yeniden harmanla
+            if (field === 'city' || field === 'district' || field === 'streetDetail' || field === 'buildingNo') {
+                const street = updatedRow.streetDetail?.trim() || "";
+                const bNo = updatedRow.buildingNo?.toString().trim() || "";
+                const dist = updatedRow.district?.trim() || "";
+                const city = updatedRow.city?.trim() || "";
+
+                let combinedLocation = street;
+                if (bNo) combinedLocation += ` No:${bNo}`;
+                if (dist) combinedLocation += ` / ${dist}`;
+                if (city) combinedLocation += ` / ${city}`;
+                updatedRow.location = combinedLocation;
             }
 
             const isValidApartment = updatedRow.apartmentName && updatedRow.apartmentName.toString().trim() !== "";
@@ -543,9 +572,34 @@ const handleDownloadTemplate = (e: React.MouseEvent) => {
                                                         className="w-full text-[10px] p-1.5 mt-1 border border-transparent rounded-lg outline-none transition-all bg-transparent hover:bg-slate-100 focus:bg-white focus:border-slate-300 text-slate-500 placeholder-slate-400"
                                                         placeholder="Adres / Konum Ekleyin"
                                                     />
+                                                    
+                                                    {/* YENİ: İL VE İLÇE AKILLI SEÇİM DROPDOWNLARI */}
+                                                    <div className="flex gap-2 mt-1">
+                                                        <select
+                                                            className={`w-1/2 p-1.5 text-[10px] font-bold rounded-lg outline-none border transition-all ${row.isCityValid && row.city ? 'bg-transparent border-transparent hover:bg-slate-100 focus:bg-white focus:border-slate-300 text-slate-600' : 'bg-rose-50 border-rose-300 text-rose-600'}`}
+                                                            value={row.city || ""}
+                                                            onChange={(e) => handleDraftChange(row._id, 'city', e.target.value)}
+                                                        >
+                                                            {!citiesList.includes(row.city) && row.city && <option value={row.city}>⚠️ {row.city} (Düzeltin)</option>}
+                                                            <option value="">İl Seçin</option>
+                                                            {citiesList.map(c => <option key={c} value={c}>{c}</option>)}
+                                                        </select>
+
+                                                        <select
+                                                            className={`w-1/2 p-1.5 text-[10px] font-bold rounded-lg outline-none border transition-all ${row.isDistrictValid && row.district ? 'bg-transparent border-transparent hover:bg-slate-100 focus:bg-white focus:border-slate-300 text-slate-600' : 'bg-rose-50 border-rose-300 text-rose-600'}`}
+                                                            value={row.district || ""}
+                                                            onChange={(e) => handleDraftChange(row._id, 'district', e.target.value)}
+                                                            disabled={!row.city || !CITY_DATA[row.city]}
+                                                        >
+                                                            {row.city && CITY_DATA[row.city] && !CITY_DATA[row.city].includes(row.district) && row.district && <option value={row.district}>⚠️ {row.district} (Düzeltin)</option>}
+                                                            <option value="">İlçe Seçin</option>
+                                                            {row.city && CITY_DATA[row.city]?.map((d: string) => <option key={d} value={d}>{d}</option>)}
+                                                        </select>
+                                                    </div>
+
                                                     {(!row.isCityValid || !row.isDistrictValid) && (
                                                         <div className="text-[9px] text-rose-500 font-bold bg-rose-50 px-1.5 py-0.5 rounded mt-1 inline-block border border-rose-200">
-                                                            ⚠️ İl veya İlçe hatası! (Adresi düzeltin)
+                                                            ⚠️ İl veya İlçe hatalı! Listeden seçin.
                                                         </div>
                                                     )}
                                                 </td>
