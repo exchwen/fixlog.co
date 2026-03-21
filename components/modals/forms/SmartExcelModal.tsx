@@ -69,77 +69,16 @@ const handleDownloadTemplate = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    const templateHeaders = targetFields.map(f => f.label);
+    // 🚀 KESİN ÇÖZÜM: Kodla üretmek yerine, senin hazırladığın kusursuz statik dosyayı indiriyoruz.
+    // Bu dosyayı projenin ana dizinindeki "public" klasörünün içine atmalısın.
+    const fileUrl = '/Fixlog_Akilli_Excel_Sablonu.xlsx';
     
-    const exampleRow = [
-        "Güneş Apartmanı",
-        assetTypesList[0], 
-        "İstanbul",
-        "Kadıköy",
-        "Atatürk Mah. Lale Sok.",
-        "12",
-        "A Blok Sağ Kuyu, 8 Durak, 800kg",
-        "30",
-        "1500",
-        "Ahmet Yılmaz",
-        "05xx",
-        "12345678901"
-    ];
-
-    const worksheet = XLSX.utils.aoa_to_sheet([templateHeaders, exampleRow]);
-
-    // 🚀 EXCEL DROPDOWN HİLESİ VE CAYDIRICI MESAJ
-    const dataSheetAOA = [
-        ["⚠️ DİKKAT: BU SAYFADAKİ VERİLER SİSTEMİN ZORUNLU REFERANS LİSTELERİDİR."],
-        ["Bu veriler yer tutucudur. Silmeniz halinde sistemde ciddi sorunlar yaşarsınız."],
-        ["Açılır liste (dropdown) sisteminizde çalışmazsa, lütfen Varlık Türü ve İl bilgilerini aşağıdaki listeden kopyalayarak Şablon sayfasına yapıştırın."],
-        ["Lütfen bu sayfaya DOKUNMAYINIZ."], 
-        ["Varlık Türleri", "İller"] 
-    ];
-
-    const maxRows = Math.max(assetTypesList.length, citiesList.length);
-    for (let i = 0; i < maxRows; i++) {
-        dataSheetAOA.push([assetTypesList[i] || "", citiesList[i] || ""]);
-    }
-    const dataWorksheet = XLSX.utils.aoa_to_sheet(dataSheetAOA);
-
-    dataWorksheet['!cols'] = [{ wch: 110 }, { wch: 30 }];
-
-    if (!worksheet['!dataValidation']) worksheet['!dataValidation'] = [];
-    
-    // 🚀 KESİN VE NİHAİ ÇÖZÜM: SheetJS'in formülleri doğru algılaması için "Veriler" sayfasını direkt formülle bağladık.
-    // Excel, bu referansları gizli de olsa sayfa içinden çekip List Validation olarak uygulayacaktır.
-    
-    // B Sütunu (Varlık Türü) - Veriler sayfası A6'dan itibaren başlar
-    worksheet['!dataValidation'].push({
-      sqref: 'B2:B1000', 
-      type: 'list', 
-      formula1: `Veriler!$A$6:$A$${assetTypesList.length + 5}`, // 🚀 Tırnakları kaldırdık, saf referans kullanıyoruz
-      showErrorMessage: true,
-      errorTitle: 'Hatalı Tür Seçimi',
-      error: 'Lütfen açılır listeden tanımlı bir asansör türü seçiniz.'
-    });
-
-    // C Sütunu (İl) - Veriler sayfası B6'dan itibaren başlar
-    worksheet['!dataValidation'].push({
-      sqref: 'C2:C1000', 
-      type: 'list', 
-      formula1: `Veriler!$B$6:$B$${citiesList.length + 5}`, // 🚀 Tırnakları kaldırdık, saf referans kullanıyoruz
-      showErrorMessage: true,
-      errorTitle: 'Hatalı İl Seçimi',
-      error: 'Lütfen açılır listeden geçerli bir İl seçiniz.'
-    });
-
-    worksheet['!cols'] = [
-        { wch: 25 }, { wch: 35 }, { wch: 20 }, { wch: 20 }, 
-        { wch: 30 }, { wch: 15 }, { wch: 40 }, { wch: 20 }, { wch: 15 }, { wch: 25 }, { wch: 18 }, { wch: 20 }
-    ];
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Şablon");
-    XLSX.utils.book_append_sheet(workbook, dataWorksheet, "Veriler"); 
-
-    XLSX.writeFile(workbook, "Fixlog_Akilli_Excel_Sablonu.xlsx");
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.setAttribute('download', 'Fixlog_Akilli_Excel_Sablonu.xlsx');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
