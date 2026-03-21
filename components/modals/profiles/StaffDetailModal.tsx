@@ -190,13 +190,12 @@ export default function StaffDetailModal({
       {selectedStaff && (
         <motion.div 
         key="modal-backdrop-staff-detail"
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }} 
-        exit={{ opacity: 0 }} 
+        // 🚀 KESİN ÇÖZÜM 2.0: Pointer Events direkt Framer Motion'ın kendi motoruna bağlandı.
+        // Style tag'i tamamen silindi. Modal çıkış emri aldığı milisaniyede tıklamalara karşı %100 geçirgen olur!
+        initial={{ opacity: 0, pointerEvents: 'none' }} 
+        animate={{ opacity: 1, pointerEvents: 'auto' }} 
+        exit={{ opacity: 0, pointerEvents: 'none', display: 'none' }} 
         transition={{ duration: 0.15 }}
-        // 🚀 KESİN ÇÖZÜM: selectedStaff null olduğu anda pointer-events-none devreye girer.
-        // Bu sayede animasyonun bitmesini beklemeden arka plana tıklamaya izin verilir.
-        style={{ pointerEvents: selectedStaff ? 'auto' : 'none' }}
         className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[10]' : 'z-[120]'}`}
       >
           {/* Arka plan tıklaması ile kapatma */}
@@ -207,16 +206,16 @@ export default function StaffDetailModal({
 
           <motion.div 
             key="modal-content-staff-detail"
-            initial={{ opacity: 0, scale: 0.95, y: 10 }} 
+            initial={{ opacity: 0, scale: 0.95, y: 10, pointerEvents: 'none' }} 
             animate={{ 
                 opacity: 1, 
                 scale: isStacked ? 0.92 : 1, 
                 y: isStacked ? -20 : 0, 
-                filter: isStacked ? 'brightness(0.5)' : 'brightness(1)' 
+                filter: isStacked ? 'brightness(0.5)' : 'brightness(1)',
+                pointerEvents: isStacked ? 'none' : 'auto' 
             }} 
-            exit={{ opacity: 0, scale: 0.95, y: 10 }} 
-            transition={{ duration: 0.20, ease: "easeInOut" }} // Animasyonu biraz daha hızlandırdım
-            style={{ pointerEvents: (isStacked || !selectedStaff) ? 'none' : 'auto' }} // Ghost Layer koruması
+            exit={{ opacity: 0, scale: 0.95, y: 10, pointerEvents: 'none' }} 
+            transition={{ duration: 0.20, ease: "easeInOut" }}
             onClick={(e) => e.stopPropagation()}
             className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 z-10"
           >
