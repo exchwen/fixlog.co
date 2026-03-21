@@ -37,8 +37,8 @@ export default function SmartExcelModal({
   const heuristicDictionary: any = {
     apartmentName: ['bina', 'apartman', 'tesis', 'site', 'blok', 'yer'],
     assetType: ['asansör', 'cihaz', 'tür', 'tip', 'cinsi'],
-    city: ['il', 'şehir'],
     district: ['ilçe'],
+    city: ['il', 'şehir'],
     streetDetail: ['adres', 'mahalle', 'sokak', 'cadde'],
     buildingNo: ['kapı', 'bina no', 'numara'],
     assetDetails: ['not', 'detay', 'marka', 'model', 'etiket', 'kapasite', 'durak', 'kps'],
@@ -51,18 +51,18 @@ export default function SmartExcelModal({
 
 // 🚀 EKSİKSİZ 12 SÜTUNLUK TAM ENTEGRE MİMARİ
 const targetFields = [
-  { id: 'apartmentName', label: 'Bina / Apartman Adı (ZORUNLU)' },
-  { id: 'assetType', label: 'Varlık (Cihaz) Türü (LİSTEDEN SEÇİN)' },
-  { id: 'city', label: 'İl (LİSTEDEN SEÇİN)' },
-  { id: 'district', label: 'İlçe' },
-  { id: 'streetDetail', label: 'Mahalle / Cadde / Sokak (ZORUNLU)' },
-  { id: 'buildingNo', label: 'Bina / Kapı No' },
-  { id: 'assetDetails', label: 'Cihaz Detayları (Kapasite, Durak, Marka vb.)' },
-  { id: 'maintenancePeriod', label: 'Bakım Periyodu (Gün)' },
-  { id: 'maintenanceFee', label: 'Bakım Ücreti (₺)' },
-  { id: 'customerName', label: 'Müşteri / Yönetici Adı' },
-  { id: 'customerPhone', label: 'İletişim / Telefon' },
-  { id: 'taxInfo', label: 'Vergi No / T.C. Kimlik' }
+  { id: 'apartmentName', label: 'Bina / Apartman Adı', excelHeader: 'Bina / Apartman Adı' },
+  { id: 'assetType', label: 'Varlık (Cihaz) Türü', excelHeader: 'Varlık (Cihaz) Türü' },
+  { id: 'city', label: 'İl', excelHeader: 'İl' },
+  { id: 'district', label: 'İlçe', excelHeader: 'İlçe' },
+  { id: 'streetDetail', label: 'Mahalle / Cadde / Sokak (ZORUNLU)', excelHeader: 'Mahalle / Cadde / Sokak' },
+  { id: 'buildingNo', label: 'Bina / Kapı No', excelHeader: 'Bina / Kapı No' },
+  { id: 'assetDetails', label: 'Cihaz Detayları (Kapasite, Durak, Marka vb.)', excelHeader: 'Cihaz Detayları (Kapasite, Durak, Marka vb.)' },
+  { id: 'maintenancePeriod', label: 'Bakım Periyodu (Gün)', excelHeader: 'Bakım Periyodu (Gün)' },
+  { id: 'maintenanceFee', label: 'Bakım Ücreti (₺)', excelHeader: 'Bakım Ücreti (₺)' },
+  { id: 'customerName', label: 'Müşteri / Yönetici Adı', excelHeader: 'Müşteri / Yönetici Adı' },
+  { id: 'customerPhone', label: 'İletişim / Telefon', excelHeader: 'İletişim / Telefon' },
+  { id: 'taxInfo', label: 'Vergi No / T.C. Kimlik', excelHeader: 'Vergi No / T.C.\nKimlik' }
 ];
 
 const handleDownloadTemplate = (e: React.MouseEvent) => {
@@ -106,17 +106,24 @@ const handleDownloadTemplate = (e: React.MouseEvent) => {
           setHeaders(fileHeaders);
           setRawExcelData(jsonData);
 
-          const templateHeaders = targetFields.map(f => f.label);
-          const isMatch = templateHeaders.every(th => fileHeaders.includes(th));
-          setIsTemplateMatch(isMatch);
+// Boşlukları ve alt satırları temizleyerek kusursuz eşleşme yakalama
+const normalizeString = (str: string) => str.replace(/\s+/g, '').toLowerCase();
+const normalizedFileHeaders = fileHeaders.map(normalizeString);
 
-          let autoMap: any = {};
-          
-          if (isMatch) {
-              targetFields.forEach(field => {
-                  autoMap[field.id] = field.label;
-              });
-          } else {
+const isMatch = targetFields.every(field => 
+    normalizedFileHeaders.includes(normalizeString(field.excelHeader))
+);
+setIsTemplateMatch(isMatch);
+
+let autoMap: any = {};
+
+if (isMatch) {
+    targetFields.forEach(field => {
+        // Orijinal dosya başlığını bul ve eşleştir
+        const matchedHeader = fileHeaders.find(h => normalizeString(h) === normalizeString(field.excelHeader));
+        if (matchedHeader) autoMap[field.id] = matchedHeader;
+    });
+} else {
               fileHeaders.forEach(header => {
                   const lowerHeader = header.toLowerCase();
                   for (const [targetId, keywords] of Object.entries(heuristicDictionary)) {
