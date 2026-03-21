@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, UploadCloud, Loader2, CheckCircle2, FileSpreadsheet, Bot, ArrowRight, AlertCircle, Download, FileWarning } from 'lucide-react'; 
 import * as XLSX from 'xlsx'; 
 import sectorsData from '@/lib/data/sectors.json'; 
-import trCitiesData from '@/lib/data/tr-cities.json'; // 🚀 ŞEHİR VERİSİ EKLENDİ
+import trCitiesData from '@/lib/data/tr-cities.json'; 
 
 const CITY_DATA: any = trCitiesData;
 const citiesList = Object.keys(CITY_DATA);
@@ -27,11 +27,11 @@ export default function SmartExcelModal({
   const [isTemplateMatch, setIsTemplateMatch] = useState<boolean>(true);
   const [importError, setImportError] = useState<string | null>(null); 
   
-  // 🚀 KATAKULLİ: Canlı Önizleme (Taslak) ve Doğrulama (Validation) State'leri
   const [draftData, setDraftData] = useState<any[]>([]);
-  const [draftTab, setDraftTab] = useState<'valid' | 'invalid'>('invalid'); // Hatalılar öncelikli
+  const [draftTab, setDraftTab] = useState<'valid' | 'invalid'>('invalid'); 
 
-  // 🚀 Dinamik Asansör Türleri (Müşteri yanlış yazmasın diye dropdown'a koyacağız)
+  const [isDragging, setIsDragging] = useState(false);
+
   const assetTypesList = sectorsData.sectors["Asansör Bakım & Montaj"].assetTypes;
 
   const heuristicDictionary: any = {
@@ -49,7 +49,6 @@ export default function SmartExcelModal({
     taxInfo: ['vergi', 'tc', 't.c.', 'v.d.', 'vd']
 };
 
-// 🚀 EKSİKSİZ 12 SÜTUNLUK TAM ENTEGRE MİMARİ
 const targetFields = [
   { id: 'apartmentName', label: 'Bina / Apartman Adı', excelHeader: 'Bina / Apartman Adı' },
   { id: 'assetType', label: 'Varlık (Cihaz) Türü', excelHeader: 'Varlık (Cihaz) Türü' },
@@ -69,10 +68,7 @@ const handleDownloadTemplate = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // 🚀 KESİN ÇÖZÜM: Kodla üretmek yerine, senin hazırladığın kusursuz statik dosyayı indiriyoruz.
-    // Bu dosyayı projenin ana dizinindeki "public" klasörünün içine atmalısın.
     const fileUrl = '/Fixlog_Akilli_Excel_Sablonu.xlsx';
-    
     const link = document.createElement('a');
     link.href = fileUrl;
     link.setAttribute('download', 'Fixlog_Akilli_Excel_Sablonu.xlsx');
@@ -86,6 +82,24 @@ const handleDownloadTemplate = (e: React.MouseEvent) => {
       if (!uploadedFile) return;
       setFile(uploadedFile);
       processFileLocally(uploadedFile);
+  };
+
+  // 🚀 Sürükle - Bırak (Drag & Drop) Olayları Geliştirildi
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault(); e.stopPropagation(); setIsDragging(true);
+  };
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault(); e.stopPropagation(); setIsDragging(true);
+  };
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault(); e.stopPropagation(); setIsDragging(false);
+  };
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault(); e.stopPropagation(); setIsDragging(false);
+      const droppedFile = e.dataTransfer.files?.[0];
+      if (!droppedFile) return;
+      setFile(droppedFile);
+      processFileLocally(droppedFile);
   };
 
   const processFileLocally = (file: File) => {
@@ -106,24 +120,22 @@ const handleDownloadTemplate = (e: React.MouseEvent) => {
           setHeaders(fileHeaders);
           setRawExcelData(jsonData);
 
-// Boşlukları ve alt satırları temizleyerek kusursuz eşleşme yakalama
-const normalizeString = (str: string) => str.replace(/\s+/g, '').toLowerCase();
-const normalizedFileHeaders = fileHeaders.map(normalizeString);
+          const normalizeString = (str: string) => str.replace(/\s+/g, '').toLowerCase();
+          const normalizedFileHeaders = fileHeaders.map(normalizeString);
 
-const isMatch = targetFields.every(field => 
-    normalizedFileHeaders.includes(normalizeString(field.excelHeader))
-);
-setIsTemplateMatch(isMatch);
+          const isMatch = targetFields.every(field => 
+              normalizedFileHeaders.includes(normalizeString(field.excelHeader))
+          );
+          setIsTemplateMatch(isMatch);
 
-let autoMap: any = {};
+          let autoMap: any = {};
 
-if (isMatch) {
-    targetFields.forEach(field => {
-        // Orijinal dosya başlığını bul ve eşleştir
-        const matchedHeader = fileHeaders.find(h => normalizeString(h) === normalizeString(field.excelHeader));
-        if (matchedHeader) autoMap[field.id] = matchedHeader;
-    });
-} else {
+          if (isMatch) {
+              targetFields.forEach(field => {
+                  const matchedHeader = fileHeaders.find(h => normalizeString(h) === normalizeString(field.excelHeader));
+                  if (matchedHeader) autoMap[field.id] = matchedHeader;
+              });
+          } else {
               fileHeaders.forEach(header => {
                   const lowerHeader = header.toLowerCase();
                   for (const [targetId, keywords] of Object.entries(heuristicDictionary)) {
@@ -159,7 +171,6 @@ if (isMatch) {
       setMappings({ ...mappings, [targetId]: headerValue });
   };
 
-  // 🚀 Adım 4'e Geçiş: Taslakları Hazırla ve Doğrula
   const handlePrepareDrafts = () => {
     const formattedData = rawExcelData.map((row, index) => {
         let cleanRow: any = { _id: index };
@@ -172,11 +183,14 @@ if (isMatch) {
             cleanRow.customerPhone = cleanRow.customerPhone.toString().trim();
         }
 
-        // 🚀 YENİ ALANLAR: Bakım Periyodu ve Ücreti Veri Temizliği
         cleanRow.maintenance_period = parseInt(cleanRow.maintenancePeriod) || 30;
-        cleanRow.maintenanceFee = cleanRow.maintenanceFee ? cleanRow.maintenanceFee.toString().replace(/[^0-9,.]/g, '') : "";
 
-        // 🚀 ADRES BİRLEŞTİRME
+        let fee = cleanRow.maintenanceFee ? cleanRow.maintenanceFee.toString().trim() : "";
+        fee = fee.replace(/[^0-9.,]/g, ''); 
+        fee = fee.replace(/\./g, ''); 
+        fee = fee.replace(',', '.'); 
+        cleanRow.maintenanceFee = fee;
+
         const street = cleanRow.streetDetail?.trim() || "";
         const bNo = cleanRow.buildingNo?.toString().trim() || "";
         const dist = cleanRow.district?.trim() || "";
@@ -191,7 +205,6 @@ if (isMatch) {
         const isValidType = assetTypesList.includes(cleanRow.assetType?.toString().trim());
         const isValidApartment = cleanRow.apartmentName && cleanRow.apartmentName.toString().trim() !== "";
         
-        // 🚀 İL VE İLÇE GÜMRÜĞÜ
         const isCityValid = city === "" || citiesList.includes(city);
         const isDistrictValid = dist === "" || (city !== "" && CITY_DATA[city]?.includes(dist));
 
@@ -208,20 +221,29 @@ if (isMatch) {
     setStep(4);
   };
 
-  // 🚀 Taslak Tablosunda Müşterinin Elle Düzeltme Yaptığı Fonksiyon
-  const handleDraftTypeChange = (id: number, newType: string) => {
-      setDraftData(prev => prev.map(row => {
-          if (row._id === id) {
-              const updatedRow = { ...row, assetType: newType };
-              const isValidApartment = updatedRow.apartmentName && updatedRow.apartmentName.toString().trim() !== "";
-              updatedRow._isValid = assetTypesList.includes(newType) && isValidApartment;
-              return updatedRow;
-          }
-          return row;
-      }));
+  // 🚀 TAM DÜZENLENEBİLİRLİK (HER ŞEY DÜZENLENEBİLİR)
+  const handleDraftChange = (id: number, field: string, value: string) => {
+    setDraftData(prev => prev.map(row => {
+        if (row._id === id) {
+            const updatedRow = { ...row, [field]: value };
+            
+            // Eğer müşteri konumu elle düzeltirse il/ilçe hatasını otomatik baypas et (UX İyileştirmesi)
+            if (field === 'location') {
+                updatedRow.isCityValid = true;
+                updatedRow.isDistrictValid = true;
+            }
+
+            const isValidApartment = updatedRow.apartmentName && updatedRow.apartmentName.toString().trim() !== "";
+            const isValidType = assetTypesList.includes(updatedRow.assetType?.toString().trim());
+            
+            updatedRow._isValid = isValidType && isValidApartment && updatedRow.isCityValid && updatedRow.isDistrictValid;
+            
+            return updatedRow;
+        }
+        return row;
+    }));
   };
 
-  // 🚀 Adım 5: Sadece Geçerli (Valid) Verileri DB'ye Gönder
   const handleFinalSubmit = async () => {
       setIsSaving(true);
       setImportError(null); 
@@ -243,13 +265,12 @@ if (isMatch) {
     setTimeout(() => {
         setStep(1); setFile(null); setRawExcelData([]); setHeaders([]); setMappings({}); 
         setIsSaving(false); setUploadMode(null); setIsTemplateMatch(true); setImportError(null); 
-        setDraftData([]); setDraftTab('invalid');
+        setDraftData([]); setDraftTab('invalid'); setIsDragging(false);
     }, 300);
   };
 
   const autoMappedCount = Object.keys(mappings).length;
   
-  // Taslakları kategorilere ayır
   const validDrafts = draftData.filter(d => d._isValid);
   const invalidDrafts = draftData.filter(d => !d._isValid);
 
@@ -348,21 +369,37 @@ if (isMatch) {
                                     </div>
                                 )}
 
-                                <input type="file" accept=".xlsx, .xls, .csv" id="excel-upload" className="hidden" onChange={handleFileUpload} />
-                                <label htmlFor="excel-upload" className="w-full cursor-pointer group">
-                                    <div className={`border-2 border-dashed rounded-2xl p-10 transition-all flex flex-col items-center gap-4 ${uploadMode === 'template' ? 'border-emerald-300 bg-emerald-50/30 hover:bg-emerald-50' : 'border-blue-300 bg-blue-50/30 hover:bg-blue-50'}`}>
-                                        <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                                            <FileSpreadsheet size={32} className={uploadMode === 'template' ? "text-emerald-500" : "text-blue-500"} />
+                                {/* Sürükle Bırak Kapsayıcısı */}
+                                <div 
+                                    className="w-full"
+                                    onDragEnter={handleDragEnter}
+                                    onDragOver={handleDragOver}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={handleDrop}
+                                >
+                                    <input type="file" accept=".xlsx, .xls, .csv" id="excel-upload" className="hidden" onChange={handleFileUpload} />
+                                    <label 
+                                        htmlFor="excel-upload" 
+                                        className="w-full cursor-pointer group block"
+                                    >
+                                        <div className={`border-2 border-dashed rounded-2xl p-10 transition-all duration-300 flex flex-col items-center gap-4 ${isDragging ? 'border-emerald-500 bg-emerald-100/80 scale-[1.02] shadow-inner' : (uploadMode === 'template' ? 'border-emerald-300 bg-emerald-50/30 hover:bg-emerald-50' : 'border-blue-300 bg-blue-50/30 hover:bg-blue-50')}`}>
+                                            <div className={`w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center transition-transform ${isDragging ? 'scale-125' : 'group-hover:scale-110'}`}>
+                                                <FileSpreadsheet size={32} className={isDragging || uploadMode === 'template' ? "text-emerald-500" : "text-blue-500"} />
+                                            </div>
+                                            <div className="text-center pointer-events-none">
+                                                <h3 className="text-base font-black text-slate-700">
+                                                    {isDragging ? 'Dosyayı Buraya Bırakın' : 'Dosyanızı Buraya Yükleyin'}
+                                                </h3>
+                                                <p className="text-xs font-medium text-slate-500 mt-2">
+                                                    {isDragging ? 'Yükleme hemen başlayacak...' : 'Doldurduğunuz dosyayı seçin veya sürükleyin.'}
+                                                </p>
+                                            </div>
+                                            <div className={`px-6 py-2.5 text-white text-xs font-bold rounded-xl shadow-md mt-2 transition-colors ${isDragging ? 'bg-emerald-500' : (uploadMode === 'template' ? 'bg-emerald-600 group-hover:bg-emerald-700' : 'bg-blue-600 group-hover:bg-blue-700')}`}>
+                                                Dosya Seç
+                                            </div>
                                         </div>
-                                        <div className="text-center">
-                                            <h3 className="text-base font-black text-slate-700">Dosyanızı Buraya Yükleyin</h3>
-                                            <p className="text-xs font-medium text-slate-500 mt-2">Doldurduğunuz dosyayı seçin.</p>
-                                        </div>
-                                        <div className={`px-6 py-2.5 text-white text-xs font-bold rounded-xl shadow-md mt-2 ${uploadMode === 'template' ? 'bg-emerald-600 group-hover:bg-emerald-700' : 'bg-blue-600 group-hover:bg-blue-700'}`}>
-                                            Dosya Seç
-                                        </div>
-                                    </div>
-                                </label>
+                                    </label>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -443,16 +480,14 @@ if (isMatch) {
                     </div>
                 )}
 
-                {/* 🚀 YENİ STEP 4: KUSURSUZ TASLAK / GÜMRÜK EKRANI */}
                 {step === 4 && (
                     <div className="space-y-4 h-full flex flex-col">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm shrink-0">
                             <div>
                                 <h4 className="text-sm font-black text-slate-800">Son Kontrol ve Onay</h4>
-                                <p className="text-[11px] font-medium text-slate-500 mt-1">Sisteme eklenecek veriler aşağıdadır. Hatalı olanları düzeltin veya silin.</p>
+                                <p className="text-[11px] font-medium text-slate-500 mt-1">Tüm alanlara tıklayarak doğrudan düzenleme yapabilirsiniz.</p>
                             </div>
                             
-                            {/* Sekmeler (Tab) */}
                             <div className="flex bg-slate-100 p-1 rounded-lg w-full sm:w-auto">
                                 <button 
                                     onClick={() => setDraftTab('invalid')}
@@ -474,7 +509,7 @@ if (isMatch) {
                         <div className="border border-slate-200 rounded-xl overflow-hidden bg-white flex-1 min-h-[300px] shadow-inner relative flex flex-col">
                             {draftTab === 'invalid' && invalidDrafts.length > 0 && (
                                 <div className="bg-rose-50 border-b border-rose-100 p-3 text-xs font-semibold text-rose-700 flex items-center gap-2 shrink-0">
-                                    <FileWarning size={16} /> Aşağıdaki kayıtların "Asansör Türü" sistemle eşleşmiyor veya "Bina Adı" eksik. Lütfen açılır menüden doğru türü seçin.
+                                    <FileWarning size={16} /> Aşağıdaki kayıtlarda hatalı veya eksik veri var. İlgili alanlara tıklayarak anında düzeltebilirsiniz.
                                 </div>
                             )}
 
@@ -491,23 +526,34 @@ if (isMatch) {
                                     <tbody className="divide-y divide-slate-100">
                                         {(draftTab === 'valid' ? validDrafts : invalidDrafts).map((row) => (
                                             <tr key={row._id} className="hover:bg-slate-50 transition-colors group">
-                                                <td className="p-3">
-                                                    <div className={`font-bold ${!row.apartmentName ? 'text-rose-500' : 'text-slate-800'}`}>
-                                                        {row.apartmentName || 'BİNA ADI EKSİK!'}
-                                                    </div>
-                                                    <div className="text-[10px] text-slate-400 font-medium truncate max-w-[200px]">{row.location}</div>
+                                                <td className="p-3 align-top">
+                                                    {/* Bina Adı Düzenlenebilir Input */}
+                                                    <input 
+                                                        type="text" 
+                                                        value={row.apartmentName || ''} 
+                                                        onChange={(e) => handleDraftChange(row._id, 'apartmentName', e.target.value)}
+                                                        className={`w-full text-xs font-bold p-1.5 border rounded-lg outline-none transition-all ${!row.apartmentName ? 'border-rose-300 text-rose-600 bg-rose-50 placeholder-rose-400' : 'border-transparent bg-transparent hover:bg-slate-100 focus:bg-white focus:border-emerald-400 text-slate-800'}`}
+                                                        placeholder="Bina Adı Eksik!"
+                                                    />
+                                                    {/* Konum Düzenlenebilir Input */}
+                                                    <input 
+                                                        type="text" 
+                                                        value={row.location || ''} 
+                                                        onChange={(e) => handleDraftChange(row._id, 'location', e.target.value)}
+                                                        className="w-full text-[10px] p-1.5 mt-1 border border-transparent rounded-lg outline-none transition-all bg-transparent hover:bg-slate-100 focus:bg-white focus:border-slate-300 text-slate-500 placeholder-slate-400"
+                                                        placeholder="Adres / Konum Ekleyin"
+                                                    />
                                                     {(!row.isCityValid || !row.isDistrictValid) && (
                                                         <div className="text-[9px] text-rose-500 font-bold bg-rose-50 px-1.5 py-0.5 rounded mt-1 inline-block border border-rose-200">
-                                                            ⚠️ İl veya İlçe sistemde bulunamadı!
+                                                            ⚠️ İl veya İlçe hatası! (Adresi düzeltin)
                                                         </div>
                                                     )}
                                                 </td>
-                                                <td className="p-3">
-                                                    {/* Kırmızı Yanan Veri Gümrüğü Dropdown'ı */}
+                                                <td className="p-3 align-top">
                                                     <select 
-                                                        className={`w-full p-2 rounded-lg text-xs font-bold outline-none border transition-all cursor-pointer ${assetTypesList.includes(row.assetType) ? 'bg-slate-50 border-slate-200 text-slate-700 focus:border-blue-500' : 'bg-rose-50 border-rose-300 text-rose-700 ring-2 ring-rose-500/20'}`}
+                                                        className={`w-full p-2 rounded-lg text-xs font-bold outline-none border transition-all cursor-pointer ${assetTypesList.includes(row.assetType) ? 'bg-transparent hover:bg-slate-100 focus:bg-white border-transparent focus:border-slate-300 text-slate-700' : 'bg-rose-50 border-rose-300 text-rose-700 ring-2 ring-rose-500/20'}`}
                                                         value={assetTypesList.includes(row.assetType) ? row.assetType : ""}
-                                                        onChange={(e) => handleDraftTypeChange(row._id, e.target.value)}
+                                                        onChange={(e) => handleDraftChange(row._id, 'assetType', e.target.value)}
                                                     >
                                                         {!assetTypesList.includes(row.assetType) && <option value="">⚠️ {row.assetType || 'TÜR BELİRTİLMEMİŞ'} (Düzeltin)</option>}
                                                         {assetTypesList.map((type: string) => (
@@ -515,11 +561,25 @@ if (isMatch) {
                                                         ))}
                                                     </select>
                                                 </td>
-                                                <td className="p-3">
-                                                    <div className="font-semibold text-slate-700 truncate max-w-[150px]">{row.customerName || '-'}</div>
-                                                    <div className="text-[10px] text-slate-500 font-medium">{row.customerPhone || ''}</div>
+                                                <td className="p-3 align-top">
+                                                    {/* Müşteri Adı Düzenlenebilir Inputs */}
+                                                    <input 
+                                                        type="text" 
+                                                        value={row.customerName || ''} 
+                                                        onChange={(e) => handleDraftChange(row._id, 'customerName', e.target.value)}
+                                                        className="w-full text-xs font-semibold p-1.5 border border-transparent rounded-lg outline-none transition-all bg-transparent hover:bg-slate-100 focus:bg-white focus:border-slate-300 text-slate-700 placeholder-slate-400"
+                                                        placeholder="Müşteri Adı"
+                                                    />
+                                                    {/* Telefon Düzenlenebilir Input */}
+                                                    <input 
+                                                        type="text" 
+                                                        value={row.customerPhone || ''} 
+                                                        onChange={(e) => handleDraftChange(row._id, 'customerPhone', e.target.value)}
+                                                        className="w-full text-[10px] p-1.5 mt-1 border border-transparent rounded-lg outline-none transition-all bg-transparent hover:bg-slate-100 focus:bg-white focus:border-slate-300 text-slate-500 placeholder-slate-400"
+                                                        placeholder="Telefon"
+                                                    />
                                                 </td>
-                                                <td className="p-3 text-right">
+                                                <td className="p-3 text-right align-middle">
                                                     <button 
                                                         onClick={() => setDraftData(draftData.filter(d => d._id !== row._id))} 
                                                         title="Bu satırı tamamen sil"
@@ -533,7 +593,6 @@ if (isMatch) {
                                     </tbody>
                                 </table>
 
-                                {/* Boş Durumlar */}
                                 {draftTab === 'invalid' && invalidDrafts.length === 0 && (
                                     <div className="flex flex-col items-center justify-center py-16 text-center text-slate-400 gap-3">
                                         <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500"><CheckCircle2 size={32} /></div>
@@ -572,7 +631,6 @@ if (isMatch) {
                     </div>
                 )}
 
-                {/* 🚀 STEP 5: SUCCESS */}
                 {step === 5 && (
                     <div className="flex flex-col items-center justify-center py-10 text-center space-y-4">
                         <div className="w-20 h-20 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center">
