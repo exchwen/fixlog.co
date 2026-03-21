@@ -144,7 +144,8 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
 
         const stringManifest = JSON.stringify(dynamicManifest);
         const blob = new Blob([stringManifest], { type: 'application/json' });
-        const manifestUrl = URL.createObjectURL(blob);
+        // 🚀 CACHE-BUSTING: İşletim sistemini yeni manifest olduğuna inandır
+        const manifestUrl = URL.createObjectURL(blob) + '#v=' + new Date().getTime();
 
         updateManifestTag(manifestUrl);
         updateThemeColorMeta(finalColor);
@@ -180,7 +181,8 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
   };
 
   const resetToDefaultManifest = () => {
-    updateManifestTag('/manifest.json');
+    // 🚀 CACHE-BUSTING: Default manifesti de versiyonla çağır
+    updateManifestTag(`/manifest.json?v=${new Date().getTime()}`);
     updateThemeColorMeta('#0f172a');
   };
 

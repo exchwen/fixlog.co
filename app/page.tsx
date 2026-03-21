@@ -148,6 +148,9 @@ export default function LandingPage() {
   const [mockupTab, setMockupTab] = useState('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
+  const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+  const [staffSlugInput, setStaffSlugInput] = useState('');
+
   // PWA Açılış Ekranı Yükleniyor Kontrolü
   const [isChecking, setIsChecking] = useState(true);
 
@@ -246,10 +249,7 @@ export default function LandingPage() {
             <button onClick={handleLogin} className="flex items-center gap-1.5 text-gray-600 hover:text-blue-600 text-sm font-bold transition-all active:scale-95">
               <LogIn className="w-4 h-4" /> <span className="hidden sm:inline">Patron Girişi</span><span className="sm:hidden">Giriş</span>
             </button>
-            <button onClick={() => { 
-                const slugPrompt = window.prompt('Lütfen firma kodunuzu (slug) girin:');
-                if (slugPrompt) router.push(`/${slugPrompt.trim().toLowerCase()}/login`);
-            }} className="hidden md:flex items-center gap-1.5 text-gray-600 hover:text-blue-600 text-sm font-bold transition-all active:scale-95">
+            <button onClick={() => setIsStaffModalOpen(true)} className="hidden md:flex items-center gap-1.5 text-gray-600 hover:text-blue-600 text-sm font-bold transition-all active:scale-95">
               <Users className="w-4 h-4" /> Personel Girişi
             </button>
             <button onClick={handleRegister} className="hidden md:flex bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-md shadow-blue-600/20 items-center gap-2 hover:scale-105 active:scale-95">
@@ -270,8 +270,7 @@ export default function LandingPage() {
                 </button>
                 <button onClick={() => { 
                     setIsMobileMenuOpen(false); 
-                    const slugPrompt = window.prompt('Lütfen firma kodunuzu (slug) girin:');
-                    if (slugPrompt) router.push(`/${slugPrompt.trim().toLowerCase()}/login`);
+                    setIsStaffModalOpen(true);
                 }} className="w-full flex items-center justify-center gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 px-4 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95">
                   <Users className="w-4 h-4" /> Personel Girişi
                 </button>
@@ -818,9 +817,73 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
-      </main>
+        </main>
 
-      <footer className="bg-white border-t border-gray-100 py-12 md:py-16 mt-auto">
+<AnimatePresence>
+  {isStaffModalOpen && (
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      exit={{ opacity: 0 }} 
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/40 backdrop-blur-sm px-4"
+    >
+      <motion.div 
+        initial={{ scale: 0.95, opacity: 0 }} 
+        animate={{ scale: 1, opacity: 1 }} 
+        exit={{ scale: 0.95, opacity: 0 }} 
+        className="bg-white rounded-[2rem] p-6 md:p-8 shadow-2xl w-full max-w-sm border border-gray-100"
+      >
+        <div className="flex justify-between items-center mb-5">
+          <h3 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+            <Users className="w-6 h-6 text-blue-600" />
+            Personel Girişi
+          </h3>
+          <button onClick={() => setIsStaffModalOpen(false)} className="text-gray-400 hover:text-gray-700 transition-colors p-1.5 hover:bg-gray-100 rounded-xl">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <p className="text-sm text-gray-500 font-medium mb-6">
+          Sisteme giriş yapmak için yöneticinizin size verdiği firma kodunu girin.
+        </p>
+
+        <div className="mb-6 relative">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <ShieldCheck className="h-5 w-5 text-gray-400" />
+          </div>
+          <input 
+            type="text" 
+            placeholder="Örn: merkez-asansor" 
+            value={staffSlugInput}
+            onChange={(e) => setStaffSlugInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && staffSlugInput.trim()) {
+                setIsStaffModalOpen(false);
+                router.push(`/${staffSlugInput.trim().toLowerCase()}/login`);
+              }
+            }}
+            className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border-2 border-gray-100 rounded-xl outline-none focus:bg-white focus:border-blue-500 text-gray-900 font-bold transition-all placeholder:text-gray-400 placeholder:font-medium"
+          />
+        </div>
+
+        <button 
+          onClick={() => {
+            if(staffSlugInput.trim()) {
+              setIsStaffModalOpen(false);
+              router.push(`/${staffSlugInput.trim().toLowerCase()}/login`);
+            }
+          }}
+          disabled={!staffSlugInput.trim()}
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-md shadow-blue-600/20 active:scale-95"
+        >
+          Giriş Yap <ArrowRight className="w-4 h-4" />
+        </button>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
+
+<footer className="bg-white border-t border-gray-100 py-12 md:py-16 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 sm:gap-8">
             <div className="col-span-1 sm:col-span-2 md:col-span-1">

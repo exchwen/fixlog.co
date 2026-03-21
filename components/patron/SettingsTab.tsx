@@ -388,6 +388,14 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
           </div>
         </div>
 
+        {/* 🚀 BİLGİLENDİRME NOTU: Logo ve İsim Güncellemeleri İçin */}
+        <div className="bg-blue-50/50 border border-blue-200 p-4 rounded-xl flex items-start gap-3 shadow-sm">
+           <Globe size={18} className="text-blue-600 shrink-0 mt-0.5" />
+           <p className="text-[11px] font-medium text-blue-800 leading-relaxed">
+             <strong className="font-black">PWA Uygulama Güncellemesi:</strong> Firma logonuzu veya ünvanınızı değiştirdiğinizde, telefonunuzun ana ekranındaki uygulama ikonunun yenilenmesi cihazınıza bağlı olarak <span className="font-bold underline decoration-blue-300">24 saat</span> sürebilir. Yeni ikonunuzu anında görmek isterseniz mevcut uygulamayı silip tekrar ana ekrana ekleyebilirsiniz.
+           </p>
+        </div>
+
         {/* Firma Adı & Yetkili */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
           <div>

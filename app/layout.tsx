@@ -15,9 +15,9 @@ export const metadata: Metadata = {
   title: 'FixLog.co | Profesyonel İş Takip Sistemi',
   description:
     'Global, ölçeklenebilir ve sürdürülebilir yeni nesil iş takip SaaS platformu.',
-    
-  // 🚀 İŞTE EKSİK OLAN VE CHROME'U TETİKLEYECEK SATIR!
-  manifest: "/manifest.json", 
+
+  // 🚀 CACHE-BUSTING İÇİN STATİK MANİFESTİ KALDIRDIK! 
+  // DynamicPWA bileşeni, manifest'i dinamik zaman damgasıyla kendi basacak.
 
   appleWebApp: {
     statusBarStyle: "default",

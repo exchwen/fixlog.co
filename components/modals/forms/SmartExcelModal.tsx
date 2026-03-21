@@ -35,32 +35,37 @@ export default function SmartExcelModal({
   const assetTypesList = sectorsData.sectors["Asansör Bakım & Montaj"].assetTypes;
 
   const heuristicDictionary: any = {
-      apartmentName: ['bina', 'apartman', 'tesis', 'site', 'blok', 'yer'],
-      assetType: ['asansör', 'cihaz', 'tür', 'tip', 'cinsi'],
-      assetLocation: ['kuyu', 'şube', 'departman', 'kat', 'konum'],
-      assetDetails: ['not', 'detay', 'marka', 'model', 'etiket', 'kapasite', 'durak', 'kps'],
-      customerName: ['firma', 'müşteri', 'yönetici', 'ad', 'soyisim', 'isim'],
-      customerPhone: ['tel', 'telefon', 'cep', 'iletişim', 'numara', 'gsm'],
-      customerAddress: ['adres', 'mahalle', 'sokak', 'ilçe', 'il', 'fatura adresi'],
-      taxInfo: ['vergi', 'tc', 't.c.', 'v.d.', 'vd']
-  };
+    apartmentName: ['bina', 'apartman', 'tesis', 'site', 'blok', 'yer'],
+    assetType: ['asansör', 'cihaz', 'tür', 'tip', 'cinsi'],
+    city: ['il', 'şehir'],
+    district: ['ilçe'],
+    streetDetail: ['adres', 'mahalle', 'sokak', 'cadde'],
+    buildingNo: ['kapı', 'bina no', 'numara'],
+    assetDetails: ['not', 'detay', 'marka', 'model', 'etiket', 'kapasite', 'durak', 'kps'],
+    maintenancePeriod: ['periyot', 'bakım süresi', 'gün'],
+    maintenanceFee: ['ücret', 'fiyat', 'tutar', '₺', 'tl'],
+    customerName: ['firma', 'müşteri', 'yönetici', 'ad', 'soyisim', 'isim'],
+    customerPhone: ['tel', 'telefon', 'cep', 'iletişim', 'gsm'],
+    taxInfo: ['vergi', 'tc', 't.c.', 'v.d.', 'vd']
+};
 
+// 🚀 EKSİKSİZ 12 SÜTUNLUK TAM ENTEGRE MİMARİ
+const targetFields = [
+  { id: 'apartmentName', label: 'Bina / Apartman Adı (ZORUNLU)' },
+  { id: 'assetType', label: 'Varlık (Cihaz) Türü (LİSTEDEN SEÇİN)' },
+  { id: 'city', label: 'İl (LİSTEDEN SEÇİN)' },
+  { id: 'district', label: 'İlçe' },
+  { id: 'streetDetail', label: 'Mahalle / Cadde / Sokak (ZORUNLU)' },
+  { id: 'buildingNo', label: 'Bina / Kapı No' },
+  { id: 'assetDetails', label: 'Cihaz Detayları (Kapasite, Durak, Marka vb.)' },
+  { id: 'maintenancePeriod', label: 'Bakım Periyodu (Gün)' },
+  { id: 'maintenanceFee', label: 'Bakım Ücreti (₺)' },
+  { id: 'customerName', label: 'Müşteri / Yönetici Adı' },
+  { id: 'customerPhone', label: 'İletişim / Telefon' },
+  { id: 'taxInfo', label: 'Vergi No / T.C. Kimlik' }
+];
 
- // 🚀 EKSİKSİZ 10 SÜTUNLUK YENİ MİMARİ
- const targetFields = [
-    { id: 'apartmentName', label: 'Bina / Apartman Adı (ZORUNLU)' },
-    { id: 'assetType', label: 'Varlık (Cihaz) Türü (LİSTEDEN SEÇİN)' },
-    { id: 'streetDetail', label: 'Mahalle / Cadde / Sokak (ZORUNLU)' },
-    { id: 'city', label: 'İl (LİSTEDEN SEÇİN)' },
-    { id: 'district', label: 'İlçe' },
-    { id: 'buildingNo', label: 'Bina No' },
-    { id: 'assetDetails', label: 'Cihaz Detayları (Kapasite, Durak, Konum vb.)' },
-    { id: 'customerName', label: 'Müşteri / Yönetici Adı (AYIRICI)' },
-    { id: 'customerPhone', label: 'İletişim / Telefon' },
-    { id: 'taxInfo', label: 'Vergi No / T.C. Kimlik' }
-  ];
-
-  const handleDownloadTemplate = (e: React.MouseEvent) => {
+const handleDownloadTemplate = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -69,11 +74,13 @@ export default function SmartExcelModal({
     const exampleRow = [
         "Güneş Apartmanı",
         assetTypesList[0], 
-        "Atatürk Mah. Lale Sok.",
         "İstanbul",
         "Kadıköy",
+        "Atatürk Mah. Lale Sok.",
         "12",
         "A Blok Sağ Kuyu, 8 Durak, 800kg",
+        "30",
+        "1500",
         "Ahmet Yılmaz",
         "0555 123 45 67",
         "12345678901"
@@ -84,10 +91,10 @@ export default function SmartExcelModal({
     // 🚀 EXCEL DROPDOWN HİLESİ VE CAYDIRICI MESAJ
     const dataSheetAOA = [
         ["⚠️ DİKKAT: BU SAYFADAKİ VERİLER SİSTEMİN ZORUNLU REFERANS LİSTELERİDİR."],
-        ["Bu veriler yer tutucudur. Değiştirmeniz veya silmeniz halinde sistemde ciddi sorunlar yaşarsınız."],
-        ["Sistem hatalı verileri KESİNLİKLE KABUL ETMEZ. Yükleme ekranında hepsini manuel düzeltmek zorunda kalır ve işçiliğinizi artırırsınız!"],
-        ["Lütfen bu sayfaya DOKUNMAYINIZ."], // 4. Satır
-        ["Varlık Türleri", "İller"] // 5. Satır Başlıkları
+        ["Bu veriler yer tutucudur. Silmeniz halinde sistemde ciddi sorunlar yaşarsınız."],
+        ["Açılır liste (dropdown) sisteminizde çalışmazsa, lütfen Varlık Türü ve İl bilgilerini aşağıdaki listeden kopyalayarak Şablon sayfasına yapıştırın."],
+        ["Lütfen bu sayfaya DOKUNMAYINIZ."], 
+        ["Varlık Türleri", "İller"] 
     ];
 
     const maxRows = Math.max(assetTypesList.length, citiesList.length);
@@ -96,41 +103,41 @@ export default function SmartExcelModal({
     }
     const dataWorksheet = XLSX.utils.aoa_to_sheet(dataSheetAOA);
 
-    // Uyarı mesajı okunsun diye ilk sütunu kocaman yapıyoruz
     dataWorksheet['!cols'] = [{ wch: 110 }, { wch: 30 }];
 
     if (!worksheet['!dataValidation']) worksheet['!dataValidation'] = [];
     
-    // B Sütunu (Varlık Türü) Dropdown (Uyarı mesajlarından dolayı 6. satırdan başlar -> A6)
+    // 🚀 BUG FIX: Excel'in formülü okuyabilmesi için formüllerin başına = işareti koyuldu
+    // B Sütunu (Varlık Türü) 
     worksheet['!dataValidation'].push({
       sqref: 'B2:B1000', 
       type: 'list', 
-      formula1: `Veriler!$A$6:$A$${assetTypesList.length + 5}`,
+      formula1: `"=Veriler!$A$6:$A$${assetTypesList.length + 5}"`,
       showErrorMessage: true,
       errorTitle: 'Hatalı Tür Seçimi',
       error: 'Lütfen listedeki tanımlı asansör türlerinden birini seçiniz.'
     });
 
-    // D Sütunu (İl) Dropdown (Veriler sayfası 6. satırdan başlar -> B6)
+    // C Sütunu (İl) 
     worksheet['!dataValidation'].push({
-      sqref: 'D2:D1000', 
+      sqref: 'C2:C1000', 
       type: 'list', 
-      formula1: `Veriler!$B$6:$B$${citiesList.length + 5}`,
+      formula1: `"=Veriler!$B$6:$B$${citiesList.length + 5}"`,
       showErrorMessage: true,
       errorTitle: 'Hatalı İl Seçimi',
       error: 'Lütfen açılır listeden geçerli bir İl seçiniz.'
     });
 
     worksheet['!cols'] = [
-        { wch: 25 }, { wch: 35 }, { wch: 30 }, { wch: 20 }, 
-        { wch: 15 }, { wch: 10 }, { wch: 40 }, { wch: 25 }, { wch: 18 }, { wch: 20 }
+        { wch: 25 }, { wch: 35 }, { wch: 20 }, { wch: 20 }, 
+        { wch: 30 }, { wch: 15 }, { wch: 40 }, { wch: 20 }, { wch: 15 }, { wch: 25 }, { wch: 18 }, { wch: 20 }
     ];
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Şablon");
-    XLSX.utils.book_append_sheet(workbook, dataWorksheet, "Veriler"); // Gizli Veri Sayfası
+    XLSX.utils.book_append_sheet(workbook, dataWorksheet, "Veriler"); 
 
-    XLSX.writeFile(workbook, "IsDokumu_Akilli_Excel_Sablonu.xlsx");
+    XLSX.writeFile(workbook, "Fixlog_Akilli_Excel_Sablonu.xlsx");
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -216,6 +223,10 @@ export default function SmartExcelModal({
         if (cleanRow.customerPhone) {
             cleanRow.customerPhone = cleanRow.customerPhone.toString().trim();
         }
+
+        // 🚀 YENİ ALANLAR: Bakım Periyodu ve Ücreti Veri Temizliği
+        cleanRow.maintenance_period = parseInt(cleanRow.maintenancePeriod) || 30;
+        cleanRow.maintenanceFee = cleanRow.maintenanceFee ? cleanRow.maintenanceFee.toString().replace(/[^0-9,.]/g, '') : "";
 
         // 🚀 ADRES BİRLEŞTİRME
         const street = cleanRow.streetDetail?.trim() || "";
