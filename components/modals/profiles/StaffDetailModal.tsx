@@ -190,13 +190,14 @@ export default function StaffDetailModal({
       {selectedStaff && (
         <motion.div 
         key="modal-backdrop-staff-detail"
-        // 🚀 EKRAN TIKLANAMAMA SORUNU İÇİN KESİN ÇÖZÜM:
-        // Ana wrapper çıkış (exit) yaparken tüm tıklama olaylarına kapanır ve tamamen kaybolur (display: none).
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
         exit={{ opacity: 0 }} 
         transition={{ duration: 0.15 }}
-        className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 pointer-events-auto ${isStacked ? 'z-[10]' : 'z-[120]'}`}
+        // 🚀 KESİN ÇÖZÜM: selectedStaff null olduğu anda pointer-events-none devreye girer.
+        // Bu sayede animasyonun bitmesini beklemeden arka plana tıklamaya izin verilir.
+        style={{ pointerEvents: selectedStaff ? 'auto' : 'none' }}
+        className={`fixed inset-0 flex items-center justify-center p-4 transition-all duration-300 ${isStacked ? 'z-[10]' : 'z-[120]'}`}
       >
           {/* Arka plan tıklaması ile kapatma */}
           <div 
@@ -214,8 +215,8 @@ export default function StaffDetailModal({
                 filter: isStacked ? 'brightness(0.5)' : 'brightness(1)' 
             }} 
             exit={{ opacity: 0, scale: 0.95, y: 10 }} 
-            transition={{ duration: 0.25, ease: "easeInOut" }}
-            style={{ pointerEvents: isStacked ? 'none' : 'auto' }}
+            transition={{ duration: 0.20, ease: "easeInOut" }} // Animasyonu biraz daha hızlandırdım
+            style={{ pointerEvents: (isStacked || !selectedStaff) ? 'none' : 'auto' }} // Ghost Layer koruması
             onClick={(e) => e.stopPropagation()}
             className="bg-white w-full max-w-lg rounded-2xl p-0 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 z-10"
           >
