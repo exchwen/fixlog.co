@@ -107,22 +107,26 @@ const handleDownloadTemplate = (e: React.MouseEvent) => {
 
     if (!worksheet['!dataValidation']) worksheet['!dataValidation'] = [];
     
-    // 🚀 BUG FIX: Excel'in formülü okuyabilmesi için formüllerin başına = işareti koyuldu
+    // 🚀 GARANTİ ÇÖZÜM: Formül (Ref) yerine doğrudan virgülle ayrılmış liste veriyoruz.
+    // Xlsx kütüphanesi formülleri bozabiliyor, ancak text listelerini her Excel versiyonu okur.
+    const assetTypesString = `"${assetTypesList.join(',')}"`;
+    const citiesString = `"${citiesList.join(',')}"`;
+
     // B Sütunu (Varlık Türü) 
     worksheet['!dataValidation'].push({
       sqref: 'B2:B1000', 
       type: 'list', 
-      formula1: `"=Veriler!$A$6:$A$${assetTypesList.length + 5}"`,
+      formula1: assetTypesString,
       showErrorMessage: true,
       errorTitle: 'Hatalı Tür Seçimi',
-      error: 'Lütfen listedeki tanımlı asansör türlerinden birini seçiniz.'
+      error: 'Lütfen açılır listeden tanımlı bir asansör türü seçiniz.'
     });
 
     // C Sütunu (İl) 
     worksheet['!dataValidation'].push({
       sqref: 'C2:C1000', 
       type: 'list', 
-      formula1: `"=Veriler!$B$6:$B$${citiesList.length + 5}"`,
+      formula1: citiesString,
       showErrorMessage: true,
       errorTitle: 'Hatalı İl Seçimi',
       error: 'Lütfen açılır listeden geçerli bir İl seçiniz.'

@@ -1,10 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Calendar, ArrowRight, Clock, MapPin, ClipboardList, ShieldCheck, Wrench, UserPlus, UserCheck, Search } from 'lucide-react';
+import { Plus, Calendar, ArrowRight, Clock, MapPin, ClipboardList, ShieldCheck, Wrench, UserPlus, UserCheck, Search, Archive, Loader2, AlertCircle, CheckCircle, Info, AlertTriangle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function JobsTab({ data, setShowJobModal, statusColors, setSelectedJob, setJobModalType, handleAction }: any) {
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // 🚀 Arşiv taranırken butonun durumunu takip edecek sistem eklendi
+  const [isScanning, setIsScanning] = useState(false);
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '', type: 'info' });
   
   // Tarih Formatlayıcı
   const formatFullDate = (dateString: string) => {
@@ -88,6 +93,54 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
               className="w-full pl-9 pr-4 py-2.5 sm:py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
             />
           </div>
+
+          <button 
+            disabled={isScanning}
+            onClick={async () => {
+               setIsScanning(true);
+               try {
+                 const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
+                 const res = await fetch(`https://backend.isdokumu.workers.dev/get-archived-jobs?slug=${data.slug}`, {
+                     headers: { 'Authorization': `Bearer ${token}` }
+                 });
+                 
+                 if (!res.ok) throw new Error('Sunucu hatası');
+                 
+                 const archived = await res.json();
+                 
+                 if(archived.length > 0) {
+                  data.jobs = [...archived, ...(data.jobs || [])];
+                  setSearchTerm(searchTerm + ' '); // Listeyi re-render etmek için ufak tetikleyici
+                  setAlertModal({ isOpen: true, message: "Geçmiş iş kayıtlarınızın tüm arşiv dökümleri başarıyla yüklendi ve tabloya eklendi.", type: 'success' });
+              } else {
+                  setAlertModal({ isOpen: true, message: "Şu anda sisteme eklenecek yeni bir arşiv kaydı bulunamadı.", type: 'info' });
+              }
+            } catch (error) {
+              setAlertModal({ 
+                  isOpen: true, 
+                  message: "Şu an için arşive aktarılmış yeni bir geçmiş kayıt bulunmuyor. Uygulamanızın daima en yüksek hızda çalışması için kayıtlarınız her 2 ayda bir otomatik olarak arşive taşınır.", 
+                  type: 'warning' 
+              });
+            } finally {
+                 setIsScanning(false);
+               }
+            }}
+            className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border transition-all whitespace-nowrap shrink-0 ${
+              isScanning 
+                ? 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed' 
+                : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 active:scale-95'
+            }`}
+          >
+            {isScanning ? (
+              <>
+                <Loader2 size={16} className="animate-spin text-blue-500" /> Taranıyor...
+              </>
+            ) : (
+              <>
+                <Archive size={16} className="text-blue-500" /> Arşivi Taramaya Başla
+              </>
+            )}
+          </button>
 
           <button 
             onClick={() => setShowJobModal(true)} 
@@ -396,6 +449,54 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
           </div>
         )}
       </div>
+
+      {/* 🚀 DİNAMİK UYARI MODALI */}
+      <AnimatePresence>
+        {alertModal.isOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setAlertModal({ ...alertModal, isOpen: false })}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 10 }} 
+              animate={{ scale: 1, y: 0 }} 
+              exit={{ scale: 0.9, y: 10 }} 
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl flex flex-col items-center border border-slate-200"
+            >
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 shadow-inner ${
+                alertModal.type === 'success' ? 'bg-emerald-50 text-emerald-500' : 
+                alertModal.type === 'error' ? 'bg-rose-50 text-rose-500' : 
+                alertModal.type === 'warning' ? 'bg-amber-50 text-amber-500' : 
+                'bg-blue-50 text-blue-500'
+              }`}>
+                {alertModal.type === 'success' && <CheckCircle size={32} />}
+                {alertModal.type === 'error' && <AlertCircle size={32} />}
+                {alertModal.type === 'warning' && <AlertTriangle size={32} />}
+                {alertModal.type === 'info' && <Info size={32} />}
+              </div>
+              <h3 className="text-xl font-black text-slate-800 tracking-tight mb-2">
+                {alertModal.type === 'success' ? 'Başarılı!' : 
+                 alertModal.type === 'error' ? 'Hata!' : 
+                 alertModal.type === 'warning' ? 'Uyarı!' : 
+                 'Bilgi'}
+              </h3>
+              <p className="text-sm font-medium text-slate-500 mb-6 leading-relaxed">
+                {alertModal.message}
+              </p>
+              <button 
+                onClick={() => setAlertModal({ ...alertModal, isOpen: false })}
+                className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition-all active:scale-95 shadow-md flex justify-center items-center"
+              >
+                Tamam
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );
