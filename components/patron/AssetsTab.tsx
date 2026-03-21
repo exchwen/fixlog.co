@@ -88,7 +88,7 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
     e.stopPropagation();
     if (typeof window !== 'undefined' && !navigator.onLine) {
       e.preventDefault();
-      setAlertModal({ isOpen: true, message: "Haritayı açabilmek için internet bağlantısına ihtiyacınız var.", type: 'warning' });
+      alert("Haritayı açabilmek için internet bağlantısına ihtiyacınız var.");
     }
   };
 
