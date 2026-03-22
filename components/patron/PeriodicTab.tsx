@@ -122,18 +122,25 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
 
   const executeOtopilot = async () => {
     if (isGenerating) return;
-    setConfirmModal({ ...confirmModal, isOpen: false }); // İşlem başlarken modalı kapat
-    
+    setConfirmModal({ ...confirmModal, isOpen: false });
+
     try {
-        await handleGenerateMonthlyMaintenance();
+        const response: any = await handleGenerateMonthlyMaintenance();
+        
+        if (response && response.error) {
+            setAlertModal({ isOpen: true, message: response.error, type: 'warning' });
+            return;
+        }
+
         setAlertModal({ 
             isOpen: true, 
             message: 'Otopilot sistemi çalıştı. Periyodik bakımlar, ustaların rotalarına başarıyla dağıtıldı.', 
             type: 'success' 
         });
         setTimeout(() => { window.location.reload(); }, 2000);
-    } catch (error) {
-        setAlertModal({ isOpen: true, message: 'Otopilot çalıştırılırken bir hata oluştu. Lütfen tekrar deneyin.', type: 'error' });
+    } catch (error: any) {
+        const errorMsg = error?.response?.data?.error || error?.message || error?.error || (typeof error === 'string' ? error : 'Otopilot çalıştırılırken bir hata oluştu. Lütfen tekrar deneyin.');
+        setAlertModal({ isOpen: true, message: errorMsg, type: 'warning' });
     }
   };
 
