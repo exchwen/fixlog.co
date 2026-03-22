@@ -3,6 +3,7 @@
   "short_name": "FixLog.co",
   "description": "Saha operasyonları, personel, varlık, stok, kasa ve iş takibi uygulaması.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",

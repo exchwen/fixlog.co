@@ -120,7 +120,8 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
           short_name: companyName || "FixLog.co",
           description: "Saha operasyonları, personel ve iş takibi uygulaması.",
           // 🚀 KESİN ÇÖZÜM: URL is invalid hatasını önlemek için tam adres veriyoruz.
-          start_url: window.location.origin + window.location.pathname,
+          start_url: window.location.origin + "/",
+          scope: "/",
           display: "standalone",
           background_color: finalColor,
           theme_color: finalColor,
@@ -178,6 +179,22 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
       document.head.appendChild(metaTag);
     }
     metaTag.setAttribute('content', color);
+
+    let appleMeta = document.querySelector('meta[name="apple-mobile-web-app-capable"]');
+    if (!appleMeta) {
+      appleMeta = document.createElement('meta');
+      appleMeta.setAttribute('name', 'apple-mobile-web-app-capable');
+      appleMeta.setAttribute('content', 'yes');
+      document.head.appendChild(appleMeta);
+    }
+
+    let appleStatusMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (!appleStatusMeta) {
+      appleStatusMeta = document.createElement('meta');
+      appleStatusMeta.setAttribute('name', 'apple-mobile-web-app-status-bar-style');
+      appleStatusMeta.setAttribute('content', 'default');
+      document.head.appendChild(appleStatusMeta);
+    }
   };
 
   const resetToDefaultManifest = () => {
