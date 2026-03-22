@@ -287,7 +287,7 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                                     ) : upcomingJob && upcomingJob.worker_name ? (
                                         <div className="flex items-center gap-2 font-semibold text-purple-700" title="Otopilot tarafından bu ay için atandı">
                                             <div className="w-6 h-6 rounded-md bg-purple-100 text-purple-600 flex items-center justify-center text-[10px]"><Bot size={12}/></div>
-                                            {upcomingJob.worker_name} <span className="text-[9px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded font-black border border-purple-200">Otopilot</span>
+                                            {upcomingJob.worker_name} <span className="ml-2 text-[9px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded font-black border border-purple-200">Otopilot</span>
                                         </div>
                                     ) : (
                                         <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200">Personel Atanmadı</span>
@@ -339,7 +339,7 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                 </tbody>
             </table>
         </div>
-        
+
         <div className="md:hidden flex flex-col gap-4 p-4 bg-slate-50/50">
             {filteredAssets.length > 0 ? filteredAssets.map((asset: any) => {
                 // 🚀 GÜNCELLEME: Masaüstünde olduğu gibi mobil görünüm için de değişkenleri tanımlıyoruz
@@ -388,9 +388,9 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                                     {permanentStaff ? (
                                         <><User size={10} className="text-slate-400"/> {permanentStaff.name}</>
                                     ) : upcomingJob && upcomingJob.worker_name ? (
-                                        <><Bot size={10} className="text-purple-500"/> <span className="text-purple-600">{upcomingJob.worker_name} (Oto)</span></>
+                                        <><Bot size={10} className="text-purple-500"/> <span className="text-purple-600 font-black">{upcomingJob.worker_name} (Otopilot)</span></>
                                     ) : (
-                                        'Atanmadı'
+                                        <span className="text-amber-600 font-bold">Atanmadı</span>
                                     )}
                                 </span>
                             </div>
