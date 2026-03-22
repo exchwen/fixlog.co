@@ -339,10 +339,12 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                 </tbody>
             </table>
         </div>
-
+        
         <div className="md:hidden flex flex-col gap-4 p-4 bg-slate-50/50">
             {filteredAssets.length > 0 ? filteredAssets.map((asset: any) => {
-                const assignedStaff = staff.find((s:any) => s.id === asset.route_staff_id);
+                // 🚀 GÜNCELLEME: Masaüstünde olduğu gibi mobil görünüm için de değişkenleri tanımlıyoruz
+                const permanentStaff = staff.find((s:any) => s.id === asset.route_staff_id);
+                const upcomingJob = (data?.jobs || []).find((j: any) => j.asset_id === asset.id && j.work_type === 'Periyodik Bakım' && j.status !== 'Tamamlandı' && j.status !== 'İptal');
                 
                 const isCollected = (() => {
                     if (!asset.last_collection_date) return false;
