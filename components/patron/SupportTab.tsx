@@ -45,11 +45,7 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
     };
 
 // 🚀 MOBİL KLAVYE İÇİN HAYAT KURTARAN KİLİT
-    // Tarayıcının inputa odaklanınca tüm sayfayı yukarı kaydırmasını (scroll) engeller.
-    const scrollY = window.scrollY;
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = '100%';
+    // Body'e fixed vermek mobilde inputa tıklayınca sayfanın uzaya fırlamasına sebep oluyor. Sadece overflow gizliyoruz.
     document.body.style.overflow = 'hidden';
 
     window.history.pushState({ modal: 'ticketOpen' }, '');
@@ -58,12 +54,7 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
 
     return () => {
       // Modaldan çıkınca kilidi aç
-      const scrollY = document.body.style.top;
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
       document.body.style.overflow = '';
-      window.scrollTo(0, parseInt(scrollY || '0') * -1);
 
       window.removeEventListener('keydown', handleEsc);
       window.removeEventListener('popstate', handlePopState);
@@ -525,8 +516,8 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed top-0 left-0 w-full z-[100] flex flex-col sm:items-center sm:justify-center bg-slate-900/60 backdrop-blur-sm sm:p-4 overscroll-none"
-              style={{ height: '100dvh', maxHeight: '100dvh' }} // Tamamen DVH sınırlarına kilitledik
+              // DVH'ı tamamen sildik, fixed inset-0 ile tarayıcının native alanına bıraktık
+              className="fixed inset-0 z-[100] flex flex-col sm:items-center sm:justify-center bg-slate-900/60 backdrop-blur-sm sm:p-4 overscroll-none"
               onClick={handleCloseModal}
             >
                <motion.div
@@ -534,8 +525,8 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
                  animate={{ scale: 1, opacity: 1, y: 0 }}
                  exit={{ scale: 0.95, opacity: 0, y: 10 }}
                  onClick={(e) => e.stopPropagation()} 
-                 className="bg-white w-full h-full sm:h-auto sm:flex-none sm:w-[95%] sm:max-w-4xl sm:max-h-[85vh] rounded-none sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden"
-                 style={{ maxHeight: '100dvh' }}
+                 // h-full yerine flex-1 verdik, style kısmını tamamen sildik
+                 className="bg-white w-full flex-1 sm:h-auto sm:flex-none sm:w-[95%] sm:max-w-4xl sm:max-h-[85vh] rounded-none sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden"
                >
                  {/* Modal Üst Bilgi (Sabit) */}
                  <div className="flex justify-between items-center p-4 sm:p-5 border-b border-slate-100 bg-slate-50 shrink-0">
