@@ -151,8 +151,44 @@ export default function LandingPage() {
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
   const [staffSlugInput, setStaffSlugInput] = useState('');
 
+  const [infoModalContent, setInfoModalContent] = useState<{ title: string, content: string } | null>(null);
+
   // PWA Açılış Ekranı Yükleniyor Kontrolü
   const [isChecking, setIsChecking] = useState(true);
+
+  const openInfoModal = (title: string, content: string) => {
+    setInfoModalContent({ title, content });
+    window.history.pushState({ modal: 'infoModal' }, '');
+  };
+
+  const closeInfoModal = () => {
+    setInfoModalContent(null);
+  };
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && infoModalContent) {
+        closeInfoModal();
+        if (window.history.state?.modal === 'infoModal') {
+            window.history.back();
+        }
+      }
+    };
+
+    const handlePopState = () => {
+      if (infoModalContent) {
+        closeInfoModal();
+      }
+    };
+
+    window.addEventListener('keydown', handleEsc);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [infoModalContent]);
 
   // YENİ: PWA AKILLI YÖNLENDİRİCİ (TRAFİK POLİSİ)
   useEffect(() => {
@@ -878,6 +914,64 @@ export default function LandingPage() {
         >
           Giriş Yap <ArrowRight className="w-4 h-4" />
         </button>
+        </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
+
+{/* BİLGİ MODALI */}
+<AnimatePresence>
+  {infoModalContent && (
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      exit={{ opacity: 0 }} 
+      className="fixed inset-0 z-[110] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm px-4"
+      onClick={() => {
+        closeInfoModal();
+        if (window.history.state?.modal === 'infoModal') {
+            window.history.back();
+        }
+      }}
+    >
+      <motion.div 
+        initial={{ scale: 0.95, opacity: 0, y: 10 }} 
+        animate={{ scale: 1, opacity: 1, y: 0 }} 
+        exit={{ scale: 0.95, opacity: 0, y: 10 }} 
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-3xl p-6 md:p-8 shadow-2xl w-full max-w-lg border border-gray-100 flex flex-col max-h-[80vh]"
+      >
+        <div className="flex justify-between items-center mb-5 border-b border-gray-100 pb-4 shrink-0">
+          <h3 className="text-xl font-black text-gray-900 tracking-tight">
+            {infoModalContent.title}
+          </h3>
+          <button onClick={() => {
+            closeInfoModal();
+            if (window.history.state?.modal === 'infoModal') {
+                window.history.back();
+            }
+          }} className="text-gray-400 hover:text-gray-900 transition-colors p-2 hover:bg-gray-100 rounded-xl bg-gray-50">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <div className="text-sm text-gray-600 font-medium leading-relaxed overflow-y-auto custom-scrollbar pr-2 whitespace-pre-wrap">
+          {infoModalContent.content}
+        </div>
+
+        <div className="mt-6 pt-4 border-t border-gray-100 shrink-0">
+          <button 
+            onClick={() => {
+                closeInfoModal();
+                if (window.history.state?.modal === 'infoModal') {
+                    window.history.back();
+                }
+            }}
+            className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-md active:scale-95"
+          >
+            Anladım, Kapat
+          </button>
+        </div>
       </motion.div>
     </motion.div>
   )}
@@ -885,7 +979,7 @@ export default function LandingPage() {
 
 <footer className="bg-white border-t border-gray-100 py-12 md:py-16 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 sm:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10 sm:gap-8">
             <div className="col-span-1 sm:col-span-2 md:col-span-1">
               <div className="flex items-center gap-2 mb-5">
                 <ShieldCheck className="w-7 h-7 text-blue-600" />
@@ -900,24 +994,13 @@ export default function LandingPage() {
             </div>
             <div>
               <h4 className="font-black text-gray-900 mb-5 text-sm uppercase tracking-widest">
-                Özellikler
-              </h4>
-              <ul className="space-y-4 text-sm text-gray-500 font-medium">
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">Varlık & QR Yönetimi</li>
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">Sesle Form Doldurma</li>
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">Performans Analizi</li>
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">Offline PWA Desteği</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-black text-gray-900 mb-5 text-sm uppercase tracking-widest">
                 Kurumsal
               </h4>
               <ul className="space-y-4 text-sm text-gray-500 font-medium">
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">Hakkımızda</li>
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">Sektörel Çözümler</li>
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">Fiyatlandırma</li>
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">İletişim & Destek</li>
+                <li onClick={() => openInfoModal('Hakkımızda', 'FixLog.co, saha operasyonlarını dijitalleştirmek amacıyla kurulmuş yenilikçi bir SaaS platformudur. Misyonumuz, firmaların operasyonel maliyetlerini düşürürken verimliliklerini maksimuma çıkarmaktır.')} className="hover:text-blue-600 cursor-pointer transition-colors">Hakkımızda</li>
+                <li onClick={() => openInfoModal('Sektörel Çözümler', 'Asansör, iklimlendirme, güvenlik sistemleri ve profesyonel temizlik başta olmak üzere saha ekiplerinin yoğun olduğu tüm sektörler için özelleştirilebilir altyapılar sunuyoruz.')} className="hover:text-blue-600 cursor-pointer transition-colors">Sektörel Çözümler</li>
+                <li onClick={() => openInfoModal('Fiyatlandırma', 'Hiçbir donanım veya sunucu kurulum maliyeti olmadan, tamamen bulut tabanlı sistemimizi kullanabilirsiniz. Detaylı paketler ve fiyatlar işletmenizin hacmine göre şekillenmektedir.')} className="hover:text-blue-600 cursor-pointer transition-colors">Fiyatlandırma</li>
+                <li onClick={() => openInfoModal('İletişim & Destek', 'Sistem içi canlı destek hattımızdan, iletisim@fixlog.co adresinden veya size özel atanan müşteri temsilciniz üzerinden bize 7/24 ulaşabilirsiniz.')} className="hover:text-blue-600 cursor-pointer transition-colors">İletişim & Destek</li>
               </ul>
             </div>
             <div>
@@ -925,9 +1008,9 @@ export default function LandingPage() {
                 Yasal
               </h4>
               <ul className="space-y-4 text-sm text-gray-500 font-medium">
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">Kullanım Koşulları</li>
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">Gizlilik Politikası (KVKK)</li>
-                <li className="hover:text-blue-600 cursor-pointer transition-colors">İptal ve İade</li>
+                <li onClick={() => openInfoModal('Kullanım Koşulları', 'Platformumuzu kullanan tüm kullanıcılar standart kullanım koşullarımızı kabul etmiş sayılır. Sistemimiz, kötü niyetli veya yasadışı işlemler için kullanılamaz.')} className="hover:text-blue-600 cursor-pointer transition-colors">Kullanım Koşulları</li>
+                <li onClick={() => openInfoModal('Gizlilik Politikası (KVKK)', 'Verileriniz KVKK standartlarına tamamen uygun olarak Türkiye içerisindeki sunucularda şifreli olarak barındırılmaktadır. Üçüncü şahıs veya kurumlarla asla paylaşılmaz.')} className="hover:text-blue-600 cursor-pointer transition-colors">Gizlilik Politikası (KVKK)</li>
+                <li onClick={() => openInfoModal('İptal ve İade', 'Aboneliğinizi dilediğiniz zaman iptal edebilirsiniz. Herhangi bir taahhüt şartı bulunmamaktadır.')} className="hover:text-blue-600 cursor-pointer transition-colors">İptal ve İade</li>
               </ul>
             </div>
           </div>
