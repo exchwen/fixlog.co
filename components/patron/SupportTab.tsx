@@ -19,21 +19,6 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
   const [isReplying, setIsReplying] = useState(false);
   
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
-  const [viewportHeight, setViewportHeight] = useState('100dvh');
-
-  // 🚀 YENİ: Klavye açıldığında gerçek görünür alanı anlık hesaplayan beyin
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.visualViewport) {
-        const handleResize = () => setViewportHeight(`${window.visualViewport?.height}px`);
-        window.visualViewport.addEventListener('resize', handleResize);
-        window.visualViewport.addEventListener('scroll', handleResize);
-        handleResize(); // İlk açılışta yüksekliği al
-        return () => {
-            window.visualViewport?.removeEventListener('resize', handleResize);
-            window.visualViewport?.removeEventListener('scroll', handleResize);
-        };
-    }
-  }, []);
 
   useEffect(() => {
     if (setHideChatBubble) {
@@ -524,8 +509,7 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed top-0 left-0 w-full z-[100] flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm sm:p-4"
-              style={{ height: viewportHeight }}
+              className="fixed inset-0 z-[100] flex flex-col sm:items-center sm:justify-center bg-slate-900/60 backdrop-blur-sm sm:p-4"
               onClick={handleCloseModal}
             >
                <motion.div
@@ -533,7 +517,7 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
                  animate={{ scale: 1, opacity: 1, y: 0 }}
                  exit={{ scale: 0.95, opacity: 0, y: 10 }}
                  onClick={(e) => e.stopPropagation()} 
-                 className="bg-white w-full h-full sm:h-auto sm:flex-none sm:w-[95%] sm:max-w-4xl sm:max-h-[85vh] rounded-none sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+                 className="bg-white flex-1 w-full h-full sm:flex-none sm:h-auto sm:w-[95%] sm:max-w-4xl sm:max-h-[85vh] rounded-none sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
                >
                  {/* Modal Üst Bilgi (Sabit) */}
                  <div className="flex justify-between items-center p-4 sm:p-5 border-b border-slate-100 bg-slate-50 shrink-0">
