@@ -20,6 +20,9 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
   
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
 
+  // 🚀 YENİ: Modalın yüksekliğini dinamik hesaplamak için state
+  const [modalHeight, setModalHeight] = useState('100dvh');
+
   useEffect(() => {
     if (setHideChatBubble) {
         setHideChatBubble(!!selectedTicket);
@@ -36,6 +39,23 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
   useEffect(() => {
     if (!selectedTicket) return;
 
+    // 🚀 KESİN ÇÖZÜM: visualViewport ile klavye açılınca gerçek ekran yüksekliğini yakalama
+    const updateHeight = () => {
+        if (window.visualViewport) {
+            setModalHeight(`${window.visualViewport.height}px`);
+            // Tarayıcının kendi kendine sayfayı kaydırmasını sıfırla
+            window.scrollTo(0, 0); 
+        } else {
+            setModalHeight(`${window.innerHeight}px`);
+        }
+    };
+
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', updateHeight);
+        window.visualViewport.addEventListener('scroll', updateHeight); // Safari inatçılığı için eklendi
+        updateHeight(); // İlk açılışta boyu ayarla
+    }
+
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') handleCloseModal();
     };
@@ -44,8 +64,7 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
       setSelectedTicket(null);
     };
 
-// 🚀 MOBİL KLAVYE İÇİN HAYAT KURTARAN KİLİT
-    // Body'e fixed vermek mobilde inputa tıklayınca sayfanın uzaya fırlamasına sebep oluyor. Sadece overflow gizliyoruz.
+    // Arkada sayfa kaymasını engelle
     document.body.style.overflow = 'hidden';
 
     window.history.pushState({ modal: 'ticketOpen' }, '');
@@ -53,7 +72,11 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
     window.addEventListener('popstate', handlePopState);
 
     return () => {
-      // Modaldan çıkınca kilidi aç
+      if (window.visualViewport) {
+          window.visualViewport.removeEventListener('resize', updateHeight);
+          window.visualViewport.removeEventListener('scroll', updateHeight);
+      }
+      
       document.body.style.overflow = '';
 
       window.removeEventListener('keydown', handleEsc);
@@ -138,7 +161,6 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
       const data = await res.json();
 
       if (Array.isArray(data)) {
-        // 🚀 YENİ: En son mesaj yazılan bileti en üste taşıyan sıralama algoritması
         data.sort((a, b) => {
             const getLatestDate = (ticket: any) => {
                 let latest = new Date(ticket.created_at ? ticket.created_at.replace(' ', 'T') : 0).getTime();
@@ -151,7 +173,7 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
                 } catch(e) {}
                 return latest;
             };
-            return getLatestDate(b) - getLatestDate(a); // Büyükten küçüğe (En yeni tarih en üstte)
+            return getLatestDate(b) - getLatestDate(a);
         });
 
         setMyTickets(data);
@@ -211,6 +233,12 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
         if (result.success) {
             setReplyMessageText(prev => ({ ...prev, [ticketId]: '' }));
             await fetchMyTickets(); 
+            
+            // Mesaj gönderildikten sonra scrollu alta çek
+            setTimeout(() => {
+                const box = document.getElementById('ticket-scroll-box');
+                if (box) box.scrollTop = box.scrollHeight;
+            }, 100);
         }
     } catch(e) {
         console.error("Yanıt gönderilemedi", e);
@@ -516,8 +544,9 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              // DVH'ı tamamen sildik, fixed inset-0 ile tarayıcının native alanına bıraktık
-              className="fixed inset-0 z-[100] flex flex-col sm:items-center sm:justify-center bg-slate-900/60 backdrop-blur-sm sm:p-4 overscroll-none"
+              // 🚀 CSS kısıtlamalarını kaldırdık, boyutu dinamik JS veriyor.
+              className="fixed top-0 left-0 w-full z-[100] flex flex-col sm:items-center sm:justify-center bg-slate-900/60 backdrop-blur-sm sm:p-4 overscroll-none"
+              style={{ height: modalHeight }} 
               onClick={handleCloseModal}
             >
                <motion.div
@@ -525,8 +554,7 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
                  animate={{ scale: 1, opacity: 1, y: 0 }}
                  exit={{ scale: 0.95, opacity: 0, y: 10 }}
                  onClick={(e) => e.stopPropagation()} 
-                 // h-full yerine flex-1 verdik, style kısmını tamamen sildik
-                 className="bg-white w-full flex-1 sm:h-auto sm:flex-none sm:w-[95%] sm:max-w-4xl sm:max-h-[85vh] rounded-none sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+                 className="bg-white w-full h-full sm:h-auto sm:flex-none sm:w-[95%] sm:max-w-4xl sm:max-h-[85vh] rounded-none sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden"
                >
                  {/* Modal Üst Bilgi (Sabit) */}
                  <div className="flex justify-between items-center p-4 sm:p-5 border-b border-slate-100 bg-slate-50 shrink-0">
@@ -547,8 +575,8 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
                  </div>
 
                  {/* Modal İçerik / Sohbet Akışı (Scrollable) */}
-                 {/* 🚀 3. DEĞİŞİKLİK: overscroll-contain eklendi, böylece mesajlarda kaydırırken sayfa arkada hareket etmez. */}
-                 <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6 bg-slate-50/50 flex flex-col scrollbar-hide overscroll-contain">
+                 {/* 🚀 YENİ: id="ticket-scroll-box" ekledik ki klavye açıldığında JS ile burayı aşağı kaydırabilelim */}
+                 <div id="ticket-scroll-box" className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6 bg-slate-50/50 flex flex-col scrollbar-hide overscroll-contain">
                    
                    {/* İlk Mesaj (Sağda - Kullanıcı) - Geniş ekranlarda mesaj balonu çok uzamasın diye max-w limiti var */}
                    <div className="w-full max-w-[90%] sm:max-w-[75%] ml-auto">
@@ -589,7 +617,6 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
 
                  {/* Modal Alt Kısmı / Yanıt Yazma Alanı (Sabit) */}
                  {selectedTicket.status !== 'Çözüldü' && selectedTicket.status !== 'Resolved' && !selectedTicket.id.startsWith('sistem-hatasi') && (
-                     // 🚀 4. DEĞİŞİKLİK: pb-[max(0.75rem,env(safe-area-inset-bottom))] eklendi. (iPhone home bar ile klavyenin çakışmasını engeller)
                      <div className="p-3 sm:p-5 bg-white border-t border-slate-200 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                        <div className="flex gap-2 sm:gap-3 items-center max-w-4xl mx-auto">
                            <input
@@ -597,6 +624,18 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
                               value={replyMessageText[selectedTicket.id] || ''}
                               onChange={(e) => setReplyMessageText(prev => ({ ...prev, [selectedTicket.id]: e.target.value }))}
                               placeholder="Yanıtınızı buraya yazın..."
+                              // 🚀 YENİ: Inputa tıklandığı an tarayıcının saçmalamasını engelleyip mesajları aşağı kaydıran büyü
+                              onFocus={() => {
+                                  setTimeout(() => {
+                                      window.scrollTo(0, 0); // Sayfa yukarı fırlamasın diye
+                                      const box = document.getElementById('ticket-scroll-box');
+                                      if (box) box.scrollTop = box.scrollHeight; // Mesajları en alta kaydır
+                                  }, 100);
+                                  setTimeout(() => {
+                                      const box = document.getElementById('ticket-scroll-box');
+                                      if (box) box.scrollTop = box.scrollHeight;
+                                  }, 400); // Klavye tam oturduğunda tekrar et
+                              }}
                               onKeyDown={(e) => { if(e.key === 'Enter') handleCustomerReply(selectedTicket.id) }}
                               className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 sm:py-4 text-sm font-medium outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400"
                            />
