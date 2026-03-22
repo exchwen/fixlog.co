@@ -44,35 +44,35 @@ import { auth } from '@/lib/firebase';
 // Sabit veriler
 const SECTORS = [
   'Asansör Bakım & Montaj',
-  'İklimlendirme (Klima & Kombi)',
-  'Güvenlik Kamera & Alarm Sistemleri',
-  'Profesyonel Temizlik Hizmetleri',
-  'İlaçlama ve Pest Kontrol',
-  'Yangın Söndürme Sistemleri',
-  'Su Arıtma Sistemleri',
-  'Endüstriyel Kapı ve Kepenk',
-  'Diğer (Özel Sektör)',
+  //'İklimlendirme (Klima & Kombi)',
+  //'Güvenlik Kamera & Alarm Sistemleri',
+  //'Profesyonel Temizlik Hizmetleri',
+  //'İlaçlama ve Pest Kontrol',
+  //'Yangın Söndürme Sistemleri',
+  //'Su Arıtma Sistemleri',
+  //'Endüstriyel Kapı ve Kepenk',
+  //'Diğer (Özel Sektör)',
 ];
 
 const REVIEWS = [
   {
     name: 'Ahmet Y.',
-    role: 'Asansör Firması',
+    role: 'Asansör Bakım & Montaj',
     text: 'Usta performanslarını ölçmek kârımı %30 artırdı.',
   },
   {
-    name: 'Selin K.',
-    role: 'İklimlendirme',
+    name: 'Özkan K.',
+    role: 'Asansör Bakım & Montaj',
     text: 'Varlık yönetimi ile müşterilere kurumsal bir yüz sunuyoruz.',
   },
   {
     name: 'Mehmet D.',
-    role: 'Güvenlik',
+    role: 'Asansör Bakım & Montaj',
     text: 'Sesle form doldurma sahadaki işleri çok hızlandırdı.',
   },
   {
-    name: 'Canan T.',
-    role: 'Temizlik',
+    name: 'Fatih T.',
+    role: 'Asansör Bakım & Montaj',
     text: 'Taşeronları tek ekrandan yönetmek harika.',
   },
 ];
@@ -80,7 +80,7 @@ const REVIEWS = [
 const FEATURES = [
   {
     icon: Smartphone,
-    title: 'Mobil Uygulama (PWA)',
+    title: 'Mobil Uygulama',
     desc: 'Uygulama marketleriyle uğraşmadan, tek tıkla ana ekrana ekleyin ve anında kullanmaya başlayın.',
   },
   {
