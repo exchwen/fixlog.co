@@ -134,7 +134,7 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
 
         setAlertModal({ 
             isOpen: true, 
-            message: 'Otopilot sistemi çalıştı. Periyodik bakımlar, ustaların rotalarına başarıyla dağıtıldı.', 
+            message: response?.message || 'Otopilot sistemi çalıştı. Periyodik bakımlar, ustaların rotalarına başarıyla dağıtıldı.', 
             type: 'success' 
         });
         setTimeout(() => { window.location.reload(); }, 2000);
