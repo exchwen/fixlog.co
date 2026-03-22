@@ -255,11 +255,11 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                    {filteredAssets.length > 0 ? filteredAssets.map((asset: any) => {
-                        const permanentStaff = staff.find((s:any) => s.id === asset.route_staff_id);
+                {filteredAssets.length > 0 ? filteredAssets.map((asset: any) => {
+                        const permanentStaff = staff.find((s:any) => String(s.id) === String(asset.route_staff_id));
                         
                         // 🚀 GÜNCELLEME: Otopilot bu binaya geçici bir usta atadı mı diye işler listesine bakıyoruz
-                        const upcomingJob = (data?.jobs || []).find((j: any) => j.asset_id === asset.id && j.work_type === 'Periyodik Bakım' && j.status !== 'Tamamlandı' && j.status !== 'İptal');
+                        const upcomingJob = (data?.jobs || []).find((j: any) => String(j.asset_id) === String(asset.id) && j.work_type === 'Periyodik Bakım' && j.status !== 'Tamamlandı' && j.status !== 'İptal');
                         
                         const isCollected = (() => {
                             if (!asset.last_collection_date) return false;
@@ -350,8 +350,8 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
         <div className="md:hidden flex flex-col gap-4 p-4 bg-slate-50/50">
             {filteredAssets.length > 0 ? filteredAssets.map((asset: any) => {
                 // 🚀 GÜNCELLEME: Masaüstünde olduğu gibi mobil görünüm için de değişkenleri tanımlıyoruz
-                const permanentStaff = staff.find((s:any) => s.id === asset.route_staff_id);
-                const upcomingJob = (data?.jobs || []).find((j: any) => j.asset_id === asset.id && j.work_type === 'Periyodik Bakım' && j.status !== 'Tamamlandı' && j.status !== 'İptal');
+                const permanentStaff = staff.find((s:any) => String(s.id) === String(asset.route_staff_id));
+                const upcomingJob = (data?.jobs || []).find((j: any) => String(j.asset_id) === String(asset.id) && j.work_type === 'Periyodik Bakım' && j.status !== 'Tamamlandı' && j.status !== 'İptal');
                 
                 const isCollected = (() => {
                     if (!asset.last_collection_date) return false;
