@@ -249,7 +249,10 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                     {filteredAssets.length > 0 ? filteredAssets.map((asset: any) => {
-                        const assignedStaff = staff.find((s:any) => s.id === asset.route_staff_id);
+                        const permanentStaff = staff.find((s:any) => s.id === asset.route_staff_id);
+                        
+                        // 🚀 GÜNCELLEME: Otopilot bu binaya geçici bir usta atadı mı diye işler listesine bakıyoruz
+                        const upcomingJob = (data?.jobs || []).find((j: any) => j.asset_id === asset.id && j.work_type === 'Periyodik Bakım' && j.status !== 'Tamamlandı' && j.status !== 'İptal');
                         
                         const isCollected = (() => {
                             if (!asset.last_collection_date) return false;
@@ -276,10 +279,15 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                                 </td>
                                 
                                 <td className="p-4">
-                                    {assignedStaff ? (
+                                    {permanentStaff ? (
                                         <div className="flex items-center gap-2 font-semibold text-slate-700">
                                             <div className="w-6 h-6 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center text-[10px]"><User size={12}/></div>
-                                            {assignedStaff.name}
+                                            {permanentStaff.name}
+                                        </div>
+                                    ) : upcomingJob && upcomingJob.worker_name ? (
+                                        <div className="flex items-center gap-2 font-semibold text-purple-700" title="Otopilot tarafından bu ay için atandı">
+                                            <div className="w-6 h-6 rounded-md bg-purple-100 text-purple-600 flex items-center justify-center text-[10px]"><Bot size={12}/></div>
+                                            {upcomingJob.worker_name} <span className="text-[9px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded font-black border border-purple-200">Otopilot</span>
                                         </div>
                                     ) : (
                                         <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200">Personel Atanmadı</span>
@@ -375,8 +383,13 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
                             <div className="flex flex-col gap-0.5">
                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sorumlu</span>
                                 <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
-                                    <User size={10} className="text-slate-400"/> 
-                                    {assignedStaff ? assignedStaff.name : 'Atanmadı'}
+                                    {permanentStaff ? (
+                                        <><User size={10} className="text-slate-400"/> {permanentStaff.name}</>
+                                    ) : upcomingJob && upcomingJob.worker_name ? (
+                                        <><Bot size={10} className="text-purple-500"/> <span className="text-purple-600">{upcomingJob.worker_name} (Oto)</span></>
+                                    ) : (
+                                        'Atanmadı'
+                                    )}
                                 </span>
                             </div>
                             <div className="flex flex-col gap-0.5 text-right">
