@@ -115,12 +115,24 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
         const icon192 = generateIcon(192);
         const icon512 = generateIcon(512);
 
+// 🚀 PWA BAŞLANGIÇ ROTASI MOTORU
+        // Eğer cihazda staff (personel) oturumu oluşturulurken bu manifest yükleniyorsa, onu kendi slug login'ine kilitle!
+        const currentSlug = window.location.pathname.split('/')[1]; // Örn: url.com/doky-ox4q/login -> 'doky-ox4q'
+        let pwaStartUrl = window.location.origin + "/login?pwa=true"; // Varsayılan: Patron Girişi
+        
+        // Eğer URL'de geçerli bir firma slug'ı (login, worker, manager vs. içindeyken) varsa, başlangıcı o firmaya sabitle.
+        if (currentSlug === 'masterboss') {
+            pwaStartUrl = window.location.origin + "/masterboss?pwa=true";
+        } else if (currentSlug && currentSlug !== 'login' && currentSlug !== 'register' && currentSlug !== '') {
+            pwaStartUrl = window.location.origin + `/${currentSlug}/login?pwa=true`;
+        }
+
         const dynamicManifest = {
           name: companyName || "FixLog.co",
           short_name: companyName || "FixLog.co",
           description: "Saha operasyonları, personel ve iş takibi uygulaması.",
-          // 🚀 KESİN ÇÖZÜM: URL is invalid hatasını önlemek için tam adres veriyoruz.
-          start_url: window.location.origin + "/",
+          // 🚀 KESİN ÇÖZÜM: Artık landing page yerine doğrudan Login sayfalarına açılacak!
+          start_url: pwaStartUrl,
           scope: "/",
           display: "standalone",
           background_color: finalColor,

@@ -29,27 +29,39 @@ export default function LoginPage() {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // YENİ: SADECE PATRON (FİREBASE) KONTROLÜ
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const patronToken = localStorage.getItem('patron_authToken');
-        const patronSlug = localStorage.getItem('patron_userSlug');
-        
-        if (patronToken && patronSlug) {
-          router.replace(`/${patronSlug}/dashboard`); // 🚀 DÜZELTME: manager yerine dashboard
-          return;
-        } else {
-          await signOut(auth);
-          setIsCheckingAuth(false);
-        }
+// YENİ: SADECE PATRON (FİREBASE) KONTROLÜ
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      const patronToken = localStorage.getItem('patron_authToken');
+      const patronSlug = localStorage.getItem('patron_userSlug');
+      
+      if (patronToken && patronSlug) {
+        router.replace(`/${patronSlug}/dashboard`); // 🚀 DÜZELTME: manager yerine dashboard
+        return;
       } else {
+        await signOut(auth);
         setIsCheckingAuth(false);
       }
-    });
+    } else {
+      setIsCheckingAuth(false);
+    }
+  });
 
-    return () => unsubscribe();
-  }, [router]);
+// 🚀 PWA ÇAPRAZ OTURUM KORUMASI: Eğer bir usta, patron giriş sayfasını açarsa (veya PWA'dan buraya düşerse) onu kendi şirketinin loginine fırlat!
+const staffSlug = localStorage.getItem('staff_userSlug');
+const masterToken = localStorage.getItem('masterbossToken');
+
+if (masterToken) {
+   router.replace('/masterboss/dashboard');
+   return;
+} else if (!localStorage.getItem('patron_authToken') && staffSlug) {
+   router.replace(`/${staffSlug}/login`);
+   return;
+}
+
+return () => unsubscribe();
+}, [router]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });

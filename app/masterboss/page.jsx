@@ -11,6 +11,14 @@ export default function MasterbossLogin() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // 🚀 PWA VE OTOMATİK GİRİŞ KONTROLÜ: Masterboss token varsa direkt dashboard'a at!
+  useEffect(() => {
+    const token = localStorage.getItem("masterbossToken");
+    if (token) {
+      router.replace("/masterboss/dashboard");
+    }
+  }, [router]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
