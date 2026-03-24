@@ -2,13 +2,66 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Building2, Users, Activity, BarChart3, LogOut, TicketCheck, Gift, AlertCircle, CheckCircle, Database, Plus, ShoppingCart, X, TrendingUp, TrendingDown, Clock } from "lucide-react";
+import { Building2, Users, Activity, BarChart3, LogOut, TicketCheck, Gift, AlertCircle, CheckCircle, Database, Plus, ShoppingCart, X, TrendingUp, TrendingDown, Clock, Download } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function MasterbossDashboard() {
   const router = useRouter();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // 🚀 PWA KURULUM STATE'LERİ
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+  const [isIos, setIsIos] = useState(false);
+
+  useEffect(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    if (isStandalone) return;
+
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
+    setIsIos(isIOSDevice);
+
+    if (isIOSDevice) {
+      setIsInstallable(true);
+    } else {
+      const handler = (e) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+        setIsInstallable(true);
+      };
+
+      window.addEventListener('beforeinstallprompt', handler);
+
+      // Global olarak yakalanmış PWA kurulum tetikleyicisi varsa al
+      if (window.pwaDeferredPrompt) {
+        handler(window.pwaDeferredPrompt);
+        window.pwaDeferredPrompt = null;
+      }
+
+      window.addEventListener('appinstalled', () => setIsInstallable(false));
+
+      return () => window.removeEventListener('beforeinstallprompt', handler);
+    }
+  }, []);
+
+  const handleInstallPwa = async () => {
+    if (isIos) {
+      toast('Yüklemek için "Paylaş" ikonuna basıp "Ana Ekrana Ekle"yi seçin.', {
+        icon: '📲',
+        duration: 5000,
+        style: { background: '#171717', color: '#fff', border: '1px solid #e11d48' }
+      });
+      return;
+    }
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') setIsInstallable(false);
+      setDeferredPrompt(null);
+    }
+  };
   const [activeTab, setActiveTab] = useState("companies");
   const [replyTexts, setReplyTexts] = useState({});
 
@@ -335,8 +388,8 @@ export default function MasterbossDashboard() {
   return (
     <div className="min-h-screen bg-neutral-950 text-white selection:bg-rose-500/30">
       
-      {/* Top Navbar */}
-      <nav className="sticky top-0 z-50 bg-neutral-900/80 backdrop-blur-xl border-b border-neutral-800">
+{/* Top Navbar */}
+<nav className="sticky top-0 z-50 bg-neutral-900/80 backdrop-blur-xl border-b border-neutral-800">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center shadow-lg shadow-rose-500/20">
@@ -345,12 +398,22 @@ export default function MasterbossDashboard() {
             <span className="font-bold text-lg tracking-tight">Masterboss</span>
           </div>
           
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-neutral-800/50 hover:bg-neutral-800 text-neutral-300 hover:text-white transition-all text-xs sm:text-sm font-medium border border-neutral-700/50"
-          >
-            <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Çıkış</span>
-          </button>
+          <div className="flex items-center gap-2 sm:gap-3">
+            {isInstallable && (
+              <button 
+                onClick={handleInstallPwa}
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-all text-xs sm:text-sm font-bold border border-rose-500/20 active:scale-95"
+              >
+                <Download className="w-4 h-4" /> <span className="hidden sm:inline">Uygulamayı Yükle</span>
+              </button>
+            )}
+            <button 
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-neutral-800/50 hover:bg-neutral-800 text-neutral-300 hover:text-white transition-all text-xs sm:text-sm font-medium border border-neutral-700/50 active:scale-95"
+            >
+              <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Çıkış</span>
+            </button>
+          </div>
         </div>
       </nav>
 
