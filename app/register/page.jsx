@@ -59,6 +59,7 @@ export default function RegisterPage() {
     sector: SECTORS[0],
     email: '',
     password: '',
+    referredByCode: '',
   });
 
   useEffect(() => {
@@ -106,6 +107,7 @@ export default function RegisterPage() {
           companyName: formData.companyName,
           sector: formData.sector,
           slug,
+          referredByCode: formData.referredByCode,
         }),
       });
 
@@ -140,6 +142,7 @@ export default function RegisterPage() {
           companyName: formData.companyName,
           sector: formData.sector,
           slug,
+          referredByCode: formData.referredByCode,
         }),
       });
 
@@ -251,6 +254,17 @@ export default function RegisterPage() {
                         placeholder="Şifre"
                       />
                     </div>
+                    <div className="relative">
+                      <Star className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        name="referredByCode"
+                        value={formData.referredByCode}
+                        onChange={handleChange}
+                        className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all placeholder:font-medium placeholder:text-gray-400"
+                        placeholder="Referans Kodu (Opsiyonel)"
+                      />
+                    </div>
                   </div>
                   <button
                     type="submit"
@@ -322,6 +336,17 @@ export default function RegisterPage() {
                           </option>
                         ))}
                       </select>
+                  </div>
+                  <div className="relative">
+                      <Star className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        name="referredByCode"
+                        value={formData.referredByCode}
+                        onChange={handleChange}
+                        className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all placeholder:font-medium placeholder:text-gray-400"
+                        placeholder="Referans Kodu (Opsiyonel)"
+                      />
                   </div>
                   <button
                     onClick={handleFinalize}
