@@ -1028,7 +1028,7 @@ useEffect(() => {
                                                 <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-4 shadow-inner"><AlertTriangle size={32} /></div>
                                                 <h3 className="text-xl font-black text-slate-800 mb-2">İşi İptal Etmek İstiyor musun?</h3>
                                                 <div className="flex gap-3 w-full max-w-[250px]">
-                                                    <button onClick={async () => { await handleAction('update-job', { id: selectedJob.id, status: 'İptal' }, () => setSelectedJob(null), () => {}); }} className="flex-1 bg-rose-600 text-white py-3 rounded-xl text-sm font-bold shadow-md active:scale-95">{isSaving ? <Loader2 className="animate-spin mx-auto" size={18} /> : 'Evet, İptal'}</button>
+                                                    <button onClick={async () => { await handleAction('update-job', { id: selectedJob.id, status: 'İptal' }, () => { setSelectedJob(null); setShowCancelConfirm(false); }, () => {}); }} className="flex-1 bg-rose-600 text-white py-3 rounded-xl text-sm font-bold shadow-md active:scale-95">{isSaving ? <Loader2 className="animate-spin mx-auto" size={18} /> : 'Evet, İptal'}</button>
                                                     <button onClick={() => setShowCancelConfirm(false)} className="flex-1 bg-white border-2 border-slate-200 text-slate-700 py-3 rounded-xl text-sm font-bold active:scale-95">Vazgeç</button>
                                                 </div>
                                                 </motion.div>

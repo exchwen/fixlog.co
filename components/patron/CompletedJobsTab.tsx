@@ -1,10 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, CheckCircle, MapPin, ClipboardList, Calendar, Clock, ArrowRight, ShieldCheck, UserPlus, UserCheck, Wrench, Building2, FileCheck, Database } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, CheckCircle, MapPin, ClipboardList, Calendar, Clock, ArrowRight, ShieldCheck, UserPlus, UserCheck, Wrench, Building2, FileCheck, Database, X, AlertTriangle } from 'lucide-react';
 
 export default function CompletedJobsTab({ data, setSelectedJob, statusColors }: any) {
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Şık Bildirim Modalı State'i
+  const [notification, setNotification] = useState<{show: boolean, msg: string, type: 'error' | 'success' | 'info'}>({show: false, msg: '', type: 'success'});
 
   // Tarih Formatlayıcı (Gün.Ay.Yıl Saat:Dakika)
   const formatFullDate = (dateString: string) => {
@@ -268,9 +272,11 @@ export default function CompletedJobsTab({ data, setSelectedJob, statusColors }:
                       if(archived.length > 0) {
                           data.jobs = [...archived, ...data.jobs];
                           setSearchTerm(searchTerm + ' '); 
-                          alert(`Toplam ${archived.length} adet eski iş kaydı arşivden çıkarıldı ve listeye eklendi.`);
+                          setNotification({ show: true, msg: `Toplam ${archived.length} adet eski iş kaydı arşivden çıkarıldı ve listeye eklendi.`, type: 'success' });
+                          setTimeout(() => setNotification({ show: false, msg: '', type: 'success' }), 4000);
                       } else {
-                          alert("Arşivde kayıtlı eski iş bulunamadı.");
+                          setNotification({ show: true, msg: "Arşivde kayıtlı eski iş bulunamadı.", type: 'info' });
+                          setTimeout(() => setNotification({ show: false, msg: '', type: 'info' }), 4000);
                       }
                   }}
                   className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-slate-200 text-slate-600 rounded-2xl font-black text-xs hover:bg-slate-100 transition-all active:scale-95 shadow-sm"
@@ -303,7 +309,7 @@ export default function CompletedJobsTab({ data, setSelectedJob, statusColors }:
            }
            if (detailWorker && !worker) {
                worker = detailWorker.name;
-           }
+               }
 
            const isCreatorSameAsManager = manager && (creator === manager);
            
@@ -412,6 +418,34 @@ export default function CompletedJobsTab({ data, setSelectedJob, statusColors }:
           </div>
         )}
       </div>
+
+      {/* ŞIK BİLDİRİM / HATA MODALI */}
+      <AnimatePresence>
+        {notification.show && (
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.8 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="fixed inset-0 z-[400] flex items-center justify-center p-4 pointer-events-none"
+            >
+                <div className="bg-white/95 backdrop-blur-md border-2 border-slate-100 shadow-2xl rounded-3xl p-8 flex flex-col items-center text-center max-w-sm w-full pointer-events-auto relative">
+                    <button 
+                       onClick={() => setNotification({ show: false, msg: '', type: 'success' })}
+                       className="absolute top-4 right-4 p-2 text-slate-400 hover:bg-slate-100 rounded-full transition-colors"
+                    >
+                       <X size={18} />
+                    </button>
+                    <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 shadow-inner animate-pulse ${notification.type === 'error' ? 'bg-rose-100 text-rose-600' : notification.type === 'info' ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                        {notification.type === 'error' ? <AlertTriangle size={40} strokeWidth={3} /> : notification.type === 'info' ? <Database size={40} strokeWidth={3} /> : <CheckCircle size={40} strokeWidth={3} />}
+                    </div>
+                    <h3 className="text-xl font-black text-slate-900 mb-1">
+                        {notification.type === 'error' ? 'Hata!' : notification.type === 'info' ? 'Bilgi' : 'Başarılı!'}
+                    </h3>
+                    <p className="text-sm text-slate-500 font-medium leading-relaxed">{notification.msg}</p>
+                </div>
+            </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

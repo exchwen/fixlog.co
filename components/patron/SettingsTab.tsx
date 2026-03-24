@@ -365,8 +365,13 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
              className="w-20 h-20 rounded-xl flex items-center justify-center overflow-hidden shrink-0 shadow-sm border border-slate-200 transition-colors duration-300"
              style={{ backgroundColor: settingsForm?.logo ? logoBgColor : '#ffffff' }}
           >
+            {/* 🚀 DÜZELTME: R2 Linklerini Proxy Üzerinden Çekecek Güvenli İmaj Etiketi */}
             {settingsForm?.logo ? (
-              <img src={settingsForm.logo} alt="Logo" className="max-w-full max-h-full object-contain p-2" />
+              <img 
+                src={settingsForm.logo.startsWith('http') ? getSafeImageUrl(settingsForm.logo) : settingsForm.logo} 
+                alt="Logo" 
+                className="max-w-full max-h-full object-contain p-2" 
+              />
             ) : (
               <ImagePlus className="text-slate-300" size={32} />
             )}
