@@ -91,8 +91,8 @@ export default function WorkerSidebar({ activeTab, setActiveTab, isMobileMenuOpe
         max-lg:transition-transform max-lg:duration-300 max-lg:ease-out lg:transition-all lg:duration-300 lg:ease-in-out`}
       >
         <div className="p-6 flex items-center justify-between border-b border-slate-100 shrink-0">
-          <div className="flex items-center gap-3 w-full">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shrink-0 shadow-inner overflow-hidden p-1.5">
+        <div className="flex items-center gap-3 w-full">
+            <div className="w-10 h-10 flex items-center justify-center shrink-0">
                <img src="/favicon.ico" alt="FixLog.co Logo" className="w-full h-full object-contain" />
             </div>
             <div className="flex-col opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex">

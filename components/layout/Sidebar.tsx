@@ -116,8 +116,8 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
         max-lg:transition-none lg:transition-all lg:duration-300 lg:ease-in-out`}
       >
         <div className="p-6 flex items-center justify-between border-b border-slate-800 shrink-0 bg-slate-900/50">
-          <div className="flex items-center gap-3 w-full">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shrink-0 shadow-lg overflow-hidden p-1">
+        <div className="flex items-center gap-3 w-full">
+            <div className="w-8 h-8 flex items-center justify-center shrink-0">
                <img src="/favicon.ico" alt="FixLog.co Logo" className="w-full h-full object-contain" />
             </div>
             <div className="flex-col opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex">
