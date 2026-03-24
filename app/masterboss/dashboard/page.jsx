@@ -395,7 +395,7 @@ const handleInstallPwa = async () => {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white selection:bg-rose-500/30 relative">
-      <DynamicPWA companyName="FixLog.co" />
+      <DynamicPWA companyName="FixLog.co" companyLogo="/icons/icon-512x512.png" />
       {/* 🚀 PWA YÜKLEME BALONU EKLENDİ */}
       <AnimatePresence>
         {showPwaPrompt && (
