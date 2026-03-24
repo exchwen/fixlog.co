@@ -77,7 +77,7 @@ export default function WorkerSidebar({ activeTab, setActiveTab, isMobileMenuOpe
 
   return (
     <>
-      {/* Mobildeki Arka Plan Karartması (Animasyonsuz, Performanslı) */}
+      {/* 1Mobildeki Arka Plan Karartması (Animasyonsuz, Performanslı) */}
       {isMobileMenuOpen && !isDesktop && (
         <div
           onClick={() => setIsMobileMenuOpen(false)}
