@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { LogOut, CheckCircle2, ChevronRight, X, ListTodo, Wrench } from 'lucide-react';
+import { LogOut, CheckCircle2, ChevronRight, X, ListTodo } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 
 export default function WorkerSidebar({ activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen }: any) {
@@ -77,7 +77,7 @@ export default function WorkerSidebar({ activeTab, setActiveTab, isMobileMenuOpe
 
   return (
     <>
-      {/* 1Mobildeki Arka Plan Karartması (Animasyonsuz, Performanslı) */}
+      {/* Mobildeki Arka Plan Karartması (Animasyonsuz, Performanslı) */}
       {isMobileMenuOpen && !isDesktop && (
         <div
           onClick={() => setIsMobileMenuOpen(false)}
@@ -92,11 +92,11 @@ export default function WorkerSidebar({ activeTab, setActiveTab, isMobileMenuOpe
       >
         <div className="p-6 flex items-center justify-between border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3 w-full">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shrink-0 shadow-inner">
-               <Wrench className="text-white" size={20} />
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shrink-0 shadow-inner overflow-hidden p-1.5">
+               <img src="/favicon.ico" alt="FixLog.co Logo" className="w-full h-full object-contain" />
             </div>
             <div className="flex-col opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex">
-               <span className="font-black text-slate-800 text-lg leading-tight tracking-tight whitespace-nowrap">SAHA PANELİ</span>
+               <span className="font-black text-slate-800 text-lg leading-tight tracking-tight whitespace-nowrap">FixLog.co</span>
                <span className="text-[10px] text-blue-600 font-bold uppercase tracking-widest whitespace-nowrap">Personel</span>
             </div>
           </div>

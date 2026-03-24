@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, ShieldCheck, CheckSquare, Bell, HelpCircle, X, CheckCircle2, UserCircle, ChevronRight, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, CheckSquare, Bell, HelpCircle, X, CheckCircle2, UserCircle, ChevronRight, RefreshCw } from 'lucide-react';
 import { useParams } from 'next/navigation';
 
 export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen }: any) {
@@ -117,11 +117,11 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
       >
         <div className="p-6 flex items-center justify-between border-b border-slate-800 shrink-0 bg-slate-900/50">
           <div className="flex items-center gap-3 w-full">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shrink-0 shadow-lg">
-               <ShieldCheck size={18} />
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shrink-0 shadow-lg overflow-hidden p-1">
+               <img src="/favicon.ico" alt="FixLog.co Logo" className="w-full h-full object-contain" />
             </div>
             <div className="flex-col opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex">
-               <span className="font-bold text-white text-sm tracking-tight uppercase whitespace-nowrap">FixLog.co</span>
+               <span className="font-bold text-white text-sm tracking-tight whitespace-nowrap">FixLog.co</span>
                <span className="text-[10px] text-blue-500 font-bold tracking-widest whitespace-nowrap">{userRole || 'Yönetim'}</span>
             </div>
           </div>
