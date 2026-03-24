@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Building2, Users, Activity, BarChart3, LogOut, TicketCheck, Gift, AlertCircle, CheckCircle, Database, Plus, ShoppingCart, X, TrendingUp, TrendingDown, Clock, Download } from "lucide-react";
+import { Building2, Users, Activity, BarChart3, LogOut, TicketCheck, Gift, AlertCircle, CheckCircle, Database, Plus, ShoppingCart, X, TrendingUp, TrendingDown, Clock, Download, Share, Check } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function MasterbossDashboard() {
@@ -10,58 +10,65 @@ export default function MasterbossDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🚀 PWA KURULUM STATE'LERİ
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isInstallable, setIsInstallable] = useState(false);
-  const [isIos, setIsIos] = useState(false);
+// 🚀 PWA KURULUM STATE'LERİ
+const [deferredPrompt, setDeferredPrompt] = useState(null);
+const [showPwaPrompt, setShowPwaPrompt] = useState(false);
+const [isIos, setIsIos] = useState(false);
+const [installState, setInstallState] = useState('idle');
 
-  useEffect(() => {
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-    if (isStandalone) return;
+useEffect(() => {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (isStandalone) return;
 
-    const userAgent = window.navigator.userAgent.toLowerCase();
-    const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
-    setIsIos(isIOSDevice);
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
+  setIsIos(isIOSDevice);
 
-    if (isIOSDevice) {
-      setIsInstallable(true);
-    } else {
-      const handler = (e) => {
-        e.preventDefault();
-        setDeferredPrompt(e);
-        setIsInstallable(true);
-      };
+  if (isIOSDevice) {
+    setTimeout(() => setShowPwaPrompt(true), 2000);
+  } else {
+    const handler = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setTimeout(() => setShowPwaPrompt(true), 2000);
+    };
 
-      window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('beforeinstallprompt', handler);
 
-      // Global olarak yakalanmış PWA kurulum tetikleyicisi varsa al
-      if (window.pwaDeferredPrompt) {
-        handler(window.pwaDeferredPrompt);
-        window.pwaDeferredPrompt = null;
-      }
-
-      window.addEventListener('appinstalled', () => setIsInstallable(false));
-
-      return () => window.removeEventListener('beforeinstallprompt', handler);
+    // Global olarak yakalanmış PWA kurulum tetikleyicisi varsa al
+    if (window.pwaDeferredPrompt) {
+      handler(window.pwaDeferredPrompt);
+      window.pwaDeferredPrompt = null;
     }
-  }, []);
 
-  const handleInstallPwa = async () => {
-    if (isIos) {
-      toast('Yüklemek için "Paylaş" ikonuna basıp "Ana Ekrana Ekle"yi seçin.', {
-        icon: '📲',
-        duration: 5000,
-        style: { background: '#171717', color: '#fff', border: '1px solid #e11d48' }
-      });
-      return;
+    window.addEventListener('appinstalled', () => {
+      setInstallState('success');
+      setTimeout(() => setShowPwaPrompt(false), 3000);
+    });
+
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }
+}, []);
+
+const handleInstallPwa = async () => {
+  if (isIos) {
+    toast('Yüklemek için "Paylaş" ikonuna basıp "Ana Ekrana Ekle"yi seçin.', {
+      icon: '📲',
+      duration: 5000,
+      style: { background: '#171717', color: '#fff', border: '1px solid #e11d48' }
+    });
+    return;
+  }
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setInstallState('success');
+      setTimeout(() => setShowPwaPrompt(false), 3000);
     }
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') setIsInstallable(false);
-      setDeferredPrompt(null);
-    }
-  };
+    setDeferredPrompt(null);
+  }
+};
   const [activeTab, setActiveTab] = useState("companies");
   const [replyTexts, setReplyTexts] = useState({});
 
@@ -386,10 +393,40 @@ export default function MasterbossDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white selection:bg-rose-500/30">
+    <div className="min-h-screen bg-neutral-950 text-white selection:bg-rose-500/30 relative">
       
-{/* Top Navbar */}
-<nav className="sticky top-0 z-50 bg-neutral-900/80 backdrop-blur-xl border-b border-neutral-800">
+      {/* 🚀 PWA YÜKLEME BALONU EKLENDİ */}
+      <AnimatePresence>
+        {showPwaPrompt && (
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} 
+            className="fixed bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[420px] bg-neutral-900 text-white p-4 sm:p-5 rounded-2xl shadow-2xl z-[9999] flex flex-row items-center justify-between border border-neutral-700"
+          >
+            {installState === 'success' ? (
+              <div className="flex items-center gap-3 w-full justify-center py-1">
+                <div className="bg-emerald-500 p-2 rounded-full shrink-0"><Check size={20} className="text-white" /></div>
+                <div className="flex flex-col flex-1 min-w-0 pr-2"><span className="font-bold text-sm text-emerald-400">Kurulum Başarılı!</span><span className="text-xs text-neutral-400 mt-0.5">Cihazınızın ana ekranından giriş yapabilirsiniz.</span></div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-3 w-full">
+                  <div className="bg-rose-600 p-2.5 rounded-xl shrink-0"><Download size={20} className="text-white" /></div>
+                  <div className="flex flex-col flex-1 min-w-0 pr-2">
+                    <span className="font-bold text-sm">Masterboss'u Yükle</span>
+                    {isIos ? (<span className="text-[11px] text-neutral-400 mt-0.5 leading-tight">Yüklemek için <Share size={12} className="inline-block mx-0.5 mb-0.5" /> <b>Paylaş</b> ikonuna basıp <br/> <b>Ana Ekrana Ekle</b>'yi seçin.</span>) : (<span className="text-xs text-neutral-400 mt-0.5">Panele hızlıca erişmek için yükleyin.</span>)}
+                  </div>
+                </div>
+                <div className="flex gap-2 shrink-0 items-center">
+                  {!isIos && (<button onClick={handleInstallPwa} className="bg-rose-600 hover:bg-rose-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95">Yükle</button>)}
+                </div>
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Top Navbar */}
+      <nav className="sticky top-0 z-50 bg-neutral-900/80 backdrop-blur-xl border-b border-neutral-800">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center shadow-lg shadow-rose-500/20">
@@ -399,7 +436,7 @@ export default function MasterbossDashboard() {
           </div>
           
           <div className="flex items-center gap-2 sm:gap-3">
-            {isInstallable && (
+            {showPwaPrompt && installState !== 'success' && (
               <button 
                 onClick={handleInstallPwa}
                 className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-all text-xs sm:text-sm font-bold border border-rose-500/20 active:scale-95"
