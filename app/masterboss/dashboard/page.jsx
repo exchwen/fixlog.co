@@ -395,7 +395,7 @@ const handleInstallPwa = async () => {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white selection:bg-rose-500/30 relative">
-      <DynamicPWA companyName="Masterboss" />
+      <DynamicPWA companyName="FixLog.co" />
       {/* 🚀 PWA YÜKLEME BALONU EKLENDİ */}
       <AnimatePresence>
         {showPwaPrompt && (
@@ -413,7 +413,7 @@ const handleInstallPwa = async () => {
                 <div className="flex items-center gap-3 w-full">
                   <div className="bg-rose-600 p-2.5 rounded-xl shrink-0"><Download size={20} className="text-white" /></div>
                   <div className="flex flex-col flex-1 min-w-0 pr-2">
-                    <span className="font-bold text-sm">Masterboss'u Yükle</span>
+                    <span className="font-bold text-sm">Masterboss Panelini Yükle</span>
                     {isIos ? (<span className="text-[11px] text-neutral-400 mt-0.5 leading-tight">Yüklemek için <Share size={12} className="inline-block mx-0.5 mb-0.5" /> <b>Paylaş</b> ikonuna basıp <br/> <b>Ana Ekrana Ekle</b>'yi seçin.</span>) : (<span className="text-xs text-neutral-400 mt-0.5">Panele hızlıca erişmek için yükleyin.</span>)}
                   </div>
                 </div>

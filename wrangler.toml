@@ -1,7 +1,7 @@
-name = "is-dokumu"
+name = "fixlog"
 pages_build_output_dir = ".next"
 
 [[d1_databases]]
 binding = "DB" # Kod içinde process.env.DB olarak çağıracağımız isim
-database_name = "is-dokumu" # Cloudflare panelinde verdiğin isim
+database_name = "fixlog" # Cloudflare panelinde verdiğin isim
 database_id = "41c767a3-a552-45e9-bc0f-bba53970cd68" # Panelden kopyalayacağın ID
