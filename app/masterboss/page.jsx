@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Lock, Mail, ArrowRight, ShieldCheck, User, Download, Share, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import DynamicPWA from "@/components/DynamicPWA";
 
 export default function MasterbossLogin() {
   const [email, setEmail] = useState("");
@@ -84,7 +85,7 @@ export default function MasterbossLogin() {
 
   return (
     <div className="min-h-screen bg-neutral-950 flex flex-col justify-center items-center p-4 selection:bg-rose-500/30 relative overflow-hidden">
-      
+      <DynamicPWA companyName="Masterboss" />
       <AnimatePresence>
         {showPwaPrompt && (
           <motion.div 

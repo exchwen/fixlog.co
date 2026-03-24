@@ -183,8 +183,16 @@ export default function ManagerDashboard() {
     if (/iphone|ipad|ipod/.test(userAgent)) {
       setIsIos(true); setTimeout(() => setShowPwaPrompt(true), 2000);
     } else {
-      window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); setDeferredPrompt(e); setTimeout(() => setShowPwaPrompt(true), 2000); });
+      const handler = (e) => { e.preventDefault(); setDeferredPrompt(e); setTimeout(() => setShowPwaPrompt(true), 2000); };
+      window.addEventListener('beforeinstallprompt', handler);
+      
+      if (window.pwaDeferredPrompt) {
+        handler(window.pwaDeferredPrompt);
+        window.pwaDeferredPrompt = null;
+      }
+
       window.addEventListener('appinstalled', () => { setInstallState('success'); setTimeout(() => setShowPwaPrompt(false), 3000); });
+      return () => window.removeEventListener('beforeinstallprompt', handler);
     }
   }, []);
 

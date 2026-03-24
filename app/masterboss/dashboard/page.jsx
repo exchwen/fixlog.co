@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Building2, Users, Activity, BarChart3, LogOut, TicketCheck, Gift, AlertCircle, CheckCircle, Database, Plus, ShoppingCart, X, TrendingUp, TrendingDown, Clock, Download, Share, Check } from "lucide-react";
 import toast from "react-hot-toast";
+import DynamicPWA from "@/components/DynamicPWA";
 
 export default function MasterbossDashboard() {
   const router = useRouter();
@@ -394,7 +395,7 @@ const handleInstallPwa = async () => {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white selection:bg-rose-500/30 relative">
-      
+      <DynamicPWA companyName="Masterboss" />
       {/* 🚀 PWA YÜKLEME BALONU EKLENDİ */}
       <AnimatePresence>
         {showPwaPrompt && (

@@ -20,19 +20,59 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
   };
 
   useEffect(() => {
-    if (!companyLogo) {
-      resetToDefaultManifest();
-      return;
+    const currentSlug = window.location.pathname.split('/')[1];
+    let pwaStartUrl = window.location.origin + "/login?pwa=true";
+    if (currentSlug === 'masterboss') {
+        pwaStartUrl = window.location.origin + "/masterboss?pwa=true";
+    } else if (currentSlug && currentSlug !== 'login' && currentSlug !== 'register' && currentSlug !== '') {
+        pwaStartUrl = window.location.origin + `/${currentSlug}/login?pwa=true`;
     }
 
-    // 🔥 Linki güvenli hale getiriyoruz
     const safeLogoUrl = getSafeImageUrl(companyLogo);
+
+    const applyFallbackManifest = () => {
+      const fallbackManifest = {
+        name: companyName || "FixLog.co",
+        short_name: companyName || "FixLog.co",
+        description: "Saha operasyonları, personel ve iş takibi uygulaması.",
+        start_url: pwaStartUrl,
+        scope: window.location.origin + "/",
+        id: window.location.origin + "/",
+        display: "standalone",
+        background_color: "#0f172a",
+        theme_color: "#0f172a",
+        orientation: "portrait-primary",
+        icons: [
+          {
+            src: companyLogo ? safeLogoUrl : "/icons/icon-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any maskable"
+          },
+          {
+            src: companyLogo ? safeLogoUrl : "/icons/icon-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable"
+          }
+        ]
+      };
+      const stringManifest = JSON.stringify(fallbackManifest);
+      const blob = new Blob([stringManifest], { type: 'application/json' });
+      updateManifestTag(URL.createObjectURL(blob) + '#v=' + new Date().getTime());
+      updateThemeColorMeta('#0f172a');
+    };
+
+    if (!companyLogo) {
+      applyFallbackManifest();
+      return;
+    }
 
     const img = new Image();
     img.crossOrigin = "Anonymous";
     
     img.onerror = () => {
-      resetToDefaultManifest();
+      applyFallbackManifest();
     };
 
     img.onload = () => {
@@ -115,25 +155,13 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
         const icon192 = generateIcon(192);
         const icon512 = generateIcon(512);
 
-// 🚀 PWA BAŞLANGIÇ ROTASI MOTORU
-        // Eğer cihazda staff (personel) oturumu oluşturulurken bu manifest yükleniyorsa, onu kendi slug login'ine kilitle!
-        const currentSlug = window.location.pathname.split('/')[1]; // Örn: url.com/doky-ox4q/login -> 'doky-ox4q'
-        let pwaStartUrl = window.location.origin + "/login?pwa=true"; // Varsayılan: Patron Girişi
-        
-        // Eğer URL'de geçerli bir firma slug'ı (login, worker, manager vs. içindeyken) varsa, başlangıcı o firmaya sabitle.
-        if (currentSlug === 'masterboss') {
-            pwaStartUrl = window.location.origin + "/masterboss?pwa=true";
-        } else if (currentSlug && currentSlug !== 'login' && currentSlug !== 'register' && currentSlug !== '') {
-            pwaStartUrl = window.location.origin + `/${currentSlug}/login?pwa=true`;
-        }
-
         const dynamicManifest = {
           name: companyName || "FixLog.co",
           short_name: companyName || "FixLog.co",
           description: "Saha operasyonları, personel ve iş takibi uygulaması.",
-          // 🚀 KESİN ÇÖZÜM: Artık landing page yerine doğrudan Login sayfalarına açılacak!
           start_url: pwaStartUrl,
-          scope: "/",
+          scope: window.location.origin + "/",
+          id: window.location.origin + "/",
           display: "standalone",
           background_color: finalColor,
           theme_color: finalColor,
@@ -164,8 +192,8 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
         updateThemeColorMeta(finalColor);
 
       } catch (e) {
-        console.error("Dinamik PWA oluşturulamadı, varsayılana dönülüyor:", e);
-        resetToDefaultManifest();
+        console.error("Dinamik PWA icon oluşturulamadı, basit manifest basılıyor:", e);
+        applyFallbackManifest();
       }
     };
     
@@ -207,12 +235,6 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
       appleStatusMeta.setAttribute('content', 'default');
       document.head.appendChild(appleStatusMeta);
     }
-  };
-
-  const resetToDefaultManifest = () => {
-    // 🚀 CACHE-BUSTING: Default manifesti de versiyonla çağır
-    updateManifestTag(`/manifest.json?v=${new Date().getTime()}`);
-    updateThemeColorMeta('#0f172a');
   };
 
   return null;

@@ -368,6 +368,12 @@ if (showSOSModal) { stopEvent(); setShowSOSModal(false); return true; }
         setTimeout(() => setShowPwaPrompt(true), 2000);
       };
       window.addEventListener('beforeinstallprompt', handler);
+      
+      // Global yakalanan event varsa onu kullan
+      if (window.pwaDeferredPrompt) {
+        handler(window.pwaDeferredPrompt);
+        window.pwaDeferredPrompt = null;
+      }
 
       const handleInstalled = () => {
         setInstallState('success');
