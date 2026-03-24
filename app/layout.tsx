@@ -38,6 +38,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.addEventListener('beforeinstallprompt', function(e) {
+                e.preventDefault();
+                window.pwaDeferredPrompt = e;
+              });
+            `,
+          }}
+        />
+      </head>
       <body>
         {children}
         <OfflineSyncManager />

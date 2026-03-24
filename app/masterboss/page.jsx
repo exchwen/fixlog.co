@@ -1,15 +1,51 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, Mail, ArrowRight, ShieldCheck, User } from "lucide-react";
+import { Lock, Mail, ArrowRight, ShieldCheck, User, Download, Share, Check } from "lucide-react";
 import toast from "react-hot-toast";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function MasterbossLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  // PWA States
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showPwaPrompt, setShowPwaPrompt] = useState(false);
+  const [isIos, setIsIos] = useState(false);
+  const [installState, setInstallState] = useState('idle');
+
+  const handleInstallPwa = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt(); 
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') { setInstallState('success'); setTimeout(() => setShowPwaPrompt(false), 3000); }
+      setDeferredPrompt(null);
+    }
+  };
+
+  useEffect(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    if (isStandalone) return;
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    if (/iphone|ipad|ipod/.test(userAgent)) {
+      setIsIos(true); setTimeout(() => setShowPwaPrompt(true), 2000);
+    } else {
+      const handler = (e) => { e.preventDefault(); setDeferredPrompt(e); setTimeout(() => setShowPwaPrompt(true), 2000); };
+      window.addEventListener('beforeinstallprompt', handler);
+      
+      // Global yakalanan event varsa onu kullan
+      if (window.pwaDeferredPrompt) {
+        handler(window.pwaDeferredPrompt);
+        window.pwaDeferredPrompt = null;
+      }
+
+      window.addEventListener('appinstalled', () => { setInstallState('success'); setTimeout(() => setShowPwaPrompt(false), 3000); });
+      return () => { window.removeEventListener('beforeinstallprompt', handler); };
+    }
+  }, []);
 
   // 🚀 PWA VE OTOMATİK GİRİŞ KONTROLÜ: Masterboss token varsa direkt dashboard'a at!
   useEffect(() => {
@@ -47,8 +83,37 @@ export default function MasterbossLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 flex flex-col justify-center items-center p-4 selection:bg-rose-500/30">
+    <div className="min-h-screen bg-neutral-950 flex flex-col justify-center items-center p-4 selection:bg-rose-500/30 relative overflow-hidden">
       
+      <AnimatePresence>
+        {showPwaPrompt && (
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} 
+            className="fixed bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[420px] bg-neutral-900 text-white p-4 sm:p-5 rounded-2xl shadow-2xl z-[9999] flex flex-row items-center justify-between border border-neutral-700"
+          >
+            {installState === 'success' ? (
+              <div className="flex items-center gap-3 w-full justify-center py-1">
+                <div className="bg-emerald-500 p-2 rounded-full shrink-0"><Check size={20} className="text-white" /></div>
+                <div className="flex flex-col flex-1 min-w-0 pr-2"><span className="font-bold text-sm text-emerald-400">Kurulum Başarılı!</span><span className="text-xs text-neutral-400 mt-0.5">Cihazınızın ana ekranından giriş yapabilirsiniz.</span></div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-3 w-full">
+                  <div className="bg-rose-600 p-2.5 rounded-xl shrink-0"><Download size={20} className="text-white" /></div>
+                  <div className="flex flex-col flex-1 min-w-0 pr-2">
+                    <span className="font-bold text-sm">Masterboss'u Yükle</span>
+                    {isIos ? (<span className="text-[11px] text-neutral-400 mt-0.5 leading-tight">Yüklemek için <Share size={12} className="inline-block mx-0.5 mb-0.5" /> <b>Paylaş</b> ikonuna basıp <br/> <b>Ana Ekrana Ekle</b>'yi seçin.</span>) : (<span className="text-xs text-neutral-400 mt-0.5">Panele hızlıca erişmek için yükleyin.</span>)}
+                  </div>
+                </div>
+                <div className="flex gap-2 shrink-0 items-center">
+                  {!isIos && (<button onClick={handleInstallPwa} className="bg-rose-600 hover:bg-rose-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95">Yükle</button>)}
+                </div>
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Background Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-rose-600/10 blur-[120px] rounded-full pointer-events-none" />
 

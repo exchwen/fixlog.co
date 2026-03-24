@@ -102,6 +102,12 @@ export default function StaffLoginPage() {
       };
       window.addEventListener('beforeinstallprompt', handler);
 
+      // Global yakalanan event varsa onu kullan
+      if (window.pwaDeferredPrompt) {
+        handler(window.pwaDeferredPrompt);
+        window.pwaDeferredPrompt = null;
+      }
+
       const handleInstalled = () => {
         setInstallState('success');
         setTimeout(() => setShowPwaPrompt(false), 3000);
