@@ -7,7 +7,7 @@ import {
   ClipboardList, Users, Box, Wallet, Plus, ArrowUpRight, 
   CheckCircle, Clock, Calendar, TrendingUp, TrendingDown, 
   Package, AlertTriangle, ShieldCheck, Activity, User, Lock, RefreshCw,
-  Settings, X, Wrench, Link as LinkIcon, Check, Database, ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2, Bell, CheckSquare, UserPlus, UserCheck, MapPin, AlertCircle, Info, ShieldAlert, ArrowRight, Gift, Star, CreditCard, Copy
+  Settings, X, Wrench, Link as LinkIcon, Check, Database, ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2, Bell, CheckSquare, UserPlus, UserCheck, MapPin, AlertCircle, Info, ShieldAlert, ArrowRight, Gift, Star, CreditCard, Copy, FileText
 } from 'lucide-react';
 
 export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob, setActiveTab, userRole: propRole, handleAction, isMyJobsTab, setJobModalType }: any) {
