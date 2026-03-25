@@ -1505,10 +1505,26 @@ useEffect(() => {
                                     <Search className="absolute left-3 top-3 sm:top-2.5 text-slate-400" size={16} />
                                     <input type="text" placeholder="İsim veya TC ile Müşteri Ara..." className="w-full pl-9 pr-3 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 bg-white" value={searchCust} onChange={e => setSearchCust(e.target.value)} />
                                     </div>
-                                    <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500 custom-scrollbar" size={4} value={editJobDetailForm.customerName} onChange={e => setEditJobDetailForm({...editJobDetailForm, customerName: e.target.value, assetId: ''})}>
-                                    <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- 1. Listeden Müşteri Seçin --</option>
-                                    {(data?.customers || []).filter((c:any) => c.name?.toLowerCase().includes(searchCust?.toLowerCase()) || c.tax_info?.includes(searchCust)).map((c: any) => <option key={c.id} value={c.name} className="py-2 border-b border-slate-50 last:border-0">{c.name} {c.tax_info ? `(${c.tax_info})` : ''}</option>)}
-                                    </select>
+                                    <div className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
+                                          <div className="text-xs font-bold text-slate-400 bg-slate-50 px-4 py-2 border-b border-slate-100">-- 1. Listeden Müşteri Seçin --</div>
+                                          <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1">
+                                            {(data?.customers || []).filter((c:any) => 
+                                                (c.name || '').toLowerCase().includes((searchCust || '').toLowerCase())
+                                            ).map((c: any) => (
+                                                <button 
+                                                    key={c.id} 
+                                                    type="button"
+                                                    onClick={() => setEditJobDetailForm({...editJobDetailForm, customerName: c.name, assetId: ''})}
+                                                    className={`text-left px-3 py-2.5 rounded-lg text-sm font-semibold transition-all ${editJobDetailForm.customerName === c.name ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm' : 'text-slate-700 hover:bg-slate-50 border border-transparent'}`}
+                                                >
+                                                    {c.name}
+                                                </button>
+                                            ))}
+                                            {(data?.customers || []).filter((c:any) => (c.name || '').toLowerCase().includes((searchCust || '').toLowerCase())).length === 0 && (
+                                                <div className="text-center text-xs text-slate-400 py-4 font-medium">Müşteri bulunamadı.</div>
+                                            )}
+                                          </div>
+                                      </div>
                                     
                                     {editJobDetailForm.customerName && (() => {
                                     const selectedCustomer = (data?.customers || []).find((c:any) => c.name === editJobDetailForm.customerName);
@@ -1517,16 +1533,35 @@ useEffect(() => {
                                     return (
                                         <div className="pt-2 border-t border-slate-100">
                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">2. Bu Müşteriye Ait Varlık (İsteğe Bağlı)</label>
-                                            <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500" value={editJobDetailForm.assetId} onChange={e => {
-                                                const selectedAsset = customerAssets.find((a:any) => String(a.id) === String(e.target.value));
-                                                const autoStaffId = selectedAsset?.route_staff_id || editJobDetailForm.staffId;
-                                                setEditJobDetailForm({...editJobDetailForm, assetId: e.target.value, staffId: autoStaffId});
-                                            }}>
-                                                <option value="">-- Varlık Seçilmedi (Genel Müşteri İşi) --</option>
-                                                {customerAssets.map((a:any) => (
-                                                <option key={a.id} value={a.id}>{a.name} - {a.location}</option>
-                                                ))}
-                                            </select>
+                                            <div className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => setEditJobDetailForm({...editJobDetailForm, assetId: '', staffId: editJobDetailForm.staffId})}
+                                                    className={`text-left px-4 py-3 text-sm font-semibold transition-all border-b border-slate-100 ${!editJobDetailForm.assetId ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                                                >
+                                                    -- Varlık Seçilmedi (Genel Müşteri İşi) --
+                                                </button>
+                                                <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1">
+                                                    {customerAssets.map((a:any) => {
+                                                       const aptName = a.apartmentName || a.apartment_name || '';
+                                                       const isSelected = editJobDetailForm.assetId === String(a.id);
+                                                       return (
+                                                           <button 
+                                                               key={a.id} 
+                                                               type="button"
+                                                               onClick={() => {
+                                                                   const autoStaffId = a.route_staff_id || editJobDetailForm.staffId;
+                                                                   setEditJobDetailForm({...editJobDetailForm, assetId: String(a.id), staffId: autoStaffId});
+                                                               }}
+                                                               className={`text-left px-3 py-2.5 rounded-lg transition-all flex flex-col gap-0.5 ${isSelected ? 'bg-blue-50 border border-blue-200 shadow-sm' : 'hover:bg-slate-50 border border-transparent'}`}
+                                                           >
+                                                               <div className={`text-sm ${isSelected ? 'text-blue-800 font-bold' : 'text-slate-800 font-bold'}`}>{aptName || a.name}</div>
+                                                               {aptName && <div className={`text-[11px] ${isSelected ? 'text-blue-600 font-semibold' : 'text-slate-500 font-medium'}`}>{a.name}</div>}
+                                                           </button>
+                                                       )
+                                                    })}
+                                                </div>
+                                            </div>
                                             {customerAssets.length === 0 && <div className="text-[10px] text-amber-500 mt-1.5 font-bold px-1">Bu müşteriye ait kayıtlı varlık bulunamadı.</div>}
                                         </div>
                                     );
@@ -1538,17 +1573,43 @@ useEffect(() => {
                                     <Search className="absolute left-3 top-3 sm:top-2.5 text-slate-400" size={16} />
                                     <input type="text" placeholder="Cihaz Adı Ara..." className="w-full pl-9 pr-3 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 bg-white" value={searchAsset} onChange={e => setSearchAsset(e.target.value)} />
                                     </div>
-                                    <select className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none bg-white focus:border-blue-500 custom-scrollbar" size={4} value={editJobDetailForm.assetId} onChange={e => {
-                                    const selectedAsset = (data?.assets || []).find((a:any) => String(a.id) === String(e.target.value));
-                                    const parentCust = (data?.customers || []).find((c:any) => String(c.id) === String(selectedAsset?.customer_id));
-                                    const autoStaffId = selectedAsset?.route_staff_id || editJobDetailForm.staffId;
-                                    setEditJobDetailForm({...editJobDetailForm, assetId: e.target.value, customerName: parentCust?.name || '', staffId: autoStaffId});
-                                    }}>
-                                    <option value="" disabled className="font-bold text-slate-400 border-b border-slate-100 pb-2 mb-2">-- Listeden Varlık Seçin --</option>
-                                    {(data?.assets || []).filter((a: any) => a.name?.toLowerCase().includes(searchAsset?.toLowerCase())).map((a: any) => (
-                                        <option key={a.id} value={a.id} className="py-2 border-b border-slate-50 last:border-0">{a.name} - {a.location}</option>
-                                    ))}
-                                    </select>
+                                    <div className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
+                                          <div className="text-xs font-bold text-slate-400 bg-slate-50 px-4 py-2 border-b border-slate-100">-- Listeden Varlık Seçin --</div>
+                                          <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1">
+                                            {(data?.assets || []).filter((a: any) => {
+                                                const term = (searchAsset || '').toLowerCase();
+                                                const aptName = (a.apartmentName || a.apartment_name || '').toLowerCase();
+                                                const assetName = (a.name || '').toLowerCase();
+                                                return assetName.includes(term) || aptName.includes(term);
+                                            }).map((a: any) => {
+                                                const aptName = a.apartmentName || a.apartment_name || '';
+                                                const isSelected = editJobDetailForm.assetId === String(a.id);
+                                                return (
+                                                    <button 
+                                                        key={a.id} 
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const parentCust = (data?.customers || []).find((c:any) => String(c.id) === String(a.customer_id));
+                                                            const autoStaffId = a.route_staff_id || editJobDetailForm.staffId;
+                                                            setEditJobDetailForm({...editJobDetailForm, assetId: String(a.id), customerName: parentCust?.name || '', staffId: autoStaffId});
+                                                        }}
+                                                        className={`text-left px-3 py-2.5 rounded-lg transition-all flex flex-col gap-0.5 ${isSelected ? 'bg-blue-50 border border-blue-200 shadow-sm' : 'hover:bg-slate-50 border border-transparent'}`}
+                                                    >
+                                                        <div className={`text-sm ${isSelected ? 'text-blue-800 font-bold' : 'text-slate-800 font-bold'}`}>{aptName || a.name}</div>
+                                                        {aptName && <div className={`text-[11px] ${isSelected ? 'text-blue-600 font-semibold' : 'text-slate-500 font-medium'}`}>{a.name}</div>}
+                                                    </button>
+                                                )
+                                            })}
+                                            {(data?.assets || []).filter((a: any) => {
+                                                const term = (searchAsset || '').toLowerCase();
+                                                const aptName = (a.apartmentName || a.apartment_name || '').toLowerCase();
+                                                const assetName = (a.name || '').toLowerCase();
+                                                return assetName.includes(term) || aptName.includes(term);
+                                            }).length === 0 && (
+                                                <div className="text-center text-xs text-slate-400 py-4 font-medium">Varlık bulunamadı.</div>
+                                            )}
+                                          </div>
+                                      </div>
                                     {editJobDetailForm.assetId && (
                                         <div className="mt-3 text-[10px] font-bold text-blue-700 bg-blue-50/80 p-2.5 rounded-lg border border-blue-100 flex items-center gap-1.5">
                                             <CheckCircle size={14} className="text-blue-500 shrink-0"/> Müşteri Eşleşti: <span className="text-slate-800 truncate">{editJobDetailForm.customerName || 'Bağımsız Varlık'}</span>
