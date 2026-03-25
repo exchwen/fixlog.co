@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Search, User, Box, AlertTriangle, CheckCircle, ArrowRight, Briefcase } from 'lucide-react';
+import { X, Loader2, Search, User, Box, AlertTriangle, CheckCircle, ArrowRight, Briefcase, FileText } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 
 export default function AddJobModal({
@@ -268,6 +268,29 @@ export default function AddJobModal({
                               </div>
                               
                               <div>
+                                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Proje / Yönetmelik PDF (İsteğe Bağlı)</label>
+                                <div className="relative">
+                                    <input type="file" accept="application/pdf" className="hidden" id="pdf-upload" onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                                setJobForm({...jobForm, projectPdf: reader.result});
+                                            };
+                                            reader.readAsDataURL(file);
+                                        }
+                                    }} />
+                                    <label htmlFor="pdf-upload" className={`w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold flex items-center justify-between cursor-pointer transition-all ${jobForm?.projectPdf ? 'bg-blue-50 border-blue-300 text-blue-700 shadow-sm' : 'bg-slate-50 hover:bg-white text-slate-600'}`}>
+                                        <span className="truncate pr-4 flex items-center gap-2">
+                                            <FileText size={16} /> 
+                                            {jobForm?.projectPdf ? 'PDF Yüklendi (Değiştir)' : 'Bir PDF Dosyası Seçin'}
+                                        </span>
+                                        {jobForm?.projectPdf && <CheckCircle size={16} className="text-blue-500 shrink-0" />}
+                                    </label>
+                                </div>
+                              </div>
+
+                              <div>
                                 <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Görev Özeti / Talimatlar</label>
                                 <textarea rows={3} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none resize-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" placeholder="İşin detayı nedir?..." value={jobForm?.taskNote || ''} onChange={e => setJobForm({...jobForm, taskNote: e.target.value})} />
                               </div>
@@ -294,7 +317,7 @@ export default function AddJobModal({
                             workCategory: jobForm.workCategory || 'Normal İş Atama', 
                             status: initialStatus, // YENİ DURUMU EKLİYORUZ
                             details: { note: jobForm.taskNote } 
-                        }, setShowJobModal, () => setJobForm({ customerName: '', assetId: '', staffId: '', workType: 'Görev', workCategory: 'Normal İş Atama', jobType: 'Anlık', scheduledDate: '', taskNote: '' }));
+                        }, setShowJobModal, () => setJobForm({ customerName: '', assetId: '', staffId: '', workType: 'Görev', workCategory: 'Normal İş Atama', jobType: 'Anlık', scheduledDate: '', taskNote: '', projectPdf: '' }));
                     }} className="w-full bg-blue-600 text-white py-3.5 sm:py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex justify-center items-center disabled:opacity-50">
                       {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'İş Emrini Gönder'}
                     </button>

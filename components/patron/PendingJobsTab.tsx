@@ -234,12 +234,13 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                   return (
                     <tr key={j.id} className="hover:bg-amber-50/50 transition-colors group">
                       <td className="px-5 py-4 align-top border-r border-slate-50">
-                        <div className="font-bold text-slate-800 text-sm mb-1.5 group-hover:text-amber-700 transition-colors">
+                      <div className="font-bold text-slate-800 text-sm mb-1.5 group-hover:text-amber-700 transition-colors flex items-center gap-2">
                           {aptName ? (
                             <><span className="text-amber-600">{aptName}</span> - {j.customer_name}</>
                           ) : (
                             j.customer_name
                           )}
+                          {j.project_pdf_url && <FileText size={16} className="text-blue-500 shrink-0" />}
                         </div>
                         
                         <div className="text-[10px] font-black text-slate-600 mb-2 truncate max-w-[200px]">
@@ -397,12 +398,13 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
                   {/* Müşteri ve İş Tipi */}
                   <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
                     <div className="min-w-0 flex flex-col gap-1">
-                      <div className="font-black text-slate-800 text-sm truncate">
+                    <div className="font-black text-slate-800 text-sm truncate flex items-center gap-2">
                         {aptName ? (
                             <><span className="text-amber-600">{aptName}</span> - {j.customer_name}</>
                         ) : (
                             j.customer_name
                         )}
+                        {j.project_pdf_url && <FileText size={16} className="text-blue-500 shrink-0" />}
                       </div>
                       <div className="text-[11px] font-bold text-slate-600 truncate">
                         {currentAsset?.name || 'Bağımsız İş'}

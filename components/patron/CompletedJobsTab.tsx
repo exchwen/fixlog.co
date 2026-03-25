@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, CheckCircle, MapPin, ClipboardList, Calendar, Clock, ArrowRight, ShieldCheck, UserPlus, UserCheck, Wrench, Building2, FileCheck, Database, X, AlertTriangle } from 'lucide-react';
+// 🚀 İMPORT EKLENDİ (FileText ve Box)
+import { Search, CheckCircle, MapPin, ClipboardList, Calendar, Clock, ArrowRight, ShieldCheck, UserPlus, UserCheck, Wrench, Building2, FileCheck, Database, X, AlertTriangle, FileText, Box } from 'lucide-react';
 
 export default function CompletedJobsTab({ data, setSelectedJob, statusColors }: any) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -138,13 +139,16 @@ export default function CompletedJobsTab({ data, setSelectedJob, statusColors }:
                  >
                    {/* Müşteri ve Varlık */}
                    <td className="px-5 py-4 align-top">
-                      <div className="font-bold text-slate-800 text-sm group-hover:text-emerald-700 transition-colors truncate max-w-[220px]">
+                      {/* 🚀 DÜZELTME BAŞLANGICI: MASAÜSTÜ MÜŞTERİ BİLGİSİ İÇİNE PDF EKLENDİ */}
+                      <div className="font-bold text-slate-800 text-sm group-hover:text-emerald-700 transition-colors truncate max-w-[220px] flex items-center gap-2">
                         {aptName ? (
                           <><span className="text-blue-600">{aptName}</span> - {j.customer_name}</>
                         ) : (
                           j.customer_name
                         )}
+                        {j.project_pdf_url && <FileText size={16} className="text-blue-500 shrink-0" />}
                       </div>
+                      {/* 🚀 DÜZELTME BİTİŞİ */}
                       <div className="text-[11px] font-black text-slate-600 mt-1 mb-1.5 truncate max-w-[220px]">
                         {currentAsset?.name || 'Bağımsız İş'}
                       </div>
@@ -325,13 +329,16 @@ export default function CompletedJobsTab({ data, setSelectedJob, statusColors }:
               {/* Üst Kısım: Müşteri ve Durum */}
               <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
                  <div className="min-w-0 pr-2">
-                   <div className="font-black text-slate-800 text-sm line-clamp-2">
+                   {/* 🚀 DÜZELTME BAŞLANGICI: MOBİL MÜŞTERİ BİLGİSİ İÇİNE PDF EKLENDİ */}
+                   <div className="font-black text-slate-800 text-sm line-clamp-2 flex items-center gap-2">
                      {aptName ? (
-                        <><span className="text-blue-600">{aptName}</span> - {j.customer_name}</>
+                        <><span className="text-emerald-600">{aptName}</span> - {j.customer_name}</>
                      ) : (
                         j.customer_name
                      )}
+                     {j.project_pdf_url && <FileText size={16} className="text-blue-500 shrink-0" />}
                    </div>
+                   {/* 🚀 DÜZELTME BİTİŞİ */}
                    <div className="text-[11px] font-bold text-slate-600 mt-1 mb-1.5 truncate">
                      {currentAsset?.name || 'Bağımsız İş'}
                    </div>

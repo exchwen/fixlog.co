@@ -723,8 +723,9 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
                                     </span>
                                 </div>
                                 
-                                <h3 className="text-sm font-black leading-tight mb-0.5 line-clamp-2">
+                                <h3 className="text-sm font-black leading-tight mb-0.5 line-clamp-2 flex items-center gap-2">
                                     {aptName ? <><span className="text-amber-300">{aptName}</span> - {job.customer_name}</> : job.customer_name}
+                                    {job.project_pdf_url && <FileText size={16} className="text-blue-500 shrink-0" />}
                                 </h3>
                                 <div className="text-[10px] font-bold text-amber-200/80 mb-2 truncate">
                                     {currentAsset ? currentAsset.name : 'Genel Görev / Varlık Yok'}
@@ -784,8 +785,9 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
                                     </span>
                                 </div>
                                 
-                                <h3 className="text-sm font-black leading-tight mb-0.5 line-clamp-2">
+                                <h3 className="text-sm font-black leading-tight mb-0.5 line-clamp-2 flex items-center gap-2">
                                     {aptName ? <><span className="text-indigo-300">{aptName}</span> - {job.customer_name}</> : job.customer_name}
+                                    {job.project_pdf_url && <FileText size={16} className="text-blue-500 shrink-0" />}
                                 </h3>
                                 <div className="text-[10px] font-bold text-indigo-300/80 mb-2 truncate">
                                     {currentAsset ? currentAsset.name : 'Genel Görev / Varlık Yok'}
@@ -1171,12 +1173,13 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
                     className="hover:bg-blue-50/50 transition-colors group cursor-pointer relative"
                   >
                     <td className="px-5 py-4 align-middle">
-                      <div className="font-bold text-slate-800 text-sm mb-1 group-hover:text-blue-700 transition-colors truncate max-w-[220px]">
+                      <div className="font-bold text-slate-800 text-sm mb-1 group-hover:text-blue-700 transition-colors truncate max-w-[220px] flex items-center gap-2">
                         {aptName ? (
                           <><span className="text-blue-600">{aptName}</span> - {j.customer_name}</>
                         ) : (
                           j.customer_name
                         )}
+                        {j.project_pdf_url && <FileText size={16} className="text-blue-500 shrink-0" />}
                       </div>
                       <div className="text-[11px] font-black text-slate-600 mb-1.5 truncate max-w-[220px]">
                         {currentAsset ? currentAsset.name : 'Genel Görev / Varlık Yok'}
@@ -1302,13 +1305,14 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
                 className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col gap-4 active:scale-95 transition-all cursor-pointer"
               >
                  <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
-                    <div className="min-w-0 flex flex-col gap-1 w-full pr-2">
-                      <div className="font-black text-slate-800 text-sm line-clamp-2">
+                 <div className="min-w-0 flex flex-col gap-1 w-full pr-2">
+                      <div className="font-black text-slate-800 text-sm line-clamp-2 flex items-center gap-2">
                         {aptName ? (
                           <><span className="text-blue-600">{aptName}</span> - {j.customer_name}</>
                         ) : (
                           j.customer_name
                         )}
+                        {j.project_pdf_url && <FileText size={16} className="text-blue-500 shrink-0" />}
                       </div>
                       <div className="text-[11px] font-bold text-slate-600 truncate">
                         {currentAsset ? currentAsset.name : 'Genel Görev / Varlık Yok'}

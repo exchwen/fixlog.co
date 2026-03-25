@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Clock, CheckCircle2, MessageSquareText, LogOut, ChevronRight, PenTool, Loader2, AlertCircle, PlayCircle, ClipboardList, WifiOff, Download, Share, Check, Camera, X, ShieldCheck, UserPlus, Box, Phone, User, Briefcase, Map, AlertOctagon, Navigation, PlusCircle, Search, Package, AlertTriangle, Send, Plus, Mic } from 'lucide-react';
+import { MapPin, Clock, CheckCircle2, MessageSquareText, LogOut, ChevronRight, PenTool, Loader2, AlertCircle, PlayCircle, ClipboardList, WifiOff, Download, Share, Check, Camera, X, ShieldCheck, UserPlus, Box, Phone, User, Briefcase, Map, AlertOctagon, Navigation, PlusCircle, Search, Package, AlertTriangle, Send, Plus, Mic, FileText } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 import Header from '@/components/layout/Header';
 import WorkerSidebar from '@/components/layout/WorkerSidebar'; 
@@ -983,8 +983,9 @@ const handleStatusUpdate = async (newStatus) => {
                                   <span className="text-[10px] font-bold opacity-80 flex items-center gap-1"><Clock size={10}/> {job.scheduled_date || 'Anlık'}</span>
                                 </div>
                                 
-                                <h3 className="text-lg font-black leading-tight mb-1 truncate">
+                                <h3 className="text-lg font-black leading-tight mb-1 truncate flex items-center gap-2">
                                     {asset ? (asset.apartmentName || asset.name) : job.customer_name}
+                                    {job.project_pdf_url && <FileText size={16} className="text-white shrink-0" />}
                                </h3>
                                 
                                 <p className="text-blue-100 text-xs font-medium flex items-center gap-1.5 mb-1 truncate">
@@ -1041,8 +1042,9 @@ const handleStatusUpdate = async (newStatus) => {
                             <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Clock size={10}/> {job.scheduled_date || 'Anlık'}</span>
                           </div>
                           
-                          <h3 className="text-base font-black text-slate-800 leading-tight mb-1 truncate">
+                          <h3 className="text-base font-black text-slate-800 leading-tight mb-1 truncate flex items-center gap-2">
                               {asset ? (asset.apartmentName || asset.name) : job.customer_name}
+                              {job.project_pdf_url && <FileText size={16} className="text-blue-500 shrink-0" />}
                           </h3>
                           
                           <p className="text-slate-500 text-xs font-medium flex items-center gap-1.5 mb-1 truncate">

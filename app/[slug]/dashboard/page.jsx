@@ -100,7 +100,7 @@ export default function PatronDashboard() {
   const [jobModalStep, setJobModalStep] = useState(1);
   const [jobForm, setJobForm] = useState({ 
     customerName: '', assetId: '', staffId: '', workType: 'Görev', 
-    workCategory: 'Normal İş Atama', jobType: 'Anlık', scheduledDate: '', taskNote: '' 
+    workCategory: 'Normal İş Atama', jobType: 'Anlık', scheduledDate: '', taskNote: '', projectPdf: '' 
   });
 
   const [newAsset, setNewAsset] = useState({ 

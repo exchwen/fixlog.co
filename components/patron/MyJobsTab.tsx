@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Briefcase, MapPin, CheckCircle, PlayCircle, 
     ArrowUpRight, User, Wrench, Loader2, Search,
-    UserPlus, Check, Calendar, Activity, AlertTriangle, CheckSquare, Clock, Eye, ShieldCheck, UserCheck, Box, AlertCircle, Info
+    UserPlus, Check, Calendar, Activity, AlertTriangle, CheckSquare, Clock, Eye, ShieldCheck, UserCheck, Box, AlertCircle, Info, FileText
   } from 'lucide-react';
 
 interface Job {
@@ -223,12 +223,13 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                         </div>
                         
                         <div className="mb-3">
-                            <h4 className="font-black text-white leading-tight mb-0.5 line-clamp-2">
+                        <h4 className="font-black text-white leading-tight mb-0.5 line-clamp-2 flex items-center gap-2">
                                 {(() => {
                                     const asset = assets.find((a: any) => String(a.id) === String(job.asset_id));
                                     const aptName = asset?.apartmentName || asset?.apartment_name;
                                     return aptName ? <><span className="text-amber-200">{aptName}</span> - {job.customer_name}</> : job.customer_name;
                                 })()}
+                                {job.project_pdf_url && <FileText size={16} className="text-amber-200 shrink-0" />}
                             </h4>
                             <div className="text-[10px] font-bold text-amber-200 truncate flex items-center gap-1 mt-1">
                                 <Box size={10}/>
@@ -282,8 +283,9 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                                    <Clock size={10}/> {formatDateTime(job.details?.scheduledDate || job.created_at)}
                                 </span>
                             </div>
-                            <h4 className="text-lg font-black text-slate-800 leading-tight mb-2 line-clamp-2">
+                            <h4 className="text-lg font-black text-slate-800 leading-tight mb-2 line-clamp-2 flex items-center gap-2">
                                 {aptName ? <><span className="text-indigo-600">{aptName}</span> - {job.customer_name}</> : job.customer_name}
+                                {job.project_pdf_url && <FileText size={16} className="text-blue-500 shrink-0" />}
                             </h4>
                             <div className="text-xs font-bold text-slate-500 mb-3 truncate flex items-center gap-1.5">
                                 <Box size={14} className="text-slate-400"/>
@@ -382,8 +384,9 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                               return (
                                 <tr key={job.id} onClick={() => handleOpenModal(job)} className="hover:bg-blue-50/50 transition-colors cursor-pointer group">
                                     <td className="px-6 py-4">
-                                        <div className="font-bold text-slate-800 text-sm leading-tight max-w-[250px] truncate">
+                                    <div className="font-bold text-slate-800 text-sm leading-tight max-w-[250px] truncate flex items-center gap-2">
                                           {aptName ? <><span className="text-blue-600">{aptName}</span> - {job.customer_name}</> : job.customer_name}
+                                          {job.project_pdf_url && <FileText size={16} className="text-blue-500 shrink-0" />}
                                         </div>
                                         <div className="text-[11px] font-black text-slate-600 mt-1 mb-1.5 flex items-center gap-1.5 truncate max-w-[250px]">
                                           <Box size={12} className="text-blue-400" />
@@ -522,8 +525,9 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                         <div key={job.id} onClick={() => handleOpenModal(job)} className="bg-white rounded-xl border border-blue-100 p-4 shadow-sm flex flex-col gap-4 active:scale-95 transition-all cursor-pointer">
                            <div className="flex justify-between items-start gap-2 border-b border-slate-100 pb-3">
                               <div className="min-w-0 pr-2 flex flex-col gap-1.5 w-full">
-                                <div className="font-black text-slate-800 text-sm line-clamp-2">
+                              <div className="font-black text-slate-800 text-sm line-clamp-2 flex items-center gap-2">
                                   {aptName ? <><span className="text-blue-600">{aptName}</span> - {job.customer_name}</> : job.customer_name}
+                                  {job.project_pdf_url && <FileText size={16} className="text-blue-500 shrink-0" />}
                                 </div>
                                 <div className="text-[11px] font-bold text-slate-600 truncate flex items-center gap-1.5">
                                   <Box size={12} className="text-blue-400" />
@@ -652,8 +656,9 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                               return (
                                 <tr key={job.id} onClick={() => handleOpenModal(job)} className="completed-myjob-item hover:bg-emerald-50/50 transition-colors cursor-pointer group">
                                       <td className="px-6 py-4">
-                                          <div className="font-bold text-slate-800 text-sm leading-tight max-w-[250px] truncate">
+                                      <div className="font-bold text-slate-800 text-sm leading-tight max-w-[250px] truncate flex items-center gap-2">
                                             {aptName ? <><span className="text-emerald-600">{aptName}</span> - {job.customer_name}</> : job.customer_name}
+                                            {job.project_pdf_url && <FileText size={16} className="text-blue-500 shrink-0" />}
                                           </div>
                                           <div className="text-[10px] text-slate-500 font-bold mt-1.5 flex items-center gap-1.5 truncate max-w-[250px]">
                                             <Box size={12} className="text-emerald-500"/>
@@ -710,8 +715,9 @@ export default function MyJobsTab({ data, setShowJobModal, statusColors, setSele
                         <div key={job.id} onClick={() => handleOpenModal(job)} className="completed-myjob-item bg-white rounded-xl border border-emerald-100 p-4 shadow-sm flex flex-col gap-3 active:scale-95 transition-all cursor-pointer">
                            <div className="flex justify-between items-start gap-2 border-b border-slate-50 pb-2">
                               <div className="min-w-0 pr-2">
-                                <div className="font-bold text-slate-800 text-sm line-clamp-2">
+                              <div className="font-bold text-slate-800 text-sm line-clamp-2 flex items-center gap-2">
                                   {aptName ? <><span className="text-emerald-600">{aptName}</span> - {job.customer_name}</> : job.customer_name}
+                                  {job.project_pdf_url && <FileText size={16} className="text-blue-500 shrink-0" />}
                                 </div>
                                 <div className="text-[10px] text-slate-500 font-bold mt-1.5 flex items-center gap-1.5 truncate">
                                   <Box size={12} className="text-emerald-500"/>

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Search, User, Box, Calendar, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle, Clock, Image as ImageIcon, Download, MessageSquareText, Settings, CheckSquare, Tag, Wrench, ArrowUpRight, UserPlus, UserCheck, Printer, Palette, Bluetooth, Share2 } from 'lucide-react';
+import { X, Loader2, Search, User, Box, Calendar, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle, Clock, Image as ImageIcon, Download, MessageSquareText, Settings, CheckSquare, Tag, Wrench, ArrowUpRight, UserPlus, UserCheck, Printer, Palette, Bluetooth, Share2, FileText } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -1085,28 +1085,44 @@ useEffect(() => {
                                                     <div className="text-sm font-bold text-slate-800">{selectedJob.work_type}</div>
                                                 </div>
                                                 <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
-                                                    <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Planlanan Tarih</div>
-                                                    <div className="text-sm font-bold text-slate-800">
-                                                        {selectedJob.scheduled_date ? (
-                                                            selectedJob.scheduled_date
-                                                        ) : (
-                                                            <div className="flex flex-col">
-                                                                <span>Anlık</span>
-                                                                {selectedJob.created_at && (
-                                                                    <span className="text-[10px] text-slate-400 font-bold mt-0.5">
-                                                                        {new Date(selectedJob.created_at).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        )}
+                                                        <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Planlanan Tarih</div>
+                                                        <div className="text-sm font-bold text-slate-800">
+                                                            {selectedJob.scheduled_date ? (
+                                                                selectedJob.scheduled_date
+                                                            ) : (
+                                                                <div className="flex flex-col">
+                                                                    <span>Anlık</span>
+                                                                    {selectedJob.created_at && (
+                                                                        <span className="text-[10px] text-slate-400 font-bold mt-0.5">
+                                                                            {new Date(selectedJob.created_at).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
+                                                
                                                 <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm col-span-2 flex justify-between items-center">
                                                      <div>
                                                          <div className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Saha Ustası</div>
                                                          <div className="text-sm font-bold text-emerald-700 flex items-center gap-1.5"><Wrench size={14}/> {finalWorkerName || 'Atanmadı'}</div>
                                                      </div>
                                                 </div>
+
+                                                {selectedJob.project_pdf_url && (
+                                                    <a href={getSafeImageUrl(selectedJob.project_pdf_url)} target="_blank" rel="noopener noreferrer" className="col-span-2 bg-blue-50 p-4 border border-blue-200 rounded-xl shadow-sm flex items-center justify-between group hover:bg-blue-100 transition-colors">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 bg-blue-200 text-blue-700 rounded-lg flex items-center justify-center group-hover:bg-white transition-colors shadow-sm">
+                                                                <FileText size={20} />
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-sm font-black text-blue-900">Proje / Yönetmelik PDF'i</div>
+                                                                <div className="text-[11px] font-bold text-blue-700/80 mt-0.5">Sahada referans almak için tıklayıp görüntüleyin.</div>
+                                                            </div>
+                                                        </div>
+                                                        <ArrowUpRight size={18} className="text-blue-500 group-hover:text-blue-700 transition-colors" />
+                                                    </a>
+                                                )}
                                             </div>
                                         </>
                                     );
