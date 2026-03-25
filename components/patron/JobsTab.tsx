@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Calendar, ArrowRight, Clock, MapPin, ClipboardList, ShieldCheck, Wrench, UserPlus, UserCheck, Search, Archive, Loader2, AlertCircle, CheckCircle, Info, AlertTriangle } from 'lucide-react';
+import { Plus, Calendar, ArrowRight, Clock, MapPin, ClipboardList, ShieldCheck, Wrench, UserPlus, UserCheck, Search, Archive, Loader2, AlertCircle, CheckCircle, Info, AlertTriangle, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function JobsTab({ data, setShowJobModal, statusColors, setSelectedJob, setJobModalType, handleAction }: any) {
