@@ -160,16 +160,16 @@ export default function RegisterPage() {
     // YENİ: Mobilde klavye açılınca sayfanın bozulmasını önlemek için min-h-[100dvh] eklendi
     <div className="min-h-[100dvh] bg-white flex flex-col lg:flex-row overflow-hidden font-sans">
       <div className="w-full lg:w-[42%] p-6 sm:p-12 md:p-16 flex flex-col justify-center bg-white z-20 shadow-xl lg:shadow-none relative">
-        <div className="max-w-sm mx-auto w-full">
+      <div className="max-w-sm mx-auto w-full">
           <div className="mb-8 lg:mb-12 flex items-center justify-between">
             <div
-              className="flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+              className="flex items-center gap-2 cursor-pointer transition-all active:scale-95 group"
               onClick={() => router.push('/')}
             >
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
-                <ShieldCheck className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md shadow-slate-200/50 border border-slate-100 p-2 overflow-hidden group-hover:shadow-lg transition-shadow">
+                <img src="/icons/icon-192x192.png" alt="FixLog Logo" className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300" />
               </div>
-              <span className="text-xl font-black text-gray-900 tracking-tight hidden sm:block">
+              <span className="text-xl font-black text-gray-900 tracking-tight hidden sm:block group-hover:text-blue-600 transition-colors">
               FixLog.co
               </span>
             </div>

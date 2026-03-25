@@ -1506,7 +1506,6 @@ useEffect(() => {
                                     <input type="text" placeholder="İsim veya TC ile Müşteri Ara..." className="w-full pl-9 pr-3 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 bg-white" value={searchCust} onChange={e => setSearchCust(e.target.value)} />
                                     </div>
                                     <div className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
-                                          <div className="text-xs font-bold text-slate-400 bg-slate-50 px-4 py-2 border-b border-slate-100">-- 1. Listeden Müşteri Seçin --</div>
                                           <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1">
                                             {(data?.customers || []).filter((c:any) => 
                                                 (c.name || '').toLowerCase().includes((searchCust || '').toLowerCase())
@@ -1574,7 +1573,6 @@ useEffect(() => {
                                     <input type="text" placeholder="Cihaz Adı Ara..." className="w-full pl-9 pr-3 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 bg-white" value={searchAsset} onChange={e => setSearchAsset(e.target.value)} />
                                     </div>
                                     <div className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
-                                          <div className="text-xs font-bold text-slate-400 bg-slate-50 px-4 py-2 border-b border-slate-100">-- Listeden Varlık Seçin --</div>
                                           <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1">
                                             {(data?.assets || []).filter((a: any) => {
                                                 const term = (searchAsset || '').toLowerCase();

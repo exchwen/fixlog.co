@@ -132,7 +132,7 @@ return () => unsubscribe();
   if (isCheckingAuth) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center font-sans">
-        <ShieldCheck className="w-12 h-12 text-blue-500 mb-4 animate-pulse" />
+        <img src="/icons/icon-192x192.png" alt="FixLog Logo" className="w-16 h-16 mb-4 animate-pulse object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]" />
         <span className="font-black tracking-widest text-[11px] text-gray-400 uppercase">Oturum Kontrol Ediliyor...</span>
       </div>
     );
@@ -153,8 +153,8 @@ return () => unsubscribe();
         className="max-w-[400px] w-full bg-white rounded-[2.5rem] shadow-2xl shadow-blue-900/5 p-6 sm:p-10 border border-gray-100"
       >
         <div className="flex flex-col items-center mb-8 sm:mb-10 mt-6 sm:mt-0">
-          <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-200 mb-4">
-            <ShieldCheck className="w-8 h-8 text-white" />
+          <div className="w-20 h-20 rounded-3xl flex items-center justify-center shadow-xl shadow-blue-900/10 mb-4 bg-white border border-slate-100 p-3 overflow-hidden">
+            <img src="/icons/icon-192x192.png" alt="FixLog Logo" className="w-full h-full object-contain hover:scale-105 transition-transform duration-300" />
           </div>
           <h1 className="text-2xl font-black text-gray-900 leading-tight text-center tracking-tight">
             Tekrar Hoş Geldiniz

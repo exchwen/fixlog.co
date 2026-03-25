@@ -263,7 +263,7 @@ export default function LandingPage() {
   if (isChecking) {
     return (
       <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white">
-        <ShieldCheck className="w-12 h-12 text-blue-500 mb-4 animate-pulse" />
+        <img src="/icons/icon-192x192.png" alt="FixLog Logo" className="w-16 h-16 mb-4 animate-pulse object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
         <span className="font-black tracking-widest text-[11px] uppercase opacity-50">Uygulama Hazırlanıyor...</span>
       </div>
     );
@@ -276,7 +276,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-lg border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-7 h-7 text-blue-600" />
+            <img src="/icons/icon-192x192.png" alt="FixLog Logo" className="w-8 h-8 object-contain" />
             <span translate="no" className="notranslate text-xl font-black tracking-tight text-gray-900">
               {t.brand}
             </span>
@@ -353,9 +353,7 @@ export default function LandingPage() {
                 {/* Sol Menü */}
                 <div className="w-full md:w-60 bg-[#F8FAFC] border-b md:border-b-0 md:border-r border-gray-200 p-2 md:p-5 flex flex-row md:flex-col gap-2 z-10 overflow-x-auto md:overflow-y-auto custom-scrollbar items-center md:items-stretch shrink-0">
                   <div className="hidden md:flex items-center gap-2.5 mb-6 px-2">
-                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-md shadow-blue-600/30">
-                      <ShieldCheck className="w-5 h-5" />
-                    </div>
+                    <img src="/icons/icon-192x192.png" alt="FixLog Logo" className="w-8 h-8 object-contain drop-shadow-sm" />
                     <span className="font-black text-gray-900 text-base tracking-tight">FixLog.co</span>
                   </div>
 
@@ -982,7 +980,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12">
             <div className="col-span-1 sm:col-span-2 lg:col-span-2 lg:pr-16">
               <div className="flex items-center gap-2 mb-5">
-                <ShieldCheck className="w-7 h-7 text-blue-600" />
+                <img src="/icons/icon-192x192.png" alt="FixLog Logo" className="w-8 h-8 object-contain" />
                 <span translate="no" className="notranslate text-xl font-black text-gray-900 tracking-tight">
                 FixLog.co
                 </span>
