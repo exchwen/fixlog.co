@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, Search, User, Box, AlertTriangle, CheckCircle, ArrowRight, Briefcase, FileText } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
@@ -12,6 +12,8 @@ export default function AddJobModal({
   searchCust, setSearchCust, searchAsset, setSearchAsset,
   isSaving, handleAction, data, userRole
 }: any) {
+
+  const [isDraggingPdf, setIsDraggingPdf] = useState(false);
 
   const currentSector = data?.sector || '';
   const safeSectors: any = sectorsData;
@@ -269,7 +271,25 @@ export default function AddJobModal({
                               
                               <div>
                                 <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Proje / Yönetmelik PDF (İsteğe Bağlı)</label>
-                                <div className="relative">
+                                <div 
+                                    className={`relative border-2 border-dashed rounded-xl transition-all ${isDraggingPdf ? 'border-blue-500 bg-blue-50 scale-[1.02]' : jobForm?.projectPdf ? 'border-blue-300 bg-blue-50' : 'border-slate-300 bg-slate-50 hover:bg-white'}`}
+                                    onDragOver={(e) => { e.preventDefault(); setIsDraggingPdf(true); }}
+                                    onDragLeave={() => setIsDraggingPdf(false)}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        setIsDraggingPdf(false);
+                                        const file = e.dataTransfer.files?.[0];
+                                        if (file && file.type === 'application/pdf') {
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                                setJobForm({...jobForm, projectPdf: reader.result});
+                                            };
+                                            reader.readAsDataURL(file);
+                                        } else if (file) {
+                                            alert('Lütfen sadece PDF formatında dosya yükleyin.');
+                                        }
+                                    }}
+                                >
                                     <input type="file" accept="application/pdf" className="hidden" id="pdf-upload" onChange={(e) => {
                                         const file = e.target.files?.[0];
                                         if (file) {
@@ -280,12 +300,12 @@ export default function AddJobModal({
                                             reader.readAsDataURL(file);
                                         }
                                     }} />
-                                    <label htmlFor="pdf-upload" className={`w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold flex items-center justify-between cursor-pointer transition-all ${jobForm?.projectPdf ? 'bg-blue-50 border-blue-300 text-blue-700 shadow-sm' : 'bg-slate-50 hover:bg-white text-slate-600'}`}>
-                                        <span className="truncate pr-4 flex items-center gap-2">
-                                            <FileText size={16} /> 
-                                            {jobForm?.projectPdf ? 'PDF Yüklendi (Değiştir)' : 'Bir PDF Dosyası Seçin'}
+                                    <label htmlFor="pdf-upload" className="w-full px-4 py-6 sm:py-8 cursor-pointer flex flex-col items-center justify-center gap-2">
+                                        <FileText size={28} className={jobForm?.projectPdf ? 'text-blue-500' : 'text-slate-400'} /> 
+                                        <span className="text-sm font-semibold text-center text-slate-600">
+                                            {jobForm?.projectPdf ? 'PDF Yüklendi (Değiştirmek için tıkla veya sürükle)' : 'PDF Seçmek için Tıklayın veya Sürükleyip Bırakın'}
                                         </span>
-                                        {jobForm?.projectPdf && <CheckCircle size={16} className="text-blue-500 shrink-0" />}
+                                        {jobForm?.projectPdf && <CheckCircle size={20} className="text-blue-500 mt-1" />}
                                     </label>
                                 </div>
                               </div>
