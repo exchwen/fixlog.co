@@ -752,15 +752,26 @@ export default function ChatPanel({ hideBubble, isChatOpen, setIsChatOpen, activ
                   {displayMessages.length > 0 && (
                     <button 
                       onClick={async () => {
-                        const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
-                        const res = await fetch(`https://backend.fixlog-co.workers.dev/get-archived-messages?slug=${actualSlug}`, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        });
-                        const archived = await res.json();
-                        setAllMessages(prev => {
-                            const combined = [...archived, ...prev];
-                            return Array.from(new Map(combined.map(item => [item.id || item._tempId, item])).values());
-                        });
+                        try {
+                            const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
+                            const res = await fetch(`https://backend.fixlog-co.workers.dev/get-archived-messages?slug=${actualSlug}`, {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            const archived = await res.json();
+                            if (Array.isArray(archived)) {
+                                setAllMessages(prev => {
+                                    const combined = [...archived, ...prev];
+                                    const uniqueMsgs = Array.from(new Map(combined.map(item => [item.id || item._tempId, item])).values());
+                                    // Tarihe göre sırala ki arşiv mesajları en üstte düzgün görünsün
+                                    uniqueMsgs.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+                                    return uniqueMsgs;
+                                });
+                            } else {
+                                console.error("Arşiv mesajları yüklenemedi:", archived);
+                            }
+                        } catch (err) {
+                            console.error("Arşiv çekilirken hata:", err);
+                        }
                       }}
                       className="w-full py-2 mb-4 text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 transition-all active:scale-95 uppercase tracking-widest"
                     >
