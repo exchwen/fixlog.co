@@ -162,8 +162,8 @@ export default function AddStaffModal({
                       type="tel" 
                       placeholder="05XX XXX XX XX" 
                       className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400" 
-                      value={newStaff.contact || ''} 
-                      onChange={e => setNewStaff({...newStaff, contact: e.target.value})} 
+                      value={newStaff.phone || newStaff.contact || ''} 
+                      onChange={e => setNewStaff({...newStaff, phone: e.target.value, contact: e.target.value})} 
                   />
                 </div>
 
@@ -229,7 +229,7 @@ export default function AddStaffModal({
             <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0">
                <button 
                   disabled={isSaving || !isFormValid} 
-                  onClick={() => handleAction('add-staff', newStaff, setShowAddStaff, () => setNewStaff({ name: '', role: '', contact: '', branch: '', username: '', password: '' }))} 
+                  onClick={() => handleAction('add-staff', newStaff, setShowAddStaff, () => setNewStaff({ name: '', role: '', phone: '', contact: '', branch: '', username: '', password: '', assigned_regions: '' }))} 
                   className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:bg-slate-800 transition-all active:scale-95 flex justify-center items-center disabled:opacity-50"
                >
                   {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Personeli Kaydet'}
