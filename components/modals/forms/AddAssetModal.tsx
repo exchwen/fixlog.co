@@ -28,6 +28,23 @@ export default function AddAssetModal({
   // 🚀 Stacking Takılmasını Önleyen Özel State
   const [isPushedBack, setIsPushedBack] = useState(false);
 
+  // 🚀 YENİ: Arka planda yeni müşteri eklendiğinde otomatik seçmek için gözlemci
+  const [prevCustomers, setPrevCustomers] = useState(data?.customers || []);
+
+  useEffect(() => {
+    const currentCustomers = data?.customers || [];
+    // Eğer müşteri sayısında bir artış varsa (Yeni müşteri eklendiyse)
+    if (currentCustomers.length > prevCustomers.length) {
+        // Eklenen yeni müşteriyi bul
+        const addedCustomer = currentCustomers.find((c: any) => !prevCustomers.some((pc: any) => pc.id === c.id));
+        if (addedCustomer) {
+            // Yeni müşteriyi otomatik olarak varlığa ata
+            setNewAsset((prev: any) => ({ ...prev, customer_id: addedCustomer.id }));
+        }
+    }
+    setPrevCustomers(currentCustomers);
+  }, [data?.customers]);
+
   // Eğer diğer modal kapanırsa, bu modalı tekrar öne getir
   useEffect(() => {
     if (!showAddCustomer) setIsPushedBack(false);
