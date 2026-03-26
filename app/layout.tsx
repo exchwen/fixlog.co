@@ -65,8 +65,8 @@ export default function RootLayout({
     <html lang="tr">
       <head>
         {/* 🚀 GOOGLE SEARCH CONSOLE DOĞRULAMA KODU */}
-        <meta name="google-site-verification" content="google3e87915d070d5f8f" />
-        
+        <meta name="google-site-verification" content="OHA0sINLXAbEuPKjXi84t-Fp-X0FnZXFKE4aSOnAVus" />
+
         <script
           dangerouslySetInnerHTML={{
             __html: `
