@@ -14,6 +14,9 @@ export default function StockEntryModal({
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedItemId, setSelectedItemId] = useState('');
   const [addedQuantity, setAddedQuantity] = useState('');
+  
+  // 🚀 YENİ: Seçili birimi tutacağımız ve anlık değiştirebileceğimiz state
+  const [selectedUnit, setSelectedUnit] = useState('Adet');
 
   // Sadece seçili kategoriye ait ürünleri filtrele
   const filteredItems = (data?.stock || []).filter((item: any) => 
@@ -23,12 +26,20 @@ export default function StockEntryModal({
   // 🚀 ÇÖZÜM BURADA: Veritabanından Number dönen ID ile Select'ten String dönen ID'yi eşitlemek için String() kullanıyoruz
   const selectedItemData = (data?.stock || []).find((s: any) => String(s.id) === String(selectedItemId));
 
+  // 🚀 YENİ: Ürün seçildiğinde o ürünün mevcut birimini state'e yaz
+  useEffect(() => {
+    if (selectedItemData) {
+      setSelectedUnit(selectedItemData.unit_name || 'Adet');
+    }
+  }, [selectedItemId, selectedItemData]);
+
   // Modal kapandığında state'leri temizle
   useEffect(() => {
     if (!showStockEntryModal) {
       setSelectedCategory('');
       setSelectedItemId('');
       setAddedQuantity('');
+      setSelectedUnit('Adet'); // 🚀 YENİ: Kapanırken birimi de sıfırla
     }
   }, [showStockEntryModal]);
 
@@ -44,17 +55,17 @@ export default function StockEntryModal({
     // Mevcut miktar ile yeni girilen miktarı topluyoruz.
     const newTotalQuantity = Number(selectedItemData.quantity) + Number(addedQuantity);
 
-    // Mevcut update-stock yapını kullanarak güncelleme gönderiyoruz.
-    const payload = {
-        id: selectedItemData.id,
-        itemName: selectedItemData.item_name,
-        quantity: newTotalQuantity.toString(), // String olarak kaydediyoruz
-        unitName: selectedItemData.unit_name,
-        unitPrice: selectedItemData.unit_price,
-        category: selectedItemData.category || '',
-        supplierId: selectedItemData.supplier_id || null,
-        minAlert: selectedItemData.min_alert || 5
-    };
+// Mevcut update-stock yapını kullanarak güncelleme gönderiyoruz.
+const payload = {
+  id: selectedItemData.id,
+  itemName: selectedItemData.item_name,
+  quantity: newTotalQuantity.toString(), // String olarak kaydediyoruz
+  unitName: selectedUnit, // 🚀 YENİ: Sabit değer yerine kullanıcının seçtiği/gördüğü birimi yolluyoruz
+  unitPrice: selectedItemData.unit_price,
+  category: selectedItemData.category || '',
+  supplierId: selectedItemData.supplier_id || null,
+  minAlert: selectedItemData.min_alert || 5
+};
 
     // 🚀 DÜZELTME: resetFn eklenerek işlem sonrası input içi temizlendi.
     const success = await handleAction('update-stock', payload, () => setShowStockEntryModal(false), () => setAddedQuantity(''));
@@ -154,10 +165,20 @@ export default function StockEntryModal({
                           value={addedQuantity} 
                           onChange={e => setAddedQuantity(e.target.value)} 
                       />
+                      {/* 🚀 YENİ: Sabit div yerine birim değiştirilebilir Select dropdown'ı eklendi */}
                       {selectedItemData && (
-                          <div className="shrink-0 bg-slate-100 text-slate-600 font-bold px-4 py-3 rounded-xl border border-slate-200 uppercase text-xs">
-                              {selectedItemData.unit_name}
-                          </div>
+                          <select 
+                              className="shrink-0 bg-slate-100 text-slate-700 font-black px-2 sm:px-4 py-3 rounded-xl border border-slate-200 uppercase text-xs outline-none focus:border-emerald-500 cursor-pointer appearance-none text-center"
+                              value={selectedUnit}
+                              onChange={(e) => setSelectedUnit(e.target.value)}
+                          >
+                              <option value="Adet">ADET</option>
+                              <option value="Metre">METRE</option>
+                              <option value="Kg">KG</option>
+                              <option value="Kutu">KUTU</option>
+                              <option value="Paket">PAKET</option>
+                              <option value="Litre">LİTRE</option>
+                          </select>
                       )}
                   </div>
                 </div>

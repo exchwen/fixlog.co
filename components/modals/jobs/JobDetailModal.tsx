@@ -762,7 +762,10 @@ useEffect(() => {
                                         }
                                     }
 
-                                    cleanNote = cleanNote.replace(/\[Usta Notu\]:/g, '').replace(/\[📍 Konum Kaydı\].*/g, '').trim();
+                                    if (cleanNote.includes('[Usta Notu]:')) {
+                                        cleanNote = cleanNote.split('[Usta Notu]:').pop() || '';
+                                    }
+                                    cleanNote = cleanNote.replace(/\[📍 Konum Kaydı\].*/g, '').trim();
                                     
                                     if (extractedChecklist.length === 0 && !cleanNote) return <div className="p-5 text-slate-500 italic">Rapor girilmemiş.</div>;
                                     
@@ -1164,12 +1167,15 @@ useEffect(() => {
                                              }
                                          }
                                      } else {
-                                         cleanNote = rawNote;
-                                     }
+                                        cleanNote = rawNote;
+                                    }
 
-                                     cleanNote = cleanNote.replace(/\[Usta Notu\]:/g, '').replace(/\[📍 Konum Kaydı\].*/g, '').trim();
+                                    if (cleanNote.includes('[Usta Notu]:')) {
+                                        cleanNote = cleanNote.split('[Usta Notu]:').pop() || '';
+                                    }
+                                    cleanNote = cleanNote.replace(/\[📍 Konum Kaydı\].*/g, '').trim();
 
-                                     const hasFormEntries = formEntries.length > 0;
+                                    const hasFormEntries = formEntries.length > 0;
                                      const hasChecklist = extractedChecklist.length > 0;
                                      const hasCleanNote = !!cleanNote;
                                      const hasMaterials = selectedJob.details?.usedMaterials && selectedJob.details.usedMaterials.length > 0;
@@ -1284,34 +1290,34 @@ useEffect(() => {
                              </motion.div>
                         )}
 
-                        {activeTab === 'medya' && (
-                            <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="space-y-6">
-                                {selectedJob.photos && selectedJob.photos.length > 0 && (
-                                    <div>
-                                        <div className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest flex items-center gap-1.5">
-                                            <ImageIcon size={14} /> Saha Fotoğrafları
-                                        </div>
-                                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                            {selectedJob.photos.map((photoUrl: string, idx: number) => (
-                                                <div key={idx} onClick={() => setFullScreenImage(getSafeImageUrl(photoUrl))} className="aspect-square rounded-xl overflow-hidden border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition-all hover:scale-105 active:scale-95">
-                                                    <img src={getSafeImageUrl(photoUrl)} alt="Saha" crossOrigin="anonymous" className="w-full h-full object-cover" />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+{activeTab === 'medya' && (
+                            <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="space-y-6 w-full">
+                                {selectedJob.photos && selectedJob.photos.length > 0 && (
+                                    <div className="w-full">
+                                        <div className="text-[11px] font-black text-slate-500 uppercase mb-4 tracking-widest flex items-center gap-2">
+                                            <ImageIcon size={16} /> Saha Fotoğrafları
+                                        </div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                            {selectedJob.photos.map((photoUrl: string, idx: number) => (
+                                                <div key={idx} onClick={() => setFullScreenImage(getSafeImageUrl(photoUrl))} className="aspect-square w-full rounded-2xl overflow-hidden border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition-all hover:scale-105 active:scale-95 bg-slate-50">
+                                                    <img src={getSafeImageUrl(photoUrl)} alt="Saha" crossOrigin="anonymous" className="w-full h-full object-cover" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
-                                {selectedJob.signature_url && (
-                                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 text-center">
-                                        <p className="text-xs text-slate-500 mb-4 italic">Bu form müşteri nezaretinde elektronik imza ile onaylanmıştır.</p>
-                                        <div className="inline-block bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">İmzalayan: <span className="text-slate-800">{selectedJob.customer_signature_name}</span></div>
-                                            <img src={getSafeImageUrl(selectedJob.signature_url)} alt="Müşteri İmzası" className="h-24 mx-auto object-contain mix-blend-multiply" />
-                                        </div>
-                                    </div>
-                                )}
-                            </motion.div>
-                        )}
+                                {selectedJob.signature_url && (
+                                    <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 text-center w-full">
+                                        <p className="text-xs text-slate-500 mb-5 font-medium">Bu form müşteri nezaretinde elektronik imza ile onaylanmıştır.</p>
+                                        <div className="inline-flex flex-col bg-white p-5 rounded-2xl shadow-sm border border-slate-100 min-w-[200px]">
+                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">İmzalayan: <span className="text-slate-800">{selectedJob.customer_signature_name}</span></div>
+                                            <img src={getSafeImageUrl(selectedJob.signature_url)} alt="Müşteri İmzası" className="h-28 mx-auto object-contain mix-blend-multiply" />
+                                        </div>
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
 
                     </div>
 

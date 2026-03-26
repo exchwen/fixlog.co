@@ -695,32 +695,17 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
           {activeTab === 'periodic' && <PeriodicTab data={data} handleAction={handleAction} statusColors={statusColors} setSelectedAsset={setSelectedAsset} handleGenerateMonthlyMaintenance={handleGenerateMonthlyMaintenance} isGenerating={isGeneratingMaintenance} />}
           
           {activeTab === 'stock' && (
-            <div className="flex flex-col space-y-4">
-              <div className="flex justify-end w-full">
-                <div className="bg-white border border-slate-200 rounded-xl p-2 shadow-sm flex items-center gap-2">
-                  <Filter size={16} className="text-slate-400 ml-2" />
-                  <select value={stockCategory} onChange={(e) => setStockCategory(e.target.value)} className="text-sm font-bold text-slate-700 outline-none cursor-pointer bg-transparent">
-                    <option value="Tümü">Tüm Kategoriler</option>
-                    {Array.from(new Set((data?.stock || []).map((s) => s?.category).filter(Boolean))).map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <StockTab 
-                data={filteredDataForTabs} 
-                handleAction={handleAction} 
-                setShowStockModal={setShowStockModal} 
-                setShowSupplierModal={setShowSupplierModal} 
-                setShowSupplierListModal={setShowSupplierModal} 
-                setShowCategoryModal={setShowCategoryModal}
-                setShowOrderModal={setShowOrderModal}
-                setShowBulkOrderModal={setShowBulkOrderModal}
-                stockCategory={stockCategory}
-                setStockCategory={setStockCategory}
-                setShowStockEntryModal={setShowStockEntryModal}
-              />
-            </div>
+            <StockTab 
+              data={data} 
+              handleAction={handleAction} 
+              setShowStockModal={setShowStockModal} 
+              setShowSupplierModal={setShowSupplierModal} 
+              setShowSupplierListModal={setShowSupplierModal} 
+              setShowCategoryModal={setShowCategoryModal}
+              setShowOrderModal={setShowOrderModal}
+              setShowBulkOrderModal={setShowBulkOrderModal}
+              setShowStockEntryModal={setShowStockEntryModal}
+            />
           )}
           
           {activeTab === 'assets' && <AssetsTab data={data} setShowAddAsset={setShowAddAsset} setSelectedAsset={setSelectedAsset} setShowQRModal={setShowQRModal} setSelectedQRAsset={setSelectedQRAsset} setShowSmartExcelModal={setShowSmartExcelModal} />}
