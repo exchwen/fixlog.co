@@ -325,11 +325,11 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
   });
 
   const executePrint = (mode: 'color' | 'bw') => {
-    flushSync(() => {
-      setPrintMode(mode);
-      setShowPrintModeSelection(false);
-    });
-    handlePrint();
+    setPrintMode(mode);
+    setShowPrintModeSelection(false);
+    setTimeout(() => {
+      handlePrint();
+    }, 150); // DOM reflow ve boyut hesaplamalarının tamamlanması için kısa bir bekleme süresi
   };
 
   if (!isOpen || !asset) return null;
@@ -411,7 +411,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                 {/* 1. LOGO VE FİRMA ADI */}
                 <div className="w-full flex flex-col items-center justify-center shrink-0">
                   <div 
-                    className={`w-10 h-10 print-logo-box rounded-lg flex items-center justify-center mb-1.5 overflow-hidden shadow-sm print:shadow-none border-2 ${printMode === 'bw' ? 'border-black bg-white' : 'border-white ring-1 ring-slate-100 print:ring-0 print:border-slate-100'}`}
+                    className={`w-10 h-10 print-logo-box rounded-lg flex items-center justify-center mb-1.5 overflow-hidden shadow-sm print:shadow-none border-2 print:ring-0 ${printMode === 'bw' ? 'border-black bg-white' : 'border-white ring-1 ring-slate-100 print:border-slate-100'}`}
                     style={{ backgroundColor: printMode === 'bw' ? '#ffffff' : (companyLogo ? logoBgColor : '#f8fafc') }}
                   >
                     {companyLogo ? (
@@ -419,7 +419,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                         src={getSafeImageUrl(companyLogo)} 
                         alt="Logo" 
                         crossOrigin="anonymous"
-                        className={`w-7 h-7 print-logo-img object-contain drop-shadow-md print:drop-shadow-none ${printMode === 'bw' ? 'grayscale brightness-0' : ''}`} 
+                        className={`w-7 h-7 print-logo-img object-contain drop-shadow-md print:drop-shadow-none ${printMode === 'bw' ? 'grayscale' : ''}`} 
                       />
                     ) : (
                       <Building2 className={`w-6 h-6 print-logo-icon ${printMode === 'bw' ? 'text-black' : 'text-slate-400'}`} />

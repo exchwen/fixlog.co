@@ -363,7 +363,7 @@ const notificationCount = notifications.length;
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 top-12 sm:top-14 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col z-[100]"
+                        className="absolute right-0 top-12 sm:top-14 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col z-[600]"
                     >
                         <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                             <div>
