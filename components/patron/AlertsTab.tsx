@@ -213,7 +213,7 @@ export default function AlertsTab({ data, handleAction }: AlertsTabProps) {
                                 </span>
                                 {fault.asset_location && (
                                     <a 
-                                        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fault.asset_location)}`} 
+                                        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fault.asset_location || '')}`} 
                                         target="_blank" 
                                         rel="noopener noreferrer" 
                                         onClick={(e) => e.stopPropagation()}
@@ -321,7 +321,7 @@ export default function AlertsTab({ data, handleAction }: AlertsTabProps) {
                                             } catch(e) {}
                                             return '#';
                                         }
-                                        return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(em.asset_location)}`;
+                                        return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(em.asset_location || '')}`;
                                     })()}
                                     target="_blank" 
                                     rel="noopener noreferrer" 
