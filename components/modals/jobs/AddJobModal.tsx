@@ -323,8 +323,8 @@ export default function AddJobModal({
                                         setIsDraggingPdf(false);
                                         const file = e.dataTransfer.files?.[0];
                                         if (file && file.type === 'application/pdf') {
-                                            if (file.size > 3 * 1024 * 1024) {
-                                                alert('Güvenlik Duvarı (WAF) takılması yaşamamak için lütfen en fazla 3MB boyutunda bir PDF yükleyin.');
+                                            if (file.size > 10 * 1024 * 1024) {
+                                                alert('Sistem performansını korumak için lütfen en fazla 10MB boyutunda bir PDF yükleyin.');
                                                 return;
                                             }
                                             const reader = new FileReader();
@@ -340,8 +340,8 @@ export default function AddJobModal({
                                     <input type="file" accept="application/pdf" className="hidden" id="pdf-upload" onChange={(e) => {
                                         const file = e.target.files?.[0];
                                         if (file) {
-                                            if (file.size > 3 * 1024 * 1024) {
-                                                alert('Güvenlik Duvarı (WAF) takılması yaşamamak için lütfen en fazla 3MB boyutunda bir PDF yükleyin.');
+                                            if (file.size > 10 * 1024 * 1024) {
+                                                alert('Sistem performansını korumak için lütfen en fazla 10MB boyutunda bir PDF yükleyin.');
                                                 e.target.value = '';
                                                 return;
                                             }

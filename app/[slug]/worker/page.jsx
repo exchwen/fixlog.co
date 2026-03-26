@@ -983,10 +983,19 @@ const handleStatusUpdate = async (newStatus) => {
                                   <span className="text-[10px] font-bold opacity-80 flex items-center gap-1"><Clock size={10}/> {job.scheduled_date || 'Anlık'}</span>
                                 </div>
                                 
-                                <h3 className="text-lg font-black leading-tight mb-1 truncate flex items-center gap-2">
-                                    {asset ? (asset.apartmentName ? `${asset.apartmentName} (${asset.name})` : asset.name) : job.customer_name}
-                                    {job.project_pdf_url && <FileText size={16} className="text-white shrink-0" />}
-                               </h3>
+                                <div className="flex justify-between items-start gap-2 mb-1">
+                                    <h3 className="text-lg font-black leading-tight flex flex-col sm:block">
+                                        {asset ? (
+                                            <>
+                                                <span className="truncate block max-w-[200px] sm:max-w-[250px]">{asset.apartmentName || asset.name}</span>
+                                                {asset.apartmentName && <span className="text-xs sm:text-lg sm:ml-2 font-medium opacity-80 truncate block max-w-[200px] sm:max-w-[250px]">({asset.name})</span>}
+                                            </>
+                                        ) : (
+                                            <span className="truncate block max-w-[200px] sm:max-w-[250px]">{job.customer_name}</span>
+                                        )}
+                                    </h3>
+                                    {job.project_pdf_url && <FileText size={20} className="text-white shrink-0" />}
+                                </div>
                                 
                                 <p className="text-blue-100 text-xs font-medium flex items-center gap-1.5 mb-1 truncate">
                                     <User size={12} className="shrink-0"/> {job.customer_name}
@@ -1042,10 +1051,19 @@ const handleStatusUpdate = async (newStatus) => {
                             <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Clock size={10}/> {job.scheduled_date || 'Anlık'}</span>
                           </div>
                           
-                          <h3 className="text-base font-black text-slate-800 leading-tight mb-1 truncate flex items-center gap-2">
-                              {asset ? (asset.apartmentName ? `${asset.apartmentName} (${asset.name})` : asset.name) : job.customer_name}
-                              {job.project_pdf_url && <FileText size={16} className="text-blue-500 shrink-0" />}
-                          </h3>
+                          <div className="flex justify-between items-start gap-2 mb-1">
+                              <h3 className="text-base font-black text-slate-800 leading-tight flex flex-col sm:block">
+                                  {asset ? (
+                                      <>
+                                          <span className="truncate block max-w-[200px] sm:max-w-[250px]">{asset.apartmentName || asset.name}</span>
+                                          {asset.apartmentName && <span className="text-[11px] sm:text-base sm:ml-2 font-medium text-slate-500 truncate block max-w-[200px] sm:max-w-[250px]">({asset.name})</span>}
+                                      </>
+                                  ) : (
+                                      <span className="truncate block max-w-[200px] sm:max-w-[250px]">{job.customer_name}</span>
+                                  )}
+                              </h3>
+                              {job.project_pdf_url && <FileText size={18} className="text-blue-500 shrink-0 mt-0.5" />}
+                          </div>
                           
                           <p className="text-slate-500 text-xs font-medium flex items-center gap-1.5 mb-1 truncate">
                               <User size={12} className="shrink-0 text-slate-400"/> {job.customer_name}
@@ -1292,6 +1310,18 @@ const handleStatusUpdate = async (newStatus) => {
                                         </div>
                                     );
                                 })()}
+
+                                {(selectedJob.project_pdf_url || selectedJob.projectPdf) && (
+                                    <a 
+                                        href={selectedJob.project_pdf_url || selectedJob.projectPdf} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="mt-4 w-full bg-blue-50 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 text-blue-700 font-bold py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95"
+                                    >
+                                        <FileText size={18} /> Yönetici Tarafından Yüklenen PDF'i Aç
+                                    </a>
+                                )}
+
                             </div>
                         </motion.div>
                     )}
