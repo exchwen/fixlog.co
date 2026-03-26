@@ -1313,7 +1313,7 @@ const handleStatusUpdate = async (newStatus) => {
 
                                 {(selectedJob.project_pdf_url || selectedJob.projectPdf) && (
                                     <a 
-                                        href={String(selectedJob.project_pdf_url || selectedJob.projectPdf).replace('https://pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev', 'https://fixlog.co/dosya-deposu')} 
+                                        href={String(selectedJob.project_pdf_url || selectedJob.projectPdf).replace('https://pub-a78064a5e9304242b0982c01b5778197.r2.dev', 'https://fixlog.co/dosya-deposu')} 
                                         target="_blank" 
                                         rel="noopener noreferrer" 
                                         className="mt-4 w-full bg-blue-50 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 text-blue-700 font-bold py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95"

@@ -24,7 +24,7 @@ const nextConfig = {
     return [
       {
         source: "/dosya-deposu/:path*",
-        destination: "https://pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev/:path*",
+        destination: "https://pub-a78064a5e9304242b0982c01b5778197.r2.dev/:path*",
       },
     ];
   },

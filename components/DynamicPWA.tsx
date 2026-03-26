@@ -13,8 +13,8 @@ export default function DynamicPWA({ companyName, companyLogo }: DynamicPWAProps
   const getSafeImageUrl = (url: string | undefined) => {
     if (!url) return '';
     // Eğer link bizim R2 bucket ise, onu Vercel proxy'sine çevir
-    if (url.includes('pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev')) {
-       return url.replace('https://pub-d332de0237ac40de84c5f5b1ee26c3ee.r2.dev', '/dosya-deposu');
+    if (url.includes('pub-a78064a5e9304242b0982c01b5778197.r2.dev')) {
+       return url.replace('https://pub-a78064a5e9304242b0982c01b5778197.r2.dev', '/dosya-deposu');
     }
     return url;
   };
