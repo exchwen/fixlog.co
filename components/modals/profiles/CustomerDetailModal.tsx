@@ -603,7 +603,8 @@ export default function CustomerDetailModal({
                                                     onClick={async (e) => {
                                                         e.preventDefault();
                                                         const combinedAddress = getFullAddress(editCustomerForm.address, buildingNo, selectedCity, selectedDistrict);
-                                                        await handleAction('add-asset', { ...newAssetForm, customer_id: selectedCustomer.id, location: combinedAddress });
+                                                        // 🚀 DÜZELTME: Backend'in beklediği 'customerId' anahtarı da eklendi
+                                                        await handleAction('add-asset', { ...newAssetForm, customer_id: selectedCustomer.id, customerId: selectedCustomer.id, location: combinedAddress });
                                                         setIsCreatingAsset(false);
                                                         // 🚀 Form sıfırlama güncellendi
                                                         setNewAssetForm({ name: '', apartmentName: '', maintenance_period: 30, maintenance_fee: '', route_staff_id: '' });
