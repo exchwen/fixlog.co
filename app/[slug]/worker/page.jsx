@@ -1092,6 +1092,68 @@ const handleStatusUpdate = async (newStatus) => {
 
 {activeTab === 'completed' && (
              <div className="space-y-4">
+                {/* 🚀 YENİ: PERFORMANS ANALİZ KUTUSU */}
+                {(() => {
+                    const now = new Date();
+                    const currentMonth = now.getMonth();
+                    const currentYear = now.getFullYear();
+                    const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+                    const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+                    let thisMonthCount = 0;
+                    let lastMonthCount = 0;
+
+                    completedJobs.forEach(job => {
+                        if (!job.created_at) return;
+                        const jobDate = new Date(job.created_at);
+                        if (jobDate.getMonth() === currentMonth && jobDate.getFullYear() === currentYear) {
+                            thisMonthCount++;
+                        } else if (jobDate.getMonth() === lastMonth && jobDate.getFullYear() === lastMonthYear) {
+                            lastMonthCount++;
+                        }
+                    });
+
+                    let trendText = "";
+                    let trendColor = "";
+                    let IconComponent = CheckCircle2;
+
+                    if (thisMonthCount > lastMonthCount) {
+                        trendText = `Geçen aya göre ${thisMonthCount - lastMonthCount} daha fazla iş bitirdiniz. Harika gidiyorsunuz! 🚀`;
+                        trendColor = "text-emerald-700 bg-emerald-50 border-emerald-200";
+                        IconComponent = CheckCircle2;
+                    } else if (thisMonthCount < lastMonthCount && lastMonthCount > 0) {
+                        trendText = `Geçen ay toplam ${lastMonthCount} iş bitirmiştiniz. Hızlanma vakti! ⚡`;
+                        trendColor = "text-amber-700 bg-amber-50 border-amber-200";
+                        IconComponent = AlertCircle;
+                    } else if (thisMonthCount === 0 && lastMonthCount === 0) {
+                        trendText = `Henüz bu ay veya geçen ay tamamlanan işiniz bulunmuyor.`;
+                        trendColor = "text-slate-600 bg-slate-50 border-slate-200";
+                        IconComponent = Briefcase;
+                    } else {
+                        trendText = `Geçen ayla aynı performanstasınız (${thisMonthCount} iş). İstikrarlısınız! 🎯`;
+                        trendColor = "text-blue-700 bg-blue-50 border-blue-200";
+                        IconComponent = Briefcase;
+                    }
+
+                    return (
+                        <div className={`p-4 rounded-2xl border flex items-center gap-4 shadow-sm ${trendColor} mb-2`}>
+                            <div className="p-3 bg-white rounded-xl shadow-sm shrink-0">
+                                <IconComponent size={24} className="opacity-80" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-black uppercase tracking-wider mb-0.5">Aylık Performans Özeti</h3>
+                                <p className="text-sm font-medium opacity-90">{trendText}</p>
+                                {(thisMonthCount > 0 || lastMonthCount > 0) && (
+                                    <div className="flex gap-3 mt-2 text-[11px] font-black uppercase tracking-wider">
+                                        <span className="bg-white/60 px-2.5 py-1 rounded-lg">Bu Ay: {thisMonthCount} İş</span>
+                                        <span className="bg-white/60 px-2.5 py-1 rounded-lg">Geçen Ay: {lastMonthCount} İş</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })()}
+
                 <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                    <div>
                        <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">

@@ -205,9 +205,25 @@ export default function AlertsTab({ data, handleAction }: AlertsTabProps) {
                              <div className="text-xs font-semibold text-slate-500 mt-0.5 truncate">{subTitle}</div>
                           )}
 
-                          <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-4 text-xs font-semibold text-slate-500 mt-2.5">
-                            <span className="flex items-center gap-1.5 w-full sm:w-auto truncate"><MapPin size={14} className="text-slate-400 shrink-0" /> <span className="truncate">{fault.asset_location ? fault.asset_location.replace(aptName || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : 'Konum yok'}</span></span>
-                            <div className="flex items-center gap-4 w-full sm:w-auto">
+<div className="flex flex-col text-xs font-semibold text-slate-500 mt-2.5 gap-2">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
+                                <span className="flex items-start gap-1.5 flex-1">
+                                    <MapPin size={14} className="text-slate-400 shrink-0 mt-0.5" /> 
+                                    <span className="text-slate-600 leading-snug">{fault.asset_location || 'Açık adres belirtilmemiş'}</span>
+                                </span>
+                                {fault.asset_location && (
+                                    <a 
+                                        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fault.asset_location)}`} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shrink-0 border border-blue-100/50"
+                                    >
+                                        <MapPin size={12} /> Yol Tarifi
+                                    </a>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-4 w-full mt-1">
                                 <span className="flex items-center gap-1.5 truncate"><User size={14} className="text-slate-400 shrink-0" /> <span className="truncate">{fault.reporter_name || 'İsimsiz'}</span></span>
                                 <span className="flex items-center gap-1.5 shrink-0"><Phone size={14} className="text-slate-400 shrink-0" /> {fault.reporter_phone || 'Tel yok'}</span>
                             </div>
@@ -288,23 +304,33 @@ export default function AlertsTab({ data, handleAction }: AlertsTabProps) {
                           <h3 className="font-bold text-slate-800 text-lg leading-tight truncate">{mainTitle}</h3>
                           {subTitle && <div className="text-xs font-semibold text-slate-500 mt-0.5 truncate">{subTitle}</div>}
                           {isStaffSos && em.message && <div className="text-xs italic text-rose-600 mt-2 border-l-2 border-rose-300 pl-2">"{em.message}"</div>}
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-xs font-semibold text-slate-500 mt-2.5">
-                            <span className="flex items-center gap-1.5 w-full sm:w-auto truncate"><MapPin size={14} className="text-slate-400 shrink-0" /> 
-                            <span className="truncate">
-                                {isStaffSos ? (
-                                    em.location && em.location !== 'null' ? (
-                                        (() => {
-                                            let lat, lng;
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full text-xs font-semibold text-slate-500 mt-3">
+                            <span className="flex items-start gap-1.5 flex-1">
+                                <MapPin size={14} className="text-slate-400 shrink-0 mt-0.5" /> 
+                                <span className="text-slate-600 leading-snug">
+                                    {isStaffSos ? 'Personel Konumu (Cihaz GPS Verisi)' : (em.asset_location || 'Açık adres belirtilmemiş')}
+                                </span>
+                            </span>
+                            {((isStaffSos && em.location && em.location !== 'null') || (!isStaffSos && em.asset_location)) && (
+                                <a 
+                                    href={(() => {
+                                        if (isStaffSos) {
                                             try {
                                                 const parsed = typeof em.location === 'string' ? JSON.parse(em.location) : em.location;
-                                                lat = parsed.lat; lng = parsed.lng;
+                                                if (parsed.lat && parsed.lng) return `https://www.google.com/maps/dir/?api=1&destination=${parsed.lat},${parsed.lng}`;
                                             } catch(e) {}
-                                            if (lat && lng) return <a href={`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-blue-500 hover:underline">Haritada Yol Tarifi Al</a>;
-                                            return 'Konum Hatalı';
-                                        })()
-                                    ) : 'Konum Yok'
-                                ) : (em.asset_location ? em.asset_location.replace(em.asset_apartment || '', '').replace(/^[\s-/,]+|[\s-/,]+$/g, '').trim() : 'Konum yok')}
-                            </span></span>
+                                            return '#';
+                                        }
+                                        return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(em.asset_location)}`;
+                                    })()}
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shrink-0 border border-blue-100/50"
+                                >
+                                    <MapPin size={12} /> Yol Tarifi
+                                </a>
+                            )}
                           </div>
                         </div>
                       </div>
