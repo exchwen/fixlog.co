@@ -303,7 +303,7 @@ const notificationCount = notifications.length;
             </div>
           )}
 
-          {/* Yazı Alanı (Uzun isimler mobilde kayarak devam eder) */}
+          {/* Yazı Alanı (Uzun isimler mobilde kayarak devam eder) 1*/}
           <div className="flex flex-col justify-center flex-1 min-w-0">
             <h1 className="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2 tracking-tight truncate">
               <span className="truncate">{data?.name || 'Yükleniyor...'}</span>
