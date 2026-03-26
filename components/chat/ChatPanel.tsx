@@ -88,7 +88,7 @@ export default function ChatPanel({ hideBubble, isChatOpen, setIsChatOpen, activ
                 const registration = await navigator.serviceWorker.ready;
 
                 const beamsClient = new PusherPushNotifications.Client({
-                    instanceId: '6a47ebc2-0c89-48f1-81a3-80a4e003dd41',
+                    instanceId: '015accc9-e581-44a3-b37f-5410549611da',
                     serviceWorkerRegistration: registration,
                 });
 
@@ -185,7 +185,7 @@ export default function ChatPanel({ hideBubble, isChatOpen, setIsChatOpen, activ
       const fetchAllMessages = async () => {
           if (!actualSlug || !currentUserId) return;
           const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
-          const API_URL = 'https://backend.isdokumu.workers.dev';
+          const API_URL = 'https://backend.fixlog-co.workers.dev';
         
         try {
             const safeRole = currentUserRole ? currentUserRole.trim().toLocaleUpperCase('tr-TR') : '';
@@ -247,7 +247,7 @@ export default function ChatPanel({ hideBubble, isChatOpen, setIsChatOpen, activ
     if (!actualSlug || !currentUserId) return;
 
     const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
-    const API_URL = 'https://backend.isdokumu.workers.dev';
+    const API_URL = 'https://backend.fixlog-co.workers.dev';
 
     Pusher.logToConsole = false;
 
@@ -378,7 +378,7 @@ export default function ChatPanel({ hideBubble, isChatOpen, setIsChatOpen, activ
     if (!targetSenderId || !currentUserId || !document.hasFocus()) return;
     
     const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
-    const API_URL = 'https://backend.isdokumu.workers.dev';
+    const API_URL = 'https://backend.fixlog-co.workers.dev';
     
     try {
         const safeRole = currentUserRole ? currentUserRole.trim().toLocaleUpperCase('tr-TR') : '';
@@ -477,7 +477,7 @@ export default function ChatPanel({ hideBubble, isChatOpen, setIsChatOpen, activ
   setMessageInput(''); 
 
   const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
-  const API_URL = 'https://backend.isdokumu.workers.dev';
+  const API_URL = 'https://backend.fixlog-co.workers.dev';
   
   fetch(`${API_URL}/send-message`, {
         method: 'POST', 
@@ -753,7 +753,7 @@ export default function ChatPanel({ hideBubble, isChatOpen, setIsChatOpen, activ
                     <button 
                       onClick={async () => {
                         const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
-                        const res = await fetch(`https://backend.isdokumu.workers.dev/get-archived-messages?slug=${actualSlug}`, {
+                        const res = await fetch(`https://backend.fixlog-co.workers.dev/get-archived-messages?slug=${actualSlug}`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         const archived = await res.json();

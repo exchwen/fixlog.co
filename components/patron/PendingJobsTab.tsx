@@ -122,7 +122,7 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
 
     const attemptRequest = async (retries: number = 3): Promise<boolean> => {
       try {
-        const res = await fetch(`https://backend.isdokumu.workers.dev/${endpoint}`, {
+        const res = await fetch(`https://backend.fixlog-co.workers.dev/${endpoint}`, {
           method: 'POST', 
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(bodyData)

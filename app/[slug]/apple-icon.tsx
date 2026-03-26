@@ -3,7 +3,7 @@ import { ImageResponse } from 'next/og';
 export const size = { width: 180, height: 180 };
 export const contentType = 'image/png';
 
-const API_URL = 'https://backend.isdokumu.workers.dev';
+const API_URL = 'https://backend.fixlog-co.workers.dev';
 
 export default async function AppleIcon({ params }: { params: { slug: string } }) {
   const slug = params.slug;

@@ -612,7 +612,7 @@ export default function AssetDetailModal({
                                   <button 
                                     onClick={async () => {
                                         const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
-                                        const res = await fetch(`https://backend.isdokumu.workers.dev/get-archived-jobs?slug=${data.slug}&assetId=${selectedAsset.id}`, {
+                                        const res = await fetch(`https://backend.fixlog-co.workers.dev/get-archived-jobs?slug=${data.slug}&assetId=${selectedAsset.id}`, {
                                             headers: { 'Authorization': `Bearer ${token}` }
                                         });
                                         const archived = await res.json();

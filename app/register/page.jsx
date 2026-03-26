@@ -30,7 +30,7 @@ import { generateUniqueSlug } from '../../lib/utils';
 // JSON Verisini Buradan Çekiyoruz
 import sectorDataFile from '../../lib/data/sectors.json';
 
-const API_URL = 'https://backend.isdokumu.workers.dev';
+const API_URL = 'https://backend.fixlog-co.workers.dev';
 
 const SECTOR_DATA = sectorDataFile.sectors;
 const SECTORS = Object.keys(SECTOR_DATA);

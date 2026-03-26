@@ -100,7 +100,7 @@ export default function JobsTab({ data, setShowJobModal, statusColors, setSelect
                setIsScanning(true);
                try {
                  const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
-                 const res = await fetch(`https://backend.isdokumu.workers.dev/get-archived-jobs?slug=${data.slug}`, {
+                 const res = await fetch(`https://backend.fixlog-co.workers.dev/get-archived-jobs?slug=${data.slug}`, {
                      headers: { 'Authorization': `Bearer ${token}` }
                  });
                  

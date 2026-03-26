@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import * as PusherPushNotifications from '@pusher/push-notifications-web';
 
-const API_URL = 'https://backend.isdokumu.workers.dev'; 
+const API_URL = 'https://backend.fixlog-co.workers.dev'; 
 
 export default function TestPushPage() {
   const [logs, setLogs] = useState<string[]>([]);
@@ -35,7 +35,7 @@ export default function TestPushPage() {
 
         // Beams SDK Başlat
         const beamsClient = new PusherPushNotifications.Client({
-            instanceId: '6a47ebc2-0c89-48f1-81a3-80a4e003dd41', // Senin ID'n
+            instanceId: '015accc9-e581-44a3-b37f-5410549611da', // Senin ID'n
             serviceWorkerRegistration: registration,
         });
 

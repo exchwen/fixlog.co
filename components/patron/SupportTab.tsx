@@ -100,7 +100,7 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
     try {
       const token = getValidToken();
 
-      const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+      const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || "https://backend.fixlog-co.workers.dev";
       const BASE_URL = rawBaseUrl.replace(/\/$/, ""); 
 
       const res = await fetch(`${BASE_URL}/get-my-tickets?t=${Date.now()}`, {
@@ -191,7 +191,7 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
         
         const token = getValidToken(); 
         
-        const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+        const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || "https://backend.fixlog-co.workers.dev";
         const BASE_URL = rawBaseUrl.replace(/\/$/, "");
         
         const res = await fetch(`${BASE_URL}/reply-support-ticket`, {
@@ -279,7 +279,7 @@ export default function SupportTab({ handleAction, isSaving, setHideChatBubble }
     
     try {
         const token = getValidToken();
-        const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+        const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || "https://backend.fixlog-co.workers.dev";
         const BASE_URL = rawBaseUrl.replace(/\/$/, ""); 
 
         const res = await fetch(`${BASE_URL}/add-support-ticket`, {

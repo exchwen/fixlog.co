@@ -36,7 +36,7 @@ export default function AssetScanPage() {
   // Personel Sıkışmasını Önleyen "Panele Dön" State'i
   const [staffRole, setStaffRole] = useState<string | null>(null);
 
-  const API_URL = 'https://backend.isdokumu.workers.dev'; 
+  const API_URL = 'https://backend.fixlog-co.workers.dev'; 
 
   // 🚀 GÜVENLİ LİNK DÖNÜŞÜTÜRÜCÜ (PROXY)
   const getSafeImageUrl = (url: string) => {

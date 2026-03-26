@@ -109,7 +109,7 @@ useEffect(() => {
       }
 
       try {
-        const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+        const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.fixlog-co.workers.dev";
         const res = await fetch(`${BASE_URL}/masterboss-data`, {
           headers: {
             "Authorization": `Bearer ${token}`
@@ -158,7 +158,7 @@ useEffect(() => {
     const toastId = toast.loading("Güncelleniyor...");
     
     try {
-      const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+      const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.fixlog-co.workers.dev";
       
       const payload = {
         companySlug: selectedCompany.slug,
@@ -213,7 +213,7 @@ useEffect(() => {
     const toastId = toast.loading("Sistem genel fiyatları güncelleniyor...");
     
     try {
-      const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+      const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.fixlog-co.workers.dev";
       const res = await fetch(`${BASE_URL}/masterboss-update-global-pricing`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -281,7 +281,7 @@ useEffect(() => {
 
     const toastId = toast.loading("İşleniyor...");
     try {
-      const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+      const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.fixlog-co.workers.dev";
       const res = await fetch(`${BASE_URL}/masterboss-resolve-ticket`, {
         method: 'POST',
         headers: {
@@ -639,7 +639,7 @@ useEffect(() => {
                                 setInfoLoading(true);
                                 try {
                                   const token = localStorage.getItem("masterbossToken");
-                                  const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.isdokumu.workers.dev";
+                                  const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.fixlog-co.workers.dev";
                                   const res = await fetch(`${BASE_URL}/masterboss-company-details?slug=${c.slug}`, {
                                     headers: { "Authorization": `Bearer ${token}` }
                                   });

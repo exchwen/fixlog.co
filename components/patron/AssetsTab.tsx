@@ -189,7 +189,7 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
 
             const checkArchiveForColor = async (assetId: string) => {
                const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
-               const res = await fetch(`https://backend.isdokumu.workers.dev/get-archived-jobs?slug=${data.slug}&assetId=${assetId}`, {
+               const res = await fetch(`https://backend.fixlog-co.workers.dev/get-archived-jobs?slug=${data.slug}&assetId=${assetId}`, {
                    headers: { 'Authorization': `Bearer ${token}` }
                });
                const archived = await res.json();

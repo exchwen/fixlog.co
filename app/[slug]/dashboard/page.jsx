@@ -27,7 +27,7 @@ import AlertsTab from '@/components/patron/AlertsTab';
 import SupportTab from '@/components/patron/SupportTab'; 
 import PeriodicTab from '@/components/patron/PeriodicTab';
 
-const API_URL = 'https://backend.isdokumu.workers.dev';
+const API_URL = 'https://backend.fixlog-co.workers.dev';
 
 const parseJwt = (token) => {
   try {
