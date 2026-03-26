@@ -393,7 +393,12 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
   const lowStockItems = stock.filter((s: any) => Number(s.quantity) <= 5);
 
   const handleCopyLink = () => {
-    const loginUrl = `${window.location.origin}/${slug}/login`;
+    // data nesnesinden slug değerini al (eğer varsa), yoksa URL parametresindeki slug'ı kullan
+    const currentSlug = data?.slug || slug || '';
+    
+    // Geçerli bir slug varsa linki oluştur, yoksa fallback (ana sayfa vs.)
+    const loginUrl = currentSlug ? `${window.location.origin}/${currentSlug}/login` : window.location.origin;
+    
     navigator.clipboard.writeText(loginUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -565,13 +570,20 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
           </h2>
           <p className="text-slate-500 text-xs mt-1">Sistem üzerindeki anlık özetin aşağıdadır.</p>
         </div>
-        <button 
-          onClick={handleCopyLink} 
-          className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold transition-all active:scale-95 shadow-sm border border-slate-200 w-fit"
-        >
-           {copied ? <Check size={14} className="text-emerald-500" /> : <LinkIcon size={14} className="text-slate-400" />}
-           {copied ? 'Bağlantı Kopyalandı' : 'Personel Giriş Linkini Kopyala'}
-        </button>
+        
+        <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 bg-slate-100/80 px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Firma Kodu:</span>
+                <span className="text-xs font-black text-blue-600 tracking-wider">{data?.slug || slug || 'Bulunamadı'}</span>
+            </div>
+            <button 
+              onClick={handleCopyLink} 
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold transition-all active:scale-95 shadow-sm border border-slate-200 w-fit"
+            >
+               {copied ? <Check size={14} className="text-emerald-500" /> : <LinkIcon size={14} className="text-slate-400" />}
+               {copied ? 'Bağlantı Kopyalandı' : 'Personel Giriş Linkini Kopyala'}
+            </button>
+        </div>
       </div>
 
       {/* 🚀 YENİ: Yaklaşan Periyodik Bakımlar Modülü */}
