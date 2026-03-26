@@ -411,7 +411,7 @@ export default function AssetQRModal({ isOpen, onClose, asset, companyName, comp
                 {/* 1. LOGO VE FİRMA ADI */}
                 <div className="w-full flex flex-col items-center justify-center shrink-0">
                   <div 
-                    className={`w-10 h-10 print-logo-box rounded-lg flex items-center justify-center mb-1.5 overflow-hidden shadow-sm border-2 ${printMode === 'bw' ? 'border-black bg-white' : 'border-white ring-1 ring-slate-100'}`}
+                    className={`w-10 h-10 print-logo-box rounded-lg flex items-center justify-center mb-1.5 overflow-hidden shadow-sm print:shadow-none border-2 ${printMode === 'bw' ? 'border-black bg-white' : 'border-white ring-1 ring-slate-100 print:ring-0 print:border-slate-100'}`}
                     style={{ backgroundColor: printMode === 'bw' ? '#ffffff' : (companyLogo ? logoBgColor : '#f8fafc') }}
                   >
                     {companyLogo ? (

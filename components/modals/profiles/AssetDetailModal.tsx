@@ -431,7 +431,7 @@ export default function AssetDetailModal({
                                       type="number" 
                                       className="w-full pl-7 pr-3 py-3 border border-emerald-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-500 bg-emerald-50/50 focus:bg-white transition-all text-emerald-800" 
                                       // 🚀 DÜZELTME: Worker'ın beklediği "maintenanceFee" formatına bağlandı
-                                      value={editForm.maintenanceFee || editForm.maintenance_fee || ''} 
+                                      value={editForm.maintenanceFee ?? editForm.maintenance_fee ?? ''} 
                                       onChange={e => setEditForm({...editForm, maintenanceFee: e.target.value})} 
                                   />
                                </div>

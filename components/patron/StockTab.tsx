@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function StockTab({ data, handleAction, setShowStockModal, setShowSupplierModal, setShowSupplierListModal, setShowCategoryModal, setShowStockEntryModal }: any) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('Tümü');
   
   // Satır içi düzenleme state'i
   const [editingStock, setEditingStock] = useState<any>(null);
@@ -33,15 +34,19 @@ export default function StockTab({ data, handleAction, setShowStockModal, setSho
     return rawStock.filter((item: any) => Number(item.quantity) <= 5);
   }, [rawStock]);
 
-  // Sadece Arama Filtresini Uygula (Kategori filtresi kaldırıldı)
-  const filteredStock = rawStock.filter((item: any) => {
-    const supplier = suppliers.find((s:any) => s.id === item.supplier_id);
-    const supplierName = supplier ? supplier.name : (item.supplier_name || '');
-    
-    return item.item_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           supplierName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           item.category?.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+// Arama ve Kategori Filtresini Uygula
+const filteredStock = rawStock.filter((item: any) => {
+  const supplier = suppliers.find((s:any) => s.id === item.supplier_id);
+  const supplierName = supplier ? supplier.name : (item.supplier_name || '');
+  
+  const matchesSearch = item.item_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        supplierName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        item.category?.toLowerCase().includes(searchTerm.toLowerCase());
+                        
+  const matchesCategory = selectedCategory === 'Tümü' || item.category === selectedCategory;
+
+  return matchesSearch && matchesCategory;
+});
 
   // Kritik stoğu olan tedarikçileri grupla
   const suppliersWithCriticalStock = useMemo(() => {
@@ -356,7 +361,7 @@ const openWhatsappForSupplier = (supplier: any) => {
            {/* Aksiyon Butonları */}
            <div className="grid grid-cols-2 sm:flex sm:flex-nowrap gap-2">
              <button onClick={() => setShowCategoryModal(true)} className="bg-slate-100 text-slate-700 px-3 sm:px-3 py-2.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm hover:bg-slate-200 whitespace-nowrap transition-all active:scale-95 border border-slate-200">
-               <Tags size={14} /> Kategoriler
+               <Tags size={14} /> Kategori Yönetimi
              </button>
              <button onClick={() => setShowSupplierListModal(true)} className="bg-slate-100 text-slate-700 px-3 sm:px-3 py-2.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm hover:bg-slate-200 whitespace-nowrap transition-all active:scale-95 border border-slate-200">
                <Truck size={14} /> Tedarikçiler
@@ -373,6 +378,27 @@ const openWhatsappForSupplier = (supplier: any) => {
            </div>
          </div>
        </div>
+
+       {/* 2.1 KATEGORİ FİLTRESİ (AŞAĞI TAŞINDI) */}
+       {categories.length > 0 && (
+         <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2 sm:pb-0">
+           <button 
+             onClick={() => setSelectedCategory('Tümü')}
+             className={`shrink-0 px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold transition-all border ${selectedCategory === 'Tümü' ? 'bg-slate-800 text-white border-slate-900 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 shadow-sm'}`}
+           >
+             Tümü
+           </button>
+           {categories.map((c: any) => (
+             <button 
+               key={c.id}
+               onClick={() => setSelectedCategory(c.name)}
+               className={`shrink-0 px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold transition-all border ${selectedCategory === c.name ? 'bg-blue-600 text-white border-blue-700 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 shadow-sm'}`}
+             >
+               {c.name}
+             </button>
+           ))}
+         </div>
+       )}
 
        {/* 3. MASAÜSTÜ TABLO GÖRÜNÜMÜ */}
        <div className="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden overflow-x-auto custom-scrollbar">
@@ -772,7 +798,8 @@ const openWhatsappForSupplier = (supplier: any) => {
                   
                   <div className="col-span-1">
                     <label className="text-[10px] font-black text-slate-500 tracking-wider block mb-1.5">MİKTAR <span className="text-rose-500">*</span></label>
-                    <input type="number" min="0" className="w-full px-4 py-2.5 border border-slate-200 shadow-sm rounded-xl text-sm font-bold outline-none focus:border-blue-400 focus:bg-white bg-slate-50 transition-all text-slate-800" value={editingStock.quantity} onChange={e => setEditingStock({...editingStock, quantity: e.target.value})} />
+                    {/* 🚀 DÜZELTME: step="any" ile ondalıklı (1.5 vb.) giriş izni verildi */}
+                    <input type="number" min="0" step="any" className="w-full px-4 py-2.5 border border-slate-200 shadow-sm rounded-xl text-sm font-bold outline-none focus:border-blue-400 focus:bg-white bg-slate-50 transition-all text-slate-800" value={editingStock.quantity} onChange={e => setEditingStock({...editingStock, quantity: e.target.value})} />
                   </div>
                   
                   <div className="col-span-1">

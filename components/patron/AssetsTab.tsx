@@ -229,7 +229,8 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
                 className={`rounded-2xl border-2 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col group overflow-hidden relative ${borderClass}`}
               >
                 <div className="p-5 flex-1 flex flex-col">
-                  <div className="flex items-start justify-between mb-4 gap-3">
+                  <div className="flex flex-row items-start justify-between mb-4 gap-2 sm:gap-3 w-full">
+                    {/* LOGO */}
                     <div 
                       className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center border border-slate-100 shadow-sm overflow-hidden shrink-0 transition-transform duration-500 group-hover:scale-105 relative z-10"
                       style={{ backgroundColor: data?.logo ? logoBgColor : '#ffffff' }}
@@ -246,14 +247,18 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
                       )}
                     </div>
 
-                    <div className="flex flex-col items-end gap-2 shrink-0">
+                    {/* ETİKET VE MÜŞTERİ BİLGİSİ (Mobilde Sıkışmayı Önleyen Kısım) */}
+                    <div className="flex flex-col items-end justify-start gap-1.5 sm:gap-2 flex-1 min-w-0">
                       {latestColor && badgeClass !== 'hidden' && (
-                        <div className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border flex items-center gap-1 shadow-sm ${badgeClass}`}>
-                          <Tag size={10} /> {latestColor}
+                        <div className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border flex items-center gap-1 shadow-sm shrink-0 w-max max-w-full ${badgeClass}`}>
+                          <Tag size={10} className="shrink-0" /> <span className="truncate">{latestColor}</span>
                         </div>
                       )}
-                      <div className="bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 shadow-sm">
-                        <Users size={12}/> <span className="truncate max-w-[90px] sm:max-w-[120px]">{data?.customers?.find((c: any) => c.id === a.customer_id)?.name || 'Genel Müşteri'}</span>
+                      <div className="bg-slate-100 border border-slate-200 text-slate-700 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-bold flex items-center gap-1 sm:gap-1.5 shadow-sm max-w-full">
+                        <Users size={12} className="shrink-0" /> 
+                        <span className="truncate">
+                          {data?.customers?.find((c: any) => c.id === a.customer_id)?.name || 'Genel Müşteri'}
+                        </span>
                       </div>
                     </div>
                   </div>

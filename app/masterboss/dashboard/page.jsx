@@ -91,13 +91,16 @@ const handleInstallPwa = async () => {
   const [infoDetails, setInfoDetails] = useState(null);
   const [infoLoading, setInfoLoading] = useState(false);
 
-  // 🚀 YENİ: Ticket Modalı State'i
-  const [selectedTicket, setSelectedTicket] = useState(null);
+// 🚀 YENİ: Ticket Modalı State'i
+const [selectedTicket, setSelectedTicket] = useState(null);
 
-  // 🚀 YENİ: Firma Filtreleme State'i
-  const [companyFilter, setCompanyFilter] = useState("all");
+// 🚀 YENİ: Firma Filtreleme State'i
+const [companyFilter, setCompanyFilter] = useState("all");
 
-  useEffect(() => {
+// 🚀 YENİ: Ticket (Destek Talebi) Filtreleme State'i
+const [ticketFilter, setTicketFilter] = useState("all");
+
+useEffect(() => {
     const fetchDashboard = async () => {
       const token = localStorage.getItem("masterbossToken");
       if (!token) {
@@ -685,10 +688,22 @@ const handleInstallPwa = async () => {
             </div>
           )}
 
-          {activeTab === "tickets" && (
+{activeTab === "tickets" && (
             <div className="p-4 sm:p-6">
+              
+              {/* 🚀 BİLET FİLTRELEME BUTONLARI */}
+              <div className="flex flex-wrap items-center gap-2 mb-4 sm:mb-6 border-b border-neutral-800 pb-4">
+                 <button onClick={() => setTicketFilter("all")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${ticketFilter === "all" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Tümü ({tickets.length})</button>
+                 <button onClick={() => setTicketFilter("open")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${ticketFilter === "open" ? "bg-amber-500/20 text-amber-400 border border-amber-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Açık ({tickets.filter(t => t.status !== 'Çözüldü' && t.status !== 'Resolved').length})</button>
+                 <button onClick={() => setTicketFilter("resolved")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${ticketFilter === "resolved" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Çözüldü ({tickets.filter(t => t.status === 'Çözüldü' || t.status === 'Resolved').length})</button>
+              </div>
+
               <div className="space-y-3 sm:space-y-4">
-                {tickets.map(t => (
+                {tickets.filter(t => {
+                    if (ticketFilter === "open") return t.status !== 'Çözüldü' && t.status !== 'Resolved';
+                    if (ticketFilter === "resolved") return t.status === 'Çözüldü' || t.status === 'Resolved';
+                    return true;
+                }).map(t => (
                   <div key={t.id} className="bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 transition-colors">
                     <div className="flex gap-3 sm:gap-4 items-start sm:items-center flex-1 min-w-0">
                         <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-neutral-800 flex items-center justify-center shrink-0">

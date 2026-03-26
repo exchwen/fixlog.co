@@ -148,8 +148,8 @@ export default function StockEntryModal({
                   <div className="flex items-center gap-3">
                       <input 
                           type="number" 
-                          min="1"
-                          placeholder="Örn: 10" 
+                          min="0" step="any"
+                          placeholder="Örn: 10 veya 1.5" 
                           className="w-full px-4 py-3 border border-slate-200 rounded-xl text-lg font-black outline-none focus:border-emerald-500 bg-emerald-50/30 focus:bg-white transition-all text-emerald-700" 
                           value={addedQuantity} 
                           onChange={e => setAddedQuantity(e.target.value)} 

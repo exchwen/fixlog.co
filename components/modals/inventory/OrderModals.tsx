@@ -76,7 +76,7 @@ export default function OrderModals({
                   <div className="grid grid-cols-2 gap-3">
                       <div>
                           <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5"><Hash size={14} /> Miktar <span className="text-rose-500">*</span></label>
-                          <input type="number" min="1" placeholder="0" className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" value={newOrder?.quantity || ''} onChange={e => setNewOrder({...newOrder, quantity: e.target.value})} />
+                          <input type="number" min="0" step="any" placeholder="0" className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" value={newOrder?.quantity || ''} onChange={e => setNewOrder({...newOrder, quantity: e.target.value})} />
                       </div>
                       <div>
                           <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">Birim</label>
@@ -84,6 +84,9 @@ export default function OrderModals({
                               <option value="Adet">Adet</option>
                               <option value="Metre">Metre</option>
                               <option value="Kutu">Kutu</option>
+                              <option value="Paket">Paket</option>
+                              <option value="Kg">Kg</option>
+                              <option value="Litre">Litre</option>
                           </select>
                       </div>
                   </div>
@@ -138,13 +141,16 @@ export default function OrderModals({
                                           <input type="text" placeholder="Malzeme Adı" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none bg-slate-50 focus:bg-white focus:border-purple-500" value={item.item_name} onChange={e => updateBulkOrderItem(index, 'item_name', e.target.value)} />
                                       </div>
                                       <div className="sm:col-span-2">
-                                          <input type="number" min="1" placeholder="Miktar" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none bg-slate-50 focus:bg-white focus:border-purple-500" value={item.quantity} onChange={e => updateBulkOrderItem(index, 'quantity', e.target.value)} />
+                                          <input type="number" min="0" step="any" placeholder="Miktar" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none bg-slate-50 focus:bg-white focus:border-purple-500" value={item.quantity} onChange={e => updateBulkOrderItem(index, 'quantity', e.target.value)} />
                                       </div>
                                       <div className="sm:col-span-2">
                                           <select className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none bg-slate-50 focus:bg-white focus:border-purple-500" value={item.unit} onChange={e => updateBulkOrderItem(index, 'unit', e.target.value)}>
                                               <option value="Adet">Adet</option>
                                               <option value="Metre">Metre</option>
                                               <option value="Kutu">Kutu</option>
+                                              <option value="Paket">Paket</option>
+                                              <option value="Kg">Kg</option>
+                                              <option value="Litre">Litre</option>
                                           </select>
                                       </div>
                                   </div>

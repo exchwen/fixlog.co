@@ -116,13 +116,13 @@ export default function StockModal({
 
                 {/* Miktar ve Birim */}
                 <div className="grid grid-cols-2 gap-3">
-                    <div>
+                <div>
                         <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
                             <Hash size={14} /> Miktar <span className="text-rose-500">*</span>
                         </label>
                         <input 
                             type="number" 
-                            min="0"
+                            min="0" step="any"
                             placeholder="0" 
                             className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400" 
                             value={newStock.quantity || ''} 
@@ -142,6 +142,7 @@ export default function StockModal({
                             <option value="Metre">Metre</option>
                             <option value="Kg">Kilogram (Kg)</option>
                             <option value="Kutu">Kutu</option>
+                            <option value="Paket">Paket</option>
                             <option value="Litre">Litre</option>
                         </select>
                     </div>

@@ -573,24 +573,26 @@ useEffect(() => {
     ? Object.keys(safeSectors.sectors[currentSector].subTypes) 
     : [];
 
-  const handleEditClick = () => {
-    setIsEditingJobDetail(true);
-    setEditJobDetailForm({ 
-        workCategory: selectedJob.work_type === 'Genel Görev' ? 'Genel İş Atama' : 'Normal İş Atama',
-        workType: selectedJob.work_type || 'Genel Görev',
-        jobType: selectedJob.job_type || 'Anlık',
-        scheduledDate: selectedJob.scheduled_date || '', 
-        staffId: selectedJob.staff_id || '', 
-        taskNote: selectedJob.details?.note || '',
-        customerName: selectedJob.customer_name || '',
-        assetId: selectedJob.asset_id || ''
-    });
-    if (selectedJob.asset_id) {
-        setJobTargetMode('ASSET');
-    } else {
-        setJobTargetMode('CUSTOMER');
-    }
-  };
+    const handleEditClick = () => {
+            setIsEditingJobDetail(true);
+            setEditJobDetailForm({ 
+                workCategory: selectedJob.work_type === 'Genel Görev' ? 'Genel İş Atama' : 'Normal İş Atama',
+                workType: selectedJob.work_type || 'Genel Görev',
+                jobType: selectedJob.job_type || 'Anlık',
+                scheduledDate: selectedJob.scheduled_date || '', 
+                staffId: selectedJob.staff_id || '', 
+                taskNote: selectedJob.details?.note || '',
+                customerName: selectedJob.customer_name || '',
+                assetId: selectedJob.asset_id || '',
+                paymentStatus: selectedJob.payment_status || 'Bekliyor',
+                paymentAmount: selectedJob.payment_amount || ''
+            });
+            if (selectedJob.asset_id) {
+                setJobTargetMode('ASSET');
+            } else {
+                setJobTargetMode('CUSTOMER');
+            }
+          };
 
   const isStacked = Boolean(previewPdfJob || fullScreenImage || openedChild !== null);
 
@@ -867,17 +869,17 @@ useEffect(() => {
                     </div>
 
                     {previewPdfJob.photos && previewPdfJob.photos.length > 0 && (
-                       <div className="mb-8">
-                          <div className="text-xs font-black text-slate-800 uppercase pb-4">Saha Kayıt Fotoğrafları</div>
-                          <div className="grid grid-cols-2 gap-4 print-grid">
-                             {previewPdfJob.photos.map((p: string, i: number) => (
-                               <div key={i} className="page-break-avoid w-full">
-                                  <img src={p} alt="Saha" className="w-full h-auto max-h-64 object-contain rounded-lg border border-slate-300" crossOrigin="anonymous" />
-                               </div>
-                             ))}
-                          </div>
-                       </div>
-                    )}
+                       <div className="mb-8">
+                          <div className="text-xs font-black text-slate-800 uppercase pb-4">Saha Kayıt Fotoğrafları</div>
+                          <div className="grid grid-cols-2 gap-4 print-grid">
+                             {previewPdfJob.photos.map((p: string, i: number) => (
+                               <div key={i} className="page-break-avoid w-full">
+                                  <img src={getSafeImageUrl(p)} alt="Saha" className="w-full h-auto max-h-64 object-contain rounded-lg border border-slate-300" crossOrigin="anonymous" />
+                               </div>
+                             ))}
+                          </div>
+                       </div>
+                    )}
 
                     {previewPdfJob.signature_url && (
                         <div className="mt-8 pt-6 border-t-2 border-slate-800 text-center page-break-avoid flex flex-col items-center">
@@ -1283,33 +1285,33 @@ useEffect(() => {
                         )}
 
                         {activeTab === 'medya' && (
-                            <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="space-y-6">
-                                {selectedJob.photos && selectedJob.photos.length > 0 && (
-                                    <div>
-                                        <div className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest flex items-center gap-1.5">
-                                            <ImageIcon size={14} /> Saha Fotoğrafları
-                                        </div>
-                                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                            {selectedJob.photos.map((photoUrl: string, idx: number) => (
-                                                <div key={idx} onClick={() => setFullScreenImage(photoUrl)} className="aspect-square rounded-xl overflow-hidden border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition-all hover:scale-105 active:scale-95">
-                                                    <img src={photoUrl} alt="Saha" className="w-full h-full object-cover" />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+                            <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="space-y-6">
+                                {selectedJob.photos && selectedJob.photos.length > 0 && (
+                                    <div>
+                                        <div className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest flex items-center gap-1.5">
+                                            <ImageIcon size={14} /> Saha Fotoğrafları
+                                        </div>
+                                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                            {selectedJob.photos.map((photoUrl: string, idx: number) => (
+                                                <div key={idx} onClick={() => setFullScreenImage(getSafeImageUrl(photoUrl))} className="aspect-square rounded-xl overflow-hidden border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition-all hover:scale-105 active:scale-95">
+                                                    <img src={getSafeImageUrl(photoUrl)} alt="Saha" crossOrigin="anonymous" className="w-full h-full object-cover" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
-                                {selectedJob.signature_url && (
-                                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 text-center">
-                                        <p className="text-xs text-slate-500 mb-4 italic">Bu form müşteri nezaretinde elektronik imza ile onaylanmıştır.</p>
-                                        <div className="inline-block bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">İmzalayan: <span className="text-slate-800">{selectedJob.customer_signature_name}</span></div>
-                                            <img src={getSafeImageUrl(selectedJob.signature_url)} alt="Müşteri İmzası" className="h-24 mx-auto object-contain mix-blend-multiply" />
-                                        </div>
-                                    </div>
-                                )}
-                            </motion.div>
-                        )}
+                                {selectedJob.signature_url && (
+                                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 text-center">
+                                        <p className="text-xs text-slate-500 mb-4 italic">Bu form müşteri nezaretinde elektronik imza ile onaylanmıştır.</p>
+                                        <div className="inline-block bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">İmzalayan: <span className="text-slate-800">{selectedJob.customer_signature_name}</span></div>
+                                            <img src={getSafeImageUrl(selectedJob.signature_url)} alt="Müşteri İmzası" className="h-24 mx-auto object-contain mix-blend-multiply" />
+                                        </div>
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
 
                     </div>
 

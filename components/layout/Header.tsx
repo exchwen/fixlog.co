@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Bell, Building2, ScanLine, X, ArrowRight, QrCode, Camera, AlertTriangle, Wrench, Package, Info, CheckCircle2 } from 'lucide-react';
+import { Menu, Bell, Building2, ScanLine, X, ArrowRight, QrCode, Camera, AlertTriangle, Wrench, Package, Info, CheckCircle2, Briefcase } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useRouter } from 'next/navigation';
@@ -11,6 +11,7 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
   const [isOffline, setIsOffline] = useState(false);
   
   const [userInfo, setUserInfo] = useState({ name: '', role: '' });
+  const [userId, setUserId] = useState<string | null>(null);
   const [logoBgColor, setLogoBgColor] = useState<string>('#ffffff');
 
   const [showScanner, setShowScanner] = useState(false);
@@ -78,6 +79,16 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
 
     setUserInfo({ name: currentName, role: isPatronPath ? 'Patron' : storedRole });
 
+    const token = localStorage.getItem(`${prefix}authToken`);
+    if (token) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+            setUserId(JSON.parse(jsonPayload).id);
+        } catch (e) {}
+    }
+
     if (data?.logo) {
       const safeLogoUrl = getSafeImageUrl(data.logo);
       const img = new Image();
@@ -125,44 +136,68 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
     };
   }, [data]);
 
-  // 🚀 BİLDİRİMLERİ HARMANLAMA MOTORU (Acil Durum + Arıza + Malzeme + SOS)
-  const getNotifications = () => {
-      const emergencies = data?.activeEmergencies || [];
-      const faults = data?.pendingFaults || [];
-      const materials = data?.pendingMaterialRequests || [];
+// 🚀 BİLDİRİMLERİ HARMANLAMA MOTORU (Acil Durum + Arıza + Malzeme + SOS)
+const getNotifications = () => {
+  if (userInfo.role === 'Usta') {
+      if (!userId || !data?.jobs) return [];
+      
+      const myPendingJobs = data.jobs.filter((j: any) => 
+          String(j.staff_id) === String(userId) && 
+          (j.status === 'Beklemede' || j.status === 'Usta Bekliyor' || j.status === 'Gelecek')
+      );
 
-      const all = [
-          ...emergencies.map((e: any) => ({
-              id: e.id,
-              type: e.staff_id ? 'sos' : 'emergency', // Usta gönderdiyse SOS, Müşteri gönderdiyse Acil Durum
-              title: e.staff_id ? `Personel Acil Durumu` : `Acil Müdahale`,
-              desc: e.staff_id ? (e.message || `${e.staff_name} yardım talep etti.`) : `Bina: ${e.asset_apartment || 'Bilinmiyor'}`,
-              date: e.created_at,
-              timestamp: new Date(e.created_at).getTime()
-          })),
-          ...faults.map((f: any) => ({
-              id: f.id,
-              type: 'fault',
-              title: `Arıza Bildirimi`,
-              desc: `Bina: ${f.asset_apartment || 'Bilinmiyor'} - ${f.description || 'Detay yok'}`,
-              date: f.created_at,
-              timestamp: new Date(f.created_at).getTime()
-          })),
-          ...materials.map((m: any) => ({
-              id: m.id,
-              type: 'material',
-              title: `Malzeme Talebi`,
-              desc: `${m.staff_name} yeni malzeme talep etti.`,
-              date: m.created_at,
-              timestamp: new Date(m.created_at).getTime()
-          }))
-      ];
+      return myPendingJobs.map((j: any) => {
+          const asset = data.assets?.find((a: any) => String(a.id) === String(j.asset_id));
+          const assetName = asset ? (asset.apartmentName || asset.name) : j.customer_name;
+          
+          return {
+              id: `job-${j.id}`,
+              type: 'job',
+              title: `Yeni Görev: ${j.work_type}`,
+              desc: `Konum: ${assetName}`,
+              date: j.created_at,
+              timestamp: new Date(j.created_at || 0).getTime(),
+              originalJob: j
+          };
+      }).sort((a: any, b: any) => b.timestamp - a.timestamp);
+  }
 
-      return all.sort((a, b) => b.timestamp - a.timestamp); // En yeni en üstte
-  };
+  const emergencies = data?.activeEmergencies || [];
+  const faults = data?.pendingFaults || [];
+  const materials = data?.pendingMaterialRequests || [];
 
-  const notifications = getNotifications();
-  const notificationCount = notifications.length;
+  const all = [
+      ...emergencies.map((e: any) => ({
+          id: e.id,
+          type: e.staff_id ? 'sos' : 'emergency', // Usta gönderdiyse SOS, Müşteri gönderdiyse Acil Durum
+          title: e.staff_id ? `Personel Acil Durumu` : `Acil Müdahale`,
+          desc: e.staff_id ? (e.message || `${e.staff_name} yardım talep etti.`) : `Bina: ${e.asset_apartment || 'Bilinmiyor'}`,
+          date: e.created_at,
+          timestamp: new Date(e.created_at).getTime()
+      })),
+      ...faults.map((f: any) => ({
+          id: f.id,
+          type: 'fault',
+          title: `Arıza Bildirimi`,
+          desc: `Bina: ${f.asset_apartment || 'Bilinmiyor'} - ${f.description || 'Detay yok'}`,
+          date: f.created_at,
+          timestamp: new Date(f.created_at).getTime()
+      })),
+      ...materials.map((m: any) => ({
+          id: m.id,
+          type: 'material',
+          title: `Malzeme Talebi`,
+          desc: `${m.staff_name} yeni malzeme talep etti.`,
+          date: m.created_at,
+          timestamp: new Date(m.created_at).getTime()
+      }))
+  ];
+
+  return all.sort((a, b) => b.timestamp - a.timestamp); // En yeni en üstte
+};
+
+const notifications = getNotifications();
+const notificationCount = notifications.length;
 
   const processQRData = (code: string) => {
     if (!code.trim()) return;
@@ -344,15 +379,27 @@ export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: an
 
                         <div className="max-h-[60vh] sm:max-h-96 overflow-y-auto divide-y divide-slate-100 overscroll-contain">
                             {notifications.length > 0 ? notifications.map((notif: any) => (
-                                <div key={notif.id} className="p-4 hover:bg-slate-50 transition-colors flex gap-3 items-start group">
+                                <div 
+                                    key={notif.id} 
+                                    onClick={() => {
+                                        if (notif.type === 'job' && setSelectedJob) {
+                                            setSelectedJob(notif.originalJob);
+                                            setIsNotificationOpen(false);
+                                        }
+                                    }}
+                                    className={`p-4 transition-colors flex gap-3 items-start group ${notif.type === 'job' ? 'hover:bg-blue-50 cursor-pointer' : 'hover:bg-slate-50'}`}
+                                >
                                     {/* İkonlar duruma göre renkleniyor */}
                                     <div className={`mt-0.5 p-2 rounded-xl shrink-0 shadow-sm
                                         ${notif.type === 'sos' || notif.type === 'emergency' ? 'bg-rose-100 text-rose-600' : 
                                           notif.type === 'fault' ? 'bg-amber-100 text-amber-600' : 
-                                          'bg-blue-100 text-blue-600'}`}
+                                          notif.type === 'job' ? 'bg-blue-100 text-blue-600' :
+                                          'bg-emerald-100 text-emerald-600'}`}
                                     >
                                         {notif.type === 'sos' || notif.type === 'emergency' ? <AlertTriangle size={16} /> :
-                                         notif.type === 'fault' ? <Wrench size={16} /> : <Package size={16} />}
+                                         notif.type === 'fault' ? <Wrench size={16} /> : 
+                                         notif.type === 'job' ? <Briefcase size={16} /> : 
+                                         <Package size={16} />}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-start gap-2">

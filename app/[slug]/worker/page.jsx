@@ -219,8 +219,8 @@ const handleSendSOS = async () => {
     setIsSaving(false);
 };
 
-// 🚀 ÇÖZÜM: 'currentFields' değişkenini kullanıldığı yerlerden ÖNCE tanımlıyoruz!
-const rawFields = (companySector && staffBranch && sectorsData.sectors?.[companySector]?.subTypes?.[staffBranch]?.fields) || [];
+// 🚀 ÇÖZÜM: Form alanlarını ustanın kayıtlı branşına göre değil, TIKLANAN İŞİN TÜRÜNE (work_type) göre getiriyoruz!
+const rawFields = (companySector && selectedJob?.work_type && sectorsData.sectors?.[companySector]?.subTypes?.[selectedJob.work_type]?.fields) || [];
   
 // 🚀 YENİ: Seçili işin varlık türünü (MRL, Hidrolik, Yürüyen Merdiven vb.) buluyoruz
 const currentAssetForForm = (data?.assets && selectedJob?.asset_id) 
@@ -710,9 +710,9 @@ const handleStatusUpdate = async (newStatus) => {
   }
 
   if ((targetStatus === 'Onay Bekliyor' || targetStatus === 'Tamamlandı') && currentFields.length > 0) {
-        const filledData = currentFields.map(f => `${f.label}: ${dynamicForm[f.name] || 'Belirtilmedi'}`).join('\n');
-        formText = `\n--- ${staffBranch} Saha Formu ---\n${filledData}\n----------------------------------\n`;
-    }
+    const filledData = currentFields.map(f => `${f.label}: ${dynamicForm[f.name] || 'Belirtilmedi'}`).join('\n');
+    formText = `\n--- ${selectedJob.work_type} Saha Formu ---\n${filledData}\n----------------------------------\n`;
+}
 
     let gpsNote = '';
     if (targetStatus === 'Onay Bekliyor' && navigator.geolocation) {
@@ -984,9 +984,9 @@ const handleStatusUpdate = async (newStatus) => {
                                 </div>
                                 
                                 <h3 className="text-lg font-black leading-tight mb-1 truncate flex items-center gap-2">
-                                    {asset ? (asset.apartmentName || asset.name) : job.customer_name}
-                                    {job.project_pdf_url && <FileText size={16} className="text-white shrink-0" />}
-                               </h3>
+                                    {asset ? (asset.apartmentName ? `${asset.apartmentName} (${asset.name})` : asset.name) : job.customer_name}
+                                    {job.project_pdf_url && <FileText size={16} className="text-white shrink-0" />}
+                               </h3>
                                 
                                 <p className="text-blue-100 text-xs font-medium flex items-center gap-1.5 mb-1 truncate">
                                     <User size={12} className="shrink-0"/> {job.customer_name}
@@ -1043,9 +1043,9 @@ const handleStatusUpdate = async (newStatus) => {
                           </div>
                           
                           <h3 className="text-base font-black text-slate-800 leading-tight mb-1 truncate flex items-center gap-2">
-                              {asset ? (asset.apartmentName || asset.name) : job.customer_name}
-                              {job.project_pdf_url && <FileText size={16} className="text-blue-500 shrink-0" />}
-                          </h3>
+                              {asset ? (asset.apartmentName ? `${asset.apartmentName} (${asset.name})` : asset.name) : job.customer_name}
+                              {job.project_pdf_url && <FileText size={16} className="text-blue-500 shrink-0" />}
+                          </h3>
                           
                           <p className="text-slate-500 text-xs font-medium flex items-center gap-1.5 mb-1 truncate">
                               <User size={12} className="shrink-0 text-slate-400"/> {job.customer_name}
@@ -1126,8 +1126,8 @@ const handleStatusUpdate = async (newStatus) => {
                               </div>
                               
                               <h3 className="text-base font-black text-slate-800 leading-tight mb-1 truncate group-hover:text-emerald-700 transition-colors">
-                                  {asset ? (asset.apartmentName || asset.name) : job.customer_name}
-                              </h3>
+                                  {asset ? (asset.apartmentName ? `${asset.apartmentName} (${asset.name})` : asset.name) : job.customer_name}
+                              </h3>
                               
                               <p className="text-slate-500 text-xs font-medium flex items-center gap-1.5 truncate">
                                   <User size={12} className="shrink-0"/> {job.customer_name}
@@ -1203,13 +1203,13 @@ const handleStatusUpdate = async (newStatus) => {
                                 if (!asset) return null;
                                 const mapUrl = `https://www.google.com/maps/search/?api=1&query=$$${encodeURIComponent(asset.location || asset.apartmentName || asset.name)}`;
                                 return (
-                                   <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
-                                       <div className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Box size={14} /> İlgili Varlık & Konum</div>
-                                       <div className="text-sm font-black text-slate-800 mb-1">{asset.apartmentName || asset.name}</div>
-                                       <div className="text-xs font-medium text-slate-600 mb-3">{asset.location || 'Konum belirtilmemiş.'}</div>
-                                       <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="w-full bg-white border border-blue-200 text-blue-700 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm"><MapPin size={16} /> Haritada Yol Tarifi Al</a>
-                                   </div>
-                                );
+                                    <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
+                                    <div className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Box size={14} /> İlgili Varlık & Konum</div>
+                                    <div className="text-sm font-black text-slate-800 mb-1">{asset.apartmentName ? `${asset.apartmentName} (${asset.name})` : asset.name}</div>
+                                    <div className="text-xs font-medium text-slate-600 mb-3">{asset.location || 'Konum belirtilmemiş.'}</div>
+                                    <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="w-full bg-white border border-blue-200 text-blue-700 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm"><MapPin size={16} /> Haritada Yol Tarifi Al</a>
+                                    </div>
+                                    );
                             })()}
                             
                             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
@@ -1302,7 +1302,7 @@ const handleStatusUpdate = async (newStatus) => {
                             {currentFields.length > 0 && (
                                 <div className="bg-blue-50/50 p-4 sm:p-5 rounded-2xl border border-blue-100 space-y-4">
                                     <div className="text-[10px] font-black text-blue-700 uppercase tracking-widest flex items-center gap-1.5 border-b border-blue-200/50 pb-2 mb-3">
-                                      <ClipboardList size={14} /> {staffBranch} KONTROL FORMU <span className="text-rose-500 ml-auto">*Zorunlu</span>
+                                      <ClipboardList size={14} /> {selectedJob.work_type} KONTROL FORMU <span className="text-rose-500 ml-auto">*Zorunlu</span>
                                     </div>
                                     {currentFields.map(field => (
                                       <div key={field.name}>
