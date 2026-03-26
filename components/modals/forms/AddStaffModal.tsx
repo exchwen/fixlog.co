@@ -19,15 +19,16 @@ export default function AddStaffModal({
   const currentDistricts = trCities[selectedCity] || [];
   
   const toggleRegion = (region: string) => {
-      let currentRegions = newStaff.assigned_regions ? newStaff.assigned_regions.split(',').map((r:string)=>r.trim()).filter(Boolean) : [];
-      // Şehir ve İlçe formatında kaydetmek istersen `${selectedCity} - ${region}` yapılabilir, mevcut yapıyı koruyoruz.
-      if (currentRegions.includes(region)) {
-          currentRegions = currentRegions.filter((r:string) => r !== region);
-      } else {
-          currentRegions.push(region);
-      }
-      setNewStaff({...newStaff, assigned_regions: currentRegions.join(', ')});
-  };
+    // 🚀 DÜZELTME: newStaff undefined gelme ihtimaline karşı ? ve || eklendi
+    let currentRegions = (newStaff?.assigned_regions || '').split(',').map((r:string)=>r.trim()).filter(Boolean);
+    
+    if (currentRegions.includes(region)) {
+        currentRegions = currentRegions.filter((r:string) => r !== region);
+    } else {
+        currentRegions.push(region);
+    }
+    setNewStaff({...newStaff, assigned_regions: currentRegions.join(', ')});
+};
 
   const currentSector = data?.sector || '';
   const safeSectors: any = sectorsData;
