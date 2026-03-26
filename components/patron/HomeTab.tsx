@@ -559,22 +559,26 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
       </AnimatePresence>
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            Hoş Geldin, {currentUserName} 👋
-          </h2>
-          <p className="text-slate-500 text-xs mt-1">Sistem üzerindeki anlık özetin aşağıdadır.</p>
-        </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <button 
-              onClick={handleCopyLink} 
-              className="flex items-center justify-center gap-1.5 px-4 py-2 sm:py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-all active:scale-95 shadow-sm border border-slate-700"
-            >
-               {copied ? <Check size={14} className="text-emerald-400" /> : <LinkIcon size={14} className="text-blue-400" />}
-               {copied ? 'Bağlantı Kopyalandı' : 'Personel Giriş Linkini Kopyala'}
-            </button>
-        </div>
-      </div>
+        <div>
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            Hoş Geldin, {currentUserName} 👋
+          </h2>
+          <p className="text-slate-500 text-xs mt-1">Sistem üzerindeki anlık özetin aşağıdadır.</p>
+        </div>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="flex items-center justify-between sm:justify-center gap-2 px-4 py-2 sm:py-2.5 bg-blue-50 rounded-lg border border-blue-100 shadow-sm" title="Firma Bağlantı Kodu">
+                <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Firma Kodu:</span>
+                <span className="text-xs font-bold text-blue-700">{slug || 'Belirsiz'}</span>
+            </div>
+            <button 
+              onClick={handleCopyLink} 
+              className="flex items-center justify-center gap-1.5 px-4 py-2 sm:py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-all active:scale-95 shadow-sm border border-slate-700"
+            >
+               {copied ? <Check size={14} className="text-emerald-400" /> : <LinkIcon size={14} className="text-blue-400" />}
+               {copied ? 'Bağlantı Kopyalandı' : 'Personel Giriş Linkini Kopyala'}
+            </button>
+        </div>
+      </div>
 
       {/* 🚀 YENİ: Yaklaşan Periyodik Bakımlar Modülü */}
       {upcomingMaintenances.length > 0 && (
