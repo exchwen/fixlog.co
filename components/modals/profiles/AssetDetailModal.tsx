@@ -22,6 +22,15 @@ export default function AssetDetailModal({
   const [editForm, setEditForm] = useState(selectedAsset || {});
   const [isSaving, setIsSaving] = useState(false);
   
+  // 🚀 Özel Alert/Confirm Modal State'i
+  const [alertModal, setAlertModal] = useState<{
+    isOpen: boolean;
+    type: 'alert' | 'confirm';
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  } | null>(null);
+
   const [customerSearch, setCustomerSearch] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
@@ -150,15 +159,22 @@ export default function AssetDetailModal({
       }
   };
 
-  const handleDelete = async () => {
-      if(confirm("Bu varlığı kalıcı olarak silmek istediğinize emin misiniz? (Geçmiş işler ve atamalar etkilenebilir)")) {
-          const success = await handleAction('delete-asset', { id: selectedAsset.id });
-          if(success !== false) {
-              setSelectedAsset(null);
-              if (handleCloseDetail) handleCloseDetail('asset');
-          }
-      }
-  };
+  const handleDelete = () => {
+    setAlertModal({
+        isOpen: true,
+        type: 'confirm',
+        title: 'Varlığı Sil',
+        message: 'Bu varlığı kalıcı olarak silmek istediğinize emin misiniz? (Geçmiş işler ve atamalar etkilenebilir)',
+        onConfirm: async () => {
+            const success = await handleAction('delete-asset', { id: selectedAsset.id });
+            if(success !== false) {
+                setSelectedAsset(null);
+                if (handleCloseDetail) handleCloseDetail('asset');
+            }
+            setAlertModal(null);
+        }
+    });
+};
 
   const handleClose = () => {
       setSelectedAsset(null);
@@ -612,15 +628,34 @@ export default function AssetDetailModal({
                                   <button 
                                     onClick={async () => {
                                         const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
-                                        const res = await fetch(`https://backend.fixlog-co.workers.dev/get-archived-jobs?slug=${data.slug}&assetId=${selectedAsset.id}`, {
-                                            headers: { 'Authorization': `Bearer ${token}` }
-                                        });
-                                        const archived = await res.json();
-                                        if(archived.length > 0) {
-                                            data.jobs = [...archived, ...data.jobs];
-                                            alert(`${archived.length} adet eski kayıt arşivden getirildi.`);
-                                        } else {
-                                            alert("Arşivde bu cihaza ait eski kayıt bulunamadı.");
+                                        try {
+                                            const res = await fetch(`https://backend.fixlog-co.workers.dev/get-archived-jobs?slug=${data.slug}&assetId=${selectedAsset.id}`, {
+                                                headers: { 'Authorization': `Bearer ${token}` }
+                                            });
+                                            const archived = await res.json();
+                                            if(archived.length > 0) {
+                                                data.jobs = [...archived, ...data.jobs];
+                                                setAlertModal({
+                                                    isOpen: true,
+                                                    type: 'alert',
+                                                    title: 'Başarılı',
+                                                    message: `${archived.length} adet eski kayıt arşivden getirildi.`
+                                                });
+                                            } else {
+                                                setAlertModal({
+                                                    isOpen: true,
+                                                    type: 'alert',
+                                                    title: 'Bilgi',
+                                                    message: 'Arşivde bu cihaza ait eski kayıt bulunamadı.'
+                                                });
+                                            }
+                                        } catch (error) {
+                                            setAlertModal({
+                                                isOpen: true,
+                                                type: 'alert',
+                                                title: 'Hata',
+                                                message: 'Arşiv kayıtları getirilirken bir hata oluştu.'
+                                            });
                                         }
                                     }}
                                     className="w-full mt-4 py-3 bg-slate-900 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md"
@@ -670,7 +705,7 @@ export default function AssetDetailModal({
                       </motion.div>
                     )}
 
-                    {activeTab === 'emergencies' && (
+{activeTab === 'emergencies' && (
                       <motion.div key="emergencies" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
                           {assetEmergencies.length > 0 ? (
                               <div className="space-y-3">
@@ -705,6 +740,63 @@ export default function AssetDetailModal({
                 )}
 
             </div>
+
+            {/* 🚀 Özel Alert/Confirm Modalı */}
+            <AnimatePresence>
+              {alertModal?.isOpen && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                    onClick={() => setAlertModal(null)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl relative z-10 border border-slate-200"
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      {alertModal.type === 'confirm' ? (
+                        <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 shrink-0">
+                          <AlertCircle size={20} />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                          <AlertCircle size={20} />
+                        </div>
+                      )}
+                      <h3 className="text-lg font-black text-slate-800">{alertModal.title}</h3>
+                    </div>
+                    <p className="text-sm font-medium text-slate-600 mb-6">{alertModal.message}</p>
+                    <div className="flex gap-3 justify-end">
+                      {alertModal.type === 'confirm' && (
+                        <button
+                          onClick={() => setAlertModal(null)}
+                          className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all"
+                        >
+                          İptal
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          if (alertModal.onConfirm) alertModal.onConfirm();
+                          else setAlertModal(null);
+                        }}
+                        className={`px-4 py-2 rounded-xl text-sm font-bold text-white transition-all ${
+                          alertModal.type === 'confirm' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
+                      >
+                        {alertModal.type === 'confirm' ? 'Evet, Sil' : 'Tamam'}
+                      </button>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
+
           </motion.div>
         </motion.div>
       )}

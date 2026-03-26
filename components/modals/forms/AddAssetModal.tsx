@@ -273,7 +273,7 @@ return (
                         <textarea 
                             rows={2} 
                             className="w-full sm:w-2/3 px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all resize-none" 
-                            placeholder="Açık Adres veya Departman (Örn: 2. Kat Sistem Odası)" 
+                            placeholder="Mahalle/Cadde/Sokak" 
                             value={newAsset.location || ''} 
                             onChange={e => setNewAsset({...newAsset, location: e.target.value})} 
                         />
