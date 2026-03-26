@@ -350,7 +350,8 @@ return (
                   disabled={isSaving} 
                   onClick={() => {
                       const combinedLocation = getFullAddress(newAsset.location, buildingNo, selectedCity, selectedDistrict);
-                      handleAction('add-asset', { ...newAsset, location: combinedLocation }, setShowAddAsset, () => {
+                      // 🚀 DÜZELTME: Backend'in beklediği 'customerId' anahtarını da ekleyerek gönderiyoruz
+                      handleAction('add-asset', { ...newAsset, location: combinedLocation, customerId: newAsset.customer_id }, setShowAddAsset, () => {
                         setNewAsset({ name: '', location: '', customer_id: '', asset_details: '', apartmentName: '' });
                         setSelectedCity('');
                         setSelectedDistrict('');
