@@ -293,7 +293,8 @@ return (
                   onClick={() => {
                       const combinedAddress = getFullAddress(newCustomer.address, buildingNo, selectedCity, selectedDistrict);
                       
-                      handleAction('add-customer', { ...newCustomer, address: combinedAddress }, setShowAddCustomer, () => {
+                      // 🚀 DÜZELTME: Backend'in beklediği 'assetAction' anahtarına seçilen cihazın ID'sini ekliyoruz.
+                      handleAction('add-customer', { ...newCustomer, address: combinedAddress, assetAction: newCustomer.linked_asset_id }, setShowAddCustomer, () => {
                         setNewCustomer({ name: '', contact: '', address: '', tax_info: '', linked_asset_id: '' });
                         setSelectedCity('');
                         setSelectedDistrict('');
