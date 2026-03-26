@@ -259,20 +259,50 @@ export default function LandingPage() {
     REVIEWS[(reviewIndex + 2) % REVIEWS.length],
   ];
 
-  // Uygulama PWA olarak açılırken kim olduğunu bulana kadar beyaz ekran çıkmasın diye şık bir yükleyici
-  if (isChecking) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white">
-        <img src="/icons/icon-192x192.png" alt="FixLog Logo" className="w-16 h-16 mb-4 animate-pulse object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
-        <span className="font-black tracking-widest text-[11px] uppercase opacity-50">Uygulama Hazırlanıyor...</span>
-      </div>
-    );
+// 🚀 YENİ: GOOGLE İÇİN ZENGİN ARAMA SONUCU KODU (JSON-LD)
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "FixLog.co",
+  "operatingSystem": "Web, Android, iOS",
+  "applicationCategory": "BusinessApplication",
+  "description": "Asansör bakım, iklimlendirme ve saha operasyonlarınızı yönetebileceğiniz yeni nesil iş takip SaaS platformu.",
+  "url": "https://fixlog.co",
+  "offers": {
+    "@type": "Offer",
+    "price": "3000.00",
+    "priceCurrency": "TRY"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "FixLog.co",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://fixlog.co/icons/icon-512x512.png"
+    }
   }
+};
 
+// Uygulama PWA olarak açılırken kim olduğunu bulana kadar beyaz ekran çıkmasın diye şık bir yükleyici
+if (isChecking) {
   return (
-    <div className="min-h-[100dvh] bg-white text-gray-900 font-sans selection:bg-blue-100 selection:text-blue-900 overflow-x-hidden flex flex-col relative">
-      
-      {/* HEADER */}
+    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white">
+      <img src="/icons/icon-192x192.png" alt="FixLog Logo" className="w-16 h-16 mb-4 animate-pulse object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
+      <span className="font-black tracking-widest text-[11px] uppercase opacity-50">Uygulama Hazırlanıyor...</span>
+    </div>
+  );
+}
+
+return (
+  <div className="min-h-[100dvh] bg-white text-gray-900 font-sans selection:bg-blue-100 selection:text-blue-900 overflow-x-hidden flex flex-col relative">
+    
+    {/* 🚀 GOOGLE BOTLARI İÇİN GİZLİ YAPI ETİKETİ */}
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+
+    {/* HEADER */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-lg border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
