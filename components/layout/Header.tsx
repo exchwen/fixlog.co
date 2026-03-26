@@ -280,10 +280,8 @@ const notificationCount = notifications.length;
 
   return (
     <>
-      {/* 🚀 MOBİL UYUMLULUK VE ESNEK (FLEX) YAPI İYİLEŞTİRİLDİ */}
-      <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-40 shadow-sm relative">
+      <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-[100] shadow-sm relative">
         
-        {/* SOL KISIM: Logo ve İsim (flex-1 ve overflow-hidden eklendi) */}
         <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
           <button 
             onClick={() => setIsMobileMenuOpen(true)} 
