@@ -263,6 +263,26 @@ export default function ManagerDashboard() {
     }
       
       const result = await res.json();
+
+      try {
+          const histRes = await fetch(`${API_URL}/get-recent-history?slug=${slug}`, { headers: { 'Authorization': `Bearer ${token}` } });
+          if (histRes.ok) {
+             const histJobs = await histRes.json();
+             result.jobs = [...result.jobs, ...histJobs];
+          }
+          const archRes = await fetch(`${API_URL}/get-archived-jobs?slug=${slug}`, { headers: { 'Authorization': `Bearer ${token}` } });
+          if (archRes.ok) {
+             const archJobs = await archRes.json();
+             result.jobs = [...result.jobs, ...archJobs];
+          }
+          const uniqueJobs = [];
+          const ids = new Set();
+          for (const j of result.jobs) {
+              if(!ids.has(j.id)) { ids.add(j.id); uniqueJobs.push(j); }
+          }
+          result.jobs = uniqueJobs;
+      } catch(e) {}
+
       localStorage.setItem(`manager_cache_${slug}`, JSON.stringify(result));
       setIsOffline(false);
       setData(result);

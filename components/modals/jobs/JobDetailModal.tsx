@@ -1213,7 +1213,7 @@ useEffect(() => {
                                                      <div className="bg-slate-50/80 px-5 py-3.5 border-b border-slate-200">
                                                          <div className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><ShieldCheck size={14}/> Doldurulan Saha Formu</div>
                                                      </div>
-                                                     <div className="flex flex-col">
+                                                     <div className="flex flex-col bg-white">
                                                          {extractedChecklist.map((item, idx) => {
                                                              const valStr = item.val.toLowerCase().trim();
                                                              const isPositive = ['evet', 'var', 'true', 'ok', 'uygun', 'sorunsuz', 'yapıldı'].some(v => valStr === v || valStr.includes(v));
@@ -1222,13 +1222,16 @@ useEffect(() => {
 
                                                              let colorClass = 'text-slate-900';
                                                              let bgColorClass = 'bg-slate-900';
+                                                             let borderColorClass = 'border-slate-900';
 
                                                              if (isPositive) {
                                                                  colorClass = 'text-emerald-600';
                                                                  bgColorClass = 'bg-emerald-500';
+                                                                 borderColorClass = 'border-emerald-500';
                                                              } else if (isNegative) {
                                                                  colorClass = 'text-rose-600';
                                                                  bgColorClass = 'bg-rose-500';
+                                                                 borderColorClass = 'border-rose-500';
                                                              } else if (valStr.includes('mavi')) colorClass = 'text-blue-600';
                                                              else if (valStr.includes('yeşil') || valStr.includes('yesil')) colorClass = 'text-emerald-600';
                                                              else if (valStr.includes('kırmızı') || valStr.includes('kirmizi')) colorClass = 'text-rose-600';
@@ -1237,22 +1240,27 @@ useEffect(() => {
                                                              else if (valStr.includes('mor')) colorClass = 'text-purple-600';
 
                                                              return (
-                                                                 <div key={idx} className={`flex justify-between items-center py-3.5 px-5 border-b border-slate-100 last:border-0 ${idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}`}>
-                                                                     <span className="text-[13px] font-bold text-slate-700">{item.key}</span>
+                                                                 <div key={idx} className={`flex justify-between items-center py-3.5 px-5 border-b border-slate-200/80 last:border-b-0 ${idx % 2 === 0 ? 'bg-slate-50/80' : 'bg-white'}`}>
+                                                                     <div className="flex flex-col pr-4">
+                                                                         <span className="text-[14px] font-bold leading-tight text-slate-900">{item.key}</span>
+                                                                     </div>
+                                                                     
                                                                      <div className="shrink-0 flex items-center gap-3">
-                                                                         {isBooleanType && <span className={`text-[11px] font-black uppercase tracking-widest ${colorClass}`}>{item.val}</span>}
+                                                                         {isBooleanType && (
+                                                                             <span className={`text-[12px] font-black uppercase tracking-widest ${colorClass}`}>{item.val}</span>
+                                                                         )}
                                                                          {isBooleanType ? (
                                                                              isPositive ? (
-                                                                                 <div className={`w-5 h-5 flex items-center justify-center rounded shadow-sm ${bgColorClass}`}>
-                                                                                     <CheckSquare size={14} className="text-white" strokeWidth={3} />
+                                                                                 <div className={`w-6 h-6 flex items-center justify-center rounded shadow-sm ${bgColorClass}`}>
+                                                                                     <CheckSquare size={16} className="text-white" strokeWidth={3} />
                                                                                  </div>
                                                                              ) : (
-                                                                                 <div className={`w-5 h-5 flex items-center justify-center rounded shadow-sm ${bgColorClass}`}>
-                                                                                     <X size={14} className="text-white" strokeWidth={4} />
+                                                                                 <div className={`w-6 h-6 flex items-center justify-center rounded shadow-sm ${bgColorClass}`}>
+                                                                                     <X size={16} className="text-white" strokeWidth={4} />
                                                                                  </div>
                                                                              )
                                                                          ) : (
-                                                                             <span className={`text-[12px] font-black uppercase ${colorClass}`}>{item.val}</span>
+                                                                             <span className={`text-[13px] font-black uppercase ${colorClass} ${colorClass === 'text-slate-900' ? `border-b-2 ${borderColorClass}` : ''}`}>{item.val}</span>
                                                                          )}
                                                                      </div>
                                                                  </div>
@@ -1263,22 +1271,22 @@ useEffect(() => {
                                              )}
 
                                              {hasCleanNote && (
-                                                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                                                     <div className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest flex items-center gap-1.5">Usta Saha Notu</div>
-                                                     <p className="text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-wrap italic border-l-2 border-slate-300 pl-3">
+                                                 <div className="p-5 border-t border-slate-200 bg-slate-50/50">
+                                                     <span className="block text-[11px] font-black text-slate-800 uppercase tracking-widest mb-2">BAKIM / SERVİS NOTU:</span>
+                                                     <div className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">
                                                          {cleanNote}
-                                                     </p>
+                                                     </div>
                                                  </div>
                                              )}
 
                                              {hasMaterials && (
-                                                 <div className="bg-amber-50/50 p-5 rounded-2xl border border-amber-100">
-                                                     <div className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-3 flex items-center gap-1.5"><Box size={14}/> Sistemden Düşülen Malzemeler</div>
-                                                     <div className="space-y-2">
-                                                         {selectedJob.details.usedMaterials.map((mat:any, i:number) => (
-                                                             <div key={i} className="flex justify-between items-center bg-white p-3 rounded-lg border border-amber-200 shadow-sm">
-                                                                 <span className="text-xs font-bold text-slate-800">{mat.name}</span>
-                                                                 <span className="text-xs font-black text-amber-600 bg-amber-100 px-2 py-1 rounded">{mat.quantity} {mat.unit}</span>
+                                                 <div className="p-5 border-t border-slate-200 bg-white shadow-sm rounded-b-2xl">
+                                                     <span className="block text-[11px] font-black text-slate-800 uppercase tracking-widest mb-3">KULLANILAN MALZEMELER:</span>
+                                                     <div className="space-y-1.5 text-sm font-semibold text-slate-700">
+                                                         {selectedJob.details.usedMaterials.map((m: any, idx: number) => (
+                                                             <div key={idx} className="flex justify-between items-center">
+                                                                 <span>• {m.name}</span>
+                                                                 <span className="font-black text-slate-900">{m.quantity} {m.unit}</span>
                                                              </div>
                                                          ))}
                                                      </div>
@@ -1297,10 +1305,10 @@ useEffect(() => {
                                         <div className="text-[11px] font-black text-slate-500 uppercase mb-4 tracking-widest flex items-center gap-2">
                                             <ImageIcon size={16} /> Saha Fotoğrafları
                                         </div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-2 gap-4">
                                             {selectedJob.photos.map((photoUrl: string, idx: number) => (
-                                                <div key={idx} onClick={() => setFullScreenImage(getSafeImageUrl(photoUrl))} className="aspect-square w-full rounded-2xl overflow-hidden border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition-all hover:scale-105 active:scale-95 bg-slate-50">
-                                                    <img src={getSafeImageUrl(photoUrl)} alt="Saha" crossOrigin="anonymous" className="w-full h-full object-cover" />
+                                                <div key={idx} onClick={() => setFullScreenImage(getSafeImageUrl(photoUrl))} className="w-full cursor-pointer transition-all hover:scale-[1.02] active:scale-95">
+                                                    <img src={getSafeImageUrl(photoUrl)} alt="Saha" crossOrigin="anonymous" className="w-full h-auto max-h-64 object-contain rounded-lg border border-slate-300 bg-slate-50" />
                                                 </div>
                                             ))}
                                         </div>

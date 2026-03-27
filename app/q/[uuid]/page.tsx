@@ -336,8 +336,12 @@ export default function AssetScanPage() {
   // 🚀 BAKIM DURUMU KONTROLÜ
   const isUnderMaintenance = asset?.jobs?.some((j: any) => j.status === 'Devam Ediyor');
 
-  // Geçmiş listesi için sadece "Tamamlandı" olanları filtreliyoruz
-  const completedHistoryJobs = asset?.jobs?.filter((j: any) => j.status === 'Tamamlandı') || [];
+  // Geçmiş listesi için tüm durumları filtrelemeden alıyoruz ve tarihe göre sıralıyoruz
+  const allHistoryJobs = [...(asset?.jobs || [])].sort((a, b) => {
+      const dateA = new Date(a.scheduled_date || a.created_at || 0).getTime();
+      const dateB = new Date(b.scheduled_date || b.created_at || 0).getTime();
+      return dateB - dateA;
+  });
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 font-sans relative selection:bg-blue-100">
@@ -385,7 +389,7 @@ export default function AssetScanPage() {
         {/* 🚀 DİNAMİK BAKIM / KULLANILABİLİR ROZETİ */}
         {isUnderMaintenance ? (
           <div className="absolute top-4 right-4 bg-amber-500 text-amber-950 px-3 py-1.5 rounded-full text-[10px] font-black tracking-wider flex items-center gap-1.5 shadow-md z-10 animate-pulse">
-            <Wrench size={12} /> CİHAZ BAKIMDA
+            <Wrench size={12} /> ÇALIŞMA VAR
           </div>
         ) : (
           <div className="absolute top-4 right-4 bg-emerald-500 text-white px-3 py-1.5 rounded-full text-[10px] font-black tracking-wider flex items-center gap-1.5 shadow-md z-10">
@@ -455,7 +459,7 @@ export default function AssetScanPage() {
                 <div className="bg-white p-2 rounded-lg text-blue-600 shadow-sm"><History size={20} /></div>
                 <div className="text-left">
                     <div className="text-sm font-bold">Servis Geçmişi</div>
-                    <div className="text-[10px] opacity-70">Tamamlanan işlemleri görüntüle</div>
+                    <div className="text-[10px] opacity-70">Tüm servis ve bakım işlemlerini görüntüle</div>
                 </div>
              </div>
              <ChevronRight size={18} className="opacity-50 group-hover:opacity-100 transition-opacity" />
@@ -589,23 +593,23 @@ export default function AssetScanPage() {
         </div>
       )}
 
-      {/* 🚀 ANA GEÇMİŞ MODALI (Sadece Tamamlanan İşler) */}
+      {/* 🚀 ANA GEÇMİŞ MODALI (Tüm İşler) */}
       {showHistory && (
         <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-200">
             <div className="bg-white w-full max-w-md h-[80vh] sm:h-auto sm:max-h-[80vh] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300">
                 <div className="flex justify-between items-center p-5 border-b border-slate-100 bg-slate-50/50">
                     <div>
                         <h3 className="text-lg font-bold text-slate-800">Servis Geçmişi</h3>
-                        <p className="text-xs text-slate-500">Sadece tamamlanan işlemler listelenir.</p>
+                        <p className="text-xs text-slate-500">Tesisinize ait tüm servis ve bakım geçmişi.</p>
                     </div>
                     <button onClick={() => setShowHistory(false)} className="p-2 bg-white hover:bg-slate-100 rounded-xl border border-slate-200 text-slate-500 transition-colors active:scale-95">
                         <X size={20} />
                     </button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                    {completedHistoryJobs.length > 0 ? (
+                    {allHistoryJobs.length > 0 ? (
                         <div className="space-y-3">
-                            {completedHistoryJobs.map((job: any, index: number) => (
+                            {allHistoryJobs.map((job: any, index: number) => (
                                 <div 
                                     key={index} 
                                     onClick={() => setSelectedHistoryJob(job)}
@@ -638,7 +642,7 @@ export default function AssetScanPage() {
                     ) : (
                         <div className="flex flex-col items-center justify-center h-40 text-slate-400 gap-2">
                             <History size={32} className="opacity-20" />
-                            <span className="text-sm font-medium">Henüz tamamlanan bir işlem yok.</span>
+                            <span className="text-sm font-medium">Henüz bir işlem kaydı yok.</span>
                         </div>
                     )}
                 </div>
@@ -664,8 +668,13 @@ export default function AssetScanPage() {
                         <div className="text-[10px] font-black text-slate-600 bg-slate-200 border border-slate-300 px-2.5 py-1 rounded-md tracking-wider uppercase">
                             {selectedHistoryJob.job_type || 'İŞ KAYDI'}
                         </div>
-                        <div className="text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md tracking-wider uppercase">
-                            TAMAMLANDI
+                        <div className={`text-[10px] font-black border px-2.5 py-1 rounded-md tracking-wider uppercase ${
+                            selectedHistoryJob.status === 'Tamamlandı' ? 'text-emerald-600 bg-emerald-50 border-emerald-200' :
+                            selectedHistoryJob.status === 'Devam Ediyor' ? 'text-blue-600 bg-blue-50 border-blue-200' :
+                            selectedHistoryJob.status === 'İptal' ? 'text-rose-600 bg-rose-50 border-rose-200' :
+                            'text-amber-600 bg-amber-50 border-amber-200'
+                        }`}>
+                            {selectedHistoryJob.status || 'BELİRTİLMEDİ'}
                         </div>
                     </div>
                 </div>

@@ -495,6 +495,26 @@ if (showSOSModal) { stopEvent(); setShowSOSModal(false); return true; }
 
       if (res.ok) {
         const result = await res.json();
+        
+        try {
+            const histRes = await fetch(`${API_URL}/get-recent-history?slug=${slug}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (histRes.ok) {
+               const histJobs = await histRes.json();
+               result.jobs = [...result.jobs, ...histJobs];
+            }
+            const archRes = await fetch(`${API_URL}/get-archived-jobs?slug=${slug}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (archRes.ok) {
+               const archJobs = await archRes.json();
+               result.jobs = [...result.jobs, ...archJobs];
+            }
+            const uniqueJobs = [];
+            const ids = new Set();
+            for (const j of result.jobs) {
+                if(!ids.has(j.id)) { ids.add(j.id); uniqueJobs.push(j); }
+            }
+            result.jobs = uniqueJobs;
+        } catch(e) {}
+
         setData(result); 
         localStorage.setItem(`worker_cache_${slug}`, JSON.stringify(result));
         setIsOffline(false);
@@ -502,7 +522,7 @@ if (showSOSModal) { stopEvent(); setShowSOSModal(false); return true; }
         setCompanySector(result.sector || '');
         const myStaffRecord = result.staff.find(s => String(s.id) === String(decoded.id));
         if (myStaffRecord) setStaffBranch(myStaffRecord.branch);
-        const myJobs = result.jobs.filter(j => String(j.staff_id) === String(decoded.id));
+        const myJobs = result.jobs.filter(j => String(j.staff_id) === String(decoded.id) || String(j.worker_id) === String(decoded.id));
         setJobs(myJobs);
       } else if (res.status === 401 || res.status === 403) {
         handleLogout();

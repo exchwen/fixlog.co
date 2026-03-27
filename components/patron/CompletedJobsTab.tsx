@@ -23,23 +23,8 @@ export default function CompletedJobsTab({ data, setSelectedJob, statusColors }:
     });
   };
 
-  const [completedJobs, setCompletedJobs] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  useEffect(() => {
-     const fetchRecentCompleted = async () => {
-         setIsLoading(true);
-         try {
-             const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken') || localStorage.getItem('manager_authToken');
-             const res = await fetch(`https://backend.fixlog-co.workers.dev/get-recent-history?slug=${data?.slug || window.location.pathname.split('/')[1]}`, {
-                 headers: { 'Authorization': `Bearer ${token}` }
-             });
-             if(res.ok) setCompletedJobs(await res.json());
-         } catch(e) {}
-         setIsLoading(false);
-     };
-     fetchRecentCompleted();
-  }, [data?.slug]);
+  const completedJobs = data?.jobs?.filter((j: any) => j.status === 'Tamamlandı') || [];
+  const isLoading = false;
   
   const filteredJobs = completedJobs.filter((j: any) => {
     const term = searchTerm.toLowerCase();
