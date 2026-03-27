@@ -20,7 +20,7 @@ import {
 } from '../../lib/firebase';
 import { setPersistence, browserLocalPersistence, onAuthStateChanged, signOut } from 'firebase/auth'; 
 
-const API_URL = 'https://backend.fixlog-co.workers.dev';
+const API_URL = 'https://api.fixlog.co';
 
 export default function LoginPage() {
   const router = useRouter();

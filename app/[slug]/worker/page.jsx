@@ -14,7 +14,7 @@ import DynamicPWA from '@/components/DynamicPWA';
 import ThermalPrintModal from '@/components/modals/jobs/ThermalPrintModal'; // 🚀 EKLENDİ
 import { PaywallOverlay } from '@/components/PaywallOverlay';
 
-const API_URL = 'https://backend.fixlog-co.workers.dev';
+const API_URL = 'https://api.fixlog.co';
 
 const parseJwt = (token) => {
   try {

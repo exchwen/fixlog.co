@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, User, Lock, Loader2, ArrowRight, AlertCircle, Building2, Download, Share, Check, ArrowLeft } from 'lucide-react';
 import DynamicPWA from '@/components/DynamicPWA';
 
-const API_URL = 'https://backend.fixlog-co.workers.dev';
+const API_URL = 'https://api.fixlog.co';
 
 export default function StaffLoginPage() {
   const { slug } = useParams();

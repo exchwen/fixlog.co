@@ -185,7 +185,7 @@ export default function ChatPanel({ hideBubble, isChatOpen, setIsChatOpen, activ
       const fetchAllMessages = async () => {
           if (!actualSlug || !currentUserId) return;
           const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
-          const API_URL = 'https://backend.fixlog-co.workers.dev';
+          const API_URL = 'https://api.fixlog.co';
         
         try {
             const safeRole = currentUserRole ? currentUserRole.trim().toLocaleUpperCase('tr-TR') : '';
@@ -247,7 +247,7 @@ export default function ChatPanel({ hideBubble, isChatOpen, setIsChatOpen, activ
     if (!actualSlug || !currentUserId) return;
 
     const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
-    const API_URL = 'https://backend.fixlog-co.workers.dev';
+    const API_URL = 'https://api.fixlog.co';
 
     Pusher.logToConsole = false;
 
@@ -378,7 +378,7 @@ export default function ChatPanel({ hideBubble, isChatOpen, setIsChatOpen, activ
     if (!targetSenderId || !currentUserId || !document.hasFocus()) return;
     
     const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
-    const API_URL = 'https://backend.fixlog-co.workers.dev';
+    const API_URL = 'https://api.fixlog.co';
     
     try {
         const safeRole = currentUserRole ? currentUserRole.trim().toLocaleUpperCase('tr-TR') : '';
@@ -477,7 +477,7 @@ export default function ChatPanel({ hideBubble, isChatOpen, setIsChatOpen, activ
   setMessageInput(''); 
 
   const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
-  const API_URL = 'https://backend.fixlog-co.workers.dev';
+  const API_URL = 'https://api.fixlog.co';
   
   fetch(`${API_URL}/send-message`, {
         method: 'POST', 
@@ -754,7 +754,7 @@ export default function ChatPanel({ hideBubble, isChatOpen, setIsChatOpen, activ
                       onClick={async () => {
                         try {
                             const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
-                            const res = await fetch(`https://backend.fixlog-co.workers.dev/get-archived-messages?slug=${actualSlug}`, {
+                            const res = await fetch(`https://api.fixlog.co/get-archived-messages?slug=${actualSlug}`, {
                                 headers: { 'Authorization': `Bearer ${token}` }
                             });
                             const archived = await res.json();

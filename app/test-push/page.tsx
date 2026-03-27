@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import * as PusherPushNotifications from '@pusher/push-notifications-web';
 
-const API_URL = 'https://backend.fixlog-co.workers.dev'; 
+const API_URL = 'https://api.fixlog.co'; 
 
 export default function TestPushPage() {
   const [logs, setLogs] = useState<string[]>([]);

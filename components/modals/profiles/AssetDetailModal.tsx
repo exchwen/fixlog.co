@@ -630,7 +630,7 @@ export default function AssetDetailModal({
                                     onClick={async () => {
                                         const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
                                         try {
-                                            const res = await fetch(`https://backend.fixlog-co.workers.dev/get-archived-jobs?slug=${data.slug}&assetId=${selectedAsset.id}`, {
+                                            const res = await fetch(`https://api.fixlog.co/get-archived-jobs?slug=${data.slug}&assetId=${selectedAsset.id}`, {
                                                 headers: { 'Authorization': `Bearer ${token}` }
                                             });
                                             const archived = await res.json();

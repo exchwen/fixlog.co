@@ -28,7 +28,7 @@ import AssetQRModal from '@/components/modals/AssetQRModal';
 import DynamicPWA from '@/components/DynamicPWA';
 import { PaywallOverlay } from '@/components/PaywallOverlay';
 
-const API_URL = 'https://backend.fixlog-co.workers.dev';
+const API_URL = 'https://api.fixlog.co';
 
 const parseJwt = (token) => {
   try {

@@ -111,7 +111,7 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
     const token = localStorage.getItem(isPatronPath ? 'patron_authToken' : 'staff_authToken');
 
     try {
-      const res = await fetch(`https://backend.fixlog-co.workers.dev/${endpoint}`, {
+      const res = await fetch(`https://api.fixlog.co/${endpoint}`, {
         method: 'POST', 
         headers: { 
             'Content-Type': 'application/json',
@@ -154,7 +154,7 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
     const token = localStorage.getItem(isPatronPath ? 'patron_authToken' : 'staff_authToken');
     
     try {
-      const res = await fetch(`https://backend.fixlog-co.workers.dev/approve-finance`, {
+      const res = await fetch(`https://api.fixlog.co/approve-finance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ slug: activeSlug, id })
@@ -179,7 +179,7 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
     const token = localStorage.getItem(isPatronPath ? 'patron_authToken' : 'staff_authToken');
     
     try {
-      const res = await fetch(`https://backend.fixlog-co.workers.dev/reject-finance`, {
+      const res = await fetch(`https://api.fixlog.co/reject-finance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ slug: activeSlug, id })

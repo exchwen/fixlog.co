@@ -275,7 +275,7 @@ export default function CompletedJobsTab({ data, setSelectedJob, statusColors }:
               <button 
                   onClick={async () => {
                       const token = localStorage.getItem('patron_authToken');
-                      const res = await fetch(`https://backend.fixlog-co.workers.dev/get-archived-jobs?slug=${data.slug}`, {
+                      const res = await fetch(`https://api.fixlog.co/get-archived-jobs?slug=${data.slug}`, {
                           headers: { 'Authorization': `Bearer ${token}` }
                       });
                       const archived = await res.json();

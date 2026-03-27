@@ -35,7 +35,7 @@ export default function OfflineSyncManager() {
     setSyncState('syncing');
     setSyncedCount(pendingActions.length);
     
-    const WORKER_URL = 'https://backend.fixlog-co.workers.dev'; 
+    const WORKER_URL = 'https://api.fixlog.co'; 
 
     let remainingQueue = [];
     let successCount = 0;

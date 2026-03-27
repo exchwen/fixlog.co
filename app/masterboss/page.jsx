@@ -61,7 +61,7 @@ export default function MasterbossLogin() {
     setLoading(true);
 
     try {
-      const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.fixlog-co.workers.dev";
+      const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.fixlog.co";
       const res = await fetch(`${BASE_URL}/masterboss-login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
