@@ -522,7 +522,16 @@ if (showSOSModal) { stopEvent(); setShowSOSModal(false); return true; }
         setCompanySector(result.sector || '');
         const myStaffRecord = result.staff.find(s => String(s.id) === String(decoded.id));
         if (myStaffRecord) setStaffBranch(myStaffRecord.branch);
-        const myJobs = result.jobs.filter(j => String(j.staff_id) === String(decoded.id) || String(j.worker_id) === String(decoded.id));
+        const myJobs = result.jobs.filter(j => {
+            if (String(j.staff_id) === String(decoded.id) || String(j.worker_id) === String(decoded.id)) return true;
+            // 🚀 Eski hatalı "update-job" yüzünden staff_id null olan "Tamamlandı" işleri kurtarma
+            if (j.status === 'Tamamlandı') {
+                if (j.worker_name === decoded.name || j.manager_name === decoded.name) return true;
+                if (j.details && typeof j.details === 'string' && j.details.includes(decoded.name)) return true;
+                if (j.details && typeof j.details === 'object' && JSON.stringify(j.details).includes(decoded.name)) return true;
+            }
+            return false;
+        });
         setJobs(myJobs);
       } else if (res.status === 401 || res.status === 403) {
         handleLogout();
@@ -537,7 +546,15 @@ if (showSOSModal) { stopEvent(); setShowSOSModal(false); return true; }
          setCompanySector(data.sector || '');
          const myStaffRecord = data.staff.find(s => String(s.id) === String(decoded.id));
          if (myStaffRecord) setStaffBranch(myStaffRecord.branch);
-         const myJobs = data.jobs.filter(j => String(j.staff_id) === String(decoded.id));
+         const myJobs = data.jobs.filter(j => {
+            if (String(j.staff_id) === String(decoded.id) || String(j.worker_id) === String(decoded.id)) return true;
+            if (j.status === 'Tamamlandı') {
+                if (j.worker_name === decoded.name || j.manager_name === decoded.name) return true;
+                if (j.details && typeof j.details === 'string' && j.details.includes(decoded.name)) return true;
+                if (j.details && typeof j.details === 'object' && JSON.stringify(j.details).includes(decoded.name)) return true;
+            }
+            return false;
+         });
          setJobs(myJobs);
       }
     } finally {

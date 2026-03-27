@@ -419,7 +419,19 @@ export default function StaffDetailModal({
                                             </div>
                                             <div className="col-span-1">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Hesap Şifresi</label>
-                                                <input disabled={userRole === 'Yönetici' && selectedStaff?.role === 'Yönetici'} type="text" autoComplete="new-password" title="Mevcut şifreyi değiştirmek istemiyorsanız boş bırakın." className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 transition-all placeholder:text-[10px] placeholder:text-slate-400 bg-white disabled:opacity-60 disabled:bg-slate-100" value={editStaffForm.password} onChange={(e) => setEditStaffForm({...editStaffForm, password: e.target.value})} placeholder="Değiştirmek için yazın..." />
+                                                <input 
+                                                  disabled={userRole === 'Yönetici' && selectedStaff?.role === 'Yönetici'} 
+                                                  type="text" 
+                                                  name="secure_random_pwd_input_1289"
+                                                  autoComplete="new-password" 
+                                                  readOnly={true}
+                                                  onFocus={(e) => e.target.removeAttribute('readonly')}
+                                                  title="Mevcut şifreyi değiştirmek istemiyorsanız boş bırakın." 
+                                                  className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 transition-all placeholder:text-[10px] placeholder:text-slate-400 bg-white disabled:opacity-60 disabled:bg-slate-100" 
+                                                  value={editStaffForm.password} 
+                                                  onChange={(e) => setEditStaffForm({...editStaffForm, password: e.target.value.trim()})} 
+                                                  placeholder="Değiştirmek için yazın..." 
+                                                />
                                             </div>
                                             <div className="col-span-1 sm:col-span-2">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Hesap Durumu</label>

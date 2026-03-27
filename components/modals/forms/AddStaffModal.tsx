@@ -146,10 +146,14 @@ export default function AddStaffModal({
                     </label>
                     <input 
                         type="text" 
+                        name="secure_random_pwd_input_add_1329"
+                        autoComplete="new-password" 
+                        readOnly={true}
+                        onFocus={(e) => e.target.removeAttribute('readonly')}
                         placeholder="Şifre" 
                         className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400" 
                         value={newStaff.password || ''} 
-                        onChange={e => setNewStaff({...newStaff, password: e.target.value})} 
+                        onChange={e => setNewStaff({...newStaff, password: e.target.value.trim()})} 
                     />
                     </div>
                 </div>
