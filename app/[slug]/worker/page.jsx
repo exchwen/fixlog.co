@@ -522,13 +522,18 @@ if (showSOSModal) { stopEvent(); setShowSOSModal(false); return true; }
         setCompanySector(result.sector || '');
         const myStaffRecord = result.staff.find(s => String(s.id) === String(decoded.id));
         if (myStaffRecord) setStaffBranch(myStaffRecord.branch);
+        const uid = String(decoded.id);
+        const uname = decoded.name;
         const myJobs = result.jobs.filter(j => {
-            if (String(j.staff_id) === String(decoded.id) || String(j.worker_id) === String(decoded.id)) return true;
+            if (j.staff_id && String(j.staff_id) === uid) return true;
+            if (j.worker_id && String(j.worker_id) === uid) return true;
+            if (j.manager_id && String(j.manager_id) === uid) return true;
+
             // 🚀 Eski hatalı "update-job" yüzünden staff_id null olan "Tamamlandı" işleri kurtarma
             if (j.status === 'Tamamlandı' || j.status === 'Onay Bekliyor') {
-                if (j.worker_name === decoded.name || j.manager_name === decoded.name) return true;
-                if (j.details && typeof j.details === 'string' && j.details.includes(decoded.name)) return true;
-                if (j.details && typeof j.details === 'object' && JSON.stringify(j.details).includes(decoded.name)) return true;
+                if (j.worker_name === uname || j.manager_name === uname) return true;
+                const dStr = typeof j.details === 'string' ? j.details : JSON.stringify(j.details || {});
+                if (dStr.includes(uname) || dStr.includes(uid)) return true;
             }
             return false;
         });
@@ -546,12 +551,17 @@ if (showSOSModal) { stopEvent(); setShowSOSModal(false); return true; }
          setCompanySector(data.sector || '');
          const myStaffRecord = data.staff.find(s => String(s.id) === String(decoded.id));
          if (myStaffRecord) setStaffBranch(myStaffRecord.branch);
+         const uid = String(decoded.id);
+         const uname = decoded.name;
          const myJobs = data.jobs.filter(j => {
-            if (String(j.staff_id) === String(decoded.id) || String(j.worker_id) === String(decoded.id)) return true;
+            if (j.staff_id && String(j.staff_id) === uid) return true;
+            if (j.worker_id && String(j.worker_id) === uid) return true;
+            if (j.manager_id && String(j.manager_id) === uid) return true;
+
             if (j.status === 'Tamamlandı' || j.status === 'Onay Bekliyor') {
-                if (j.worker_name === decoded.name || j.manager_name === decoded.name) return true;
-                if (j.details && typeof j.details === 'string' && j.details.includes(decoded.name)) return true;
-                if (j.details && typeof j.details === 'object' && JSON.stringify(j.details).includes(decoded.name)) return true;
+                if (j.worker_name === uname || j.manager_name === uname) return true;
+                const dStr = typeof j.details === 'string' ? j.details : JSON.stringify(j.details || {});
+                if (dStr.includes(uname) || dStr.includes(uid)) return true;
             }
             return false;
          });
