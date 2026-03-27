@@ -350,8 +350,8 @@ return (
                   disabled={isSaving} 
                   onClick={() => {
                       const combinedLocation = getFullAddress(newAsset.location, buildingNo, selectedCity, selectedDistrict);
-                      // 🚀 DÜZELTME: Backend'in beklediği 'customerId' anahtarını da ekleyerek gönderiyoruz
-                      handleAction('add-asset', { ...newAsset, location: combinedLocation, customerId: newAsset.customer_id }, setShowAddAsset, () => {
+                      // 🚀 DÜZELTME: Bölge (region) verisini Otopilot'un kullanabilmesi için selectedDistrict olarak backend'e gönderiyoruz
+                      handleAction('add-asset', { ...newAsset, location: combinedLocation, customerId: newAsset.customer_id, region: selectedDistrict }, setShowAddAsset, () => {
                         setNewAsset({ name: '', location: '', customer_id: '', asset_details: '', apartmentName: '' });
                         setSelectedCity('');
                         setSelectedDistrict('');

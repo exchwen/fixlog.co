@@ -143,15 +143,16 @@ export default function AssetDetailModal({
   };
 
   const handleSaveEdit = async () => {
-      setIsSaving(true);
-      const locationToSave = (selectedCity || selectedDistrict || buildingNo) 
-          ? getFullAddress(editForm.location, buildingNo, selectedCity, selectedDistrict) 
-          : editForm.location;
+    setIsSaving(true);
+    const locationToSave = (selectedCity || selectedDistrict || buildingNo) 
+        ? getFullAddress(editForm.location, buildingNo, selectedCity, selectedDistrict) 
+        : editForm.location;
 
-      const payload = { ...editForm, location: locationToSave };
-      
-      const success = await handleAction('update-asset', payload);
-      setIsSaving(false);
+    // 🚀 YENİ: Otopilot'un doğru ustayı bulabilmesi için güncellenmiş bölge bilgisini ekliyoruz
+    const payload = { ...editForm, location: locationToSave, region: selectedDistrict };
+    
+    const success = await handleAction('update-asset', payload);
+    setIsSaving(false);
       
       if(success !== false) {
           setIsEditing(false);
