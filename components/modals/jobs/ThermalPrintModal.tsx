@@ -302,25 +302,42 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName, c
 
     try {
       let device;
+      let server;
+      const savedDeviceId = localStorage.getItem('lastPrinterId');
       
       if (nav.bluetooth.getDevices) {
         const devices = await nav.bluetooth.getDevices();
         if (devices.length > 0) {
-          device = devices[0]; 
+          device = savedDeviceId ? devices.find((d: any) => d.id === savedDeviceId) : null;
         }
       }
 
-      if (!device) {
+      if (device) {
+        try {
+            setStatusMsg('Kayıtlı yazıcıya bağlanılıyor...');
+            server = await device.gatt?.connect();
+        } catch (e) {
+            console.warn("Kayıtlı cihaza otomatik bağlantı başarısız oldu (Kapalı veya uzakta olabilir).", e);
+            device = null;
+        }
+      }
+
+      if (!device || !server) {
+        setStatusMsg('Cihaz seçimi bekleniyor...');
         device = await nav.bluetooth.requestDevice({
           acceptAllDevices: true,
           optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb', 'e7810a71-73ae-499d-8c15-faa9aef0c3f2'] 
         });
+        
+        setStatusMsg('Yazıcıya bağlanılıyor...');
+        server = await device.gatt?.connect();
       }
-
-      setStatusMsg('Yazıcıya bağlanılıyor...');
-      const server = await device.gatt?.connect();
       
       if (!server) throw new Error("Bağlantı kurulamadı.");
+
+      if (device.id) {
+          localStorage.setItem('lastPrinterId', device.id);
+      }
 
       const services = await server.getPrimaryServices();
       let printCharacteristic = null;
@@ -361,6 +378,7 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName, c
       if (error.name === 'NotFoundError') {
         setErrorMsg('Cihaz seçimi iptal edildi veya cihaz bulunamadı.');
       } else {
+        localStorage.removeItem('lastPrinterId');
         setErrorMsg(error.message || 'Yazıcıya bağlanırken bir hata oluştu.');
       }
     }

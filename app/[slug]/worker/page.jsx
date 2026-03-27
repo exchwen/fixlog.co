@@ -1236,7 +1236,7 @@ const handleStatusUpdate = async (newStatus) => {
                            />
                        </div>
 
-                       {/* 🚀 VERİ KUTUSU */}
+                       {/* 🚀 VERİ KUTUSU 1*/}
                        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-2.5 flex items-center gap-3 shrink-0 hidden sm:flex">
                            <div className="w-10 h-10 bg-white rounded-lg shadow-sm border border-emerald-200 flex items-center justify-center">
                                <span className="text-lg font-black text-emerald-600">{completedJobs.length}</span>
@@ -1254,22 +1254,34 @@ const handleStatusUpdate = async (newStatus) => {
                       const asset = getAssetDetails(job.asset_id);
                       return (
                         <div key={job.id} onClick={() => setSelectedJob(job)} className="completed-job-card bg-white rounded-2xl p-5 shadow-sm border border-slate-200 cursor-pointer hover:border-emerald-300 transition-colors group flex flex-col justify-between">
-                          <div>
-                              <div className="flex justify-between items-start mb-3">
-                                 <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border border-emerald-100">{job.status}</span>
-                                 <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Clock size={10}/> {new Date(job.created_at).toLocaleDateString('tr-TR')}</span>
+                          <div className="flex flex-col w-full min-w-0">
+                              <div className="flex justify-between items-start mb-3 w-full">
+                                 <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border border-emerald-100 shrink-0">{job.status}</span>
+                                 <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 shrink-0"><Clock size={10}/> {new Date(job.created_at).toLocaleDateString('tr-TR')}</span>
                               </div>
                               
-                              <h3 className="text-base font-black text-slate-800 leading-tight mb-1 truncate group-hover:text-emerald-700 transition-colors">
-                                  {asset ? (asset.apartmentName ? `${asset.apartmentName} (${asset.name})` : asset.name) : job.customer_name}
-                              </h3>
+                              <div className="flex justify-between items-start gap-2 mb-1 w-full">
+                                  <div className="flex-1 min-w-0 flex flex-col">
+                                      <h3 className="text-base font-black text-slate-800 leading-tight flex flex-col sm:flex-row sm:items-center sm:gap-2 group-hover:text-emerald-700 transition-colors text-left w-full">
+                                          {asset ? (
+                                              <>
+                                                  <span className="truncate block w-full sm:w-auto">{asset.apartmentName || asset.name}</span>
+                                                  {asset.apartmentName && <span className="text-[11px] sm:text-sm font-medium text-slate-500 truncate block w-full sm:w-auto">({asset.name})</span>}
+                                              </>
+                                          ) : (
+                                              <span className="truncate block w-full">{job.customer_name}</span>
+                                          )}
+                                      </h3>
+                                  </div>
+                                  {job.project_pdf_url && <FileText size={18} className="text-emerald-500 shrink-0 mt-0.5" />}
+                              </div>
                               
-                              <p className="text-slate-500 text-xs font-medium flex items-center gap-1.5 truncate">
-                                  <User size={12} className="shrink-0"/> {job.customer_name}
+                              <p className="text-slate-500 text-xs font-medium flex items-center gap-1.5 truncate w-full text-left">
+                                  <User size={12} className="shrink-0"/> <span className="truncate">{job.customer_name}</span>
                               </p>
                           </div>
                           
-                          <div className="text-[11px] font-medium text-slate-500 mt-3 bg-slate-50 p-2 rounded-xl border border-slate-100 truncate">
+                          <div className="text-[11px] font-medium text-slate-500 mt-3 bg-slate-50 p-2 rounded-xl border border-slate-100 truncate w-full text-left">
                               <span className="font-bold flex items-center gap-1 text-emerald-600"><ClipboardList size={12}/> {job.work_type}</span>
                           </div>
                       </div>
