@@ -253,7 +253,7 @@ export default function ChatPanel({ hideBubble, isChatOpen, setIsChatOpen, activ
 
     const pusher = new Pusher('75dfed44245e16eaea0a', {
       cluster: 'eu',
-      authEndpoint: `${API_URL}/pusher/auth`,
+      authEndpoint: `${API_URL}/pusher/auth?slug=${actualSlug}`,
       auth: {
           headers: { 'Authorization': `Bearer ${token}` }
       }
