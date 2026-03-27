@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, AlertTriangle, Filter, ShieldAlert, MapPin, Check, WifiOff, Download, Share } from 'lucide-react';
+import Pusher from 'pusher-js';
 
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
@@ -251,7 +252,13 @@ export default function PatronDashboard() {
     setMessageInput(''); fetchMessages();
   };
 
-  useEffect(() => { fetchData(true); const int = setInterval(() => fetchData(false), 15000); return () => clearInterval(int); }, [slug]);
+  useEffect(() => { 
+      fetchData(true); 
+      const pusher = new Pusher('75dfed44245e16eaea0a', { cluster: 'eu' });
+      const channel = pusher.subscribe(`company-${slug}`);
+      channel.bind('data_updated', () => { fetchData(false); });
+      return () => { channel.unbind_all(); channel.unsubscribe(); pusher.disconnect(); }; 
+  }, [slug]);
   useEffect(() => { if (isChatOpen && activeChatId) fetchMessages(); }, [isChatOpen, activeChatId]);
 
   // Modal Kapatma

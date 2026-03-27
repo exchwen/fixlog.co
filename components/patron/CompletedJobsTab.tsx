@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 // 🚀 İMPORT EKLENDİ (FileText ve Box)
 import { Search, CheckCircle, MapPin, ClipboardList, Calendar, Clock, ArrowRight, ShieldCheck, UserPlus, UserCheck, Wrench, Building2, FileCheck, Database, X, AlertTriangle, FileText, Box } from 'lucide-react';
@@ -23,8 +23,23 @@ export default function CompletedJobsTab({ data, setSelectedJob, statusColors }:
     });
   };
 
-  // Sadece tamamlanan işleri filtrele ve aramayı uygula
-  const completedJobs = (data?.jobs || []).filter((j: any) => j.status === 'Tamamlandı');
+  const [completedJobs, setCompletedJobs] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+     const fetchRecentCompleted = async () => {
+         setIsLoading(true);
+         try {
+             const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken') || localStorage.getItem('manager_authToken');
+             const res = await fetch(`https://backend.fixlog-co.workers.dev/get-recent-history?slug=${data?.slug || window.location.pathname.split('/')[1]}`, {
+                 headers: { 'Authorization': `Bearer ${token}` }
+             });
+             if(res.ok) setCompletedJobs(await res.json());
+         } catch(e) {}
+         setIsLoading(false);
+     };
+     fetchRecentCompleted();
+  }, [data?.slug]);
   
   const filteredJobs = completedJobs.filter((j: any) => {
     const term = searchTerm.toLowerCase();
@@ -103,7 +118,13 @@ export default function CompletedJobsTab({ data, setSelectedJob, statusColors }:
              </tr>
            </thead>
            <tbody className="divide-y divide-slate-100">
-             {filteredJobs.length > 0 ? filteredJobs.map((j: any) => {
+             {isLoading ? (
+               <tr>
+                 <td colSpan={6} className="p-20 text-center bg-slate-50 text-slate-500 font-bold">
+                    Yükleniyor...
+                 </td>
+               </tr>
+             ) : filteredJobs.length > 0 ? filteredJobs.map((j: any) => {
                
                // 🚀 STANDART HİYERARŞİ HESAPLAMASI
                const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';
@@ -290,9 +311,10 @@ export default function CompletedJobsTab({ data, setSelectedJob, statusColors }:
            </div>
         </div>
 
-      {/* MOBİL GÖRÜNÜM: DİKEY İŞ KARTLARI */}
       <div className="md:hidden flex flex-col gap-3">
-        {filteredJobs.length > 0 ? filteredJobs.map((j: any) => {
+        {isLoading ? (
+           <div className="p-10 text-center font-bold text-slate-500">Yükleniyor...</div>
+        ) : filteredJobs.length > 0 ? filteredJobs.map((j: any) => {
            
            // 🚀 HİYERARŞİ HESAPLAMASI (MOBİL)
            const ownerName = data?.ownerName?.split(' ')[0] || 'Patron';

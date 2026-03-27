@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Clock, CheckCircle2, MessageSquareText, LogOut, ChevronRight, PenTool, Loader2, AlertCircle, PlayCircle, ClipboardList, WifiOff, Download, Share, Check, Camera, X, ShieldCheck, UserPlus, Box, Phone, User, Briefcase, Map, AlertOctagon, Navigation, PlusCircle, Search, Package, AlertTriangle, Send, Plus, Mic, FileText } from 'lucide-react';
+import Pusher from 'pusher-js';
 import sectorsData from '@/lib/data/sectors.json';
 import Header from '@/components/layout/Header';
 import WorkerSidebar from '@/components/layout/WorkerSidebar'; 
@@ -549,8 +550,10 @@ if (showSOSModal) { stopEvent(); setShowSOSModal(false); return true; }
 
   useEffect(() => {
     fetchData(true);
-    const int = setInterval(() => fetchData(false), 15000); 
-    return () => clearInterval(int);
+    const pusher = new Pusher('75dfed44245e16eaea0a', { cluster: 'eu' });
+    const channel = pusher.subscribe(`company-${slug}`);
+    channel.bind('data_updated', () => { fetchData(false); });
+    return () => { channel.unbind_all(); channel.unsubscribe(); pusher.disconnect(); };
   }, [slug, router]);
 
   useEffect(() => { 
@@ -596,14 +599,14 @@ if (showSOSModal) { stopEvent(); setShowSOSModal(false); return true; }
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 1920; 
+                    const MAX_WIDTH = 1280; 
                     let scale = 1;
                     if (img.width > MAX_WIDTH) scale = MAX_WIDTH / img.width; 
                     canvas.width = img.width * scale;
                     canvas.height = img.height * scale;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    resolve(canvas.toDataURL('image/jpeg', 0.90)); 
+                    resolve(canvas.toDataURL('image/webp', 0.80)); 
                 };
                 img.src = event.target.result;
             };
