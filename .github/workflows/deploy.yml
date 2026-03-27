@@ -18,4 +18,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy
+          # Next.js bağımlılıklarını kurmadan doğrudan dosyayı gönderiyoruz
+          command: deploy worker.js --name backend --compatibility-date 2026-03-28 
