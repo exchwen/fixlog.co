@@ -1035,17 +1035,19 @@ const handleStatusUpdate = async (newStatus) => {
                                 </div>
                                 
                                 <div className="flex justify-between items-start gap-2 mb-1">
-                                    <h3 className="text-lg font-black leading-tight flex flex-col sm:block">
-                                        {asset ? (
-                                            <>
-                                                <span className="truncate block max-w-[200px] sm:max-w-[250px]">{asset.apartmentName || asset.name}</span>
-                                                {asset.apartmentName && <span className="text-xs sm:text-lg sm:ml-2 font-medium opacity-80 truncate block max-w-[200px] sm:max-w-[250px]">({asset.name})</span>}
-                                            </>
-                                        ) : (
-                                            <span className="truncate block max-w-[200px] sm:max-w-[250px]">{job.customer_name}</span>
-                                        )}
-                                    </h3>
-                                    {job.project_pdf_url && <FileText size={20} className="text-white shrink-0" />}
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="text-lg font-black leading-tight flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                                            {asset ? (
+                                                <>
+                                                    <span className="truncate w-full sm:w-auto">{asset.apartmentName || asset.name}</span>
+                                                    {asset.apartmentName && <span className="text-xs sm:text-lg font-medium opacity-80 truncate w-full sm:w-auto">({asset.name})</span>}
+                                                </>
+                                            ) : (
+                                                <span className="truncate block w-full">{job.customer_name}</span>
+                                            )}
+                                        </h3>
+                                    </div>
+                                    {job.project_pdf_url && <FileText size={20} className="text-white shrink-0 mt-0.5" />}
                                 </div>
                                 
                                 <p className="text-blue-100 text-xs font-medium flex items-center gap-1.5 mb-1 truncate">
@@ -1103,17 +1105,19 @@ const handleStatusUpdate = async (newStatus) => {
                           </div>
                           
                           <div className="flex justify-between items-start gap-2 mb-1">
-                              <h3 className="text-base font-black text-slate-800 leading-tight flex flex-col sm:block">
-                                  {asset ? (
-                                      <>
-                                          <span className="truncate block max-w-[200px] sm:max-w-[250px]">{asset.apartmentName || asset.name}</span>
-                                          {asset.apartmentName && <span className="text-[11px] sm:text-base sm:ml-2 font-medium text-slate-500 truncate block max-w-[200px] sm:max-w-[250px]">({asset.name})</span>}
-                                      </>
-                                  ) : (
-                                      <span className="truncate block max-w-[200px] sm:max-w-[250px]">{job.customer_name}</span>
-                                  )}
-                              </h3>
-                              {job.project_pdf_url && <FileText size={18} className="text-blue-500 shrink-0 mt-0.5" />}
+                              <div className="flex-1 min-w-0">
+                                  <h3 className="text-base font-black text-slate-800 leading-tight flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                                      {asset ? (
+                                          <>
+                                              <span className="truncate w-full sm:w-auto">{asset.apartmentName || asset.name}</span>
+                                              {asset.apartmentName && <span className="text-[11px] sm:text-base font-medium text-slate-500 truncate w-full sm:w-auto">({asset.name})</span>}
+                                          </>
+                                      ) : (
+                                          <span className="truncate block w-full">{job.customer_name}</span>
+                                      )}
+                                  </h3>
+                              </div>
+                              {job.project_pdf_url && <FileText size={18} className="text-blue-500 shrink-0 mt-0.5" />}
                           </div>
                           
                           <p className="text-slate-500 text-xs font-medium flex items-center gap-1.5 mb-1 truncate">
