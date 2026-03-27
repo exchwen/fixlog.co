@@ -1,7 +1,12 @@
-name = "fixlog"
-pages_build_output_dir = ".next"
+name = "backend"
+main = "worker.js"
+compatibility_date = "2026-03-28"
 
 [[d1_databases]]
-binding = "DB" # Kod içinde process.env.DB olarak çağıracağımız isim
-database_name = "fixlog" # Cloudflare panelinde verdiğin isim
-database_id = "41c767a3-a552-45e9-bc0f-bba53970cd68" # Panelden kopyalayacağın ID
+binding = "DB" 
+database_name = "fixlog" 
+database_id = "e765c5e3-c2d5-4744-b2dd-bf18f8d79f7d" 
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "fixlog-storage"
