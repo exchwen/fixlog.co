@@ -525,7 +525,7 @@ if (showSOSModal) { stopEvent(); setShowSOSModal(false); return true; }
         const myJobs = result.jobs.filter(j => {
             if (String(j.staff_id) === String(decoded.id) || String(j.worker_id) === String(decoded.id)) return true;
             // 🚀 Eski hatalı "update-job" yüzünden staff_id null olan "Tamamlandı" işleri kurtarma
-            if (j.status === 'Tamamlandı') {
+            if (j.status === 'Tamamlandı' || j.status === 'Onay Bekliyor') {
                 if (j.worker_name === decoded.name || j.manager_name === decoded.name) return true;
                 if (j.details && typeof j.details === 'string' && j.details.includes(decoded.name)) return true;
                 if (j.details && typeof j.details === 'object' && JSON.stringify(j.details).includes(decoded.name)) return true;
@@ -548,7 +548,7 @@ if (showSOSModal) { stopEvent(); setShowSOSModal(false); return true; }
          if (myStaffRecord) setStaffBranch(myStaffRecord.branch);
          const myJobs = data.jobs.filter(j => {
             if (String(j.staff_id) === String(decoded.id) || String(j.worker_id) === String(decoded.id)) return true;
-            if (j.status === 'Tamamlandı') {
+            if (j.status === 'Tamamlandı' || j.status === 'Onay Bekliyor') {
                 if (j.worker_name === decoded.name || j.manager_name === decoded.name) return true;
                 if (j.details && typeof j.details === 'string' && j.details.includes(decoded.name)) return true;
                 if (j.details && typeof j.details === 'object' && JSON.stringify(j.details).includes(decoded.name)) return true;
@@ -879,7 +879,7 @@ const handleStatusUpdate = async (newStatus) => {
 
   const activeJobs = jobs.filter(j => j.status === 'Devam Ediyor' || j.status === 'Sahada');
   const pendingJobs = jobs.filter(j => j.status === 'Beklemede' || j.status === 'Gelecek' || j.status === 'Usta Bekliyor');
-  const completedJobs = jobs.filter(j => j.status === 'Tamamlandı');
+  const completedJobs = jobs.filter(j => j.status === 'Tamamlandı' || j.status === 'Onay Bekliyor');
 
   const isPastDue = data?.subscription_status === 'past_due';
 
