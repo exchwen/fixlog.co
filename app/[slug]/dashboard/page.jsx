@@ -573,7 +573,7 @@ return (
       </div>
 
       <main className="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-y-auto relative z-10">
-        <Header data={data} setIsMobileMenuOpen={setIsMobileMenuOpen} setSelectedJob={setSelectedJob} />
+        <Header data={data} setIsMobileMenuOpen={setIsMobileMenuOpen} setSelectedJob={setSelectedJob} setSelectedAsset={setSelectedAsset} />
 
         <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">
           

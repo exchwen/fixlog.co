@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useRouter } from 'next/navigation';
 
-export default function Header({ data, setIsMobileMenuOpen, setSelectedJob }: any) {
+export default function Header({ data, setIsMobileMenuOpen, setSelectedJob, setSelectedAsset }: any) {
   const router = useRouter(); 
   const [isOffline, setIsOffline] = useState(false);
   
@@ -219,8 +219,9 @@ const notificationCount = notifications.length;
 
             if (isUsta && data?.jobs) {
                 const activeJob = data.jobs.find((j: any) => 
+                    (String(j.staff_id) === String(userId) || String(j.worker_id) === String(userId)) &&
                     (String(j.asset_id) === String(foundAsset.id) || String(j.asset_id) === String(foundAsset.uuid)) &&
-                    (j.status === 'Beklemede' || j.status === 'Gelecek' || j.status === 'Devam Ediyor' || j.status === 'Sahada')
+                    ['Beklemede', 'Gelecek', 'Devam Ediyor', 'Sahada', 'Usta Bekliyor', 'Yeni Kayıt'].includes(j.status)
                 );
                 
                 if (activeJob) {
@@ -229,6 +230,14 @@ const notificationCount = notifications.length;
                     setManualCode('');
                     return; 
                 }
+            }
+
+            // Patron veya Yönetici ise modalı aç
+            if (setSelectedAsset && !isUsta) {
+                setSelectedAsset(foundAsset);
+                setShowScanner(false);
+                setManualCode('');
+                return;
             }
         }
     }
