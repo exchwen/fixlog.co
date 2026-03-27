@@ -753,8 +753,9 @@ useEffect(() => {
                                     } else {
                                         cleanNote = rawNote;
                                         if (previewPdfJob.details) {
+                                            const pdfDetails = typeof previewPdfJob.details === 'string' ? JSON.parse(previewPdfJob.details) : previewPdfJob.details;
                                             const excludeKeys = ['note', 'price', 'lastEditedBy', 'lastEditedAt', 'managerName', 'managerId', 'createdBy', 'worker_id', 'assetName', 'usedMaterials'];
-                                            Object.entries(previewPdfJob.details).forEach(([k, v]) => {
+                                            Object.entries(pdfDetails).forEach(([k, v]) => {
                                                 if (!excludeKeys.includes(k) && typeof v === 'string') {
                                                     extractedChecklist.push({ key: k, val: v });
                                                 }
@@ -1139,9 +1140,10 @@ useEffect(() => {
                              <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="space-y-4">
                                  {(() => {
                                      const excludeKeys = ['note', 'price', 'lastEditedBy', 'lastEditedAt', 'managerName', 'managerId', 'createdBy', 'worker_id', 'assetName', 'usedMaterials'];
-                                     const formEntries = Object.entries(selectedJob.details || {}).filter(([k]) => !excludeKeys.includes(k));
+                                     const safeDetails = typeof selectedJob.details === 'string' ? JSON.parse(selectedJob.details) : (selectedJob.details || {});
+                                     const formEntries = Object.entries(safeDetails).filter(([k]) => !excludeKeys.includes(k));
                                      
-                                     let rawNote = selectedJob.details?.note || selectedJob.taskNote || '';
+                                     let rawNote = safeDetails.note || selectedJob.taskNote || '';
                                      let extractedChecklist: { key: string, val: string }[] = [];
                                      let cleanNote = '';
 
@@ -1178,7 +1180,7 @@ useEffect(() => {
                                     const hasFormEntries = formEntries.length > 0;
                                      const hasChecklist = extractedChecklist.length > 0;
                                      const hasCleanNote = !!cleanNote;
-                                     const hasMaterials = selectedJob.details?.usedMaterials && selectedJob.details.usedMaterials.length > 0;
+                                     const hasMaterials = safeDetails.usedMaterials && safeDetails.usedMaterials.length > 0;
 
                                      if (!hasFormEntries && !hasChecklist && !hasCleanNote && !hasMaterials) {
                                          return (
@@ -1283,7 +1285,7 @@ useEffect(() => {
                                                  <div className="p-5 border-t border-slate-200 bg-white shadow-sm rounded-b-2xl">
                                                      <span className="block text-[11px] font-black text-slate-800 uppercase tracking-widest mb-3">KULLANILAN MALZEMELER:</span>
                                                      <div className="space-y-1.5 text-sm font-semibold text-slate-700">
-                                                         {selectedJob.details.usedMaterials.map((m: any, idx: number) => (
+                                                         {safeDetails.usedMaterials.map((m: any, idx: number) => (
                                                              <div key={idx} className="flex justify-between items-center">
                                                                  <span>• {m.name}</span>
                                                                  <span className="font-black text-slate-900">{m.quantity} {m.unit}</span>
@@ -1359,13 +1361,14 @@ useEffect(() => {
                                                    setIsApproving(true);
                                                    // 🚀 Hangi fiyatı kullanacağımızı belirliyoruz
                                                    const finalPrice = jobPrice !== '' ? jobPrice : selectedJob.payment_amount;
-                                                   const newDetails = { ...selectedJob.details, price: finalPrice + ' TL' };
+                                                   const safeDetails = typeof selectedJob.details === 'string' ? JSON.parse(selectedJob.details) : (selectedJob.details || {});
+                                                   const newDetails = { ...safeDetails, price: finalPrice + ' TL' };
                                                    
                                                    // 1. İşi Tamamla ve Tahsilat Durumunu Güncelle
                                                    await handleAction('update-job', { 
                                                        id: selectedJob.id, 
                                                        status: 'Tamamlandı', 
-                                                       taskNote: selectedJob.details?.note, 
+                                                       taskNote: safeDetails.note, 
                                                        lastEditedBy: data?.ownerName || 'Yönetici', 
                                                        workType: selectedJob.work_type, 
                                                        details: newDetails,
@@ -1394,7 +1397,8 @@ useEffect(() => {
                                     <button 
                                         onClick={() => {
                                             if (setShowThermalPrintModal && setSelectedThermalJob) {
-                                                setSelectedThermalJob(selectedJob);
+                                                const parsedJobDetails = typeof selectedJob.details === 'string' ? JSON.parse(selectedJob.details) : (selectedJob.details || {});
+                                                setSelectedThermalJob({ ...selectedJob, details: parsedJobDetails });
                                                 setShowThermalPrintModal(true);
                                             }
                                         }} 
@@ -1405,7 +1409,10 @@ useEffect(() => {
                                 )}
 
                                 {selectedJob.status === 'Tamamlandı' && (  
-                                    <button onClick={() => setPreviewPdfJob(selectedJob)} className="w-full bg-emerald-100 border border-emerald-300 text-emerald-700 font-black py-3.5 rounded-xl hover:bg-emerald-200 transition-all flex justify-center items-center gap-2 shadow-sm active:scale-95 text-sm mt-3">
+                                    <button onClick={() => {
+                                        const parsedJobDetails = typeof selectedJob.details === 'string' ? JSON.parse(selectedJob.details) : (selectedJob.details || {});
+                                        setPreviewPdfJob({ ...selectedJob, details: parsedJobDetails });
+                                    }} className="w-full bg-emerald-100 border border-emerald-300 text-emerald-700 font-black py-3.5 rounded-xl hover:bg-emerald-200 transition-all flex justify-center items-center gap-2 shadow-sm active:scale-95 text-sm mt-3">
                                        <MessageSquareText size={18} /> {isGeneralTask && (!selectedJob.customer_name || selectedJob.customer_name === 'Genel Görev') ? 'Servis Formu / PDF Görüntüle' : 'Rapor Önizleme & WhatsApp Gönder'}
                                     </button>
                                 )}

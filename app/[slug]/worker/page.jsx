@@ -805,9 +805,10 @@ const handleStatusUpdate = async (newStatus) => {
     
     // Fiş Yazdırmayı Tetikle (Sadece Periyodik Bakımsa VE İŞ TAMAMLANDIYSA)
     if (targetStatus === 'Tamamlandı' && selectedJob.work_type === 'Periyodik Bakım') {
+        const parsedDetails = typeof selectedJob.details === 'string' ? JSON.parse(selectedJob.details) : (selectedJob.details || {});
         setSelectedThermalJob({
             ...selectedJob, 
-            details: { ...selectedJob.details, note: finalNote, usedMaterials: usedMaterials }, 
+            details: { ...parsedDetails, note: finalNote, usedMaterials: usedMaterials }, 
             signature_url: signatureImage, 
             customer_signature_name: signatureName
         });
