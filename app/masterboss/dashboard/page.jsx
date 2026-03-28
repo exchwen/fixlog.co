@@ -42,12 +42,16 @@ useEffect(() => {
       window.pwaDeferredPrompt = null;
     }
 
-    window.addEventListener('appinstalled', () => {
+    const handleInstalled = () => {
       setInstallState('success');
       setTimeout(() => setShowPwaPrompt(false), 3000);
-    });
+    };
+    window.addEventListener('appinstalled', handleInstalled);
 
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('appinstalled', handleInstalled);
+    };
   }
 }, []);
 

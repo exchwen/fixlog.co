@@ -31,13 +31,17 @@ self.addEventListener('fetch', (event) => {
   }
 
   // API ve Pusher isteklerine de dokunma, onlar dinamik.
-  if (event.request.url.includes('workers.dev') || event.request.url.includes('pusher.com')) {
+  if (event.request.url.includes('workers.dev') || event.request.url.includes('pusher.com') || event.request.url.includes('cloudflareinsights.com')) {
     return;
- }
+  }
 
   // Diğer statik dosyalar (CSS, JS, yerel iconlar) için standart strateji
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
+    fetch(event.request).catch(() => {
+      return caches.match(event.request).then((response) => {
+        return response || new Response('', { status: 404, statusText: 'Not Found' });
+      });
+    })
   );
 });
 

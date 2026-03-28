@@ -192,8 +192,13 @@ export default function ManagerDashboard() {
         window.pwaDeferredPrompt = null;
       }
 
-      window.addEventListener('appinstalled', () => { setInstallState('success'); setTimeout(() => setShowPwaPrompt(false), 3000); });
-      return () => window.removeEventListener('beforeinstallprompt', handler);
+      const handleInstalled = () => { setInstallState('success'); setTimeout(() => setShowPwaPrompt(false), 3000); };
+      window.addEventListener('appinstalled', handleInstalled);
+      
+      return () => {
+        window.removeEventListener('beforeinstallprompt', handler);
+        window.removeEventListener('appinstalled', handleInstalled);
+      };
     }
   }, []);
 
