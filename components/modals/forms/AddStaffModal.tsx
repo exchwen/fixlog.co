@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, User, Phone, ShieldCheck, Briefcase, KeyRound, MapPin } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 import trCitiesData from '@/lib/data/tr-cities.json';
+import { buildStaffSavePayload } from '@/lib/staffPayload';
 
 export default function AddStaffModal({
   showAddStaff, setShowAddStaff,
@@ -145,8 +146,8 @@ export default function AddStaffModal({
                         <KeyRound size={14} /> Şifre
                     </label>
                     <input 
-                        type="text" 
-                        name="secure_random_pwd_input_add_1329"
+                        type="password" 
+                        name="fixlog_add_staff_password"
                         autoComplete="new-password" 
                         readOnly={true}
                         onFocus={(e) => e.target.removeAttribute('readonly')}
@@ -233,7 +234,7 @@ export default function AddStaffModal({
             <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0">
                <button 
                   disabled={isSaving || !isFormValid} 
-                  onClick={() => handleAction('add-staff', newStaff, setShowAddStaff, () => setNewStaff({ name: '', role: '', phone: '', contact: '', branch: '', username: '', password: '', assigned_regions: '' }))} 
+                  onClick={() => handleAction('add-staff', buildStaffSavePayload(newStaff), setShowAddStaff, () => setNewStaff({ name: '', role: '', phone: '', contact: '', branch: '', username: '', password: '', assigned_regions: '' }))} 
                   className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:bg-slate-800 transition-all active:scale-95 flex justify-center items-center disabled:opacity-50"
                >
                   {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Personeli Kaydet'}

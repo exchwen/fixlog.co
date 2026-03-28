@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Phone, Mail, Briefcase, Calendar, User, ShieldCheck, CheckCircle, Clock, Settings, Trash2, Loader2, Filter, MapPin } from 'lucide-react';
 import sectorsData from '@/lib/data/sectors.json';
 import trCitiesData from '@/lib/data/tr-cities.json';
+import { buildStaffSavePayload } from '@/lib/staffPayload';
 
 export default function StaffDetailModal({
   selectedStaff, setSelectedStaff,
@@ -421,14 +422,14 @@ export default function StaffDetailModal({
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Hesap Şifresi</label>
                                                 <input 
                                                   disabled={userRole === 'Yönetici' && selectedStaff?.role === 'Yönetici'} 
-                                                  type="text" 
-                                                  name="secure_random_pwd_input_1289"
+                                                  type="password" 
+                                                  name="fixlog_staff_new_password"
                                                   autoComplete="new-password" 
                                                   readOnly={true}
                                                   onFocus={(e) => e.target.removeAttribute('readonly')}
                                                   title="Mevcut şifreyi değiştirmek istemiyorsanız boş bırakın." 
                                                   className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 transition-all placeholder:text-[10px] placeholder:text-slate-400 bg-white disabled:opacity-60 disabled:bg-slate-100" 
-                                                  value={editStaffForm.password} 
+                                                  value={editStaffForm.password ?? ''} 
                                                   onChange={(e) => setEditStaffForm({...editStaffForm, password: e.target.value.trim()})} 
                                                   placeholder="Değiştirmek için yazın..." 
                                                 />
@@ -551,7 +552,7 @@ export default function StaffDetailModal({
                     </div>
                 ) : (
                     <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                        <button onClick={() => handleAction('add-staff', { ...editStaffForm, id: selectedStaff.id }, closeThisModal, () => setIsEditingStaff(false))} className="w-full sm:flex-[2] bg-blue-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-md flex justify-center items-center disabled:opacity-50">
+                        <button onClick={() => handleAction('add-staff', buildStaffSavePayload(editStaffForm, selectedStaff.id), closeThisModal, () => setIsEditingStaff(false))} className="w-full sm:flex-[2] bg-blue-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-md flex justify-center items-center disabled:opacity-50">
                             {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Değişiklikleri Kaydet'}
                         </button>
                         <button onClick={() => setIsEditingStaff(false)} className="w-full sm:flex-1 bg-white border-2 border-slate-200 text-slate-700 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95">İptal</button>

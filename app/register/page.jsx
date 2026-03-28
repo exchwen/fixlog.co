@@ -24,9 +24,11 @@ import {
   auth,
   googleProvider,
   createUserWithEmailAndPassword,
+  deleteUser,
+  signInWithPopup,
 } from '../../lib/firebase';
-import { signInWithPopup } from 'firebase/auth';
 import { generateUniqueSlug } from '../../lib/utils';
+import { fetchAndStorePatronSession } from '../../lib/patronSession';
 // JSON Verisini Buradan Çekiyoruz
 import sectorDataFile from '../../lib/data/sectors.json';
 
@@ -77,11 +79,18 @@ export default function RegisterPage() {
 
   const handleGoogleRegister = async () => {
     setIsLoading(true);
+    setError('');
     try {
       await signInWithPopup(auth, googleProvider);
       setStep(2);
     } catch (err) {
-      setError('Google bağlantısı başarısız.');
+      if (err?.code === 'auth/account-exists-with-different-credential') {
+        setError('Bu e-posta zaten kullanılıyor. Aynı adresle e-posta/şifre ile kayıt olduysanız giriş yapın.');
+      } else if (err?.code === 'auth/popup-closed-by-user') {
+        setError('');
+      } else {
+        setError('Google bağlantısı başarısız.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -90,16 +99,22 @@ export default function RegisterPage() {
   const handleEmailRegister = async (e) => {
     e.preventDefault();
     if (formData.companyName.length < 3) return setError('Firma adını girin.');
+    if (!formData.email?.trim()) return setError('E-posta adresi girin.');
+    if (!formData.password || formData.password.length < 6) {
+      return setError('Şifre en az 6 karakter olmalı.');
+    }
     setIsLoading(true);
+    setError('');
+    let userCredential = null;
     try {
-      const userCredential = await createUserWithEmailAndPassword(
+      userCredential = await createUserWithEmailAndPassword(
         auth,
-        formData.email,
+        formData.email.trim(),
         formData.password
       );
       const slug = generateUniqueSlug(formData.companyName);
 
-      await fetch(`${API_URL}/register`, {
+      const res = await fetch(`${API_URL}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -111,15 +126,34 @@ export default function RegisterPage() {
         }),
       });
 
-      router.push(`/${slug}/dashboard`);
+      const reg = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        try {
+          await deleteUser(userCredential.user);
+        } catch (_) {
+          /* yoksay */
+        }
+        setError(reg.error || 'Kayıt tamamlanamadı. Tekrar deneyin.');
+        return;
+      }
+
+      const session = await fetchAndStorePatronSession(API_URL, userCredential.user.uid);
+      if (!session.ok) {
+        setError('Firma oluşturuldu ancak oturum başlatılamadı. Giriş sayfasından giriş yapın.');
+        return;
+      }
+
+      const destSlug = reg.slug || session.slug || slug;
+      router.push(`/${destSlug}/dashboard`);
     } catch (err) {
-      // Firebase'den gelen asıl hata mesajını ekrana basarız
       if (err.code === 'auth/email-already-in-use') {
         setError('Bu e-posta adresi zaten kullanımda.');
       } else if (err.code === 'auth/weak-password') {
         setError('Şifre çok zayıf (en az 6 karakter olmalı).');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('Geçerli bir e-posta adresi girin.');
       } else {
-        setError('Kayıt sırasında bir hata oluştu: ' + err.message);
+        setError('Kayıt sırasında bir hata oluştu: ' + (err.message || err.code || ''));
       }
     } finally {
       setIsLoading(false);
@@ -130,11 +164,16 @@ export default function RegisterPage() {
     if (formData.companyName.trim().length < 3)
       return setError('Firma adı girin.');
     setIsLoading(true);
+    setError('');
     try {
-      const slug = generateUniqueSlug(formData.companyName);
       const user = auth.currentUser;
+      if (!user) {
+        setError('Oturum bulunamadı. Lütfen tekrar "Google ile Devam Et"e tıklayın.');
+        return;
+      }
+      const slug = generateUniqueSlug(formData.companyName);
 
-      await fetch(`${API_URL}/register`, {
+      const res = await fetch(`${API_URL}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -146,7 +185,20 @@ export default function RegisterPage() {
         }),
       });
 
-      router.push(`/${slug}/dashboard`);
+      const reg = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(reg.error || 'Kurulum tamamlanamadı.');
+        return;
+      }
+
+      const session = await fetchAndStorePatronSession(API_URL, user.uid);
+      if (!session.ok) {
+        setError('Firma oluşturuldu ancak oturum başlatılamadı. Giriş sayfasından giriş yapın.');
+        return;
+      }
+
+      const destSlug = reg.slug || session.slug || slug;
+      router.push(`/${destSlug}/dashboard`);
     } catch (err) {
       setError('İşlem tamamlanamadı.');
     } finally {

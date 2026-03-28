@@ -356,6 +356,15 @@ export default {
             if (url.pathname === "/register" && method === "POST") {
                 const { uid, companyName, sector, slug, ownerName, referredByCode } = await request.json();
 
+                if (!uid || typeof uid !== 'string' || uid.trim() === '') {
+                    return new Response(JSON.stringify({ error: "Oturum bilgisi eksik. Lütfen tekrar giriş yapın." }), { status: 400, headers: corsHeaders });
+                }
+
+                const existing = await safeFirst(env.DB.prepare("SELECT slug, referral_code FROM companies WHERE owner_uid = ?").bind(uid.trim()));
+                if (existing) {
+                    return new Response(JSON.stringify({ success: true, slug: existing.slug, refCode: existing.referral_code, existing: true }), { headers: corsHeaders });
+                }
+
                 // 14 gün sonrası için trial_ends_at hesaplama
                 const trialEndsAt = new Date();
                 trialEndsAt.setDate(trialEndsAt.getDate() + 14);
@@ -373,16 +382,23 @@ export default {
                     }
                 }
 
-                // Veritabanına yeni özellikleri dahil ederek yazıyoruz
-                await env.DB.prepare(`
+                try {
+                    await env.DB.prepare(`
                     INSERT INTO companies (
                         owner_uid, company_name, slug, sector, owner_name, 
                         subscription_status, trial_ends_at, referral_code, referred_by_id
                     ) VALUES (?, ?, ?, ?, ?, 'trialing', ?, ?, ?)
                 `).bind(
-                    uid || '', companyName || '', slug || '', sector || '', ownerName || 'Yönetici',
+                    uid.trim(), companyName || '', slug || '', sector || '', ownerName || 'Yönetici',
                     trialEndsAt.toISOString(), refCode, referredById
                 ).run();
+                } catch (e) {
+                    const msg = (e && e.message) ? String(e.message) : '';
+                    if (msg.includes('UNIQUE') || msg.includes('unique')) {
+                        return new Response(JSON.stringify({ error: "Bu firma veya bağlantı zaten kayıtlı. Giriş yapmayı deneyin." }), { status: 409, headers: corsHeaders });
+                    }
+                    throw e;
+                }
 
                 return new Response(JSON.stringify({ success: true, refCode }), { headers: corsHeaders });
             }
@@ -674,7 +690,12 @@ export default {
                         try { photos = JSON.parse(j.photo_urls || '[]'); } catch (e) { }
                         return { ...j, details, photos };
                     }),
-                    assets: assets || [], staff: staff || [], stock: stock || [], finances: finances || [], customers: customers || [],
+                    assets: assets || [],
+                    staff: (staff || []).map((s) => {
+                        const { password_hash, ...safe } = s;
+                        return safe;
+                    }),
+                    stock: stock || [], finances: finances || [], customers: customers || [],
                     suppliers: suppliers || [], categories: categories || [],
 
                     // 🚀 YENİ VERİLER: Hem Cihaz hem Personel Acil Durumları birleştiriliyor
@@ -820,6 +841,7 @@ export default {
                 const { slug, id, name, phone, contact, role, branch, username, password, is_active, assigned_regions } = await request.json();
 
                 const finalPhone = phone || contact || '';
+                const passwordTrimmed = typeof password === 'string' ? password.trim() : '';
 
                 // Yönetici rolündekilerin yalnızca "Usta" eklemesini / düzenlemesini sağlayan kontrol
                 if (userAuth && userAuth.role === "Yönetici") {
@@ -835,12 +857,12 @@ export default {
                 }
 
                 let hashedPw = null;
-                if (password) {
-                    hashedPw = await hashPassword(password);
+                if (passwordTrimmed) {
+                    hashedPw = await hashPassword(passwordTrimmed);
                 }
 
                 if (id) {
-                    if (password) {
+                    if (passwordTrimmed) {
                         await env.DB.prepare("UPDATE staff SET name=?, phone=?, role=?, branch=?, username=?, password_hash=?, is_active=?, assigned_regions=? WHERE id=? AND company_slug=?")
                             .bind(name || '', finalPhone, role || '', branch || '', username || '', hashedPw, is_active ?? 1, assigned_regions || '', id, slug || '').run();
                     } else {

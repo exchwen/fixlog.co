@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { UserPlus, Activity, MapPin, CheckCircle, Plus, ChevronRight, KeyRound, X, MessageCircle, Send, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { staffFormStateFromServer } from '@/lib/staffPayload';
 
 // --- TİP TANIMLAMALARI (INTERFACES) ---
 
@@ -331,7 +332,7 @@ const openWhatsAppModal = (staff: Staff) => {
                    <button 
                      onClick={() => { 
                        setSelectedStaff(s); 
-                       setEditStaffForm({ ...s, password: '', is_active: s.is_active ?? 1 }); 
+                       setEditStaffForm(staffFormStateFromServer(s)); 
                        setIsEditingStaff(false); 
                      }} 
                      className="flex items-center justify-center gap-1.5 bg-white border border-slate-200 text-slate-700 py-2.5 rounded-xl text-[11px] font-bold hover:bg-slate-50 hover:text-slate-900 transition-all active:scale-95 shadow-sm"
