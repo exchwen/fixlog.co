@@ -1,8 +1,8 @@
 // 🚀 Pusher Beams SDK
 importScripts("https://js.pusher.com/beams/service-worker.js");
 
-// Versiyonu yükselttik (v7) ki tarayıcılar değişikliği hemen anlasın
-const CACHE_NAME = 'isdokumu-mobile-final-v7';
+// Versiyonu yükseltiyoruz (v8 - Yüksek performans ve maliyet optimizasyonu)
+const CACHE_NAME = 'isdokumu-mobile-final-v8';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting(); // Beklemeden yeni versiyona geç
@@ -13,8 +13,11 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Eski cache temizleniyor:', cacheName);
+          // 👑 KRİTİK HAMLE: Sadece bizim yarattığımız eski önbellekleri siliyoruz.
+          // Sistemin kendi hızlandırıcı önbelleklerine ASLA dokunmuyoruz. 
+          // Bu sayede uygulama roket gibi çalışacak ve veri maliyeti düşecek.
+          if (cacheName.startsWith('isdokumu-mobile-final-') && cacheName !== CACHE_NAME) {
+            console.log('Eski cache temizleniyor, sistem rahatlatılıyor:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -24,18 +27,28 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // 🚀 KRİTİK AYAR: R2 (Logo/Resim) linklerine ASLA karışma!
-  // Tarayıcı bu istekleri doğrudan yapsın, Service Worker araya girmesin.
-  if (event.request.url.includes('r2.dev') || event.request.url.includes('pub-d332de0237ac40de84c5f5b1ee26c3ee')) {
-      return; 
-  }
-
-  // API ve Pusher isteklerine de dokunma, onlar dinamik.
-  if (event.request.url.includes('workers.dev') || event.request.url.includes('pusher.com') || event.request.url.includes('cloudflareinsights.com')) {
+  // 1. GÜVENLİK DUVARI: Sadece sayfa ve dosya getirme (GET) işlemlerine odaklan.
+  // Form gönderme veya veri yazma işlemlerine karışıp sistemi bozma.
+  if (event.request.method !== 'GET') {
     return;
   }
 
-  // Diğer statik dosyalar (CSS, JS, yerel iconlar) için standart strateji
+  const url = event.request.url;
+
+  // 2. DIŞ BAĞLANTILAR: API, Cloudflare, Pusher ve R2 (Resim) bağlantılarına aracı olma.
+  // Tarayıcı bu işlemleri kendi doğal hızında ve sorunsuz halletsin.
+  if (
+    url.includes('r2.dev') || 
+    url.includes('pub-d332de0237ac40de84c5f5b1ee26c3ee') ||
+    url.includes('workers.dev') || 
+    url.includes('pusher.com') || 
+    url.includes('cloudflareinsights.com') ||
+    url.includes('/api/') // API istekleri için ekstra güvenlik
+  ) {
+      return; 
+  }
+
+  // 3. Kendi statik dosyalarımız için standart ve güvenli strateji
   event.respondWith(
     fetch(event.request).catch(() => {
       return caches.match(event.request).then((response) => {
@@ -45,23 +58,20 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// 🚀 BİLDİRİM GÖSTERİM KONTROLÜ (YENİ EKLENDİ)
-// Pusher Beams'in varsayılan davranışını eziyoruz. 
-// Sadece uygulama arka plandaysa veya ekran kapalıysa üstten bildirim gösterilecek.
+// 🚀 BİLDİRİM GÖSTERİM KONTROLÜ
+// Sadece uygulama arka plandaysa veya ekran kapalıysa üstten bildirim göster.
 PusherPushNotifications.onNotificationReceived = ({ pushEvent, payload, handleNotification }) => {
   pushEvent.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       let isAppVisible = false;
       
       for (const client of clientList) {
-        // Eğer uygulamanın penceresi ekranda açıksa ve görünürse
         if (client.visibilityState === 'visible') {
           isAppVisible = true;
           break;
         }
       }
 
-      // Eğer uygulama ekranda DEĞİLSE (arka planda veya kapalıysa) bildirimi göster
       if (!isAppVisible) {
         return handleNotification(payload);
       }
@@ -70,7 +80,7 @@ PusherPushNotifications.onNotificationReceived = ({ pushEvent, payload, handleNo
 };
 
 // 🚀 BİLDİRİM TIKLAMA YÖNETİCİSİ (PWA FOCUS MODU)
-// Bu kod sayesinde bildirime tıklayınca Chrome sekmesi değil, Uygulama açılır.
+// Bildirime tıklayınca yeni sekme açmak yerine mevcut uygulamayı öne getir.
 self.addEventListener('notificationclick', function(event) {
   const { notification } = event;
   const { data } = notification;
@@ -79,20 +89,15 @@ self.addEventListener('notificationclick', function(event) {
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
-      // 1. Hedef URL'yi al (Pusher'dan gelen deep_link)
       const targetUrl = (data && data.pusher && data.pusher.deep_link) ? data.pusher.deep_link : '/';
 
-      // 2. Zaten açık bir uygulama penceresi var mı kontrol et
       for (const client of clientList) {
-        // Eğer uygulama açıksa (URL bizim domain ise)
         if (client.url.includes(self.registration.scope) && 'focus' in client) {
-          // Sayfayı hedefe yönlendir ve öne getir
           if (targetUrl) client.navigate(targetUrl);
           return client.focus();
         }
       }
 
-      // 3. Açık pencere yoksa, PWA modunda yeni pencere aç
       if (clients.openWindow) {
         return clients.openWindow(targetUrl);
       }
