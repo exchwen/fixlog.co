@@ -587,7 +587,7 @@ export default {
                     // 🚀 YENİ EKLENEN SORGULAR (SOS ve Malzeme Talepleri)
                     activeStaffSos, allStaffSos, pendingMaterialRequests, allMaterialRequests
                 ] = await Promise.all([
-                    safeFirst(env.DB.prepare("SELECT company_name, sector, owner_name, address, tax_info, phone, landline_phone, emergency_phone, whatsapp_phone, website, logo, subscription_status, custom_base_price, referral_code, trial_ends_at, billing_cycle_anchor, free_months_balance, has_masterboss_gift FROM companies WHERE slug = ?").bind(slug || '')),
+                    safeFirst(env.DB.prepare("SELECT company_name, sector, owner_name, address, tax_info, phone, landline_phone, emergency_phone, whatsapp_phone, website, logo, subscription_status, custom_base_price, custom_per_asset_price, referral_code, trial_ends_at, billing_cycle_anchor, free_months_balance, has_masterboss_gift, work_days, autopilot_daily_capacity_units FROM companies WHERE slug = ?").bind(slug || '')),
                     safeFirst(env.DB.prepare("SELECT free_months_balance, has_masterboss_gift FROM company_rewards WHERE company_slug = ?").bind(slug || '')),
 
                     safeFirst(env.DB.prepare("SELECT COUNT(*) as total FROM jobs WHERE company_slug = ?").bind(slug || '')),
@@ -677,6 +677,9 @@ export default {
                     website: company?.website || "",
                     logo: company?.logo || "",
                     referral_code: company?.referral_code,
+                    work_days: (() => { try { return company?.work_days ? JSON.parse(company.work_days) : [1, 2, 3, 4, 5, 6]; } catch (e) { return [1, 2, 3, 4, 5, 6]; } })(),
+                    autopilot_daily_capacity_units: (company?.autopilot_daily_capacity_units != null && !isNaN(Number(company.autopilot_daily_capacity_units)) && Number(company.autopilot_daily_capacity_units) >= 0.5)
+                        ? Number(company.autopilot_daily_capacity_units) : 10,
                     stats: [
                         { label: 'Toplam İş', value: (statsJob?.total || 0).toString() },
                         { label: 'Personel Sayısı', value: (statsStaff?.total || 0).toString() },
@@ -726,7 +729,19 @@ export default {
 
             // 🚀 R2 PUBLIC URL KULLANAN, ÜSTÜNE YAZAN (OVERWRITE) VE CACHE KIRAN LOGO MOTORU
             if (url.pathname === "/update-settings" && method === "POST") {
-                const { slug, companyName, ownerName, sector, address, taxInfo, phone, landlinePhone, emergencyPhone, whatsappPhone, website, logo } = await request.json();
+                const { slug, companyName, ownerName, sector, address, taxInfo, phone, landlinePhone, emergencyPhone, whatsappPhone, website, logo, work_days, autopilot_daily_capacity_units } = await request.json();
+
+                const existingCo = await safeFirst(env.DB.prepare("SELECT work_days, autopilot_daily_capacity_units FROM companies WHERE slug = ?").bind(slug || ''));
+
+                let workDaysStr = existingCo?.work_days || '[1,2,3,4,5,6]';
+                if (work_days !== undefined && work_days !== null) {
+                    workDaysStr = typeof work_days === 'string' ? work_days : JSON.stringify(work_days);
+                }
+                let capUnits = (existingCo?.autopilot_daily_capacity_units != null && !isNaN(Number(existingCo.autopilot_daily_capacity_units)) && Number(existingCo.autopilot_daily_capacity_units) >= 0.5)
+                    ? Number(existingCo.autopilot_daily_capacity_units) : 10;
+                if (autopilot_daily_capacity_units !== undefined && autopilot_daily_capacity_units !== null && !isNaN(Number(autopilot_daily_capacity_units)) && Number(autopilot_daily_capacity_units) >= 0.5) {
+                    capUnits = Number(autopilot_daily_capacity_units);
+                }
 
                 let finalLogoUrl = logo;
 
@@ -752,8 +767,8 @@ export default {
                     }
                 }
 
-                await env.DB.prepare("UPDATE companies SET company_name = ?, owner_name = ?, sector = ?, address = ?, tax_info = ?, phone = ?, landline_phone = ?, emergency_phone = ?, whatsapp_phone = ?, website = ?, logo = ? WHERE slug = ?")
-                    .bind(companyName || '', ownerName || '', sector || '', address || '', taxInfo || '', phone || '', landlinePhone || '', emergencyPhone || '', whatsappPhone || '', website || '', finalLogoUrl || '', slug || '').run();
+                await env.DB.prepare("UPDATE companies SET company_name = ?, owner_name = ?, sector = ?, address = ?, tax_info = ?, phone = ?, landline_phone = ?, emergency_phone = ?, whatsapp_phone = ?, website = ?, logo = ?, work_days = ?, autopilot_daily_capacity_units = ? WHERE slug = ?")
+                    .bind(companyName || '', ownerName || '', sector || '', address || '', taxInfo || '', phone || '', landlinePhone || '', emergencyPhone || '', whatsappPhone || '', website || '', finalLogoUrl || '', workDaysStr, capUnits, slug || '').run();
 
                 return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
             }
@@ -838,10 +853,14 @@ export default {
             }
 
             if (url.pathname === "/add-staff" && method === "POST") {
-                const { slug, id, name, phone, contact, role, branch, username, password, is_active, assigned_regions } = await request.json();
+                const { slug, id, name, phone, contact, role, branch, username, password, is_active, assigned_regions, off_days } = await request.json();
 
                 const finalPhone = phone || contact || '';
                 const passwordTrimmed = typeof password === 'string' ? password.trim() : '';
+                let offDaysStr = '[]';
+                if (off_days !== undefined && off_days !== null) {
+                    offDaysStr = typeof off_days === 'string' ? off_days : JSON.stringify(off_days);
+                }
 
                 // Yönetici rolündekilerin yalnızca "Usta" eklemesini / düzenlemesini sağlayan kontrol
                 if (userAuth && userAuth.role === "Yönetici") {
@@ -863,15 +882,15 @@ export default {
 
                 if (id) {
                     if (passwordTrimmed) {
-                        await env.DB.prepare("UPDATE staff SET name=?, phone=?, role=?, branch=?, username=?, password_hash=?, is_active=?, assigned_regions=? WHERE id=? AND company_slug=?")
-                            .bind(name || '', finalPhone, role || '', branch || '', username || '', hashedPw, is_active ?? 1, assigned_regions || '', id, slug || '').run();
+                        await env.DB.prepare("UPDATE staff SET name=?, phone=?, role=?, branch=?, username=?, password_hash=?, is_active=?, assigned_regions=?, off_days=? WHERE id=? AND company_slug=?")
+                            .bind(name || '', finalPhone, role || '', branch || '', username || '', hashedPw, is_active ?? 1, assigned_regions || '', offDaysStr, id, slug || '').run();
                     } else {
-                        await env.DB.prepare("UPDATE staff SET name=?, phone=?, role=?, branch=?, username=?, is_active=?, assigned_regions=? WHERE id=? AND company_slug=?")
-                            .bind(name || '', finalPhone, role || '', branch || '', username || '', is_active ?? 1, assigned_regions || '', id, slug || '').run();
+                        await env.DB.prepare("UPDATE staff SET name=?, phone=?, role=?, branch=?, username=?, is_active=?, assigned_regions=?, off_days=? WHERE id=? AND company_slug=?")
+                            .bind(name || '', finalPhone, role || '', branch || '', username || '', is_active ?? 1, assigned_regions || '', offDaysStr, id, slug || '').run();
                     }
                 } else {
-                    await env.DB.prepare("INSERT INTO staff (company_slug, name, phone, role, branch, username, password_hash, is_active, assigned_regions) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
-                        .bind(slug || '', name || '', finalPhone, role || 'Usta', branch || '', username || '', hashedPw || '', is_active ?? 1, assigned_regions || '').run();
+                    await env.DB.prepare("INSERT INTO staff (company_slug, name, phone, role, branch, username, password_hash, is_active, assigned_regions, off_days) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                        .bind(slug || '', name || '', finalPhone, role || 'Usta', branch || '', username || '', hashedPw || '', is_active ?? 1, assigned_regions || '', offDaysStr).run();
                 }
                 return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
             }
@@ -1090,22 +1109,35 @@ export default {
                 const targetMonth = reqBody.month !== undefined ? reqBody.month : new Date().getMonth();
                 const targetYear = reqBody.year !== undefined ? reqBody.year : new Date().getFullYear();
 
-                // 1. Firmanın çalışma günlerini dinamik olarak çek
-                const company = await safeFirst(env.DB.prepare("SELECT work_days FROM companies WHERE slug = ?").bind(safeSlug));
-                let workDays = [1, 2, 3, 4, 5, 6]; // Varsayılan Pzt-Cmt
+                // 1. Çalışma günleri + günlük kapasite (standart bakım birimi / mesai)
+                const company = await safeFirst(env.DB.prepare("SELECT work_days, autopilot_daily_capacity_units FROM companies WHERE slug = ?").bind(safeSlug));
+                let workDays = [1, 2, 3, 4, 5, 6];
                 if (company && company.work_days) {
                     try { workDays = JSON.parse(company.work_days); } catch (e) { }
                 }
+                const dailyCapacityUnits = (company?.autopilot_daily_capacity_units != null && !isNaN(Number(company.autopilot_daily_capacity_units)) && Number(company.autopilot_daily_capacity_units) >= 0.5)
+                    ? Number(company.autopilot_daily_capacity_units) : 10;
 
                 // 🚀 OTOPİLOT HEDEF AYI
                 const targetMonthStr = String(targetMonth + 1).padStart(2, '0');
                 const monthPrefix = `${targetYear}-${targetMonthStr}`;
 
-                // 2. Bakım yapabilecek aktif ustaları çek (Otopilot Bölge Eşleştirmesi için assigned_regions dahil edildi)
-                const staffList = await safeAll(env.DB.prepare("SELECT id, name, assigned_regions FROM staff WHERE company_slug = ? AND role = 'Usta' AND is_active = 1").bind(safeSlug));
+                // 2. Aktif ustalar (bölge, izin günleri)
+                const staffList = await safeAll(env.DB.prepare("SELECT id, name, assigned_regions, off_days FROM staff WHERE company_slug = ? AND role = 'Usta' AND is_active = 1").bind(safeSlug));
                 if (!staffList || staffList.length === 0) {
                     return new Response(JSON.stringify({ error: "Sistemde bakım atanacak aktif usta bulunamadı. Lütfen önce usta ekleyin." }), { status: 400, headers: corsHeaders });
                 }
+
+                const parseOffDays = (raw) => {
+                    if (!raw) return new Set();
+                    try {
+                        const arr = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                        if (Array.isArray(arr)) return new Set(arr.map(String));
+                    } catch (e) { /* ignore */ }
+                    return new Set();
+                };
+                const staffOffSets = {};
+                staffList.forEach((s) => { staffOffSets[String(s.id)] = parseOffDays(s.off_days); });
 
                 // 🚀 PROD SEVİYE RAM FİLTRELEME MİMARİSİ (SQLite Hatalarını %100 Önler)
                 // A. Tüm varlıkları çek ve JS ile filtrele
@@ -1128,17 +1160,44 @@ export default {
 
                 const existingAssetIds = new Set(thisMonthJobs.map(j => String(j.asset_id)));
 
-                // C. İşi olmayan varlıkları ayır
-                const assets = allAutopilotAssets.filter(a => !existingAssetIds.has(String(a.id)));
+                const assetById = {};
+                rawAssets.forEach((a) => { assetById[String(a.id)] = a; });
+
+                // C. Müşteri + yük formülü (açık iş ve birikim hesabı için)
+                const customers = await safeAll(env.DB.prepare("SELECT id, name, importance_weight FROM customers WHERE company_slug = ?").bind(safeSlug));
+                const customerMap = {};
+                const customerById = {};
+                customers.forEach((c) => {
+                    customerMap[String(c.id)] = c.name;
+                    customerById[String(c.id)] = c;
+                });
+
+                const effectiveLoad = (asset) => {
+                    const aid = asset.customer_id != null ? String(asset.customer_id) : null;
+                    const cw = aid && customerById[aid] ? Math.max(0.1, Number(customerById[aid].importance_weight) || 1) : 1;
+                    const aw = (asset.maintenance_load_units != null && asset.maintenance_load_units !== '' && !isNaN(Number(asset.maintenance_load_units)))
+                        ? Math.max(0.1, Number(asset.maintenance_load_units)) : 1;
+                    return cw * aw;
+                };
+
+                // D. Tamamlanmamış periyodik işi olan varlığa ikinci kayıt üretme (birikmeyi önler)
+                const openPeriodicJobs = await safeAll(env.DB.prepare(`
+                    SELECT asset_id, staff_id FROM jobs
+                    WHERE company_slug = ?
+                    AND work_type = 'Periyodik Bakım'
+                    AND status NOT IN ('Tamamlandı', 'İptal')
+                `).bind(safeSlug));
+                const openAssetIds = new Set();
+                openPeriodicJobs.forEach((j) => { if (j.asset_id) openAssetIds.add(String(j.asset_id)); });
+
+                // E. Bu ay otomatik kaydı yok ve açık işi de yok
+                const assets = allAutopilotAssets.filter((a) =>
+                    !existingAssetIds.has(String(a.id)) && !openAssetIds.has(String(a.id))
+                );
 
                 if (assets.length === 0) {
-                    return new Response(JSON.stringify({ success: true, message: "Sistem Kusursuz: Otopilottaki tüm varlıklar için bu ayın bakım kayıtları zaten başarıyla oluşturulmuş ve ustaların rotalarına düşmüştür!" }), { headers: corsHeaders });
+                    return new Response(JSON.stringify({ success: true, message: "Otopilot: Bu ay için ek plan gerekmiyor (kayıtlar oluşturulmuş veya tamamlanmamış açık periyodik iş var)." }), { headers: corsHeaders });
                 }
-
-                // D. Müşteri isimlerini hızlıca RAM'e al
-                const customers = await safeAll(env.DB.prepare("SELECT id, name FROM customers WHERE company_slug = ?").bind(safeSlug));
-                const customerMap = {};
-                customers.forEach(c => { customerMap[String(c.id)] = c.name; });
 
                 // 4. İlgili ayın içinde çalışılacak net günleri (Tarih formatında) hesapla
                 const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
@@ -1168,69 +1227,134 @@ export default {
                     return new Response(JSON.stringify({ error: "Seçilen ayda ileriye dönük çalışma günü bulunmuyor." }), { status: 400, headers: corsHeaders });
                 }
 
-                // 5. Yük Dengeleme (Load Balancing) ile İşleri Zamana Yayma Algoritması
-                let jobsToInsert = [];
-                let workloadCounters = {};
-                staffList.forEach(s => workloadCounters[String(s.id)] = 0); // Ustaların iş yükü sıfırlanıyor
+                // 5. Kapasite birimine göre (müşteri önemi × tesis yükü) gün/usta bazlı dağıtım
+                const sortedAssets = assets.map((a) => ({ asset: a, loadUnits: effectiveLoad(a) })).sort((x, y) => y.loadUnits - x.loadUnits);
 
+                const staffDayUnits = {};
+                const getDayLoad = (sid, d) => ((staffDayUnits[sid] && staffDayUnits[sid][d]) ? staffDayUnits[sid][d] : 0);
+                const addDayLoad = (sid, d, units) => {
+                    if (!staffDayUnits[sid]) staffDayUnits[sid] = {};
+                    staffDayUnits[sid][d] = getDayLoad(sid, d) + units;
+                };
+                const sumStaffLoads = (sid) => {
+                    const o = staffDayUnits[sid] || {};
+                    return Object.values(o).reduce((a, b) => a + b, 0);
+                };
+
+                // 5a. Geciken / tamamlanmamış periyodik işlerin yükünü takvime yay: yeni işler aynı güne üst üste binmez
+                const backlogByStaff = {};
+                for (const j of openPeriodicJobs) {
+                    const sid = j.staff_id != null ? String(j.staff_id) : null;
+                    if (!sid || !staffList.some((s) => String(s.id) === sid)) continue;
+                    const ast = assetById[String(j.asset_id)];
+                    if (!ast) continue;
+                    backlogByStaff[sid] = (backlogByStaff[sid] || 0) + effectiveLoad(ast);
+                }
+                let backlogTotalUnits = 0;
+                for (const sid of Object.keys(backlogByStaff)) {
+                    backlogTotalUnits += backlogByStaff[sid];
+                    let rem = backlogByStaff[sid];
+                    for (const dateStr of availableDates) {
+                        if (rem <= 0) break;
+                        const chunk = Math.min(dailyCapacityUnits, rem);
+                        addDayLoad(sid, dateStr, chunk);
+                        rem -= chunk;
+                    }
+                    if (rem > 0 && availableDates.length > 0) {
+                        addDayLoad(sid, availableDates[availableDates.length - 1], rem);
+                    }
+                }
+
+                const getEligibleStaff = (asset) => {
+                    if (asset.route_staff_id && staffList.some((s) => String(s.id) === String(asset.route_staff_id))) {
+                        return staffList.filter((s) => String(s.id) === String(asset.route_staff_id));
+                    }
+                    let eligible = staffList;
+                    if (asset.region) {
+                        const regional = staffList.filter((s) => {
+                            if (!s.assigned_regions) return false;
+                            return s.assigned_regions.split(',').map((r) => r.trim()).includes(asset.region);
+                        });
+                        if (regional.length > 0) eligible = regional;
+                    }
+                    return eligible;
+                };
+
+                const scheduleRows = [];
                 const nowStr = new Date().toISOString();
 
-                for (let i = 0; i < assets.length; i++) {
-                    const asset = assets[i];
+                for (const row of sortedAssets) {
+                    const asset = row.asset;
+                    const loadUnits = row.loadUnits;
+                    let eligible = getEligibleStaff(asset);
+                    if (eligible.length === 0) eligible = staffList;
 
-                    let assignedStaffId = asset.route_staff_id ? String(asset.route_staff_id) : null;
-                    
-                    // 🚀 AKILLI BÖLGE-USTA EŞLEŞTİRMESİ
-                    if (!assignedStaffId || !workloadCounters.hasOwnProperty(assignedStaffId)) {
-                        let eligibleStaff = staffList;
-                        
-                        // Varlığın bulunduğu bölge sisteme kayıtlıysa, o bölgeye bakan ustaları bul
-                        if (asset.region) {
-                            const regionalStaff = staffList.filter(s => {
-                                if (!s.assigned_regions) return false;
-                                const regions = s.assigned_regions.split(',').map(r => r.trim());
-                                return regions.includes(asset.region);
-                            });
-                            
-                            if (regionalStaff.length > 0) {
-                                eligibleStaff = regionalStaff;
+                    let best = null;
+                    let bestScore = Infinity;
+
+                    for (const dateStr of availableDates) {
+                        for (const staff of eligible) {
+                            const sid = String(staff.id);
+                            if (staffOffSets[sid] && staffOffSets[sid].has(dateStr)) continue;
+                            const cur = getDayLoad(sid, dateStr);
+                            if (cur + loadUnits <= dailyCapacityUnits + 1e-9) {
+                                const score = cur * 10000 + sumStaffLoads(sid);
+                                if (score < bestScore) {
+                                    bestScore = score;
+                                    best = { sid, dateStr };
+                                }
                             }
                         }
-
-                        // Uygun olan ustalar arasından en az iş yükü olanı seç (Load Balancing)
-                        assignedStaffId = eligibleStaff.sort((a, b) => workloadCounters[String(a.id)] - workloadCounters[String(b.id)])[0].id;
-                        assignedStaffId = String(assignedStaffId);
                     }
-                    workloadCounters[assignedStaffId]++;
 
-                    const dateIndex = Math.floor((i / assets.length) * availableDates.length);
-                    const scheduledDate = availableDates[dateIndex];
+                    if (!best) {
+                        bestScore = Infinity;
+                        for (const dateStr of availableDates) {
+                            for (const staff of eligible) {
+                                const sid = String(staff.id);
+                                if (staffOffSets[sid] && staffOffSets[sid].has(dateStr)) continue;
+                                const cur = getDayLoad(sid, dateStr);
+                                if (cur < bestScore) {
+                                    bestScore = cur;
+                                    best = { sid, dateStr };
+                                }
+                            }
+                        }
+                    }
+
+                    if (!best) continue;
+
+                    addDayLoad(best.sid, best.dateStr, loadUnits);
 
                     const customerName = customerMap[String(asset.customer_id)] || 'Bağımsız Varlık';
                     const assetFee = asset.maintenance_fee || 0;
+                    const assignedStaff = staffList.find((s) => String(s.id) === best.sid);
+                    const assignedWorkerName = assignedStaff ? assignedStaff.name : 'Sistem Ataması';
 
-                    let assignedWorkerName = 'Sistem Ataması';
-                    const assignedStaff = staffList.find(s => String(s.id) === assignedStaffId);
-                    if (assignedStaff) assignedWorkerName = assignedStaff.name;
+                    scheduleRows.push({
+                        asset,
+                        scheduledDate: best.dateStr,
+                        assignedStaffId: best.sid,
+                        assignedWorkerName,
+                        customerName,
+                        assetFee
+                    });
+                }
 
-                    jobsToInsert.push(
-                        env.DB.prepare(`
+                const jobsToInsert = scheduleRows.map((r) => env.DB.prepare(`
                     INSERT INTO jobs (
                         company_slug, customer_name, work_type, job_type, scheduled_date, asset_id, status, 
                         worker_id, worker_name, staff_id, payment_status, payment_amount, creator_name, creator_role, details, created_at
                     )
                     VALUES (?, ?, 'Periyodik Bakım', 'Planlı', ?, ?, 'Usta Bekliyor', ?, ?, ?, 'Bekliyor', ?, 'Otonom Sistem', 'Sistem', '{}', ?)
-                `).bind(safeSlug, customerName, scheduledDate, asset.id, assignedStaffId, assignedWorkerName, assignedStaffId, assetFee, nowStr)
-                    );
-                }
+                `).bind(safeSlug, r.customerName, r.scheduledDate, r.asset.id, r.assignedStaffId, r.assignedWorkerName, r.assignedStaffId, r.assetFee, nowStr));
 
-                // 6. D1 Limitlerini Aşmayan Toplu Yazım (Batch Query)
+                const workloadCounters = {};
+                staffList.forEach((s) => { workloadCounters[String(s.id)] = 0; });
+                scheduleRows.forEach((r) => { workloadCounters[r.assignedStaffId] = (workloadCounters[r.assignedStaffId] || 0) + 1; });
+
                 if (jobsToInsert.length > 0) {
-                    const assetUpdateQueries = assets.map((asset, i) => {
-                        const dateIndex = Math.floor((i / assets.length) * availableDates.length);
-                        const scheduledDate = availableDates[dateIndex];
-                        return env.DB.prepare("UPDATE assets SET next_maintenance_date = ? WHERE id = ?").bind(scheduledDate, asset.id);
-                    });
+                    const assetUpdateQueries = scheduleRows.map((r) => env.DB.prepare("UPDATE assets SET next_maintenance_date = ? WHERE id = ?").bind(r.scheduledDate, r.asset.id));
 
                     const chunkSize = 50;
                     const allQueries = [...jobsToInsert, ...assetUpdateQueries];
@@ -1240,8 +1364,7 @@ export default {
                         await env.DB.batch(chunk);
                     }
 
-                    // 🚀 7. BİLDİRİM MOTORU: Tüm işler dağıtıldıktan sonra ustaları bilgilendir
-                    Object.keys(workloadCounters).forEach(staffId => {
+                    Object.keys(workloadCounters).forEach((staffId) => {
                         const count = workloadCounters[staffId];
                         if (count > 0) {
                             ctx.waitUntil(triggerBeams(
@@ -1255,9 +1378,13 @@ export default {
                     });
                 }
 
+                const totalUnits = scheduleRows.reduce((acc, r) => acc + effectiveLoad(r.asset), 0);
+
                 return new Response(JSON.stringify({
                     success: true,
-                    message: `${assets.length} periyodik bakım, ${staffList.length} ustaya ${availableDates.length} iş günü içine otonom olarak dağıtıldı.`
+                    message: `${scheduleRows.length} yeni periyodik bakım planlandı (${totalUnits.toFixed(1)} yük birimi).`
+                        + ` Günlük kapasite: ${dailyCapacityUnits} birim/usta.`
+                        + (backlogTotalUnits > 0 ? ` Açık/geciken iş yükü ${backlogTotalUnits.toFixed(1)} birim takvimde rezerve edildi; yeni atamalar buna göre sıkıldı.` : '')
                 }), { headers: corsHeaders });
             }
 
@@ -1297,12 +1424,14 @@ export default {
                 const assetDetails = data.assetDetails || data.asset_details || data.deviceDetails || '';
 
                 const finalUuid = data.uuid || crypto.randomUUID();
+                const loadUnits = (data.maintenance_load_units != null && !isNaN(Number(data.maintenance_load_units)) && Number(data.maintenance_load_units) >= 0.1)
+                    ? Number(data.maintenance_load_units) : 1;
 
                 await env.DB.prepare(`
             INSERT INTO assets (
                 company_slug, name, location, apartmentName, asset_details, 
-                customer_id, uuid, maintenance_fee, maintenance_period, route_staff_id, region
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                customer_id, uuid, maintenance_fee, maintenance_period, route_staff_id, region, maintenance_load_units
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
                     data.slug || '',
                     data.name || '',
@@ -1314,7 +1443,8 @@ export default {
                     maintenanceFee,
                     maintenancePeriod,
                     routeStaffId === "" ? null : routeStaffId,
-                    data.region || ''
+                    data.region || '',
+                    loadUnits
                 ).run();
                 return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
             }
@@ -1343,17 +1473,20 @@ export default {
                 const isAutopilot = data.is_autopilot !== undefined ? data.is_autopilot : currentAsset.is_autopilot;
                 const lastCollectionDate = data.last_collection_date !== undefined ? data.last_collection_date : currentAsset.last_collection_date;
                 const region = data.region !== undefined ? data.region : currentAsset.region;
+                const maintenanceLoadUnits = data.maintenance_load_units !== undefined
+                    ? ((data.maintenance_load_units != null && !isNaN(Number(data.maintenance_load_units)) && Number(data.maintenance_load_units) >= 0.1) ? Number(data.maintenance_load_units) : 1)
+                    : (currentAsset.maintenance_load_units != null ? Number(currentAsset.maintenance_load_units) : 1);
 
                 await env.DB.prepare(`
             UPDATE assets SET 
                 name = ?, location = ?, apartmentName = ?, asset_details = ?, 
                 customer_id = ?, maintenance_fee = ?, maintenance_period = ?, route_staff_id = ?,
-                is_autopilot = ?, last_collection_date = ?, region = ?
+                is_autopilot = ?, last_collection_date = ?, region = ?, maintenance_load_units = ?
             WHERE id = ? AND company_slug = ?
         `).bind(
                     name || '', location || '', apartmentName || '', assetDetails || '',
                     customerId, maintenanceFee, maintenancePeriod, routeStaffId === "" ? null : routeStaffId,
-                    isAutopilot, lastCollectionDate, region || '',
+                    isAutopilot, lastCollectionDate, region || '', maintenanceLoadUnits,
                     data.id, data.slug || ''
                 ).run();
 
@@ -1368,8 +1501,9 @@ export default {
 
             if (url.pathname === "/add-customer" && method === "POST") {
                 const data = await request.json();
-                const insertCust = await env.DB.prepare("INSERT INTO customers (company_slug, name, contact, address, tax_info) VALUES (?, ?, ?, ?, ?) RETURNING id")
-                    .bind(data.slug || '', data.name || '', data.contact || '', data.address || '', data.taxInfo || data.tax_info || '').run();
+                const impW = (data.importance_weight != null && !isNaN(Number(data.importance_weight)) && Number(data.importance_weight) >= 0.1) ? Number(data.importance_weight) : 1;
+                const insertCust = await env.DB.prepare("INSERT INTO customers (company_slug, name, contact, address, tax_info, importance_weight) VALUES (?, ?, ?, ?, ?, ?) RETURNING id")
+                    .bind(data.slug || '', data.name || '', data.contact || '', data.address || '', data.taxInfo || data.tax_info || '', impW).run();
                 const newCustId = insertCust.results && insertCust.results.length > 0 ? insertCust.results[0].id : null;
 
                 // 🚀 DÜZELTME: Hem yeni yöntemdeki linked_asset_id hem de eski assetAction destekleniyor
@@ -1388,8 +1522,9 @@ export default {
 
             if (url.pathname === "/update-customer" && method === "POST") {
                 const data = await request.json();
-                await env.DB.prepare("UPDATE customers SET name = ?, contact = ?, address = ?, tax_info = ? WHERE id = ? AND company_slug = ?")
-                    .bind(data.name || '', data.contact || '', data.address || '', data.taxInfo || data.tax_info || '', data.id, data.slug || '').run();
+                const impW = (data.importance_weight != null && !isNaN(Number(data.importance_weight)) && Number(data.importance_weight) >= 0.1) ? Number(data.importance_weight) : 1;
+                await env.DB.prepare("UPDATE customers SET name = ?, contact = ?, address = ?, tax_info = ?, importance_weight = ? WHERE id = ? AND company_slug = ?")
+                    .bind(data.name || '', data.contact || '', data.address || '', data.taxInfo || data.tax_info || '', impW, data.id, data.slug || '').run();
                 return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
             }
 

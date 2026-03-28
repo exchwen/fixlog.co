@@ -328,6 +328,11 @@ return (
                     </div>
                 </div>
 
+                <div className="p-3 bg-amber-50/70 border border-amber-100 rounded-xl">
+                  <label className="text-[10px] font-black text-amber-900 uppercase tracking-widest block mb-1">Otopilot yük çarpanı (standart=1)</label>
+                  <input type="number" min={0.1} step={0.1} className="w-full max-w-[120px] px-3 py-2 border border-amber-200 rounded-lg text-sm font-bold bg-white" value={newAsset.maintenance_load_units ?? '1'} onChange={(e) => setNewAsset({ ...newAsset, maintenance_load_units: e.target.value })} />
+                </div>
+
                 {/* Varlık / Cihaz Detayları */}
                 <div>
                   <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
@@ -351,8 +356,8 @@ return (
                   onClick={() => {
                       const combinedLocation = getFullAddress(newAsset.location, buildingNo, selectedCity, selectedDistrict);
                       // 🚀 DÜZELTME: Bölge (region) verisini Otopilot'un kullanabilmesi için selectedDistrict olarak backend'e gönderiyoruz
-                      handleAction('add-asset', { ...newAsset, location: combinedLocation, customerId: newAsset.customer_id, region: selectedDistrict }, setShowAddAsset, () => {
-                        setNewAsset({ name: '', location: '', customer_id: '', asset_details: '', apartmentName: '' });
+                      handleAction('add-asset', { ...newAsset, location: combinedLocation, customerId: newAsset.customer_id, region: selectedDistrict, maintenance_load_units: parseFloat(newAsset.maintenance_load_units) || 1 }, setShowAddAsset, () => {
+                        setNewAsset({ name: '', location: '', customer_id: '', asset_details: '', apartmentName: '', maintenance_load_units: '1' });
                         setSelectedCity('');
                         setSelectedDistrict('');
                         setBuildingNo('');

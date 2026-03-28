@@ -438,6 +438,8 @@ export default function AssetDetailModal({
                            <div>
                                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Periyot (Gün)</label>
                                <input type="number" className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" value={editForm.maintenance_period || 30} onChange={e => setEditForm({...editForm, maintenance_period: parseInt(e.target.value) || 30})} />
+                               <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-wider">Otopilot yük çarpanı (apartman=1, hastane/fabrika=2–5)</p>
+                               <input type="number" min={0.1} step={0.1} className="w-full mt-1 px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-amber-500 bg-amber-50/50 focus:bg-white transition-all" value={editForm.maintenance_load_units ?? 1} onChange={e => setEditForm({ ...editForm, maintenance_load_units: parseFloat(e.target.value) || 1 })} />
                            </div>
                            {/* 🚀 YENİ: VARLIK DÜZENLEME EKRANINDA BAKIM ÜCRETİ */}
                            <div>

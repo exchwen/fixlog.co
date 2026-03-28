@@ -190,6 +190,11 @@ export default function PeriodicTab({ data, handleAction, statusColors, setSelec
         </div>
       </div>
 
+      <div className="bg-blue-50/80 border border-blue-100 rounded-2xl p-4 text-sm text-slate-700 leading-relaxed">
+        <strong className="text-blue-800">Kapasiteye dayalı plan:</strong> Ayarlardan günlük standart birim (ör. 10 apartman) tanımlanır. Müşteri kartında <em>önem ağırlığı</em> (ör. hastane 3), varlıkta <em>yük çarpanı</em> (ör. fabrika 2) kullanılır; toplam yük = önem × çarpan. Personel kartına izinli günler (YYYY-MM-DD) yazarak o günlerde otonom atama yapılmaz.{' '}
+        <strong className="text-blue-800">Açık periyodik iş:</strong> Tamamlanmamış veya iptal edilmemiş periyodik bakımı olan tesis için aynı dönemde ikinci otomatik kayıt oluşturulmaz; o işin yükü, atanmış ustanın günlük kapasitesinde rezerve edilir ve yeni planlar buna göre sıkılır.
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
               <div className="flex justify-between items-center mb-4">

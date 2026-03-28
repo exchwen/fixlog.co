@@ -7,6 +7,12 @@ import sectorsData from '@/lib/data/sectors.json';
 import trCitiesData from '@/lib/data/tr-cities.json';
 import { buildStaffSavePayload } from '@/lib/staffPayload';
 
+function normalizeOffDaysToJson(text: string | undefined) {
+  const lines = (text || '').split(/[\n,;]+/).map((s) => s.trim()).filter(Boolean);
+  const valid = lines.filter((p) => /^\d{4}-\d{2}-\d{2}$/.test(p));
+  return JSON.stringify(valid);
+}
+
 export default function StaffDetailModal({
   selectedStaff, setSelectedStaff,
   data, handleCloseDetail,
@@ -441,6 +447,11 @@ export default function StaffDetailModal({
                                                     <option value={0}>Pasif (Dondurulmuş Hesap)</option>
                                                 </select>
                                             </div>
+                                            <div className="col-span-1 sm:col-span-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">İzinli / çalışılmayacak günler (YYYY-MM-DD)</label>
+                                                <p className="text-[10px] text-slate-500 mb-2">Her satıra bir tarih; otopilot bu günlerde bu personele iş planlamaz.</p>
+                                                <textarea rows={3} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs font-mono font-semibold outline-none focus:border-blue-500 bg-white" placeholder={'2026-04-10\n2026-04-11'} value={editStaffForm.off_days_text ?? ''} onChange={(e) => setEditStaffForm({ ...editStaffForm, off_days_text: e.target.value })} />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -552,7 +563,7 @@ export default function StaffDetailModal({
                     </div>
                 ) : (
                     <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                        <button onClick={() => handleAction('add-staff', buildStaffSavePayload(editStaffForm, selectedStaff.id), closeThisModal, () => setIsEditingStaff(false))} className="w-full sm:flex-[2] bg-blue-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-md flex justify-center items-center disabled:opacity-50">
+                        <button onClick={() => handleAction('add-staff', buildStaffSavePayload({ ...editStaffForm, off_days: normalizeOffDaysToJson(editStaffForm.off_days_text) }, selectedStaff.id), closeThisModal, () => setIsEditingStaff(false))} className="w-full sm:flex-[2] bg-blue-600 text-white py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-md flex justify-center items-center disabled:opacity-50">
                             {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Değişiklikleri Kaydet'}
                         </button>
                         <button onClick={() => setIsEditingStaff(false)} className="w-full sm:flex-1 bg-white border-2 border-slate-200 text-slate-700 py-3.5 sm:py-3 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95">İptal</button>

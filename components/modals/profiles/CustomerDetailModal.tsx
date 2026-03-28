@@ -21,7 +21,7 @@ export default function CustomerDetailModal({
   isMobile
 }: any) {
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
-  const [editCustomerForm, setEditCustomerForm] = useState({ id: '', name: '', contact: '', address: '', tax_info: '' });
+  const [editCustomerForm, setEditCustomerForm] = useState({ id: '', name: '', contact: '', address: '', tax_info: '', importance_weight: 1 });
   
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -404,7 +404,7 @@ export default function CustomerDetailModal({
 
                       <div className="pt-5 border-t border-slate-100">
                           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
-                          <button onClick={() => { setIsEditingCustomer(true); setEditCustomerForm({ id: selectedCustomer.id, name: selectedCustomer.name, contact: selectedCustomer.contact || '', address: parseAddressToState(selectedCustomer.address || ''), tax_info: selectedCustomer.tax_info || '' }); }} className="flex-[2] bg-slate-900 text-white py-3.5 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"><Settings size={16} /> Profili Düzenle</button>
+                          <button onClick={() => { setIsEditingCustomer(true); setEditCustomerForm({ id: selectedCustomer.id, name: selectedCustomer.name, contact: selectedCustomer.contact || '', address: parseAddressToState(selectedCustomer.address || ''), tax_info: selectedCustomer.tax_info || '', importance_weight: selectedCustomer.importance_weight != null ? Number(selectedCustomer.importance_weight) : 1 }); }} className="flex-[2] bg-slate-900 text-white py-3.5 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md"><Settings size={16} /> Profili Düzenle</button>
                               <button onClick={() => setShowDeleteConfirm(true)} className="flex-1 bg-rose-50 border border-rose-200 text-rose-600 py-3.5 sm:py-2.5 rounded-xl text-sm sm:text-xs font-bold hover:bg-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2"><Trash2 size={16} /> Sil</button>
                           </div>
                       </div>
@@ -442,6 +442,12 @@ export default function CustomerDetailModal({
                             <div className="sm:col-span-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Vergi Bilgileri</label>
                                 <input className="px-4 py-3 sm:py-2.5 rounded-xl border border-slate-200 text-sm font-semibold w-full outline-none focus:border-blue-500 focus:bg-white transition-all" value={editCustomerForm.tax_info} onChange={(e) => setEditCustomerForm({...editCustomerForm, tax_info: e.target.value})} placeholder="Vergi Dairesi ve No / T.C." />
+                            </div>
+
+                            <div className="sm:col-span-2 p-3 bg-amber-50/80 border border-amber-100 rounded-xl">
+                                <label className="text-[10px] font-black text-amber-800 uppercase tracking-widest block mb-1">Otopilot önem ağırlığı</label>
+                                <p className="text-[10px] text-amber-900/80 mb-2 leading-relaxed">Standart müşteri = 1. Hastane gibi kritik veya uzun süren bakımlar için 2–5 arası verin; günlük kapasite bu çarpanla tüketilir.</p>
+                                <input type="number" min={0.1} step={0.1} className="w-full max-w-[120px] px-3 py-2 rounded-lg border border-amber-200 text-sm font-bold text-amber-950 outline-none focus:border-amber-500 bg-white" value={editCustomerForm.importance_weight ?? 1} onChange={(e) => setEditCustomerForm({ ...editCustomerForm, importance_weight: parseFloat(e.target.value) || 1 })} />
                             </div>
 
                             {/* 🚀 MÜŞTERİ DÜZENLERKEN VARLIKLARIN GÖRÜNMESİ VE YÖNETİLMESİ */}

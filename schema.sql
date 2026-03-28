@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS companies (
     free_months_balance INTEGER DEFAULT 0,
     has_masterboss_gift INTEGER DEFAULT 0,
     work_days TEXT,
+    autopilot_daily_capacity_units REAL DEFAULT 10,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -40,6 +41,7 @@ CREATE TABLE IF NOT EXISTS staff (
     password_hash TEXT,
     is_active INTEGER DEFAULT 1,
     assigned_regions TEXT,
+    off_days TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -88,6 +90,7 @@ CREATE TABLE IF NOT EXISTS assets (
     next_maintenance_date TEXT,
     last_collection_date TEXT,
     region TEXT,
+    maintenance_load_units REAL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -148,6 +151,7 @@ CREATE TABLE IF NOT EXISTS customers (
     contact TEXT,
     address TEXT,
     tax_info TEXT,
+    importance_weight REAL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

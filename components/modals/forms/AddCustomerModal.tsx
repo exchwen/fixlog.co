@@ -163,6 +163,11 @@ return (
                   />
                 </div>
 
+                <div className="p-3 bg-amber-50/80 border border-amber-100 rounded-xl">
+                  <label className="text-[10px] font-black text-amber-800 uppercase tracking-widest block mb-1">Otopilot önem (varsayılan 1)</label>
+                  <input type="number" min={0.1} step={0.1} className="w-full max-w-[120px] px-3 py-2 border border-amber-200 rounded-lg text-sm font-bold bg-white" value={newCustomer.importance_weight ?? '1'} onChange={(e) => setNewCustomer({ ...newCustomer, importance_weight: e.target.value })} />
+                </div>
+
                 {/* Adres / Konum */}
                 <div className="p-4 bg-white border border-slate-200 shadow-sm rounded-xl space-y-3">
                     <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5">
@@ -311,8 +316,8 @@ return (
                       const combinedAddress = getFullAddress(newCustomer.address, buildingNo, selectedCity, selectedDistrict);
                       
                       // 🚀 DÜZELTME: Backend'in beklediği 'assetAction' anahtarına seçilen cihazın ID'sini ekliyoruz.
-                      handleAction('add-customer', { ...newCustomer, address: combinedAddress, assetAction: newCustomer.linked_asset_id }, setShowAddCustomer, () => {
-                        setNewCustomer({ name: '', contact: '', address: '', tax_info: '', linked_asset_id: '' });
+                      handleAction('add-customer', { ...newCustomer, address: combinedAddress, assetAction: newCustomer.linked_asset_id, importance_weight: parseFloat(newCustomer.importance_weight) || 1 }, setShowAddCustomer, () => {
+                        setNewCustomer({ name: '', contact: '', address: '', tax_info: '', linked_asset_id: '', importance_weight: '1' });
                         setSelectedCity('');
                         setSelectedDistrict('');
                         setBuildingNo('');

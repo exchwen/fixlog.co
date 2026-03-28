@@ -194,10 +194,12 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
   };
 
   const handleSave = async () => {
-    // 🚀 ÇALIŞMA GÜNLERİNİ STRİNG'E (JSON) ÇEVİREREK GÖNDERİYORUZ
+    const cap = Number(settingsForm?.autopilot_daily_capacity_units);
+    const safeCap = !isNaN(cap) && cap >= 0.5 ? cap : 10;
     const finalForm = {
         ...settingsForm,
-        work_days: settingsForm.work_days ? JSON.stringify(settingsForm.work_days) : '[1,2,3,4,5,6]'
+        work_days: settingsForm.work_days ? JSON.stringify(settingsForm.work_days) : '[1,2,3,4,5,6]',
+        autopilot_daily_capacity_units: safeCap
     };
 
     // Çevrimdışı/Offline Kuyruk Koruması Entegrasyonu
@@ -758,6 +760,26 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        <div className="border-t border-slate-100 pt-6 pb-2">
+          <label className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+            Otopilot günlük kapasite (birim)
+          </label>
+          <p className="text-[11px] font-medium text-slate-500 mb-3 leading-relaxed">
+            <strong>1 birim</strong> standart (ör. apartman) bakımını temsil eder. Hastane veya fabrika gibi tesislerde varlık kartından &quot;yük çarpanı&quot; artırılır; müşteri kartından &quot;önem&quot; ile (ör. 3) ağırlık verilir. Usta başına günlük toplam birim bu sınırı aşmadan planlanır.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              type="number"
+              min={0.5}
+              step={0.5}
+              className="w-28 px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-blue-500 bg-white"
+              value={settingsForm?.autopilot_daily_capacity_units ?? 10}
+              onChange={(e) => setSettingsForm({ ...settingsForm, autopilot_daily_capacity_units: parseFloat(e.target.value) || 10 })}
+            />
+            <span className="text-xs font-semibold text-slate-500">birim / usta / gün (varsayılan 10)</span>
           </div>
         </div>
 

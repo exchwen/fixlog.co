@@ -105,7 +105,7 @@ export default function PatronDashboard() {
   });
 
   const [newAsset, setNewAsset] = useState({ 
-    name: '', location: '', customer_id: '', type: '', serial_number: '', maintenance_fee: '' // 🚀 PATRON/YÖNETİCİ BAKIM ÜCRETİNİ BURADAN GİRECEK
+    name: '', location: '', customer_id: '', type: '', serial_number: '', maintenance_fee: '', maintenance_load_units: '1'
   });
 
   const [newStaff, setNewStaff] = useState({ 
@@ -114,7 +114,7 @@ export default function PatronDashboard() {
 
   // 🟢 YENİ: asset_name ve asset_type eklendi
   const [newCustomer, setNewCustomer] = useState({ 
-    name: '', contact: '', address: '', tax_info: '', asset_name: '', asset_type: '' 
+    name: '', contact: '', address: '', tax_info: '', asset_name: '', asset_type: '', importance_weight: '1'
   });
 
   const [newStock, setNewStock] = useState({ 
@@ -135,7 +135,7 @@ export default function PatronDashboard() {
     { supplier_id: '', item_name: '', quantity: '', unit: 'Adet' }
   ]);
 
-  const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', landlinePhone: '', emergencyPhone: '', whatsappPhone: '', website: '', logo: '', referralCode: '' });
+  const [settingsForm, setSettingsForm] = useState({ companyName: '', ownerName: '', sector: '', address: '', taxInfo: '', phone: '', landlinePhone: '', emergencyPhone: '', whatsappPhone: '', website: '', logo: '', referralCode: '', work_days: [1,2,3,4,5,6], autopilot_daily_capacity_units: 10 });
   
   // Personel Düzenleme
   const [isEditingStaff, setIsEditingStaff] = useState(false);
@@ -247,7 +247,9 @@ export default function PatronDashboard() {
             address: result.address || '', taxInfo: result.taxInfo || '', phone: result.phone || '',
             landlinePhone: result.landlinePhone || '', emergencyPhone: result.emergencyPhone || '',
             whatsappPhone: result.whatsappPhone || '', website: result.website || '', logo: result.logo || '',
-            referralCode: result.referral_code || ''
+            referralCode: result.referral_code || '',
+            work_days: result.work_days || [1,2,3,4,5,6],
+            autopilot_daily_capacity_units: result.autopilot_daily_capacity_units ?? 10
         });
       }
     } catch (err) { 
