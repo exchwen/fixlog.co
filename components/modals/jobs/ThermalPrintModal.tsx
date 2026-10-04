@@ -170,7 +170,79 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName, c
       formattedTime = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute:'2-digit' });
   }
 
-  const buildReceipt = () => {
+  const fetchImageToEscPos = async (url: string, targetWidth: number = 200, align: 'center' | 'left' = 'center') => {
+    return new Promise<Uint8Array>((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const PRINTER_WIDTH = 384;
+        let imgW = img.width;
+        let imgH = img.height;
+        const aspect = imgH / imgW;
+        
+        if (imgW > targetWidth) {
+          imgW = targetWidth;
+          imgH = imgW * aspect;
+        }
+        imgH = Math.floor(imgH);
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = PRINTER_WIDTH;
+        canvas.height = imgH;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(new Uint8Array());
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, PRINTER_WIDTH, imgH);
+        
+        let offsetX = 0;
+        if (align === 'center') {
+            offsetX = Math.floor((PRINTER_WIDTH - imgW) / 2);
+        }
+        ctx.drawImage(img, offsetX, 0, imgW, imgH);
+        
+        const imgData = ctx.getImageData(0, 0, PRINTER_WIDTH, imgH).data;
+        const widthBytes = PRINTER_WIDTH / 8; // 48
+        const buffer = new Uint8Array(8 + widthBytes * imgH);
+        
+        buffer[0] = 0x1D; buffer[1] = 0x76; buffer[2] = 0x30; buffer[3] = 0x00;
+        buffer[4] = widthBytes & 0xFF; buffer[5] = (widthBytes >> 8) & 0xFF;
+        buffer[6] = imgH & 0xFF; buffer[7] = (imgH >> 8) & 0xFF;
+        
+        let offset = 8;
+        for (let y = 0; y < imgH; y++) {
+          for (let x = 0; x < widthBytes; x++) {
+            let byte = 0;
+            for (let bit = 0; bit < 8; bit++) {
+              const px = (y * PRINTER_WIDTH + (x * 8 + bit)) * 4;
+              const r = imgData[px]; const g = imgData[px+1]; const b = imgData[px+2];
+              if ((r + g + b) / 3 < 128) {
+                byte |= (1 << (7 - bit));
+              }
+            }
+            buffer[offset++] = byte;
+          }
+        }
+        resolve(buffer);
+      };
+      img.onerror = () => resolve(new Uint8Array());
+      img.src = url + (url.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
+    });
+  };
+
+  const buildReceiptAsync = async () => {
+    let payload = new Uint8Array();
+    const append = (data: Uint8Array) => {
+      const newPayload = new Uint8Array(payload.length + data.length);
+      newPayload.set(payload, 0);
+      newPayload.set(data, payload.length);
+      payload = newPayload;
+    };
+    const encoder = new TextEncoder();
+    const addText = (text: string) => {
+      append(encoder.encode(text));
+    };
+
     const init = '\x1B\x40'; 
     const center = '\x1B\x61\x01'; 
     const left = '\x1B\x61\x00'; 
@@ -178,19 +250,28 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName, c
     const boldOff = '\x1B\x45\x00'; 
     const divider = '--------------------------------\n';
 
-    let txt = init;
+    addText(init);
     
-    txt += center + boldOn + sanitizeText(companyName) + '\n' + boldOff;
-    txt += boldOn + 'Bakim Fisi\n' + boldOff;
-    txt += divider;
-    txt += left;
+    if (companyLogo) {
+      const safeLogoUrl = getSafeImageUrl(companyLogo);
+      const logoBuffer = await fetchImageToEscPos(safeLogoUrl, 200, 'center');
+      if (logoBuffer.length > 0) {
+        append(logoBuffer);
+        addText('\n');
+      }
+    }
+
+    addText(center + boldOn + sanitizeText(companyName) + '\n' + boldOff);
+    addText(boldOn + 'Bakim Fisi\n' + boldOff);
+    addText(divider);
+    addText(left);
     
-    txt += 'Fis Numarasi : ' + job.id + '\n';
-    txt += 'Tarih        : ' + formattedDate + ' ' + formattedTime + '\n';
-    txt += 'Tesis Adi    : ' + sanitizeText(assetName) + '\n';
-    txt += 'Konum        : ' + sanitizeText(assetLocation) + '\n';
+    addText('Fis Numarasi : ' + job.id + '\n');
+    addText('Tarih        : ' + formattedDate + ' ' + formattedTime + '\n');
+    addText('Tesis Adi    : ' + sanitizeText(assetName) + '\n');
+    addText('Konum        : ' + sanitizeText(assetLocation) + '\n');
     
-    txt += divider;
+    addText(divider);
     
     if (extractedChecklist.length > 0) {
         extractedChecklist.forEach((item) => {
@@ -203,41 +284,54 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName, c
                 if (cleanKey.length > 25) cleanKey = cleanKey.substring(0, 25);
                 const paddedKey = cleanKey.padEnd(26, ' ');
                 const isChecked = isPositive ? '[X]' : '[ ]';
-                txt += paddedKey + isChecked + '\n';
+                addText(paddedKey + isChecked + '\n');
             } else {
                 if (cleanKey.length > 15) cleanKey = cleanKey.substring(0, 15);
                 const paddedKey = cleanKey.padEnd(16, ' ');
-                txt += paddedKey + ': ' + sanitizeText(item.val).substring(0, 14) + '\n';
+                addText(paddedKey + ': ' + sanitizeText(item.val).substring(0, 14) + '\n');
             }
         });
-        txt += divider;
+        addText(divider);
     }
 
     if (job.details?.usedMaterials && job.details.usedMaterials.length > 0) {
-        txt += boldOn + 'Kullanilan Malzemeler:\n' + boldOff;
+        addText(boldOn + 'Kullanilan Malzemeler:\n' + boldOff);
         job.details.usedMaterials.forEach((m: any) => {
-            txt += `- ${sanitizeText(m.name)} (${m.quantity} ${sanitizeText(m.unit)})\n`;
+            addText(`- ${sanitizeText(m.name)} (${m.quantity} ${sanitizeText(m.unit)})\n`);
         });
-        txt += divider;
+        addText(divider);
     }
 
     if (cleanNote) {
-        txt += boldOn + 'Bakim Notu : \n' + boldOff + sanitizeText(cleanNote) + '\n';
-        txt += divider;
+        addText(boldOn + 'Bakim Notu : \n' + boldOff + sanitizeText(cleanNote) + '\n');
+        addText(divider);
     }
 
-    txt += `Bu form ${sanitizeText(workerName)} isimli\n`;
-    txt += `personelimiz tarafindan,\n`;
-    txt += `${formattedDate} tarihinde elektronik \n`;
-    txt += `imza ile imzalanmistir.\n\n`;
+    addText(`Bu form ${sanitizeText(workerName)} isimli\n`);
+    addText(`personelimiz tarafindan,\n`);
+    addText(`${formattedDate} tarihinde elektronik \n`);
+    addText(`imza ile imzalanmistir.\n\n`);
 
-    txt += boldOn + `Imzalayan : ` + boldOff + sanitizeText(customerSignName) + `\n`;
-    txt += `Imza      : \n\n\n\n`; 
+    addText(boldOn + `Imzalayan : ` + boldOff + sanitizeText(customerSignName) + `\n`);
     
-    txt += center + sanitizeText(companyName) + '\n';
-    txt += '\n\n\n\n\n'; 
+    if (job.signature_url) {
+      const safeSignUrl = getSafeImageUrl(job.signature_url);
+      const signBuffer = await fetchImageToEscPos(safeSignUrl, 250, 'left');
+      if (signBuffer.length > 0) {
+        addText('Imza      :\n');
+        append(signBuffer);
+        addText('\n\n');
+      } else {
+        addText(`Imza      : \n\n\n\n`); 
+      }
+    } else {
+        addText(`Imza      : \n\n\n\n`); 
+    }
+    
+    addText(center + sanitizeText(companyName) + '\n');
+    addText('\n\n\n\n\n'); 
 
-    return new TextEncoder().encode(txt);
+    return payload;
   };
 
   const handleSharePDF = async () => {
@@ -292,7 +386,12 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName, c
     const nav = navigator as any; 
 
     if (!nav.bluetooth) {
-      setErrorMsg("Tarayıcınız Bluetooth bağlantısını desteklemiyor.");
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (isIOS) {
+        setErrorMsg("iOS cihazlarda Safari Bluetooth desteklemez. Yazdırmak için App Store'dan ücretsiz 'Bluefy' veya 'WebBLE' tarayıcısını indirip kullanabilirsiniz.");
+      } else {
+        setErrorMsg("Tarayıcınız Bluetooth bağlantısını desteklemiyor. Lütfen Chrome kullanın.");
+      }
       return;
     }
 
@@ -358,7 +457,7 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName, c
       }
 
       setStatusMsg('Fiş yazdırılıyor...');
-      const payload = buildReceipt();
+      const payload = await buildReceiptAsync();
       
       const CHUNK_SIZE = 100; 
       for (let i = 0; i < payload.length; i += CHUNK_SIZE) {
