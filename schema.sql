@@ -235,4 +235,49 @@ CREATE TABLE IF NOT EXISTS company_rewards (
     company_slug TEXT PRIMARY KEY,
     free_months_balance INTEGER DEFAULT 0,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);-- 19. Firma Ayarlarý
+CREATE TABLE IF NOT EXISTS company_settings (
+    company_slug TEXT PRIMARY KEY,
+    maintenance_contract_template TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 20. Masterboss Giriþ Denemeleri
+CREATE TABLE IF NOT EXISTS masterboss_rate_limits (
+    ip TEXT PRIMARY KEY,
+    attempts INTEGER DEFAULT 0,
+    last_attempt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 21. BOM (Stock Templates)
+CREATE TABLE IF NOT EXISTS bom_templates (
+    id TEXT PRIMARY KEY,
+    company_slug TEXT,
+    name TEXT,
+    description TEXT,
+    items TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 22. Sipariþler
+CREATE TABLE IF NOT EXISTS purchase_orders (
+    id TEXT PRIMARY KEY,
+    company_slug TEXT,
+    name TEXT,
+    supplier_id INTEGER,
+    status TEXT DEFAULT 'Bekliyor',
+    items TEXT,
+    total_value REAL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 23. Envanter Ýadeleri
+CREATE TABLE IF NOT EXISTS inventory_returns (
+    id TEXT PRIMARY KEY,
+    company_slug TEXT,
+    staff_id TEXT,
+    job_id INTEGER,
+    items TEXT,
+    status TEXT DEFAULT 'Bekliyor',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

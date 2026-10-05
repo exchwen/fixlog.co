@@ -301,11 +301,16 @@ export default function AddJobModal({
                                     .filter((s:any) => {
                                         // 🚀 HİYERARŞİYE GÖRE LİSTELEME
                                         if (userRole === 'Patron') {
-                                            return s.role === 'Yönetici'; 
+                                            return true; 
                                         } else {
                                             return s.role === 'Usta'; 
                                         }
-                                    }) 
+                                    })
+                                    .sort((a: any, b: any) => {
+                                        const rankA = a.role === 'Yönetici' ? 1 : (a.role === 'Usta' ? 2 : 3);
+                                        const rankB = b.role === 'Yönetici' ? 1 : (b.role === 'Usta' ? 2 : 3);
+                                        return rankA - rankB;
+                                    })
                                     .map((s:any) => (
                                       <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
                                   ))}

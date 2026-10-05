@@ -4,8 +4,18 @@ import React, { useState, useMemo } from 'react';
 import { Plus, Search, Edit2, Trash2, X, Loader2, AlertTriangle, Package, Phone, Tag, Truck, Tags, ShoppingCart, Send, ArrowRight, CheckCircle2, ExternalLink, ArrowLeft, AlertCircle, Info, Archive } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import BomTemplatesModal from '../modals/BomTemplatesModal';
+import PurchaseOrdersModal from '../modals/PurchaseOrdersModal';
+import InventoryReturnsModal from '../modals/InventoryReturnsModal';
+
+
 export default function StockTab({ data, handleAction, setShowStockModal, setShowSupplierModal, setShowSupplierListModal, setShowCategoryModal, setShowStockEntryModal }: any) {
   const [searchTerm, setSearchTerm] = useState('');
+
+  const [showBomModal, setShowBomModal] = useState(false);
+  const [showPoModal, setShowPoModal] = useState(false);
+  const [showReturnsModal, setShowReturnsModal] = useState(false);
+
   const [selectedCategory, setSelectedCategory] = useState('Tümü');
   
   // Satır içi düzenleme state'i
@@ -955,6 +965,11 @@ const openWhatsappForSupplier = (supplier: any) => {
             </motion.div>
             )}
         </AnimatePresence>
+
+      {showBomModal && <BomTemplatesModal data={data} onClose={() => setShowBomModal(false)} />}
+      {showPoModal && <PurchaseOrdersModal data={data} onClose={() => setShowPoModal(false)} />}
+      {showReturnsModal && <InventoryReturnsModal data={data} onClose={() => setShowReturnsModal(false)} />}
+
 
     </div>
   );

@@ -9,6 +9,7 @@ import {
   Package, AlertTriangle, ShieldCheck, Activity, User, Lock, RefreshCw,
   Settings, X, Wrench, Link as LinkIcon, Check, Database, ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2, Bell, CheckSquare, UserPlus, UserCheck, MapPin, AlertCircle, Info, ShieldAlert, ArrowRight, Gift, Star, CreditCard, Copy, FileText
 } from 'lucide-react';
+import QuoteModal from '../modals/forms/QuoteModal';
 
 export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob, setActiveTab, userRole: propRole, handleAction, isMyJobsTab, setJobModalType }: any) {
   
@@ -20,6 +21,7 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
   const [currentUserName, setCurrentUserName] = useState<string>('Yönetici');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [isApproving, setIsApproving] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false); 
   const [alertModal, setAlertModal] = useState({ isOpen: false, message: '', type: 'info' });
@@ -464,8 +466,7 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
     );
   }
 
-  return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 relative">
+  return (<><QuoteModal showQuoteModal={showQuoteModal} setShowQuoteModal={setShowQuoteModal} data={data} /><motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 relative">
       
       {/* 🚀 YENİ: DENEME SÜRÜMÜ VE FATURA BİTİŞ UYARI ÇUBUĞU */}
       <AnimatePresence>
@@ -1143,9 +1144,9 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
             <Activity size={18} className="text-blue-600" />
             <h3 className="font-bold text-slate-800 text-sm sm:text-base tracking-tight">Son İş Emirleri ve Onay Durumu</h3>
           </div>
-          <button onClick={() => setShowJobModal(true)} className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-sm active:scale-95">
+          <div className="flex w-full sm:w-auto flex-col sm:flex-row gap-2"><button onClick={() => setShowQuoteModal(true)} className="w-full sm:w-auto bg-emerald-600 text-white px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all shadow-sm active:scale-95"><FileText size={16} strokeWidth={3} /> Yeni Teklif</button><button onClick={() => setShowJobModal(true)} className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-sm active:scale-95">
             <Plus size={16} strokeWidth={3} /> Yeni İş Ata
-          </button>
+          </button></div>
         </div>
         
         <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[400px] custom-scrollbar w-full">
@@ -1732,6 +1733,7 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
         )}
       </AnimatePresence>
 
-    </motion.div>
-  );
-}
+    </motion.div></>);}
+
+
+

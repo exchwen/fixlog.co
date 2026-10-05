@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -528,13 +528,8 @@ if (showSOSModal) { stopEvent(); setShowSOSModal(false); return true; }
             if (j.staff_id && String(j.staff_id) === uid) return true;
             if (j.worker_id && String(j.worker_id) === uid) return true;
             if (j.manager_id && String(j.manager_id) === uid) return true;
-
-            // 🚀 Eski hatalı "update-job" yüzünden staff_id null olan "Tamamlandı" işleri kurtarma
-            if (j.status === 'Tamamlandı' || j.status === 'Onay Bekliyor') {
-                if (j.worker_name === uname || j.manager_name === uname) return true;
-                const dStr = typeof j.details === 'string' ? j.details : JSON.stringify(j.details || {});
-                if (dStr.includes(uname) || dStr.includes(uid)) return true;
-            }
+            if (j.worker_name && j.worker_name.trim().toLowerCase() === uname.trim().toLowerCase()) return true;
+            if (j.staff_name && j.staff_name.trim().toLowerCase() === uname.trim().toLowerCase()) return true;
             return false;
         });
         setJobs(myJobs);
@@ -553,18 +548,14 @@ if (showSOSModal) { stopEvent(); setShowSOSModal(false); return true; }
          if (myStaffRecord) setStaffBranch(myStaffRecord.branch);
          const uid = String(decoded.id);
          const uname = decoded.name;
-         const myJobs = data.jobs.filter(j => {
+         const myJobs = result.jobs.filter(j => {
             if (j.staff_id && String(j.staff_id) === uid) return true;
             if (j.worker_id && String(j.worker_id) === uid) return true;
             if (j.manager_id && String(j.manager_id) === uid) return true;
-
-            if (j.status === 'Tamamlandı' || j.status === 'Onay Bekliyor') {
-                if (j.worker_name === uname || j.manager_name === uname) return true;
-                const dStr = typeof j.details === 'string' ? j.details : JSON.stringify(j.details || {});
-                if (dStr.includes(uname) || dStr.includes(uid)) return true;
-            }
+            if (j.worker_name && j.worker_name.trim().toLowerCase() === uname.trim().toLowerCase()) return true;
+            if (j.staff_name && j.staff_name.trim().toLowerCase() === uname.trim().toLowerCase()) return true;
             return false;
-         });
+        });
          setJobs(myJobs);
       }
     } finally {

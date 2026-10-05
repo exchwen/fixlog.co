@@ -311,7 +311,34 @@ export default {
                 }
             }
 
-            if (url.pathname === "/send-test-push" && method === "POST") {
+                        if (url.pathname === "/migrate-secret" && method === "GET") {
+                try {
+                    await env.DB.prepare(CREATE TABLE IF NOT EXISTS company_settings (company_slug TEXT PRIMARY KEY, maintenance_contract_template TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)).run();
+                    await env.DB.prepare(CREATE TABLE IF NOT EXISTS masterboss_rate_limits (ip TEXT PRIMARY KEY, attempts INTEGER DEFAULT 0, last_attempt DATETIME DEFAULT CURRENT_TIMESTAMP)).run();
+                    await env.DB.prepare(CREATE TABLE IF NOT EXISTS bom_templates (id TEXT PRIMARY KEY, company_slug TEXT, name TEXT, description TEXT, items TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)).run();
+                    await env.DB.prepare(CREATE TABLE IF NOT EXISTS purchase_orders (id TEXT PRIMARY KEY, company_slug TEXT, name TEXT, supplier_id INTEGER, status TEXT DEFAULT 'Bekliyor', items TEXT, total_value REAL DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)).run();
+                    await env.DB.prepare(CREATE TABLE IF NOT EXISTS inventory_returns (id TEXT PRIMARY KEY, company_slug TEXT, staff_id TEXT, job_id INTEGER, items TEXT, status TEXT DEFAULT 'Bekliyor', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)).run();
+                    
+                    return new Response(JSON.stringify({ success: true, message: "Tables created successfully" }), { headers: corsHeaders });
+                } catch (e) {
+                    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
+                }
+            }
+
+                          if (url.pathname === "/update-maintenance-contract" && method === "POST") {
+                if (userAuth.role !== "Y�netici" && userAuth.role !== "Patron") return new Response(JSON.stringify({ error: "Yetkisiz!" }), { status: 403, headers: corsHeaders });
+                const { slug, template } = await request.json();
+                if (slug !== userAuth.company_slug && userAuth.role !== "Masterboss") return new Response(JSON.stringify({ error: "Hatal� firma!" }), { status: 403, headers: corsHeaders });
+                
+                try {
+                    await env.DB.prepare("INSERT INTO company_settings (company_slug, maintenance_contract_template) VALUES (?, ?) ON CONFLICT(company_slug) DO UPDATE SET maintenance_contract_template = excluded.maintenance_contract_template, updated_at = CURRENT_TIMESTAMP").bind(slug, template).run();
+                    return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+                } catch(e) {
+                    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
+                }
+            }
+
+              if (url.pathname === "/send-test-push" && method === "POST") {
                 const { interests, title, body, link, slug } = await request.json();
 
                 const finalLink = link || APP_URL;
@@ -529,44 +556,77 @@ export default {
                 return new Response(JSON.stringify({ success: true, token, role: staff.role, name: staff.name }), { headers: corsHeaders });
             }
 
-            if (url.pathname === "/masterboss-login" && method === "POST") {
+                        if (url.pathname === "/masterboss-login" && method === "POST") {
                 const now = Date.now();
-                const limitData = rateLimitCache.get(clientIp) || { count: 0, time: now };
-                if (now - limitData.time > 15 * 60 * 1000) { limitData.count = 0; limitData.time = now; }
-                if (limitData.count >= 10) return new Response(JSON.stringify({ error: "Güvenlik: Çok fazla hatalı deneme! Lütfen 15 dakika bekleyin." }), { status: 429, headers: corsHeaders });
-
-                const { masterPassword } = await request.json();
-
-                // Güvenlik: Masterboss şifresini çevre değişkeninden alıyoruz
-                const MASTERBOSS_PASSWORD = env.MASTERBOSS_PASSWORD;
-                if (!MASTERBOSS_PASSWORD) {
-                    return new Response(JSON.stringify({ error: "Kritik: Sistemde MASTERBOSS_PASSWORD tanımlı değil!" }), { status: 500, headers: corsHeaders });
+                // D1 Rate Limiting
+                try {
+                    const rateLimit = await safeFirst(env.DB.prepare("SELECT attempts, last_attempt FROM masterboss_rate_limits WHERE ip = ?").bind(clientIp));
+                    if (rateLimit) {
+                        const lastAttemptTime = new Date(rateLimit.last_attempt).getTime();
+                        if (now - lastAttemptTime < 15 * 60 * 1000) {
+                            if (rateLimit.attempts >= 10) {
+                                return new Response(JSON.stringify({ error: "G�venlik: �ok fazla hatal� deneme! L�tfen 15 dakika bekleyin." }), { status: 429, headers: corsHeaders });
+                            }
+                            await env.DB.prepare("UPDATE masterboss_rate_limits SET attempts = attempts + 1, last_attempt = CURRENT_TIMESTAMP WHERE ip = ?").bind(clientIp).run();
+                        } else {
+                            await env.DB.prepare("UPDATE masterboss_rate_limits SET attempts = 1, last_attempt = CURRENT_TIMESTAMP WHERE ip = ?").bind(clientIp).run();
+                        }
+                    } else {
+                        await env.DB.prepare("INSERT INTO masterboss_rate_limits (ip, attempts) VALUES (?, 1)").bind(clientIp).run();
+                    }
+                } catch(e) {
+                    // Fallback to cache if table doesn't exist yet
+                    const limitData = rateLimitCache.get(clientIp) || { count: 0, time: now };
+                    if (now - limitData.time > 15 * 60 * 1000) { limitData.count = 0; limitData.time = now; }
+                    if (limitData.count >= 10) return new Response(JSON.stringify({ error: "G�venlik: �ok fazla hatal� deneme! L�tfen 15 dakika bekleyin." }), { status: 429, headers: corsHeaders });
+                    limitData.count++; rateLimitCache.set(clientIp, limitData);
                 }
 
-                if (masterPassword === MASTERBOSS_PASSWORD) {
+                const { masterPassword, email } = await request.json();
+
+                const MASTERBOSS_PASSWORD = env.MASTERBOSS_PASSWORD;
+                const MASTERBOSS_EMAIL = env.MASTERBOSS_EMAIL || "admin@fixlog.co";
+                if (!MASTERBOSS_PASSWORD) {
+                    return new Response(JSON.stringify({ error: "Kritik: Sistemde MASTERBOSS_PASSWORD tan�ml� de�il!" }), { status: 500, headers: corsHeaders });
+                }
+                
+                // Timing-safe comparison
+                const encoder = new TextEncoder();
+                const a = encoder.encode(masterPassword || "");
+                const b = encoder.encode(MASTERBOSS_PASSWORD);
+                const aEmail = encoder.encode((email || "").toLowerCase());
+                const bEmail = encoder.encode(MASTERBOSS_EMAIL.toLowerCase());
+
+                let match = (a.length === b.length) && (aEmail.length === bEmail.length);
+                if (match) {
+                    for (let i = 0; i < a.length; i++) { if (a[i] !== b[i]) match = false; }
+                    for (let i = 0; i < aEmail.length; i++) { if (aEmail[i] !== bEmail[i]) match = false; }
+                }
+
+                if (match) {
+                    try { await env.DB.prepare("DELETE FROM masterboss_rate_limits WHERE ip = ?").bind(clientIp).run(); } catch(e){}
                     rateLimitCache.delete(clientIp);
                     const header = toBase64Url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
                     const payload = toBase64Url(JSON.stringify({
                         role: "Masterboss",
-                        exp: Date.now() + 1000 * 60 * 60 * 24 // 24 Saat geçerli
+                        exp: Date.now() + 1000 * 60 * 60 * 24 
                     }));
 
                     const secret = env.JWT_SECRET; if(!secret) throw new Error("JWT_SECRET eksik!");
                     const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-                    const signatureBuffer = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${header}.${payload}`));
+                    const signatureBuffer = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(${header}.));
 
-                    let binarySig = '';
+                    let binarySig = "";
                     const sigBytes = new Uint8Array(signatureBuffer);
                     for (let i = 0; i < sigBytes.byteLength; i++) { binarySig += String.fromCharCode(sigBytes[i]); }
-                    const signature = btoa(binarySig).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+                    const signature = btoa(binarySig).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, "");
 
-                    const masterToken = `${header}.${payload}.${signature}`;
+                    const masterToken = ${header}..;
 
                     return new Response(JSON.stringify({ success: true, token: masterToken }), { headers: corsHeaders });
                 }
 
-                limitData.count++; rateLimitCache.set(clientIp, limitData);
-                return new Response(JSON.stringify({ error: "Geçersiz Masterboss Şifresi!" }), { status: 401, headers: corsHeaders });
+                return new Response(JSON.stringify({ error: "Ge�ersiz Masterboss Kimlik Bilgileri!" }), { status: 401, headers: corsHeaders });
             }
 
             // 🔥 OPTİMİZE EDİLMİŞ DASHBOARD-DATA (Performans + Maliyet Odaklı)
@@ -585,8 +645,8 @@ export default {
                     jobs, assets, staff, stock, finances, customers, suppliers, categories,
                     activeEmergencies, pendingFaults, allEmergencies, allFaults,
                     // 🚀 YENİ EKLENEN SORGULAR (SOS ve Malzeme Talepleri)
-                    activeStaffSos, allStaffSos, pendingMaterialRequests, allMaterialRequests
-                ] = await Promise.all([
+                    activeStaffSos, allStaffSos, pendingMaterialRequests, allMaterialRequests, companySettings, bomTemplates, purchaseOrders, inventoryReturns
+                  ] = await Promise.all([
                     safeFirst(env.DB.prepare("SELECT company_name, sector, owner_name, address, tax_info, phone, landline_phone, emergency_phone, whatsapp_phone, website, logo, subscription_status, custom_base_price, custom_per_asset_price, referral_code, trial_ends_at, billing_cycle_anchor, free_months_balance, has_masterboss_gift, work_days, autopilot_daily_capacity_units FROM companies WHERE slug = ?").bind(slug || '')),
                     safeFirst(env.DB.prepare("SELECT free_months_balance, has_masterboss_gift FROM company_rewards WHERE company_slug = ?").bind(slug || '')),
 
@@ -677,6 +737,7 @@ export default {
                     website: company?.website || "",
                     logo: company?.logo || "",
                     referral_code: company?.referral_code,
+                      settings: companySettings || {},
                     work_days: (() => { try { return company?.work_days ? JSON.parse(company.work_days) : [1, 2, 3, 4, 5, 6]; } catch (e) { return [1, 2, 3, 4, 5, 6]; } })(),
                     autopilot_daily_capacity_units: (company?.autopilot_daily_capacity_units != null && !isNaN(Number(company.autopilot_daily_capacity_units)) && Number(company.autopilot_daily_capacity_units) >= 0.5)
                         ? Number(company.autopilot_daily_capacity_units) : 10,
@@ -2574,6 +2635,94 @@ export default {
                 }
             }
 
+            
+            // --- BOM TEMPLATES ---
+            if (url.pathname === "/get-bom-templates" && method === "GET") {
+                const slug = url.searchParams.get("company_slug");
+                if (!slug) return new Response("Missing company_slug", { status: 400, headers: corsHeaders });
+                const { results } = await env.DB.prepare("SELECT * FROM bom_templates WHERE company_slug = ? ORDER BY created_at DESC").bind(slug).all();
+                return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
+            }
+            if (url.pathname === "/add-bom-template" && method === "POST") {
+                const { id, company_slug, name, description, items } = await request.json();
+                try {
+                    await env.DB.prepare("INSERT INTO bom_templates (id, company_slug, name, description, items) VALUES (?, ?, ?, ?, ?)").bind(id, company_slug, name, description || '', JSON.stringify(items)).run();
+                    return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+                } catch (err) { return new Response(JSON.stringify({ success: false, error: err.message }), { headers: corsHeaders }); }
+            }
+            if (url.pathname === "/update-bom-template" && method === "POST") {
+                const { id, company_slug, name, description, items } = await request.json();
+                try {
+                    await env.DB.prepare("UPDATE bom_templates SET name = ?, description = ?, items = ? WHERE id = ? AND company_slug = ?").bind(name, description || '', JSON.stringify(items), id, company_slug).run();
+                    return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+                } catch (err) { return new Response(JSON.stringify({ success: false, error: err.message }), { headers: corsHeaders }); }
+            }
+            if (url.pathname === "/delete-bom-template" && method === "POST") {
+                const { id, company_slug } = await request.json();
+                try {
+                    await env.DB.prepare("DELETE FROM bom_templates WHERE id = ? AND company_slug = ?").bind(id, company_slug).run();
+                    return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+                } catch (err) { return new Response(JSON.stringify({ success: false, error: err.message }), { headers: corsHeaders }); }
+            }
+
+            // --- PURCHASE ORDERS ---
+            if (url.pathname === "/get-purchase-orders" && method === "GET") {
+                const slug = url.searchParams.get("company_slug");
+                if (!slug) return new Response("Missing company_slug", { status: 400, headers: corsHeaders });
+                const { results } = await env.DB.prepare("SELECT * FROM purchase_orders WHERE company_slug = ? ORDER BY created_at DESC").bind(slug).all();
+                return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
+            }
+            if (url.pathname === "/add-purchase-order" && method === "POST") {
+                const { id, company_slug, name, supplier_id, status, items, total_value } = await request.json();
+                try {
+                    await env.DB.prepare("INSERT INTO purchase_orders (id, company_slug, name, supplier_id, status, items, total_value) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(id, company_slug, name, supplier_id || null, status || 'Bekliyor', JSON.stringify(items), total_value || 0).run();
+                    return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+                } catch (err) { return new Response(JSON.stringify({ success: false, error: err.message }), { headers: corsHeaders }); }
+            }
+            if (url.pathname === "/update-purchase-order" && method === "POST") {
+                const { id, company_slug, name, supplier_id, status, items, total_value } = await request.json();
+                try {
+                    await env.DB.prepare("UPDATE purchase_orders SET name = ?, supplier_id = ?, status = ?, items = ?, total_value = ? WHERE id = ? AND company_slug = ?").bind(name, supplier_id || null, status, JSON.stringify(items), total_value, id, company_slug).run();
+                    return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+                } catch (err) { return new Response(JSON.stringify({ success: false, error: err.message }), { headers: corsHeaders }); }
+            }
+            if (url.pathname === "/delete-purchase-order" && method === "POST") {
+                const { id, company_slug } = await request.json();
+                try {
+                    await env.DB.prepare("DELETE FROM purchase_orders WHERE id = ? AND company_slug = ?").bind(id, company_slug).run();
+                    return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+                } catch (err) { return new Response(JSON.stringify({ success: false, error: err.message }), { headers: corsHeaders }); }
+            }
+
+            // --- INVENTORY RETURNS ---
+            if (url.pathname === "/get-inventory-returns" && method === "GET") {
+                const slug = url.searchParams.get("company_slug");
+                if (!slug) return new Response("Missing company_slug", { status: 400, headers: corsHeaders });
+                const { results } = await env.DB.prepare("SELECT * FROM inventory_returns WHERE company_slug = ? ORDER BY created_at DESC").bind(slug).all();
+                return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
+            }
+            if (url.pathname === "/add-inventory-return" && method === "POST") {
+                const { id, company_slug, staff_id, job_id, items, status } = await request.json();
+                try {
+                    await env.DB.prepare("INSERT INTO inventory_returns (id, company_slug, staff_id, job_id, items, status) VALUES (?, ?, ?, ?, ?, ?)").bind(id, company_slug, staff_id || null, job_id || null, JSON.stringify(items), status || 'Bekliyor').run();
+                    return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+                } catch (err) { return new Response(JSON.stringify({ success: false, error: err.message }), { headers: corsHeaders }); }
+            }
+            if (url.pathname === "/update-inventory-return" && method === "POST") {
+                const { id, company_slug, staff_id, job_id, items, status } = await request.json();
+                try {
+                    await env.DB.prepare("UPDATE inventory_returns SET staff_id = ?, job_id = ?, items = ?, status = ? WHERE id = ? AND company_slug = ?").bind(staff_id || null, job_id || null, JSON.stringify(items), status, id, company_slug).run();
+                    return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+                } catch (err) { return new Response(JSON.stringify({ success: false, error: err.message }), { headers: corsHeaders }); }
+            }
+            if (url.pathname === "/delete-inventory-return" && method === "POST") {
+                const { id, company_slug } = await request.json();
+                try {
+                    await env.DB.prepare("DELETE FROM inventory_returns WHERE id = ? AND company_slug = ?").bind(id, company_slug).run();
+                    return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+                } catch (err) { return new Response(JSON.stringify({ success: false, error: err.message }), { headers: corsHeaders }); }
+            }
+
             return new Response("Not Found", { status: 404, headers: corsHeaders });
         } catch (e) {
             console.error(e);
@@ -2628,3 +2777,8 @@ export default {
         }
     }
 };
+
+
+
+
+

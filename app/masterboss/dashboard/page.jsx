@@ -401,7 +401,11 @@ useEffect(() => {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white selection:bg-rose-500/30 relative">
+    <div className="min-h-screen bg-[#0a0a0a] text-white selection:bg-rose-500/30 relative overflow-hidden">
+      {/* Abstract Animated Background Elements */}
+      <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-rose-600/10 blur-[120px] pointer-events-none" />
+      <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/10 blur-[120px] pointer-events-none" />
+      <div className="fixed top-[40%] right-[10%] w-[30%] h-[30%] rounded-full bg-blue-600/10 blur-[100px] pointer-events-none" />
       <DynamicPWA companyName="FixLog.co" companyLogo="/icons/icon-512x512.png" />
       {/* 🚀 PWA YÜKLEME BALONU EKLENDİ */}
       <AnimatePresence>
@@ -434,7 +438,7 @@ useEffect(() => {
       </AnimatePresence>
 
       {/* Top Navbar */}
-      <nav className="sticky top-0 z-50 bg-neutral-900/80 backdrop-blur-xl border-b border-neutral-800">
+      <motion.nav initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="sticky top-0 z-50 bg-black/40 backdrop-blur-2xl border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center shadow-lg shadow-rose-500/20">
@@ -460,12 +464,12 @@ useEffect(() => {
             </button>
           </div>
         </div>
-      </nav>
+      </motion.nav>
 
       <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
         
         {/* Metric Cards - MOBİLDE 2'Lİ GRID OLARAK GÜNCELLENDİ */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <MetricCard icon={Building2} label="Toplam Firma" value={companies.length} ext={`${activeCompanies} Aktif Üye`} color="from-blue-500 to-indigo-600" />
           <MetricCard icon={BarChart3} label="Toplam QR (Varlık)" value={totalAssets} ext="Sistemdeki Tüm Cihazlar" color="from-indigo-500 to-purple-600" />
           <MetricCard icon={Users} label="Sistem Personeli" value={totalStaff} ext="Kayıtlı Saha Çalışanı" color="from-emerald-500 to-teal-600" />
@@ -475,7 +479,7 @@ useEffect(() => {
           <MetricCard icon={BarChart3} label="Aylık Foto Yükü" value={stats.monthlyPhotos || 0} ext={`Yıllık: ${stats.yearlyPhotos || 0} Foto`} color="from-fuchsia-500 to-pink-600" />
           <MetricCard icon={Activity} label="Aylık Net Kazanç" value={`₺${totalMonthlyRevenue.toLocaleString('tr-TR')}`} ext={`Yıllık: ₺${totalYearlyRevenue.toLocaleString('tr-TR')}`} color="from-emerald-500 to-teal-600" />
           <MetricCard icon={AlertCircle} label="Aylık Gerçek Maliyet" value={`₺${monthlyExpectedCost.toFixed(2).toLocaleString('tr-TR')}`} ext={`Yıllık Toplam: ₺${yearlyExpectedCost.toFixed(2).toLocaleString('tr-TR')}`} color="from-rose-500 to-red-600" />
-        </div>
+        </motion.div>
 
         {/* Tabs - YATAY SCROLL İPTAL EDİLDİ, FLEX-WRAP EKLENDİ */}
         <div className="flex flex-wrap items-center gap-2 mb-6">
@@ -489,7 +493,7 @@ useEffect(() => {
           key={activeTab}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-neutral-900/50 border border-neutral-800 rounded-2xl sm:rounded-3xl overflow-hidden"
+          className="bg-white/5 border border-white/5 backdrop-blur-xl rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl"
         >
           {activeTab === "companies" && (
             <div className="p-4 sm:p-6">
@@ -530,7 +534,7 @@ useEffect(() => {
               </div>
               
               {/* Sistem Genel Fiyatlandırması */}
-              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 sm:p-5 mb-6 flex flex-col md:flex-row items-start md:items-center gap-4 justify-between">
+              <div className="bg-white/5 border border-white/10 backdrop-blur-lg shadow-xl rounded-2xl p-4 sm:p-5 mb-6 flex flex-col md:flex-row items-start md:items-center gap-4 justify-between">
                   <div className="w-full md:w-auto">
                       <h4 className="text-sm sm:text-base text-white font-bold flex items-center gap-2 mb-1"><Database size={16} className="text-blue-500" /> Sistem Genel Fiyatlandırması (Oto-Zam)</h4>
                       <p className="text-[11px] sm:text-xs text-neutral-500 leading-tight">Özel fiyat tanımlanmayan tüm firmalara otomatik uygulanacak sabit paket ve varlık başı fiyatı buradan değiştirebilirsiniz.</p>
@@ -568,18 +572,18 @@ useEffect(() => {
 
               {/* Firma Filtreleme Sekmeleri - YATAY SCROLL İPTAL, FLEX-WRAP YAPILDI */}
               <div className="flex flex-wrap items-center gap-2 mb-4 sm:mb-6 border-b border-neutral-800 pb-4">
-                 <button onClick={() => setCompanyFilter("all")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${companyFilter === "all" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Tümü ({companies.length})</button>
-                 <button onClick={() => setCompanyFilter("active")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${companyFilter === "active" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Aktif ({companies.filter(c => c.subscription_status === 'active' && c.has_masterboss_gift !== 1).length})</button>
-                 <button onClick={() => setCompanyFilter("trialing")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${companyFilter === "trialing" ? "bg-blue-500/20 text-blue-400 border border-blue-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Deneme ({companies.filter(c => c.subscription_status === 'trialing' && c.has_masterboss_gift !== 1).length})</button>
-                 <button onClick={() => setCompanyFilter("past_due")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${companyFilter === "past_due" ? "bg-rose-500/20 text-rose-400 border border-rose-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Gecikmede ({companies.filter(c => (c.subscription_status === 'past_due' || c.subscription_status === 'canceled') && c.has_masterboss_gift !== 1).length})</button>
-                 <button onClick={() => setCompanyFilter("exempt")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${companyFilter === "exempt" ? "bg-amber-500/20 text-amber-400 border border-amber-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Muaf (VIP) ({companies.filter(c => c.has_masterboss_gift === 1).length})</button>
+                 <button onClick={() => setCompanyFilter("all")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${companyFilter === "all" ? "bg-white text-black" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Tümü ({companies.length})</button>
+                 <button onClick={() => setCompanyFilter("active")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${companyFilter === "active" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Aktif ({companies.filter(c => c.subscription_status === 'active' && c.has_masterboss_gift !== 1).length})</button>
+                 <button onClick={() => setCompanyFilter("trialing")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${companyFilter === "trialing" ? "bg-blue-500/20 text-blue-400 border border-blue-500/50" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Deneme ({companies.filter(c => c.subscription_status === 'trialing' && c.has_masterboss_gift !== 1).length})</button>
+                 <button onClick={() => setCompanyFilter("past_due")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${companyFilter === "past_due" ? "bg-rose-500/20 text-rose-400 border border-rose-500/50" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Gecikmede ({companies.filter(c => (c.subscription_status === 'past_due' || c.subscription_status === 'canceled') && c.has_masterboss_gift !== 1).length})</button>
+                 <button onClick={() => setCompanyFilter("exempt")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${companyFilter === "exempt" ? "bg-amber-500/20 text-amber-400 border border-amber-500/50" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Muaf (VIP) ({companies.filter(c => c.has_masterboss_gift === 1).length})</button>
               </div>
 
               {/* Tablo İçeriği (Yatay kaydırma sadece tabloda gerekli) */}
               <div className="overflow-x-auto -mx-4 sm:mx-0">
                 <div className="inline-block min-w-full align-middle px-4 sm:px-0">
                   <table className="min-w-full text-left text-xs sm:text-sm whitespace-nowrap">
-                    <thead className="bg-neutral-900 border-b border-neutral-800 text-neutral-400">
+                    <thead className="bg-white/5 border-b border-white/10 text-neutral-300 backdrop-blur-md">
                       <tr>
                         <th className="px-4 py-3 sm:px-6 sm:py-4 font-medium">Firma Kodu (Slug)</th>
                         <th className="px-4 py-3 sm:px-6 sm:py-4 font-medium">Firma Adı / Sahibi</th>
@@ -589,7 +593,7 @@ useEffect(() => {
                         <th className="px-4 py-3 sm:px-6 sm:py-4 font-medium text-right">Eylemler</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-neutral-800/50">
+                    <tbody className="divide-y divide-white/5">
                       {companies.filter(c => {
                           if (companyFilter === "active") return c.subscription_status === 'active' && c.has_masterboss_gift !== 1;
                           if (companyFilter === "trialing") return c.subscription_status === 'trialing' && c.has_masterboss_gift !== 1;
@@ -597,7 +601,7 @@ useEffect(() => {
                           if (companyFilter === "exempt") return c.has_masterboss_gift === 1;
                           return true;
                       }).map((c) => (
-                        <tr key={c.slug} className="hover:bg-neutral-800/20 transition-colors">
+                        <tr key={c.slug} className="hover:bg-white/5 transition-all duration-200">
                           <td className="px-4 py-3 sm:px-6 sm:py-4 font-mono text-neutral-300">
                             {c.slug}
                             <div className="text-[10px] sm:text-xs text-neutral-500 mt-0.5 sm:mt-1">Ref: {c.referral_code}</div>
@@ -697,9 +701,9 @@ useEffect(() => {
               
               {/* 🚀 BİLET FİLTRELEME BUTONLARI */}
               <div className="flex flex-wrap items-center gap-2 mb-4 sm:mb-6 border-b border-neutral-800 pb-4">
-                 <button onClick={() => setTicketFilter("all")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${ticketFilter === "all" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Tümü ({tickets.length})</button>
-                 <button onClick={() => setTicketFilter("open")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${ticketFilter === "open" ? "bg-amber-500/20 text-amber-400 border border-amber-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Açık ({tickets.filter(t => t.status !== 'Çözüldü' && t.status !== 'Resolved').length})</button>
-                 <button onClick={() => setTicketFilter("resolved")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${ticketFilter === "resolved" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Çözüldü ({tickets.filter(t => t.status === 'Çözüldü' || t.status === 'Resolved').length})</button>
+                 <button onClick={() => setTicketFilter("all")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${ticketFilter === "all" ? "bg-white text-black" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Tümü ({tickets.length})</button>
+                 <button onClick={() => setTicketFilter("open")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${ticketFilter === "open" ? "bg-amber-500/20 text-amber-400 border border-amber-500/50" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Açık ({tickets.filter(t => t.status !== 'Çözüldü' && t.status !== 'Resolved').length})</button>
+                 <button onClick={() => setTicketFilter("resolved")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${ticketFilter === "resolved" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Çözüldü ({tickets.filter(t => t.status === 'Çözüldü' || t.status === 'Resolved').length})</button>
               </div>
 
               <div className="space-y-3 sm:space-y-4">
@@ -708,7 +712,7 @@ useEffect(() => {
                     if (ticketFilter === "resolved") return t.status === 'Çözüldü' || t.status === 'Resolved';
                     return true;
                 }).map(t => (
-                  <div key={t.id} className="bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 transition-colors">
+                  <div key={t.id} className="bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 rounded-2xl backdrop-blur-md p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 transition-colors">
                     <div className="flex gap-3 sm:gap-4 items-start sm:items-center flex-1 min-w-0">
                         <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-neutral-800 flex items-center justify-center shrink-0">
                           <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-400" />
@@ -756,7 +760,7 @@ useEffect(() => {
                         <th className="px-4 py-3 sm:px-6 sm:py-4 font-medium">Davet Edendeki Kredi</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-neutral-800/50">
+                    <tbody className="divide-y divide-white/5">
                       {referrals.map((r) => {
                         const referrerCompany = companies.find(c => c.slug === r.referrer_company_slug);
                         return (
@@ -813,9 +817,9 @@ useEffect(() => {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="bg-neutral-900 border border-neutral-800 rounded-none sm:rounded-3xl w-full h-full sm:h-auto sm:w-[95%] sm:max-w-lg shadow-2xl relative flex flex-col overflow-hidden"
+            className="bg-black/60 backdrop-blur-2xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-none sm:rounded-3xl w-full h-full sm:h-auto sm:w-[95%] sm:max-w-lg shadow-2xl relative flex flex-col overflow-hidden"
           >
-            <div className="shrink-0 p-4 md:p-6 border-b border-neutral-800 relative bg-neutral-900">
+            <div className="shrink-0 p-4 md:p-6 border-b border-white/10 relative bg-transparent">
               <button 
                 onClick={() => setShowManageModal(false)}
                 className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors text-sm font-medium z-10"
@@ -852,7 +856,7 @@ useEffect(() => {
                 >
                   <option value="active">Aktif (Ödeyen / Kısıtlama Yok)</option>
                   <option value="trialing">Deneme Sürümü (Trial)</option>
-                  <option value="past_due">Paywall'a Düşür (Ödeme Gecikti)</option>
+                  <option value="past_due">Paywall&apos;a Düşür (Ödeme Gecikti)</option>
                   <option value="canceled">İptal Edildi</option>
                 </select>
               </div>
@@ -913,7 +917,7 @@ useEffect(() => {
               )}
             </div>
 
-            <div className="shrink-0 p-4 md:p-6 border-t border-neutral-800 bg-neutral-900 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <div className="shrink-0 p-4 md:p-6 border-t border-white/10 bg-transparent pb-[max(1rem,env(safe-area-inset-bottom))]">
               <button
                 onClick={handleUpdateSubscription}
                 disabled={isSaving}
@@ -935,7 +939,7 @@ useEffect(() => {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="bg-neutral-900 border border-neutral-800 rounded-none sm:rounded-3xl w-full h-full sm:h-auto sm:max-w-2xl sm:max-h-[85vh] shadow-2xl relative flex flex-col overflow-hidden"
+            className="bg-black/60 backdrop-blur-2xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-none sm:rounded-3xl w-full h-full sm:h-auto sm:max-w-2xl sm:max-h-[85vh] shadow-2xl relative flex flex-col overflow-hidden"
           >
             <div className="p-4 sm:p-6 border-b border-neutral-800 flex justify-between items-start shrink-0 bg-neutral-900">
                 <div>
@@ -984,7 +988,7 @@ useEffect(() => {
 
             {/* Yanıt Gönderme Alanı */}
             {selectedTicket.status !== 'Çözüldü' && selectedTicket.status !== 'Resolved' ? (
-                <div className="p-4 sm:p-6 border-t border-neutral-800 bg-neutral-900 sm:rounded-b-3xl shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                <div className="p-4 sm:p-6 border-t border-white/10 bg-transparent sm:rounded-b-3xl shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
                     <textarea
                         value={replyTexts[selectedTicket.id] || ""}
                         onChange={(e) => setReplyTexts(prev => ({ ...prev, [selectedTicket.id]: e.target.value }))}
@@ -1053,7 +1057,7 @@ useEffect(() => {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="bg-neutral-900 border border-neutral-800 rounded-none sm:rounded-3xl w-full h-full sm:h-auto sm:w-[95%] sm:max-w-3xl shadow-2xl relative flex flex-col overflow-hidden"
+            className="bg-black/60 backdrop-blur-2xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-none sm:rounded-3xl w-full h-full sm:h-auto sm:w-[95%] sm:max-w-3xl shadow-2xl relative flex flex-col overflow-hidden"
           >
             <div className="p-4 sm:p-6 border-b border-neutral-800 bg-neutral-900 shrink-0">
               <button 
@@ -1077,10 +1081,10 @@ useEffect(() => {
 
             {/* Modal Tabs */}
             <div className="flex items-center gap-2 p-3 sm:px-6 sm:pt-4 sm:pb-4 border-b border-neutral-800 shrink-0 overflow-x-auto scrollbar-hide bg-neutral-900">
-              <button onClick={() => setInfoTab("genel")} className={`shrink-0 px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${infoTab === "genel" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Genel Bilgiler</button>
-              <button onClick={() => setInfoTab("istatistik")} className={`shrink-0 px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${infoTab === "istatistik" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Sistem & Kasa</button>
-              <button onClick={() => setInfoTab("abonelik")} className={`shrink-0 px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${infoTab === "abonelik" ? "bg-rose-500 text-white" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}>Abonelik & Gelir</button>
-              <button onClick={() => setInfoTab("karlilik")} className={`shrink-0 px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1.5 ${infoTab === "karlilik" ? "bg-emerald-500 text-white" : "bg-neutral-800 text-neutral-400 hover:text-white"}`}><Activity size={14} /> Karlılık & Maliyet</button>
+              <button onClick={() => setInfoTab("genel")} className={`shrink-0 px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${infoTab === "genel" ? "bg-white text-black" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Genel Bilgiler</button>
+              <button onClick={() => setInfoTab("istatistik")} className={`shrink-0 px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${infoTab === "istatistik" ? "bg-white text-black" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Sistem & Kasa</button>
+              <button onClick={() => setInfoTab("abonelik")} className={`shrink-0 px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${infoTab === "abonelik" ? "bg-rose-500 text-white" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Abonelik & Gelir</button>
+              <button onClick={() => setInfoTab("karlilik")} className={`shrink-0 px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1.5 ${infoTab === "karlilik" ? "bg-emerald-500 text-white" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}><Activity size={14} /> Karlılık & Maliyet</button>
             </div>
 
             <div className="overflow-y-auto flex-1 p-4 sm:p-6 overscroll-contain pb-[max(1rem,env(safe-area-inset-bottom))]">
@@ -1350,7 +1354,7 @@ useEffect(() => {
                    <div className="bg-rose-500/5 p-3 sm:p-4 rounded-xl border border-rose-500/20">
                      <div className="flex items-start sm:items-center gap-2 sm:gap-3">
                        <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-rose-400 shrink-0 mt-0.5 sm:mt-0" />
-                       <div className="text-[10px] sm:text-sm text-rose-200">Tahmini Toplam Masterboss Ödemesi özelliği sonraki güncellemelerde PayTR/Iyzico entegrasyonu ile otomatik hesaplanacaktır. Şu an firmaların kendi kasaları izlenmektedir. Detaylar "Karlılık & Maliyet" sekmesine taşınmıştır.</div>
+                       <div className="text-[10px] sm:text-sm text-rose-200">Tahmini Toplam Masterboss Ödemesi özelliği sonraki güncellemelerde PayTR/Iyzico entegrasyonu ile otomatik hesaplanacaktır. Şu an firmaların kendi kasaları izlenmektedir. Detaylar &quot;Karlılık &amp; Maliyet&quot; sekmesine taşınmıştır.</div>
                      </div>
                    </div>
                 </div>
@@ -1367,21 +1371,25 @@ useEffect(() => {
 
 function MetricCard({ icon: Icon, label, value, ext, color }) {
   return (
-    <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 relative overflow-hidden group flex flex-col justify-between">
-      <div className={`absolute -right-4 -top-4 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br ${color} opacity-10 rounded-full blur-xl sm:blur-2xl group-hover:scale-150 transition-transform duration-500`} />
-      <div className="flex justify-between items-start mb-2 sm:mb-4">
-        <div className={`w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br ${color} p-0.5 flex items-center justify-center shadow-lg`}>
-          <div className="w-full h-full bg-neutral-900 rounded-[10px] sm:rounded-[14px] flex items-center justify-center">
+    <motion.div 
+      whileHover={{ y: -5, scale: 1.02 }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      className="bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl sm:rounded-3xl p-4 sm:p-6 relative overflow-hidden group flex flex-col justify-between shadow-xl"
+    >
+      <div className={`absolute -right-4 -top-4 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br ${color} opacity-20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500`} />
+      <div className="flex justify-between items-start mb-2 sm:mb-4 relative z-10">
+        <div className={`w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br ${color} p-[1px] flex items-center justify-center shadow-lg shadow-black/50`}>
+          <div className="w-full h-full bg-neutral-900/80 backdrop-blur-sm rounded-[10px] sm:rounded-[14px] flex items-center justify-center group-hover:bg-transparent transition-colors duration-300">
             <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
         </div>
       </div>
-      <div>
-        <div className="text-xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-1 tracking-tight truncate">{value}</div>
-        <div className="text-[10px] sm:text-sm font-medium text-neutral-400 mb-0.5 sm:mb-1 leading-tight">{label}</div>
-        <div className="text-[9px] sm:text-xs text-neutral-600 leading-tight truncate">{ext}</div>
+      <div className="relative z-10">
+        <div className="text-xl sm:text-3xl font-black text-white mb-0.5 sm:mb-1 tracking-tight truncate drop-shadow-md">{value}</div>
+        <div className="text-[10px] sm:text-sm font-medium text-neutral-300 mb-0.5 sm:mb-1 leading-tight">{label}</div>
+        <div className="text-[9px] sm:text-xs text-neutral-400 leading-tight truncate">{ext}</div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -1389,23 +1397,33 @@ function TabButton({ active, onClick, icon: Icon, label }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center justify-center gap-1.5 sm:gap-2 flex-1 sm:flex-none px-3 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-[11px] sm:text-sm font-bold sm:font-medium transition-all shrink-0 ${
+      className={`relative flex items-center justify-center gap-1.5 sm:gap-2 flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-sm font-bold sm:font-medium transition-all duration-300 shrink-0 overflow-hidden ${
         active 
-          ? "bg-white text-neutral-950 shadow-lg" 
-          : "bg-neutral-900/50 text-neutral-400 hover:bg-neutral-800 hover:text-white border border-neutral-800"
+          ? "text-white shadow-[0_0_20px_rgba(255,255,255,0.1)] border border-white/10" 
+          : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-white/5"
       }`}
     >
-      <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> 
-      <span className="truncate">{label}</span>
+      {active && (
+        <motion.div 
+          layoutId="activeTab" 
+          className="absolute inset-0 bg-gradient-to-r from-rose-500/80 to-purple-600/80 backdrop-blur-md" 
+          initial={false}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        />
+      )}
+      <div className="relative z-10 flex items-center gap-1.5 sm:gap-2">
+        <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> 
+        <span className="truncate">{label}</span>
+      </div>
     </button>
   );
 }
 
 function InfoBox({ label, value, fullWidth = false }) {
   return (
-    <div className={`bg-neutral-800/30 border border-neutral-800/50 p-3 sm:p-4 rounded-xl ${fullWidth ? 'col-span-1 md:col-span-2' : ''}`}>
-      <div className="text-[10px] sm:text-xs font-medium text-neutral-500 mb-0.5 sm:mb-1">{label}</div>
-      <div className="text-xs sm:text-sm text-white font-medium break-words">{value || '-'}</div>
+    <div className={`bg-white/5 border border-white/5 backdrop-blur-sm p-3 sm:p-4 rounded-xl shadow-inner ${fullWidth ? 'col-span-1 md:col-span-2' : ''}`}>
+      <div className="text-[10px] sm:text-xs font-medium text-neutral-400 mb-0.5 sm:mb-1 uppercase tracking-wider">{label}</div>
+      <div className="text-xs sm:text-sm text-white font-semibold break-words">{value || '-'}</div>
     </div>
   );
 }
