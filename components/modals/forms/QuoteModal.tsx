@@ -2,15 +2,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, ArrowRight, Loader2, CheckCircle, Search, FileText, Download, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useReactToPrint } from 'react-to-print';
 
-export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data }: any) {
+export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, setActiveTab }: any) {
   const [step, setStep] = useState(1);
   const [quoteType, setQuoteType] = useState('Bakım Sözleşmesi');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
+  const printRef = useRef<HTMLDivElement>(null);
+  
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: "Teklif_Sozlesme",
+  });
 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  const [newCustomerMode, setNewCustomerMode] = useState(false);
+  const [searchCustomer, setSearchCustomer] = useState('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState('');
 
   const [maintenanceContract, setMaintenanceContract] = useState('');
   
@@ -74,9 +84,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data }: 
     setStatus('loading');
     setTimeout(() => {
       setStatus('success');
-      setTimeout(() => {
-        handleClose();
-      }, 2500);
+      
     }, 1500);
   };
 
@@ -187,11 +195,14 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data }: 
                   <p className="text-slate-500 font-medium mb-6">Teklifiniz sisteme kaydedildi ve işleme alındı.</p>
                   
                   <div className="flex flex-col sm:flex-row justify-center gap-3 w-full max-w-sm mx-auto">
-                     <button onClick={() => window.print()} className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all"><Download size={16}/> Convert to PDF</button>
-                     <button onClick={() => window.print()} className="w-full px-4 py-3 bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all"><FileText size={16}/> Print Thermal Receipt</button>
+                     <button onClick={handlePrint} className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all"><Download size={16}/> PDF Olarak İndir</button>
+                     <button onClick={handlePrint} className="w-full px-4 py-3 bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all"><FileText size={16}/> Termal Fiş Yazdır</button>
                   </div>
-                </div>
-              ) : (
+<div className="flex flex-col sm:flex-row justify-center gap-3 w-full max-w-sm mx-auto mt-3">
+  <button onClick={() => { setShowQuoteModal(false); if (setActiveTab) setActiveTab('quotes'); else window.location.hash = 'quotes'; }} className="w-full px-4 py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">S�zle�melere Git</button>
+</div>
+</div>
+) : (
                 <>
                   {step === 1 && (
                     <div className="space-y-6">
@@ -287,8 +298,11 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data }: 
                                   )}
                                 </div>
                               </div>
-                            </div>
-                          ) : (
+<div className="flex flex-col sm:flex-row justify-center gap-3 w-full max-w-sm mx-auto mt-3">
+  <button onClick={() => { setShowQuoteModal(false); if (setActiveTab) setActiveTab('quotes'); else window.location.hash = 'quotes'; }} className="w-full px-4 py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">S�zle�melere Git</button>
+</div>
+</div>
+) : (
                             <div className="space-y-4 p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
                               <div className="space-y-1.5">
                                 <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Yeni Asansör Adı / Bilgisi</label>
@@ -399,6 +413,60 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data }: 
           </motion.div>
         </div>
       )}
+    
+      <div style={{ display: "none" }}>
+        <div ref={printRef} className="p-8 bg-white text-black max-w-2xl mx-auto font-sans">
+          <div className="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
+            <div>
+              <h1 className="text-3xl font-black">{data?.settings?.company_name || 'Firma Adı'}</h1>
+              <p className="text-sm font-medium mt-1">{quoteType}</p>
+            </div>
+            <div className="text-right text-sm">
+              <p><strong>Tarih:</strong> {new Date().toLocaleDateString('tr-TR')}</p>
+            </div>
+          </div>
+          
+          <div className="mb-6 grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <h3 className="font-bold border-b border-black/20 mb-2 pb-1">Müşteri Bilgileri</h3>
+              <p><strong>İsim:</strong> {customerName}</p>
+              <p><strong>Telefon:</strong> {customerPhone}</p>
+              {customerEmail && <p><strong>E-posta:</strong> {customerEmail}</p>}
+            </div>
+            <div>
+              <h3 className="font-bold border-b border-black/20 mb-2 pb-1">Sistem Bilgileri</h3>
+              <p><strong>Sistem Adı:</strong> {newAssetMode ? newAssetName : (data?.assets?.find((a: any) => a.id.toString() === selectedAssetId)?.name || 'Bilinmiyor')}</p>
+              {quoteType === 'Revizyon Teklifi' && <p><strong>Detay:</strong> {revisionDetails}</p>}
+              {quoteType === 'Montaj Teklifi' && (
+                <>
+                  <p><strong>Tipi:</strong> {elevatorType}</p>
+                  <p><strong>Durak:</strong> {stopsCount}</p>
+                  <p><strong>Kapasite:</strong> {capacity}</p>
+                </>
+              )}
+            </div>
+          </div>
+          
+          <div className="mb-8">
+            <h3 className="font-bold border-b border-black/20 mb-2 pb-1">Sözleşme / Teklif Detayı</h3>
+            <div className="text-sm whitespace-pre-wrap">{maintenanceContract}</div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-8 mt-12 pt-8 border-t-2 border-black text-center">
+            <div>
+              <p className="font-bold mb-16">Yetkili (Firma) İmzası</p>
+              {employerCanvasRef.current && <img src={employerCanvasRef.current.toDataURL()} className="mx-auto h-20 object-contain mix-blend-multiply grayscale" />}
+            </div>
+            <div>
+              <p className="font-bold mb-16">Müşteri İmzası</p>
+              <p className="font-bold mb-2">{customerName}</p>
+              {customerCanvasRef.current && <img src={customerCanvasRef.current.toDataURL()} className="mx-auto h-20 object-contain mix-blend-multiply grayscale" />}
+            </div>
+          </div>
+        </div>
+      </div>
+
     </AnimatePresence>
   );
 }
+

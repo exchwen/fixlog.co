@@ -360,6 +360,14 @@ export default function ManagerDashboard() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  useEffect(() => {
+    const handleNav = (e) => {
+      if (e.detail) setActiveTab(e.detail);
+    };
+    window.addEventListener('navTab', handleNav);
+    return () => window.removeEventListener('navTab', handleNav);
+  }, []);
+
   const handleAction = async (endpoint, body, closeFn, resetFn) => {
     // 🚀 YÖNETİCİ KISITLAMALARI VE ŞIK UYARI MODALI
     if (endpoint.startsWith('delete-') || endpoint === 'update-settings') {

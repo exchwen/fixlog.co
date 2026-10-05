@@ -313,6 +313,14 @@ export default function PatronDashboard() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  useEffect(() => {
+    const handleNav = (e) => {
+      if (e.detail) setActiveTab(e.detail);
+    };
+    window.addEventListener('navTab', handleNav);
+    return () => window.removeEventListener('navTab', handleNav);
+  }, []);
+
   const handleAction = async (endpoint, body, closeFn, resetFn) => {
     setIsSaving(true);
     const token = localStorage.getItem('patron_authToken');

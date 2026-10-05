@@ -1,4 +1,6 @@
-'use client';
+﻿const fs = require('fs');
+
+const tabCode = \'use client';
 
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Edit2, Copy, Loader2, Save } from 'lucide-react';
@@ -125,3 +127,6 @@ export default function BomTab({ data }: any) {
         </div>
     );
 }
+\;
+
+fs.writeFileSync('components/patron/BomTab.tsx', tabCode);
