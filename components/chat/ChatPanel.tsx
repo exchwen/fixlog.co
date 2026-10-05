@@ -88,7 +88,7 @@ export default function ChatPanel({ hideBubble, isChatOpen, setIsChatOpen, activ
                 const registration = await navigator.serviceWorker.ready;
 
                 const beamsClient = new PusherPushNotifications.Client({
-                    instanceId: '015accc9-e581-44a3-b37f-5410549611da',
+                    instanceId: process.env.NEXT_PUBLIC_BEAMS_INSTANCE_ID || '',
                     serviceWorkerRegistration: registration,
                 });
 
@@ -248,10 +248,13 @@ export default function ChatPanel({ hideBubble, isChatOpen, setIsChatOpen, activ
 
     const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
     const API_URL = 'https://api.fixlog.co';
+    const pusherKey = process.env.NEXT_PUBLIC_PUSHER_KEY || '';
 
     Pusher.logToConsole = false;
 
-    const pusher = new Pusher('75dfed44245e16eaea0a', {
+    if (!pusherKey) return;
+
+    const pusher = new Pusher(pusherKey, {
       cluster: 'eu',
       authEndpoint: `${API_URL}/pusher/auth?slug=${actualSlug}`,
       auth: {
@@ -606,8 +609,8 @@ export default function ChatPanel({ hideBubble, isChatOpen, setIsChatOpen, activ
                               Çevrimiçi
                           </span>
                       ) : (
-                          <span className="text-[10px] text-slate-400 flex items-center gap-1.5 font-medium tracking-wide">
-                             <span className={`w-1.5 h-1.5 rounded-full ${activeStatus.label === 'Müsait' ? 'bg-emerald-500' : 'bg-slate-500'} shadow-[0_0_4px_rgba(0,0,0,0.5)]`}></span>
+                          <span className="text-[10px] text-slate-400 flex items-center gap-1.5 font-bold tracking-wide">
+                             <span className="w-1.5 h-1.5 rounded-full bg-slate-500 shadow-[0_0_4px_rgba(0,0,0,0.5)]"></span>
                              {activeStatus.label}
                           </span>
                       )}

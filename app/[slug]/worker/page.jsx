@@ -154,7 +154,7 @@ const openGoogleMapsRoute = () => {
     window.open(url, '_blank');
 };
 
-// 🚀 YENİ ÖZELLİK: MALZEME TALEBİ GÖNDERİCİ
+// 🚀 YENİ ÖZELLİK: MALZEME TALEP GÖNDERİCİ
 const handleRequestMaterial = async () => {
     if(materialRequestItems.length === 0) return;
     setIsSaving(true);
@@ -588,7 +588,9 @@ if (showSOSModal) { stopEvent(); setShowSOSModal(false); return true; }
 
   useEffect(() => {
     fetchData(true);
-    const pusher = new Pusher('75dfed44245e16eaea0a', { cluster: 'eu' });
+    const pusherKey = process.env.NEXT_PUBLIC_PUSHER_KEY || '';
+    if (!pusherKey) return;
+    const pusher = new Pusher(pusherKey, { cluster: 'eu' });
     const channel = pusher.subscribe(`company-${slug}`);
     channel.bind('data_updated', () => { fetchData(false); });
     return () => { channel.unbind_all(); channel.unsubscribe(); pusher.disconnect(); };
@@ -1097,11 +1099,11 @@ const handleStatusUpdate = async (newStatus) => {
                           
                           <div className="flex justify-between items-start gap-2 mb-1">
                               <div className="flex-1 min-w-0">
-                                  <h3 className="text-base font-black text-slate-800 leading-tight flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                                  <h3 className="text-base font-black text-slate-800 leading-tight flex flex-col sm:flex-row sm:items-center sm:gap-2 group-hover:text-emerald-700 transition-colors text-left w-full">
                                       {asset ? (
                                           <>
                                               <span className="truncate w-full sm:w-auto">{asset.apartmentName || asset.name}</span>
-                                              {asset.apartmentName && <span className="text-[11px] sm:text-base font-medium text-slate-500 truncate w-full sm:w-auto">({asset.name})</span>}
+                                              {asset.apartmentName && <span className="text-[11px] sm:text-sm font-medium text-slate-500 truncate block w-full sm:w-auto">({asset.name})</span>}
                                           </>
                                       ) : (
                                           <span className="truncate block w-full">{job.customer_name}</span>
@@ -1278,7 +1280,7 @@ const handleStatusUpdate = async (newStatus) => {
                       </div>
                    )}) : (
                       <div className="col-span-full text-center p-12 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 font-medium">
-                         Henüz tamamlanmış bir işiniz bulunmuyor.
+                         Henüz tamamlanan bir işiniz bulunmuyor.
                       </div>
                    )}
                 </div>
@@ -1545,7 +1547,7 @@ const handleStatusUpdate = async (newStatus) => {
                         </motion.div>
                     )}
 
-                    {/* 🚀 ADIM 3: MÜŞTERİ İMZASI (SADECE PERİYODİK BAKIM) */}
+                    {/* 🚀 ADIM 3: MÜŞTERİ İMZASI (SADECE PERİYODİK BAKİM) */}
                     {wizardStep === 3 && selectedJob.work_type === 'Periyodik Bakım' && (
                         <motion.div initial={{opacity:0, x:20}} animate={{opacity:1, x:0}} className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200">
                             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center justify-between">

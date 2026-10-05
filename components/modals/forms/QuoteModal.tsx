@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { X, Send, ArrowRight, Loader2, CheckCircle, Search, FileText, Download, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReactToPrint } from 'react-to-print';
@@ -116,6 +116,29 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     }
   };
 
+  const isCustomerValid = newCustomerMode ? !!customerName.trim() : !!selectedCustomerId || !!customerName.trim();
+  const isAssetValid = newAssetMode ? !!newAssetName.trim() : !!selectedAssetId;
+  const canSubmit = !!customerName.trim() && (newAssetMode ? !!newAssetName.trim() : !!selectedAssetId) && employerSignature && customerSignature;
+
+  const handleNextFromStep1 = () => {
+    if (!isCustomerValid) return;
+    setStep(2);
+  };
+
+  const handleNextFromStep2 = () => {
+    if (quoteType === 'Bakım Sözleşmesi') {
+      setStep(3);
+      return;
+    }
+    if (!isAssetValid) return;
+    setStep(3);
+  };
+
+  const handleSubmitClick = async () => {
+    if (!canSubmit) return;
+    await handleSubmit();
+  };
+
   const initCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>, setHasSignature: (v: boolean) => void) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -227,7 +250,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                      <button onClick={handlePrint} className="w-full px-4 py-3 bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all"><FileText size={16}/> Termal Fiş Yazdır</button>
                   </div>
 <div className="flex flex-col sm:flex-row justify-center gap-3 w-full max-w-sm mx-auto mt-3">
-  <button onClick={() => { setShowQuoteModal(false); if (setActiveTab) setActiveTab('quotes'); else window.location.hash = 'quotes'; }} className="w-full px-4 py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">S�zle�melere Git</button>
+  <button onClick={() => { setShowQuoteModal(false); if (setActiveTab) setActiveTab('quotes'); else window.location.hash = 'quotes'; }} className="w-full px-4 py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">Szlemelere Git</button>
 </div>
 </div>
 ) : (
@@ -251,17 +274,19 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                                   <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1">
                                     {(data?.customers || []).filter((c: any) => {
                                         const term = (searchCustomer || '').toLowerCase();
-                                        return (c.name || '').toLowerCase().includes(term);
+                                        const name = (c.name || '').toLowerCase();
+                                        const phone = (c.contact || c.phone || '').toLowerCase();
+                                        return name.includes(term) || phone.includes(term);
                                     }).map((c: any) => {
                                         const isSelected = selectedCustomerId === String(c.id);
                                         return (
                                             <button 
                                                 key={c.id} 
-                                                onClick={() => { setSelectedCustomerId(String(c.id)); setCustomerName(c.name || ''); setCustomerPhone(c.phone || ''); }}
+                                                onClick={() => { setSelectedCustomerId(String(c.id)); setCustomerName(c.name || ''); setCustomerPhone(c.contact || c.phone || ''); setSearchCustomer(c.name || ''); }}
                                                 className={"text-left p-3 rounded-lg border transition-all " + (isSelected ? "bg-blue-50 border-blue-200" : "bg-white border-slate-100 hover:border-blue-200")}
                                             >
                                                 <div className="font-bold text-sm text-slate-800">{c.name}</div>
-                                                {c.phone && <div className="text-xs text-slate-500 mt-0.5">{c.phone}</div>}
+                                                {(c.contact || c.phone) && <div className="text-xs text-slate-500 mt-0.5">{c.contact || c.phone}</div>}
                                             </button>
                                         )
                                     })}
@@ -368,7 +393,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                                 </div>
                               </div>
 <div className="flex flex-col sm:flex-row justify-center gap-3 w-full max-w-sm mx-auto mt-3">
-  <button onClick={() => { setShowQuoteModal(false); if (setActiveTab) setActiveTab('quotes'); else window.location.hash = 'quotes'; }} className="w-full px-4 py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">S�zle�melere Git</button>
+  <button onClick={() => { setShowQuoteModal(false); if (setActiveTab) setActiveTab('quotes'); else window.location.hash = 'quotes'; }} className="w-full px-4 py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">Szlemelere Git</button>
 </div>
 </div>
 ) : (
@@ -444,8 +469,8 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
               <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0">
                 {step === 1 ? (
                   <button 
-                    onClick={() => setStep(2)} 
-                    disabled={!customerName.trim()}
+                    onClick={handleNextFromStep1} 
+                    disabled={!isCustomerValid}
                     className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
                   >
                     Devam Et <ArrowRight size={18} />
@@ -456,8 +481,8 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                         <ArrowRight size={18} className="rotate-180" />
                       </button>
                       <button 
-                        onClick={() => setStep(3)} 
-                        disabled={quoteType !== 'Bakım Sözleşmesi' && !selectedAssetId && !newAssetName.trim()}
+                        onClick={handleNextFromStep2} 
+                        disabled={quoteType === 'Bakım Sözleşmesi' ? !customerName.trim() : !isAssetValid}
                         className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
                       >
                         İmza Aşamasına Geç <ArrowRight size={18} />
@@ -469,8 +494,8 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                         <ArrowRight size={18} className="rotate-180" />
                       </button>
                       <button 
-                        onClick={handleSubmit} 
-                        disabled={status === 'loading' || !employerSignature || !customerSignature}
+                        onClick={handleSubmitClick} 
+                        disabled={status === 'loading' || !canSubmit}
                         className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
                       >
                         {status === 'loading' ? <Loader2 className="animate-spin" size={20} /> : <><Send size={18} /> Onayla ve Kaydet</>}

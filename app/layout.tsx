@@ -66,17 +66,6 @@ export default function RootLayout({
       <head>
         {/* 🚀 GOOGLE SEARCH CONSOLE DOĞRULAMA KODU */}
         <meta name="google-site-verification" content="OHA0sINLXAbEuPKjXi84t-Fp-X0FnZXFKE4aSOnAVus" />
-
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.addEventListener('beforeinstallprompt', function(e) {
-                e.preventDefault();
-                window.pwaDeferredPrompt = e;
-              });
-            `,
-          }}
-        />
       </head>
       <body>
         {children}

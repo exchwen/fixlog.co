@@ -35,7 +35,7 @@ export default function TestPushPage() {
 
         // Beams SDK Başlat
         const beamsClient = new PusherPushNotifications.Client({
-            instanceId: '015accc9-e581-44a3-b37f-5410549611da', // Senin ID'n
+            instanceId: process.env.NEXT_PUBLIC_BEAMS_INSTANCE_ID || '',
             serviceWorkerRegistration: registration,
         });
 

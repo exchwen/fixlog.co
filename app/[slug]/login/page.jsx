@@ -211,19 +211,21 @@ export default function StaffLoginPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        localStorage.setItem('staff_authToken', data.token);
+        const sessionToken = data.token;
+        const safeName = typeof data.name === 'string' ? data.name : 'Staff';
+
+        localStorage.setItem('staff_authToken', sessionToken);
         localStorage.setItem('staff_userRole', data.role);
         localStorage.setItem('staff_userSlug', actualSlug);
-        localStorage.setItem('staff_userName', data.name);
+        localStorage.setItem('staff_userName', safeName);
 
-        // 🚀 KÖKTEN ÇÖZÜM: iOS Safari PWA LocalStorage silinme sorununa karşı Cookie Yedeklemesi
         const expireDate = new Date();
-        expireDate.setTime(expireDate.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 Gün
+        expireDate.setTime(expireDate.getTime() + (60 * 60 * 1000));
         const expires = "expires=" + expireDate.toUTCString();
-        document.cookie = `staff_authToken=${data.token};${expires};path=/`;
-        document.cookie = `staff_userRole=${data.role};${expires};path=/`;
-        document.cookie = `staff_userSlug=${actualSlug};${expires};path=/`;
-        document.cookie = `staff_userName=${encodeURIComponent(data.name)};${expires};path=/`;
+        document.cookie = `staff_authToken=${sessionToken};${expires};path=/;SameSite=Lax;Secure`; 
+        document.cookie = `staff_userRole=${data.role};${expires};path=/;SameSite=Lax;Secure`;
+        document.cookie = `staff_userSlug=${actualSlug};${expires};path=/;SameSite=Lax;Secure`;
+        document.cookie = `staff_userName=${encodeURIComponent(safeName)};${expires};path=/;SameSite=Lax;Secure`;
 
         if (data.role === 'Yönetici') {
             router.push(`/${actualSlug}/manager`);

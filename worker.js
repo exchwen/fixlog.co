@@ -1,56 +1,55 @@
-const rateLimitCache = new Map();
-
-export default {
-    async fetch(request, env, ctx) {
-        const url = new URL(request.url);
-        const method = request.method;
-        const clientIp = request.headers.get('cf-connecting-ip') || 'unknown';
-
-        // 🚀 CANLI DOMAIN AYARI
-        const APP_URL = "https://fixlog.co";
-
-        const allowedOrigins = ["https://fixlog.co", "https://app.fixlog.co", "https://www.fixlog.co", "http://localhost:3000"];
-        const origin = request.headers.get("Origin") || "";
-        const corsOrigin = allowedOrigins.includes(origin) ? origin : "https://fixlog.co";
-
-        const corsHeaders = {
+const corsHeaders = {
             "Access-Control-Allow-Origin": corsOrigin,
             "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            "X-Frame-Options": "DENY",
+            "X-Content-Type-Options": "nosniff",
+            "Referrer-Policy": "strict-origin-when-cross-origin",
+            "Permissions-Policy": "geolocation=(), microphone=(), camera=(), payment=()",
+            "Content-Security-Policy": "default-src 'self'; img-src 'self' https: data:; script-src 'self' 'unsafe-inline' https://js.pusher.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://api.fixlog.co https://*.pusher.com wss://*.pusher.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self';"
         };
 
-        if (method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-
-        const safeAll = async (query) => { try { const res = await query.all(); return res.results; } catch (e) { console.error("DB Error in safeAll:", e); return []; } };
-        const safeFirst = async (query) => { try { return await query.first(); } catch (e) { console.error("DB Error in safeFirst:", e); return null; } };
-
-        const hashPassword = async (password) => {
-            if (!env.JWT_SECRET) throw new Error("Kritik: Sistemde JWT_SECRET tanımlı değil!");
-            const encoder = new TextEncoder();
-            const data = encoder.encode(password + env.JWT_SECRET);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        const getRequiredEnv = (name, fallbackValue = null) => {
+            const value = env?.[name] || fallbackValue;
+            if (!value || value === "" || value === "changeme") {
+                return null;
+            }
+            return value;
         };
 
-        const toBase64Url = (str) => {
-            const encoded = encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode(parseInt(p1, 16)));
-            return btoa(encoded).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        const getPusherConfig = () => {
+            const appId = getRequiredEnv("PUSHER_APP_ID");
+            const key = getRequiredEnv("PUSHER_KEY");
+            const secret = getRequiredEnv("PUSHER_SECRET");
+
+            if (!appId || !key || !secret) {
+                console.warn("[Security] Pusher env değişkenleri eksik; push akışı devre dışı bırakıldı.");
+                return null;
+            }
+
+            return { appId, key, secret };
         };
 
-        const fromBase64Url = (str) => {
-            let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
-            while (base64.length % 4) base64 += '=';
-            const binary = atob(base64);
-            return decodeURIComponent(binary.split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+        const getBeamsConfig = () => {
+            const instanceId = getRequiredEnv("BEAMS_INSTANCE_ID");
+            const primaryKey = getRequiredEnv("BEAMS_PRIMARY_KEY");
+
+            if (!instanceId || !primaryKey) {
+                console.warn("[Security] Beams env değişkenleri eksik; push akışı devre dışı bırakıldı.");
+                return null;
+            }
+
+            return { instanceId, primaryKey };
         };
 
         const triggerPusher = async (channel, event, data) => {
             try {
+                const pusherConfig = getPusherConfig();
+                if (!pusherConfig) return { skipped: true };
                 console.log(`[Pusher] Tetikleniyor... Kanal: ${channel}, Event: ${event}`);
-                const PUSHER_APP_ID = env.PUSHER_APP_ID || "2118585";
-                const PUSHER_KEY = env.PUSHER_KEY || "75dfed44245e16eaea0a";
-                const PUSHER_SECRET = env.PUSHER_SECRET || "3e7c62a8460da425c4f4";
+                const PUSHER_APP_ID = pusherConfig.appId;
+                const PUSHER_KEY = pusherConfig.key;
+                const PUSHER_SECRET = pusherConfig.secret;
                 const PUSHER_CLUSTER = "eu";
 
                 const bodyStr = JSON.stringify({ name: event, channels: [channel], data: JSON.stringify(data) });
@@ -109,8 +108,10 @@ export default {
         const triggerBeams = async (interests, title, body, link, slug) => {
             if (slug) try { await triggerPusher(`company-${slug}`, 'data_updated', {}); } catch (e) {}
             try {
-                const BEAMS_INSTANCE_ID = "015accc9-e581-44a3-b37f-5410549611da";
-                const BEAMS_PRIMARY_KEY = "EB43AD23817C10DE923F9A222F19A4E6696642534F2F54DAEB30A6D966DB5DEC";
+                const beamsConfig = getBeamsConfig();
+                if (!beamsConfig) return { skipped: true };
+                const BEAMS_INSTANCE_ID = beamsConfig.instanceId;
+                const BEAMS_PRIMARY_KEY = beamsConfig.primaryKey;
 
                 // Varsayılan Logo ve Başlık
                 let iconUrl = `${APP_URL}/icons/icon-192x192.png`;
@@ -313,12 +314,58 @@ export default {
 
                         if (url.pathname === "/migrate-secret" && method === "GET") {
                 try {
-                    await env.DB.prepare(CREATE TABLE IF NOT EXISTS company_settings (company_slug TEXT PRIMARY KEY, maintenance_contract_template TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)).run();
-                    await env.DB.prepare(CREATE TABLE IF NOT EXISTS masterboss_rate_limits (ip TEXT PRIMARY KEY, attempts INTEGER DEFAULT 0, last_attempt DATETIME DEFAULT CURRENT_TIMESTAMP)).run();
-                    await env.DB.prepare(CREATE TABLE IF NOT EXISTS bom_templates (id TEXT PRIMARY KEY, company_slug TEXT, name TEXT, description TEXT, items TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)).run();
-                    await env.DB.prepare(CREATE TABLE IF NOT EXISTS purchase_orders (id TEXT PRIMARY KEY, company_slug TEXT, name TEXT, supplier_id INTEGER, status TEXT DEFAULT 'Bekliyor', items TEXT, total_value REAL DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)).run();
-                    await env.DB.prepare(CREATE TABLE IF NOT EXISTS inventory_returns (id TEXT PRIMARY KEY, company_slug TEXT, staff_id TEXT, job_id INTEGER, items TEXT, status TEXT DEFAULT 'Bekliyor', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)).run();
-                                        
+                    await env.DB.prepare(`
+                        CREATE TABLE IF NOT EXISTS company_settings (
+                            company_slug TEXT PRIMARY KEY,
+                            maintenance_contract_template TEXT,
+                            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    `).run();
+
+                    await env.DB.prepare(`
+                        CREATE TABLE IF NOT EXISTS masterboss_rate_limits (
+                            ip TEXT PRIMARY KEY,
+                            attempts INTEGER DEFAULT 0,
+                            last_attempt DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    `).run();
+
+                    await env.DB.prepare(`
+                        CREATE TABLE IF NOT EXISTS bom_templates (
+                            id TEXT PRIMARY KEY,
+                            company_slug TEXT,
+                            name TEXT,
+                            description TEXT,
+                            items TEXT,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    `).run();
+
+                    await env.DB.prepare(`
+                        CREATE TABLE IF NOT EXISTS purchase_orders (
+                            id TEXT PRIMARY KEY,
+                            company_slug TEXT,
+                            name TEXT,
+                            supplier_id INTEGER,
+                            status TEXT DEFAULT 'Bekliyor',
+                            items TEXT,
+                            total_value REAL DEFAULT 0,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    `).run();
+
+                    await env.DB.prepare(`
+                        CREATE TABLE IF NOT EXISTS inventory_returns (
+                            id TEXT PRIMARY KEY,
+                            company_slug TEXT,
+                            staff_id TEXT,
+                            job_id INTEGER,
+                            items TEXT,
+                            status TEXT DEFAULT 'Bekliyor',
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    `).run();
+
                     return new Response(JSON.stringify({ success: true, message: "Tables created successfully" }), { headers: corsHeaders });
                 } catch (e) {
                     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
@@ -326,9 +373,9 @@ export default {
             }
 
                           if (url.pathname === "/update-maintenance-contract" && method === "POST") {
-                if (userAuth.role !== "Y�netici" && userAuth.role !== "Patron") return new Response(JSON.stringify({ error: "Yetkisiz!" }), { status: 403, headers: corsHeaders });
+                if (userAuth.role !== "Yönetici" && userAuth.role !== "Patron") return new Response(JSON.stringify({ error: "Yetkisiz!" }), { status: 403, headers: corsHeaders });
                 const { slug, template } = await request.json();
-                if (slug !== userAuth.company_slug && userAuth.role !== "Masterboss") return new Response(JSON.stringify({ error: "Hatal� firma!" }), { status: 403, headers: corsHeaders });
+                if (slug !== userAuth.company_slug && userAuth.role !== "Masterboss") return new Response(JSON.stringify({ error: "Hatalı firma!" }), { status: 403, headers: corsHeaders });
                 
                 try {
                     await env.DB.prepare("INSERT INTO company_settings (company_slug, maintenance_contract_template) VALUES (?, ?) ON CONFLICT(company_slug) DO UPDATE SET maintenance_contract_template = excluded.maintenance_contract_template, updated_at = CURRENT_TIMESTAMP").bind(slug, template).run();
@@ -358,8 +405,13 @@ export default {
                 const socketId = params.get('socket_id');
                 const channelName = params.get('channel_name');
 
-                const PUSHER_KEY = env.PUSHER_KEY || "75dfed44245e16eaea0a";
-                const PUSHER_SECRET = env.PUSHER_SECRET || "3e7c62a8460da425c4f4";
+                const pusherConfig = getPusherConfig();
+                if (!pusherConfig) {
+                    return new Response(JSON.stringify({ error: "Pusher yapılandırması eksik." }), { status: 500, headers: corsHeaders });
+                }
+
+                const PUSHER_KEY = pusherConfig.key;
+                const PUSHER_SECRET = pusherConfig.secret;
 
                 const userId = userAuth.role === 'Patron' ? 'PATRON' : String(userAuth.id);
                 const userInfo = { name: userAuth.name, role: userAuth.role };
@@ -565,7 +617,7 @@ export default {
                         const lastAttemptTime = new Date(rateLimit.last_attempt).getTime();
                         if (now - lastAttemptTime < 15 * 60 * 1000) {
                             if (rateLimit.attempts >= 10) {
-                                return new Response(JSON.stringify({ error: "G�venlik: �ok fazla hatal� deneme! L�tfen 15 dakika bekleyin." }), { status: 429, headers: corsHeaders });
+                                return new Response(JSON.stringify({ error: "Güvenlik: Çok fazla hatalı deneme! Lütfen 15 dakika bekleyin." }), { status: 429, headers: corsHeaders });
                             }
                             await env.DB.prepare("UPDATE masterboss_rate_limits SET attempts = attempts + 1, last_attempt = CURRENT_TIMESTAMP WHERE ip = ?").bind(clientIp).run();
                         } else {
@@ -578,7 +630,7 @@ export default {
                     // Fallback to cache if table doesn't exist yet
                     const limitData = rateLimitCache.get(clientIp) || { count: 0, time: now };
                     if (now - limitData.time > 15 * 60 * 1000) { limitData.count = 0; limitData.time = now; }
-                    if (limitData.count >= 10) return new Response(JSON.stringify({ error: "G�venlik: �ok fazla hatal� deneme! L�tfen 15 dakika bekleyin." }), { status: 429, headers: corsHeaders });
+                    if (limitData.count >= 10) return new Response(JSON.stringify({ error: "Güvenlik: Çok fazla hatalı deneme! Lütfen 15 dakika bekleyin." }), { status: 429, headers: corsHeaders });
                     limitData.count++; rateLimitCache.set(clientIp, limitData);
                 }
 
@@ -951,7 +1003,7 @@ export default {
                             .bind(name || '', finalPhone, role || '', branch || '', username || '', is_active ?? 1, assigned_regions || '', offDaysStr, id, slug || '').run();
                     }
                 } else {
-                    await env.DB.prepare("INSERT INTO staff (company_slug, name, phone, role, branch, username, password_hash, is_active, assigned_regions, off_days) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                    await env.DB.prepare("INSERT INTO staff (company_slug, name, phone, role, branch, username, password_hash, is_active, assigned_regions, off_days) VALUES (?, ?, ?, ?
                         .bind(slug || '', name || '', finalPhone, role || 'Usta', branch || '', username || '', hashedPw || '', is_active ?? 1, assigned_regions || '', offDaysStr).run();
                 }
                 return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
@@ -964,7 +1016,7 @@ export default {
             }
 
             if (url.pathname === "/add-supplier" && method === "POST") {
-                const { slug, name, phone } = await request.json();
+                const { slug, name, phone } = await request
                 await env.DB.prepare("INSERT INTO suppliers (company_slug, name, phone) VALUES (?, ?, ?)")
                     .bind(slug || '', name || '', phone || '').run();
                 return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
@@ -1061,7 +1113,7 @@ export default {
                 const finalStatus = status || (jobType === 'Planlı' ? 'Gelecek' : 'Beklemede');
                 const nowStr = new Date().toISOString();
 
-                // 🚀 JSON Yerine Doğrudan Yeni Sütunlara INSERT Ediyoruz
+                // 🚀 JSON YERINE DOĞRUDAN YENİ SÜTUNLARA INSERT EDİYORUZ
                 await env.DB.prepare(`
             INSERT INTO jobs (
                 company_slug, customer_name, work_type, job_type, scheduled_date, details, asset_id, status,
@@ -1070,30 +1122,22 @@ export default {
         `).bind(
                     slug || '', customerName || '', workType || 'Görev', jobType || 'Anlık', scheduledDate || null, JSON.stringify(secureDetails), cleanAssetId, finalStatus,
                     creatorId, creatorName, creatorRole, managerId, managerName, workerId, workerName, finalStaffId, finalPdfUrl, nowStr
-                ).run();
+               
+                ctx.waitUntil(triggerPusher(`company-${slug}`, 'data_updated', {}));
+                return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+            }
 
-                if (cleanStaffId) {
-                    let jobLocationText = `👤 Müşteri: ${customerName || 'Belirtilmemiş'}`;
-                    if (cleanAssetId) {
-                        const assetDetails = await safeFirst(env.DB.prepare("SELECT name, apartmentName, customer_id FROM assets WHERE id = ?").bind(cleanAssetId));
-                        if (assetDetails) {
-                            if (assetDetails.apartmentName && assetDetails.apartmentName.trim() !== "") {
-                                jobLocationText = `🏢 Bina: ${assetDetails.apartmentName}\n🛗 Cihaz: ${assetDetails.name || 'Bilinmiyor'}`;
-                            } else {
-                                let phone = 'Telefon Yok';
-                                if (assetDetails.customer_id) {
-                                    const cust = await safeFirst(env.DB.prepare("SELECT contact FROM customers WHERE id = ?").bind(assetDetails.customer_id));
-                                    if (cust && cust.contact) phone = cust.contact;
-                                }
-                                jobLocationText = `👤 Müşteri: ${customerName}\n📞 İletişim: ${phone}`;
-                            }
-                        }
-                    }
-                    const jobTitle = `📋 Yeni Görev: ${workType || 'Genel İş'}`;
-                    const jobBody = `${jobLocationText}\nLütfen detayları kontrol edin.`;
-                    ctx.waitUntil(triggerBeams([`user-${slug}-${cleanStaffId}`], jobTitle, jobBody, `${APP_URL}/${slug}/dashboard`, slug));
-                }
+            if (url.pathname === "/add-stock" && method === "POST") {
+                const data = await request.json();
+                let finalSupplierId = data.supplierId;
 
+                if (data.supplierMode === 'NEW' && data.newSupplier && data.newSupplier.name) {
+                    const insertSup = await env.DB.prepare("INSERT INTO suppliers (company_slug, name, phone) VALUES (?,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+                    slug || '', customerName || '', workType || 'Görev', jobType || 'Anlık', scheduledDate || null, JSON.stringify(secureDetails), cleanAssetId, finalStatus,
+                    creatorId, creatorName, creatorRole, managerId, managerName, workerId, workerName, finalStaffId, finalPdfUrl, nowStr
+               
                 ctx.waitUntil(triggerPusher(`company-${slug}`, 'data_updated', {}));
                 return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
             }
@@ -1261,38 +1305,6 @@ export default {
                     return new Response(JSON.stringify({ success: true, message: "Otopilot: Bu ay için ek plan gerekmiyor (kayıtlar oluşturulmuş veya tamamlanmamış açık periyodik iş var)." }), { headers: corsHeaders });
                 }
 
-                // 4. İlgili ayın içinde çalışılacak net günleri (Tarih formatında) hesapla
-                const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
-                const todayStr = new Date().toISOString().split('T')[0];
-
-                let availableDates = [];
-                for (let day = 1; day <= daysInMonth; day++) {
-                    const date = new Date(targetYear, targetMonth, day);
-                    const dayOfWeek = date.getDay(); // JS'de 0 Pazardır
-                    const mappedDay = dayOfWeek === 0 ? 7 : dayOfWeek; // Patronun DB mantığıyla uyuşması için 7'ye çeviriyoruz
-
-                    if (workDays.includes(mappedDay)) {
-                        const dateStr = date.toISOString().split('T')[0];
-
-                        // 🚀 TARİH GÜNCELLEMESİ: Eğer otopilotu içinde bulunduğumuz ay için çalıştırıyorsa, bugünden öncesine iş atama!
-                        if (targetYear === new Date().getFullYear() && targetMonth === new Date().getMonth()) {
-                            if (dateStr >= todayStr) {
-                                availableDates.push(dateStr);
-                            }
-                        } else {
-                            availableDates.push(dateStr); // Gelecek ay ise tüm günleri kullan
-                        }
-                    }
-                }
-
-                if (availableDates.length === 0) {
-                    return new Response(JSON.stringify({ error: "Seçilen ayda ileriye dönük çalışma günü bulunmuyor." }), { status: 400, headers: corsHeaders });
-                }
-
-                // 5. Kapasite birimine göre (müşteri önemi × tesis yükü) gün/usta bazlı dağıtım
-                const sortedAssets = assets.map((a) => ({ asset: a, loadUnits: effectiveLoad(a) })).sort((x, y) => y.loadUnits - x.loadUnits);
-
-                const staffDayUnits = {};
                 const getDayLoad = (sid, d) => ((staffDayUnits[sid] && staffDayUnits[sid][d]) ? staffDayUnits[sid][d] : 0);
                 const addDayLoad = (sid, d, units) => {
                     if (!staffDayUnits[sid]) staffDayUnits[sid] = {};
@@ -1423,19 +1435,7 @@ export default {
 
                     for (let i = 0; i < allQueries.length; i += chunkSize) {
                         const chunk = allQueries.slice(i, i + chunkSize);
-                        await env.DB.batch(chunk);
-                    }
-
-                    Object.keys(workloadCounters).forEach((staffId) => {
-                        const count = workloadCounters[staffId];
-                        if (count > 0) {
-                            ctx.waitUntil(triggerBeams(
-                                [`user-${safeSlug}-${staffId}`],
-                                '🔄 Yeni Periyodik Bakımlar',
-                                `Fixlog.co Asistanı rotanıza bu ay için ${count} adet periyodik bakım görevi ekledi.`,
-                                `${APP_URL}/${safeSlug}/dashboard`,
-                                safeSlug
-                            ));
+                        await env.DB.batch(chunk
                         }
                     });
                 }
@@ -2126,7 +2126,7 @@ export default {
                     [`role-${company_slug}-ADMIN`],
                     `🚨 KABİN İÇİ ACİL DURUM`,
                     `🏢 Bina: ${aptName}\n🛗 Cihaz: ${assetType}\n📍 Konum: ${assetLoc}\n⚠️ Bu adresten acil yardım çağrısı alındı!`,
-                    `${APP_URL}/${company_slug}/manager?tab=emergencies`,
+                    `${APP_URL}/${company_slug}/manager`,
                     company_slug
                 ));
 
@@ -2238,7 +2238,7 @@ export default {
                 return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
             }
 
-            // 🚀 YENİ: MALZEME TALEBİ ONAYLAMA/KAPATMA VE STOKTAN DÜŞME
+            // 🚀 YENİ: MALZEME TALEPİ ONAYLAMA/KAPATMA VE STOKTAN DÜŞME
             if (url.pathname === "/resolve-material" && method === "POST") {
                 const { id, slug } = await request.json();
 
@@ -2640,45 +2640,55 @@ export default {
             // --- QUOTES ---
             if (url.pathname === "/add-quote" && method === "POST") {
                 try {
-                const data = await request.json();
-                let finalCustomerId = data.customer_id;
-                
-                // 1. Müşteri işlemleri
-                if (data.is_new_customer && data.customer_name) {
-                    const insertCust = await env.DB.prepare("INSERT INTO customers (company_slug, name, contact, address, tax_info) VALUES (?, ?, ?, ?, ?) RETURNING id")
-                        .bind(data.company_slug, data.customer_name, data.customer_phone || '', '', '').first();
-                    if (insertCust) finalCustomerId = insertCust.id;
-                }
+                    await ensureQuotesTable();
+                    const data = await request.json();
+                    const companySlug = (data.company_slug || '').toString().trim();
+                    if (!companySlug) {
+                        return new Response(JSON.stringify({ success: false, error: 'company_slug eksik' }), { status: 400, headers: corsHeaders });
+                    }
 
-                let finalAssetId = data.asset_id;
+                    let finalCustomerId = data.customer_id ? String(data.customer_id) : null;
+                    const customerName = (data.customer_name || '').toString().trim();
+                    const customerPhone = (data.customer_phone || '').toString().trim();
 
-                // 2. Asansör/Varlık işlemleri
-                if (data.is_new_asset && data.asset_name) {
-                    const insertAsset = await env.DB.prepare("INSERT INTO assets (company_slug, name, location, apartmentName, asset_details, customer_id) VALUES (?, ?, ?, ?, ?, ?) RETURNING id")
-                        .bind(data.company_slug, data.asset_name, '', '', JSON.stringify(data.quote_details || {}), finalCustomerId || null).first();
-                    if (insertAsset) finalAssetId = insertAsset.id;
-                } else if (finalAssetId && finalCustomerId) {
-                    // Mevcut varlığı seçtiyse, müşterisiyle eşleştir
-                    await env.DB.prepare("UPDATE assets SET customer_id = ? WHERE id = ? AND company_slug = ?")
-                        .bind(finalCustomerId, finalAssetId, data.company_slug).run();
-                }
+                    if (data.is_new_customer && customerName) {
+                        const insertCust = await env.DB.prepare("INSERT INTO customers (company_slug, name, contact, address, tax_info) VALUES (?, ?, ?, ?, ?) RETURNING id")
+                            .bind(companySlug, customerName, customerPhone, '', '').first();
+                        if (insertCust) finalCustomerId = String(insertCust.id);
+                    }
 
-                await env.DB.prepare("INSERT INTO quotes (id, company_slug, quote_type, customer_id, customer_name, customer_phone, asset_id, asset_name, quote_details, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-                    .bind(data.id || Date.now().toString(), data.company_slug, data.quote_type, finalCustomerId || null, data.customer_name, data.customer_phone, finalAssetId || null, data.asset_name, JSON.stringify(data.quote_details || {}), data.status || 'Bekliyor').run();
-                return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+                    let finalAssetId = data.asset_id ? String(data.asset_id) : null;
+                    const assetName = (data.asset_name || '').toString().trim();
+
+                    if (data.is_new_asset && assetName) {
+                        const insertAsset = await env.DB.prepare("INSERT INTO assets (company_slug, name, location, apartmentName, asset_details, customer_id) VALUES (?, ?, ?, ?, ?, ?) RETURNING id")
+                            .bind(companySlug, assetName, '', '', JSON.stringify(data.quote_details || {}), finalCustomerId || null).first();
+                        if (insertAsset) finalAssetId = String(insertAsset.id);
+                    } else if (finalAssetId && finalCustomerId) {
+                        await env.DB.prepare("UPDATE assets SET customer_id = ? WHERE id = ? AND company_slug = ?")
+                            .bind(finalCustomerId, finalAssetId, companySlug).run();
+                    }
+
+                    await env.DB.prepare("INSERT INTO quotes (id, company_slug, quote_type, customer_id, customer_name, customer_phone, asset_id, asset_name, quote_details, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                        .bind(data.id || Date.now().toString(), companySlug, data.quote_type, finalCustomerId || null, customerName, customerPhone, finalAssetId || null, assetName || 'Bilinmeyen Varlık', JSON.stringify(data.quote_details || {}), data.status || 'Bekliyor').run();
+
+                    return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
                 } catch (e) {
-                   return new Response(JSON.stringify({ success: false, error: e.message }), { headers: corsHeaders });
+                    return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: corsHeaders });
                 }
             }
 
             if (url.pathname === "/get-quotes" && method === "GET") {
                 const slug = url.searchParams.get("company_slug");
+                if (!slug) return new Response(JSON.stringify({ success: false, error: 'company_slug eksik' }), { status: 400, headers: corsHeaders });
+                await ensureQuotesTable();
                 const res = await env.DB.prepare("SELECT * FROM quotes WHERE company_slug = ? ORDER BY created_at DESC").bind(slug).all();
                 return new Response(JSON.stringify({ success: true, data: res.results }), { headers: corsHeaders });
             }
 
             if (url.pathname === "/delete-quote" && method === "POST") {
                 const data = await request.json();
+                await ensureQuotesTable();
                 await env.DB.prepare("DELETE FROM quotes WHERE id = ? AND company_slug = ?").bind(data.id, data.company_slug).run();
                 return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
             }

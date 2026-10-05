@@ -322,7 +322,9 @@ export default function ManagerDashboard() {
 
   useEffect(() => { 
       fetchData(true); 
-      const pusher = new Pusher('75dfed44245e16eaea0a', { cluster: 'eu' });
+      const pusherKey = process.env.NEXT_PUBLIC_PUSHER_KEY || '';
+      if (!pusherKey) return;
+      const pusher = new Pusher(pusherKey, { cluster: 'eu' });
       const channel = pusher.subscribe(`company-${slug}`);
       channel.bind('data_updated', () => { fetchData(false); });
       return () => { channel.unbind_all(); channel.unsubscribe(); pusher.disconnect(); }; 
