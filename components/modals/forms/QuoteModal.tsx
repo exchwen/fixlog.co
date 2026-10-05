@@ -86,30 +86,32 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
       const companySlug = data?.slug || data?.company_slug || (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '');
       const assetName = newAssetMode ? newAssetName : (data?.assets?.find((a: any) => a.id.toString() === selectedAssetId)?.name || 'Bilinmiyor');
       
-      await fetch('/add-quote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          company_slug: companySlug,
-          quote_type: quoteType,
-          is_new_customer: newCustomerMode,
-          customer_id: newCustomerMode ? null : selectedCustomerId,
-          customer_name: customerName,
-          customer_phone: customerPhone,
-          is_new_asset: newAssetMode,
-          asset_id: newAssetMode ? null : selectedAssetId,
-          asset_name: assetName,
-          quote_details: {
-             revisionDetails,
-             elevatorType,
-             stopsCount,
-             capacity
-          }
-        })
-      });
-      setStatus('success');
-    } catch(e) {
-      alert("Hata oluştu");
+      const res = await fetch('/add-quote', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      company_slug: companySlug,
+      quote_type: quoteType,
+      is_new_customer: newCustomerMode,
+      customer_id: newCustomerMode ? null : selectedCustomerId,
+      customer_name: customerName,
+      customer_phone: customerPhone,
+      is_new_asset: newAssetMode,
+      asset_id: newAssetMode ? null : selectedAssetId,
+      asset_name: assetName,
+      quote_details: {
+         revisionDetails,
+         elevatorType,
+         stopsCount,
+         capacity
+      }
+    })
+  });
+  const r = await res.json();
+  if(!r.success) throw new Error(r.error || 'Bilinmeyen Hata');
+  setStatus('success');
+    } catch(e: any) {
+      alert('Hata oluştu: ' + (e.message || ''));
       setStatus('idle');
     }
   };
@@ -342,6 +344,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                               <div className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
                                 <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1">
                                   {(data?.assets || []).filter((a: any) => {
+                                      if (!newCustomerMode && selectedCustomerId && String(a.customer_id) !== selectedCustomerId) return false;
                                       const term = (searchAsset || '').toLowerCase();
                                       return (a.name || '').toLowerCase().includes(term) || (a.apartmentName || '').toLowerCase().includes(term);
                                   }).map((a: any) => {
@@ -359,7 +362,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                                           </button>
                                       )
                                   })}
-                                  {(data?.assets || []).length === 0 && (
+                                  {(data?.assets || []).filter((a: any) => (!newCustomerMode && selectedCustomerId) ? String(a.customer_id) === selectedCustomerId : true).length === 0 && (
                                     <div className="p-4 text-center text-xs text-slate-500">Sistemde kayıtlı asansör yok. Yeni eklemeyi seçin.</div>
                                   )}
                                 </div>
@@ -483,10 +486,13 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
       <div style={{ display: "none" }}>
         <div ref={printRef} className="p-8 bg-white text-black max-w-2xl mx-auto font-sans">
           <div className="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
-            <div>
-              <h1 className="text-3xl font-black">{data?.settings?.company_name || 'Firma Adı'}</h1>
-              <p className="text-sm font-medium mt-1">{quoteType}</p>
-            </div>
+            <div className="flex items-center gap-4">
+  {data?.settings?.company_logo && <img src={data.settings.company_logo} alt="Logo" className="w-16 h-16 object-contain" />}
+  <div>
+    <h1 className="text-3xl font-black">{data?.settings?.company_name || "Firma Adı"}</h1>
+    <p className="text-sm font-medium mt-1">{quoteType}</p>
+  </div>
+</div>
             <div className="text-right text-sm">
               <p><strong>Tarih:</strong> {new Date().toLocaleDateString('tr-TR')}</p>
             </div>
@@ -520,7 +526,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
           
           <div className="grid grid-cols-2 gap-8 mt-12 pt-8 border-t-2 border-black text-center">
             <div>
-              <p className="font-bold mb-16">Yetkili (Firma) İmzası</p>
+              <p className="font-bold mb-16">Yetkili (Firma) İmzası<br/><span className="font-normal text-sm">{data?.ownerName || data?.settings?.owner_name || ""}</span></p>
               {employerCanvasRef.current && <img src={employerCanvasRef.current.toDataURL()} className="mx-auto h-20 object-contain mix-blend-multiply grayscale" />}
             </div>
             <div>

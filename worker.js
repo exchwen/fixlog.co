@@ -832,6 +832,7 @@ export default {
                     .bind(companyName || '', ownerName || '', sector || '', address || '', taxInfo || '', phone || '', landlinePhone || '', emergencyPhone || '', whatsappPhone || '', website || '', finalLogoUrl || '', workDaysStr, capUnits, slug || '').run();
 
                 return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+                } catch(e) { return new Response(JSON.stringify({ success: false, error: e.message }), { headers: corsHeaders }); }
             }
 
             if (url.pathname === "/add-support-ticket" && method === "POST") {
@@ -2638,6 +2639,7 @@ export default {
             
             // --- QUOTES ---
             if (url.pathname === "/add-quote" && method === "POST") {
+                try {
                 const data = await request.json();
                 let finalCustomerId = data.customer_id;
                 
@@ -2664,6 +2666,9 @@ export default {
                 await env.DB.prepare("INSERT INTO quotes (id, company_slug, quote_type, customer_id, customer_name, customer_phone, asset_id, asset_name, quote_details, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
                     .bind(data.id || Date.now().toString(), data.company_slug, data.quote_type, finalCustomerId || null, data.customer_name, data.customer_phone, finalAssetId || null, data.asset_name, JSON.stringify(data.quote_details || {}), data.status || 'Bekliyor').run();
                 return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+                } catch (e) {
+                   return new Response(JSON.stringify({ success: false, error: e.message }), { headers: corsHeaders });
+                }
             }
 
             if (url.pathname === "/get-quotes" && method === "GET") {
