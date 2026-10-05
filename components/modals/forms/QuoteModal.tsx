@@ -92,8 +92,12 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
         body: JSON.stringify({
           company_slug: companySlug,
           quote_type: quoteType,
+          is_new_customer: newCustomerMode,
+          customer_id: newCustomerMode ? null : selectedCustomerId,
           customer_name: customerName,
           customer_phone: customerPhone,
+          is_new_asset: newAssetMode,
+          asset_id: newAssetMode ? null : selectedAssetId,
           asset_name: assetName,
           quote_details: {
              revisionDetails,
