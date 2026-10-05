@@ -24,6 +24,8 @@ import CompletedJobsTab from '@/components/patron/CompletedJobsTab';
 import AlertsTab from '@/components/patron/AlertsTab';
 import SupportTab from '@/components/patron/SupportTab'; 
 import PeriodicTab from '@/components/patron/PeriodicTab';
+import QuotesTab from '@/components/patron/QuotesTab';
+import BomTab from '@/components/patron/BomTab';
 import AssetQRModal from '@/components/modals/AssetQRModal';
 import DynamicPWA from '@/components/DynamicPWA';
 import { PaywallOverlay } from '@/components/PaywallOverlay';
@@ -716,6 +718,8 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
           </div>
 
           {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} handleAction={handleAction} setJobModalType={setJobModalType} />}
+          {activeTab === 'quotes' && <QuotesTab data={data} />}
+          {activeTab === 'bom' && <BomTab data={data} />}
           {activeTab === 'my-jobs' && <MyJobsTab data={data} setShowJobModal={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} handleAction={handleAction} setJobModalType={setJobModalType} />}
           {activeTab === 'jobs' && <JobsTab data={data} setShowJobModal={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} setJobModalType={setJobModalType} handleAction={handleAction} />}
           {activeTab === 'pending' && <PendingJobsTab data={data} setSelectedJob={setSelectedJob} setJobModalType={setJobModalType} handleAction={handleAction} />}

@@ -27,6 +27,8 @@ import CompletedJobsTab from '@/components/patron/CompletedJobsTab';
 import AlertsTab from '@/components/patron/AlertsTab';
 import SupportTab from '@/components/patron/SupportTab'; 
 import PeriodicTab from '@/components/patron/PeriodicTab';
+import QuotesTab from '@/components/patron/QuotesTab';
+import BomTab from '@/components/patron/BomTab';
 
 const API_URL = 'https://api.fixlog.co';
 
@@ -583,6 +585,8 @@ return (
         <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto w-full pb-24">
           
           {activeTab === 'home' && <HomeTab data={data} setShowJobModal={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} setActiveTab={setActiveTab} handleAction={handleAction} setJobModalType={setJobModalType} />}
+          {activeTab === 'quotes' && <QuotesTab data={data} />}
+          {activeTab === 'bom' && <BomTab data={data} />}
           {activeTab === 'jobs' && <JobsTab data={data} setShowJobModal={setShowAddJob} statusColors={statusColors} setSelectedJob={setSelectedJob} setJobModalType={setJobModalType} handleAction={handleAction} />}
           {activeTab === 'pending' && <PendingJobsTab data={data} setSelectedJob={setSelectedJob} setJobModalType={setJobModalType} handleAction={handleAction} />}
           {activeTab === 'completed' && <CompletedJobsTab data={data} setSelectedJob={setSelectedJob} statusColors={statusColors} setJobModalType={setJobModalType} handleAction={handleAction} />}

@@ -216,7 +216,8 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName, c
             for (let bit = 0; bit < 8; bit++) {
               const px = (y * PRINTER_WIDTH + (x * 8 + bit)) * 4;
               const r = imgData[px]; const g = imgData[px+1]; const b = imgData[px+2];
-              if ((r + g + b) / 3 < 128) {
+              // Yüksek threshold (225) kullanarak çok açık renkli / soluk logoların da siyah olarak basılmasını sağlar.
+              if ((r + g + b) / 3 < 225) {
                 byte |= (1 << (7 - bit));
               }
             }

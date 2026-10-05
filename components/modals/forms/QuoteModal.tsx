@@ -18,6 +18,10 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data }: 
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [newAssetMode, setNewAssetMode] = useState(false);
   const [newAssetName, setNewAssetName] = useState('');
+  const [revisionDetails, setRevisionDetails] = useState('');
+  const [elevatorType, setElevatorType] = useState('');
+  const [stopsCount, setStopsCount] = useState('');
+  const [capacity, setCapacity] = useState('');
 
   const employerCanvasRef = useRef<HTMLCanvasElement>(null);
   const customerCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -180,7 +184,12 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data }: 
                     <CheckCircle size={40} />
                   </motion.div>
                   <h3 className="text-2xl font-black text-slate-800 mb-2">Başarıyla Oluşturuldu!</h3>
-                  <p className="text-slate-500 font-medium">Teklifiniz sisteme kaydedildi ve işleme alındı.</p>
+                  <p className="text-slate-500 font-medium mb-6">Teklifiniz sisteme kaydedildi ve işleme alındı.</p>
+                  
+                  <div className="flex flex-col sm:flex-row justify-center gap-3 w-full max-w-sm mx-auto">
+                     <button onClick={() => window.print()} className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all"><Download size={16}/> Convert to PDF</button>
+                     <button onClick={() => window.print()} className="w-full px-4 py-3 bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all"><FileText size={16}/> Print Thermal Receipt</button>
+                  </div>
                 </div>
               ) : (
                 <>
@@ -228,7 +237,6 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data }: 
                         <div className="space-y-2">
                           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 block flex justify-between items-center">
                             Sözleşme İçeriği
-                            <span className="text-blue-500 text-[9px] lowercase px-2 py-0.5 bg-blue-50 rounded-full flex items-center gap-1"><CheckCircle size={10}/> D1'e Kaydedilir</span>
                           </label>
                           <textarea 
                             rows={12}
@@ -267,7 +275,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data }: 
                                               key={a.id} 
                                               type="button"
                                               onClick={() => setSelectedAssetId(String(a.id))}
-                                              className={`text-left px-3 py-2.5 rounded-lg transition-all flex flex-col gap-0.5 ${isSelected ? 'bg-blue-50 border border-blue-200 shadow-sm' : 'hover:bg-slate-50 border border-transparent'}`}
+                                              className={`text-left px-4 py-3 rounded-xl transition-all flex flex-col gap-1 border-2 ${isSelected ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50'}`}
                                           >
                                               <div className={`text-sm ${isSelected ? 'text-blue-800 font-bold' : 'text-slate-800 font-bold'}`}>{aptName || a.name}</div>
                                               {aptName && <div className={`text-[11px] ${isSelected ? 'text-blue-600 font-semibold' : 'text-slate-500 font-medium'}`}>{a.name}</div>}
@@ -281,9 +289,33 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data }: 
                               </div>
                             </div>
                           ) : (
-                            <div className="space-y-1.5 p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
-                              <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Yeni Asansör Bilgisi</label>
-                              <input required type="text" value={newAssetName} onChange={e => setNewAssetName(e.target.value)} placeholder="Örn: A Blok Sağ Asansör (10 Kişilik)" className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
+                            <div className="space-y-4 p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
+                              <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Yeni Asansör Adı / Bilgisi</label>
+                                <input required type="text" value={newAssetName} onChange={e => setNewAssetName(e.target.value)} placeholder="Örn: A Blok Sağ Asansör" className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
+                              </div>
+                              {quoteType === 'Revizyon Teklifi' && (
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Yapılacak İşlerin Detayları</label>
+                                  <textarea rows={3} value={revisionDetails} onChange={e => setRevisionDetails(e.target.value)} placeholder="Örn: Motor değişimi, kabin revizyonu..." className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm resize-none custom-scrollbar" />
+                                </div>
+                              )}
+                              {quoteType === 'Montaj Teklifi' && (
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                  <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Asansör Tipi</label>
+                                    <input type="text" value={elevatorType} onChange={e => setElevatorType(e.target.value)} placeholder="Örn: İnsan" className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
+                                  </div>
+                                  <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Durak Sayısı</label>
+                                    <input type="number" value={stopsCount} onChange={e => setStopsCount(e.target.value)} placeholder="Örn: 5" className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
+                                  </div>
+                                  <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Kapasite</label>
+                                    <input type="text" value={capacity} onChange={e => setCapacity(e.target.value)} placeholder="Örn: 800kg" className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>

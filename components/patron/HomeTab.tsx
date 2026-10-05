@@ -564,26 +564,37 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
         )}
       </AnimatePresence>
 
-      <div className="flex flex-col items-start gap-3">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            Hoş Geldin, {currentUserName} 👋
-          </h2>
-          <p className="text-slate-500 text-xs mt-1">Sistem üzerindeki anlık özetin aşağıdadır.</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
+        <div className="flex flex-col items-start gap-3">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              Hoş Geldin, {currentUserName} 👋
+            </h2>
+            <p className="text-slate-500 text-xs mt-1">Sistem üzerindeki anlık özetin aşağıdadır.</p>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2 bg-slate-100/80 px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Firma Kodu:</span>
+                  <span className="text-xs font-black text-blue-600 tracking-wider">{data?.slug || slug || 'Bulunamadı'}</span>
+              </div>
+              <button 
+                onClick={handleCopyLink} 
+                className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold transition-all active:scale-95 shadow-sm border border-slate-200 w-fit"
+              >
+                 {copied ? <Check size={14} className="text-emerald-500" /> : <LinkIcon size={14} className="text-slate-400" />}
+                 {copied ? 'Bağlantı Kopyalandı' : 'Personel Giriş Linkini Kopyala'}
+              </button>
+          </div>
         </div>
-        
-        <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-2 bg-slate-100/80 px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Firma Kodu:</span>
-                <span className="text-xs font-black text-blue-600 tracking-wider">{data?.slug || slug || 'Bulunamadı'}</span>
-            </div>
-            <button 
-              onClick={handleCopyLink} 
-              className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold transition-all active:scale-95 shadow-sm border border-slate-200 w-fit"
-            >
-               {copied ? <Check size={14} className="text-emerald-500" /> : <LinkIcon size={14} className="text-slate-400" />}
-               {copied ? 'Bağlantı Kopyalandı' : 'Personel Giriş Linkini Kopyala'}
-            </button>
+
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <button onClick={() => setShowQuoteModal(true)} className="w-full sm:w-auto bg-emerald-600 text-white px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all shadow-sm active:scale-95">
+            <FileText size={16} strokeWidth={3} /> Yeni Teklif & Sözleşme
+          </button>
+          <button onClick={() => setShowJobModal(true)} className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-sm active:scale-95">
+            <Plus size={16} strokeWidth={3} /> Yeni İş Ata
+          </button>
         </div>
       </div>
 
@@ -1144,9 +1155,6 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
             <Activity size={18} className="text-blue-600" />
             <h3 className="font-bold text-slate-800 text-sm sm:text-base tracking-tight">Son İş Emirleri ve Onay Durumu</h3>
           </div>
-          <div className="flex w-full sm:w-auto flex-col sm:flex-row gap-2"><button onClick={() => setShowQuoteModal(true)} className="w-full sm:w-auto bg-emerald-600 text-white px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all shadow-sm active:scale-95"><FileText size={16} strokeWidth={3} /> Yeni Teklif</button><button onClick={() => setShowJobModal(true)} className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-sm active:scale-95">
-            <Plus size={16} strokeWidth={3} /> Yeni İş Ata
-          </button></div>
         </div>
         
         <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[400px] custom-scrollbar w-full">
