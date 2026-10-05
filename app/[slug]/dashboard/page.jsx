@@ -174,7 +174,7 @@ export default function PatronDashboard() {
   const [hideChatBubble, setHideChatBubble] = useState(false);
 
   // =================================================================================
-  // PWA ve Fetching
+  // PWA ve Fetching 1
   // =================================================================================
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
