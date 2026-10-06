@@ -206,6 +206,8 @@ const corsHeaders = {
             }
         };
 
+    export default {
+        async fetch(request, env, ctx) {
         try {
             // 🚀 GÜVENLİK DUVARI AYARI: Test rotası eklendi
             const publicRoutes = [
@@ -666,14 +668,14 @@ const corsHeaders = {
 
                     const secret = env.JWT_SECRET; if(!secret) throw new Error("JWT_SECRET eksik!");
                     const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-                    const signatureBuffer = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(${header}.));
+                    const signatureBuffer = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${header}.${payload}`));
 
                     let binarySig = "";
                     const sigBytes = new Uint8Array(signatureBuffer);
                     for (let i = 0; i < sigBytes.byteLength; i++) { binarySig += String.fromCharCode(sigBytes[i]); }
                     const signature = btoa(binarySig).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, "");
 
-                    const masterToken = ${header}..;
+                    const masterToken = `${header}.${payload}.${signature}`;
 
                     return new Response(JSON.stringify({ success: true, token: masterToken }), { headers: corsHeaders });
                 }
@@ -884,7 +886,6 @@ const corsHeaders = {
                     .bind(companyName || '', ownerName || '', sector || '', address || '', taxInfo || '', phone || '', landlinePhone || '', emergencyPhone || '', whatsappPhone || '', website || '', finalLogoUrl || '', workDaysStr, capUnits, slug || '').run();
 
                 return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
-                } catch(e) { return new Response(JSON.stringify({ success: false, error: e.message }), { headers: corsHeaders }); }
             }
 
             if (url.pathname === "/add-support-ticket" && method === "POST") {
@@ -1003,7 +1004,7 @@ const corsHeaders = {
                             .bind(name || '', finalPhone, role || '', branch || '', username || '', is_active ?? 1, assigned_regions || '', offDaysStr, id, slug || '').run();
                     }
                 } else {
-                    await env.DB.prepare("INSERT INTO staff (company_slug, name, phone, role, branch, username, password_hash, is_active, assigned_regions, off_days) VALUES (?, ?, ?, ?
+                    await env.DB.prepare("INSERT INTO staff (company_slug, name, phone, role, branch, username, password_hash, is_active, assigned_regions, off_days) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
                         .bind(slug || '', name || '', finalPhone, role || 'Usta', branch || '', username || '', hashedPw || '', is_active ?? 1, assigned_regions || '', offDaysStr).run();
                 }
                 return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
@@ -1016,7 +1017,7 @@ const corsHeaders = {
             }
 
             if (url.pathname === "/add-supplier" && method === "POST") {
-                const { slug, name, phone } = await request
+                const { slug, name, phone } = await request.json();
                 await env.DB.prepare("INSERT INTO suppliers (company_slug, name, phone) VALUES (?, ?, ?)")
                     .bind(slug || '', name || '', phone || '').run();
                 return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
@@ -1122,21 +1123,7 @@ const corsHeaders = {
         `).bind(
                     slug || '', customerName || '', workType || 'Görev', jobType || 'Anlık', scheduledDate || null, JSON.stringify(secureDetails), cleanAssetId, finalStatus,
                     creatorId, creatorName, creatorRole, managerId, managerName, workerId, workerName, finalStaffId, finalPdfUrl, nowStr
-               
-                ctx.waitUntil(triggerPusher(`company-${slug}`, 'data_updated', {}));
-                return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
-            }
-
-            if (url.pathname === "/add-stock" && method === "POST") {
-                const data = await request.json();
-                let finalSupplierId = data.supplierId;
-
-                if (data.supplierMode === 'NEW' && data.newSupplier && data.newSupplier.name) {
-                    const insertSup = await env.DB.prepare("INSERT INTO suppliers (company_slug, name, phone) VALUES (?,
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).bind(
-                    slug || '', customerName || '', workType || 'Görev', jobType || 'Anlık', scheduledDate || null, JSON.stringify(secureDetails), cleanAssetId, finalStatus,
-                    creatorId, creatorName, creatorRole, managerId, managerName, workerId, workerName, finalStaffId, finalPdfUrl, nowStr
+                ).run();
                
                 ctx.waitUntil(triggerPusher(`company-${slug}`, 'data_updated', {}));
                 return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
@@ -1435,9 +1422,8 @@ const corsHeaders = {
 
                     for (let i = 0; i < allQueries.length; i += chunkSize) {
                         const chunk = allQueries.slice(i, i + chunkSize);
-                        await env.DB.batch(chunk
-                        }
-                    });
+                        await env.DB.batch(chunk);
+                    }
                 }
 
                 const totalUnits = scheduleRows.reduce((acc, r) => acc + effectiveLoad(r.asset), 0);
