@@ -80,6 +80,19 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     setTimeout(resetForm, 300);
   };
 
+  // ESC tuşu ile kapanma
+  useEffect(() => {
+    const handleEscKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showQuoteModal) {
+        handleClose();
+      }
+    };
+    if (showQuoteModal) {
+      window.addEventListener('keydown', handleEscKey);
+    }
+    return () => window.removeEventListener('keydown', handleEscKey);
+  }, [showQuoteModal]);
+
   const handleSubmit = async () => {
     setStatus('loading');
     try {
@@ -250,7 +263,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                      <button onClick={handlePrint} className="w-full px-4 py-3 bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all"><FileText size={16}/> Termal Fiş Yazdır</button>
                   </div>
 <div className="flex flex-col sm:flex-row justify-center gap-3 w-full max-w-sm mx-auto mt-3">
-  <button onClick={() => { setShowQuoteModal(false); if (setActiveTab) setActiveTab('quotes'); else window.location.hash = 'quotes'; }} className="w-full px-4 py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">Szlemelere Git</button>
+  <button onClick={() => { setShowQuoteModal(false); if (setActiveTab) setActiveTab('quotes'); else window.location.hash = 'quotes'; }} className="w-full px-4 py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">Sözleşmelere Git</button>
 </div>
 </div>
 ) : (
@@ -392,11 +405,8 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                                   )}
                                 </div>
                               </div>
-<div className="flex flex-col sm:flex-row justify-center gap-3 w-full max-w-sm mx-auto mt-3">
-  <button onClick={() => { setShowQuoteModal(false); if (setActiveTab) setActiveTab('quotes'); else window.location.hash = 'quotes'; }} className="w-full px-4 py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">Szlemelere Git</button>
-</div>
-</div>
-) : (
+                            </div>
+                          ) : (
                             <div className="space-y-4 p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
                               <div className="space-y-1.5">
                                 <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Yeni Asansör Adı / Bilgisi</label>

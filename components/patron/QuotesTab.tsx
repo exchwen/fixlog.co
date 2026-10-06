@@ -3,10 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, Trash2, FileText, FileSignature, CheckCircle, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
+import dynamic from 'next/dynamic';
+
+const QuoteModal = dynamic(() => import('@/components/modals/forms/QuoteModal'), { ssr: false });
 
 export default function QuotesTab({ data }: any) {
     const [quotes, setQuotes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showQuoteModal, setShowQuoteModal] = useState(false);
     
     const companySlug = data?.slug || data?.company_slug || (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '');
 
@@ -43,8 +47,8 @@ export default function QuotesTab({ data }: any) {
                   <h2 className="text-2xl font-black text-slate-800">Teklifler ve Sözleşmeler</h2>
                   <p className="text-sm font-medium text-slate-500 mt-1">Oluşturduğunuz bakım sözleşmeleri ve montaj/revizyon tekliflerini buradan takip edebilirsiniz.</p>
                 </div>
-                <button onClick={() => { if(typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('navTab', { detail: 'home' })) }} className="px-4 py-2 bg-slate-900 text-white font-bold text-sm rounded-xl hover:bg-slate-800 transition-all shadow-sm">
-                    Yeni Oluştur
+                <button onClick={() => setShowQuoteModal(true)} className="px-4 py-2 bg-slate-900 text-white font-bold text-sm rounded-xl hover:bg-slate-800 transition-all shadow-sm">
+                    + Yeni Teklif
                 </button>
             </div>
 
@@ -89,6 +93,9 @@ export default function QuotesTab({ data }: any) {
                     )}
                 </div>
             )}
+
+            {/* QuoteModal Render */}
+            {showQuoteModal && <QuoteModal showQuoteModal={showQuoteModal} setShowQuoteModal={setShowQuoteModal} data={data} setActiveTab={(tab: string) => { if(typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('navTab', { detail: tab })) }} />}
         </div>
     );
 }

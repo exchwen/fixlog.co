@@ -18,6 +18,7 @@ import AddStaffModal from './forms/AddStaffModal';
 import AddCustomerModal from './forms/AddCustomerModal';
 import AddAssetModal from './forms/AddAssetModal';
 import SmartExcelModal from './forms/SmartExcelModal';
+import QuoteModal from './forms/QuoteModal';
 
 // 4. Stok, Tedarikçi, Ayarlar ve SİPARİŞLER
 import StockModal from './inventory/StockModal';
@@ -59,6 +60,9 @@ export default function DashboardModals(props: any) {
       <SupplierModals {...props} />
       <CategoryModal {...props} />
       <OrderModals {...props} />
+
+      {/* TEKLIF MODALı */}
+      <QuoteModal {...props} />
     </>
   );
 }
