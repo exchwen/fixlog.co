@@ -98,21 +98,21 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     ? newAssetName 
     : (data?.assets?.find((a: any) => String(a.id) === selectedAssetId)?.name || 'Bilinmiyor');
 
-  const handleSubmit = async () => {
+const handleSubmit = async () => {
     setStatus('loading');
     try {
       const companySlug = data?.slug || data?.company_slug || (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '');
-      
       const token = localStorage.getItem('token');
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
       
       const res = await fetch(`${API_URL}/add-quote`, {
         method: 'POST',
         headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // Yetkisiz Erişim hatasını çözen güvenlik anahtarı
         },
         body: JSON.stringify({
+          slug: companySlug, // worker.js güvenlik bariyerini geçmek için zorunlu (Eklendi)
           company_slug: companySlug,
           quote_type: quoteType,
           is_new_customer: newCustomerMode,
@@ -130,8 +130,10 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
           }
         })
       });
+      
       const r = await res.json();
       if(!r.success) throw new Error(r.error || 'Bilinmeyen Hata');
+      
       setStatus('success');
     } catch(e: any) {
       alert('Hata oluştu: ' + (e.message || ''));
