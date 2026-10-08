@@ -1,8 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, ArrowRight, Loader2, CheckCircle, Search, FileText, Download, RotateCcw, User, Box } from 'lucide-react';
+import { X, Send, ArrowRight, Loader2, CheckCircle, Search, FileText, Download, RotateCcw, User, Box, MessageCircle, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useReactToPrint } from 'react-to-print';
 
 const getAuthToken = () => {
   if (typeof window === 'undefined') return '';
@@ -14,19 +13,17 @@ const getAuthToken = () => {
   };
   let token = localStorage.getItem('patron_authToken') || getCookie('patron_authToken');
   if (!token) token = localStorage.getItem('staff_authToken') || getCookie('staff_authToken');
-  return token ? token.replace(/^"|"$/g, '') : '';
+  return token ? token.replace(/^"|"\$/g, '') : '';
 };
 
 export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, setActiveTab }: any) {
   const [step, setStep] = useState(1);
   const [quoteType, setQuoteType] = useState('Bakım Sözleşmesi');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
-  const printRef = useRef<HTMLDivElement>(null);
+  const [errorMessage, setErrorMessage] = useState(''); // 🚀 YENİ: Tarayıcı 'alert' yerine kullanılacak
   
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
-    documentTitle: "Teklif_Sozlesme",
-  });
+  // 🚀 YENİ: İmza Yöntemi State'i
+  const [signMode, setSignMode] = useState<'field' | 'office'>('field'); 
 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -69,12 +66,13 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
         body: JSON.stringify({ slug, template: val })
       });
-    } catch(e) { console.error('Sozlesme kaydedilemedi', e); }
+    } catch(e) {}
   };
 
   const resetForm = () => {
     setStep(1);
     setQuoteType('Bakım Sözleşmesi');
+    setSignMode('field'); // SIFIRLA
     setCustomerName('');
     setCustomerPhone('');
     setSearchAsset('');
@@ -84,6 +82,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     setNewAssetMode(false);
     setNewAssetName('');
     setStatus('idle');
+    setErrorMessage('');
     setEmployerSignature(false);
     setCustomerSignature(false);
   };
@@ -95,20 +94,16 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
 
   useEffect(() => {
     const handleEscKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && showQuoteModal) {
-        handleClose();
-      }
+      if (e.key === 'Escape' && showQuoteModal) handleClose();
     };
     if (showQuoteModal) window.addEventListener('keydown', handleEscKey);
     return () => window.removeEventListener('keydown', handleEscKey);
   }, [showQuoteModal]);
 
-  // 🚀 DÜZELTME: Apartman adını ve Varlık adını en doğru şekilde birleştiriyoruz
   const getFullAssetName = () => {
       if (newAssetMode) return newAssetName;
       const asset = data?.assets?.find((a: any) => String(a.id) === selectedAssetId);
       if (!asset) return 'Bilinmiyor';
-      
       const aptName = asset.apartmentName || asset.apartment_name;
       return aptName ? `${aptName} (${asset.name})` : asset.name;
   };
@@ -117,6 +112,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
 
   const handleSubmit = async () => {
     setStatus('loading');
+    setErrorMessage('');
     try {
       const companySlug = data?.slug || data?.company_slug || (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '');
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
@@ -126,7 +122,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
           throw new Error('Sisteme giriş yapılmamış. Oturum süreniz dolmuş olabilir.');
       }
 
-      const customerSignBase64 = customerCanvasRef.current?.toDataURL('image/png') || null;
+      const customerSignBase64 = signMode === 'field' ? (customerCanvasRef.current?.toDataURL('image/png') || null) : null;
       const employerSignBase64 = employerCanvasRef.current?.toDataURL('image/png') || null;
       
       const res = await fetch(`${API_URL}/add-quote`, {
@@ -146,7 +142,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
           is_new_asset: newAssetMode,
           asset_id: newAssetMode ? null : selectedAssetId,
           asset_name: finalAssetName, 
-          status: 'Onaylandı', 
+          status: signMode === 'office' ? 'Bekliyor' : 'Müşteri Onayladı', // 🚀 AKILLI STATÜ
           quote_details: {
              revisionDetails,
              elevatorType,
@@ -164,14 +160,17 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
       
       setStatus('success');
     } catch(e: any) {
-      alert('Hata oluştu: ' + (e.message || 'Yetkisiz erişim.'));
+      setErrorMessage(e.message || 'Yetkisiz erişim veya bağlantı sorunu.');
       setStatus('idle');
     }
   };
 
   const isCustomerValid = newCustomerMode ? !!customerName.trim() : !!selectedCustomerId;
   const isAssetValid = newAssetMode ? !!newAssetName.trim() : !!selectedAssetId;
-  const canSubmit = isCustomerValid && isAssetValid && employerSignature && customerSignature;
+  
+  // 🚀 YENİ VALIDASYON: Sadece seçili moda göre imza kontrolü
+  const isSignValid = signMode === 'field' ? (employerSignature && customerSignature) : employerSignature;
+  const canSubmit = isCustomerValid && isAssetValid && isSignValid;
 
   const handleNextFromStep1 = () => { if (!isCustomerValid || !isAssetValid) return; setStep(2); };
   const handleNextFromStep2 = () => { setStep(3); };
@@ -239,11 +238,13 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     if (showQuoteModal && step === 4) {
       const timeout = setTimeout(() => {
         initCanvas(employerCanvasRef, setEmployerSignature);
-        initCanvas(customerCanvasRef, setCustomerSignature);
+        if (signMode === 'field') {
+            initCanvas(customerCanvasRef, setCustomerSignature);
+        }
       }, 100);
       return () => clearTimeout(timeout);
     }
-  }, [showQuoteModal, step]);
+  }, [showQuoteModal, step, signMode]);
 
   const clearCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>, setHasSignature: (v: boolean) => void) => {
     const canvas = canvasRef.current;
@@ -265,7 +266,17 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
             exit={{ opacity: 0, scale: 0.95 }} 
             className="bg-white w-full max-w-lg rounded-3xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]"
           >
-            <div className="flex justify-between items-center p-5 sm:p-6 border-b border-slate-100 bg-slate-50/80">
+            {/* 🚀 YENİ: Hata Balonu (Alert Yerine) */}
+            <AnimatePresence>
+                {errorMessage && (
+                    <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} className="absolute top-4 left-4 right-4 bg-rose-100 border border-rose-200 text-rose-700 p-3 rounded-xl z-50 flex justify-between items-center shadow-lg">
+                        <div className="text-xs font-bold flex items-center gap-2"><AlertTriangle size={16}/> {errorMessage}</div>
+                        <button onClick={() => setErrorMessage('')}><X size={16}/></button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <div className="flex justify-between items-center p-5 sm:p-6 border-b border-slate-100 bg-slate-50/80 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
                   <FileText size={20} />
@@ -289,13 +300,10 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                     <CheckCircle size={40} />
                   </motion.div>
                   <h3 className="text-2xl font-black text-slate-800 mb-2">Başarıyla Oluşturuldu!</h3>
-                  <p className="text-slate-500 font-medium mb-6">Teklifiniz sisteme kaydedildi ve işleme alındı.</p>
+                  <p className="text-slate-500 font-medium mb-6">Teklifiniz sisteme kaydedildi ve listeye eklendi.</p>
                   
-                  <div className="flex flex-col sm:flex-row justify-center gap-3 w-full max-w-sm mx-auto">
-                     <button onClick={handlePrint} className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all"><Download size={16}/> PDF Olarak İndir</button>
-                  </div>
                   <div className="flex flex-col sm:flex-row justify-center gap-3 w-full max-w-sm mx-auto mt-3">
-                    <button onClick={() => { setShowQuoteModal(false); if (setActiveTab) setActiveTab('quotes'); else window.location.hash = 'quotes'; }} className="w-full px-4 py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">Sözleşmelere Git</button>
+                    <button onClick={() => { setShowQuoteModal(false); if (setActiveTab) setActiveTab('quotes'); else window.location.hash = 'quotes'; }} className="w-full px-4 py-3 bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all">Listeye Dön</button>
                   </div>
                 </div>
               ) : (
@@ -468,9 +476,15 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
 
                   {step === 4 && (
                     <div className="space-y-6">
-                      <div className="bg-amber-50 text-amber-800 p-4 rounded-xl border border-amber-200 text-sm font-medium text-center">
-                        Son aşamadasınız. Lütfen teklifi onaylamak için imzaları atınız.
+                      {/* 🚀 YENİ: SAHA VEYA OFİS (UZAKTAN İMZA) SEÇİMİ */}
+                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-3 text-center">İmza Yöntemini Seçin</label>
+                          <div className="flex bg-slate-200/50 p-1 rounded-xl">
+                              <button onClick={() => setSignMode('field')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${signMode === 'field' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Sahadayım</button>
+                              <button onClick={() => setSignMode('office')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${signMode === 'office' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Ofisteyim (Uzaktan)</button>
+                          </div>
                       </div>
+
                       <div className="grid grid-cols-1 gap-6">
                           <div className="space-y-2">
                             <div className="flex justify-between items-center px-1">
@@ -482,16 +496,25 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                               {!employerSignature && <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-300 font-bold opacity-50">Buraya imzalayın</div>}
                             </div>
                           </div>
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center px-1">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Müşteri İmzası</label>
-                                {customerSignature && <button onClick={() => clearCanvas(customerCanvasRef, setCustomerSignature)} className="text-[10px] flex items-center gap-1 text-slate-400 hover:text-rose-500 font-bold uppercase transition-colors"><RotateCcw size={12}/> Temizle</button>}
-                            </div>
-                            <div className={`border-2 border-dashed bg-slate-50 rounded-2xl overflow-hidden touch-none relative ${customerSignature ? 'border-emerald-300' : 'border-slate-200'}`}>
-                              <canvas ref={customerCanvasRef} className="w-full h-[120px] cursor-crosshair touch-none block" />
-                              {!customerSignature && <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-300 font-bold opacity-50">Buraya imzalayın</div>}
-                            </div>
-                          </div>
+
+                          {signMode === 'field' ? (
+                              <motion.div initial={{opacity:0, height:0}} animate={{opacity:1, height:'auto'}} className="space-y-2">
+                                <div className="flex justify-between items-center px-1">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Müşteri İmzası</label>
+                                    {customerSignature && <button onClick={() => clearCanvas(customerCanvasRef, setCustomerSignature)} className="text-[10px] flex items-center gap-1 text-slate-400 hover:text-rose-500 font-bold uppercase transition-colors"><RotateCcw size={12}/> Temizle</button>}
+                                </div>
+                                <div className={`border-2 border-dashed bg-slate-50 rounded-2xl overflow-hidden touch-none relative ${customerSignature ? 'border-emerald-300' : 'border-slate-200'}`}>
+                                  <canvas ref={customerCanvasRef} className="w-full h-[120px] cursor-crosshair touch-none block" />
+                                  {!customerSignature && <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-300 font-bold opacity-50">Buraya imzalayın</div>}
+                                </div>
+                              </motion.div>
+                          ) : (
+                              <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} className="bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center flex flex-col items-center justify-center">
+                                  <MessageCircle className="text-blue-500 mb-2" size={32} />
+                                  <h4 className="text-blue-800 font-bold text-sm mb-1">Uzaktan İmza Modu Devrede</h4>
+                                  <p className="text-blue-600/80 text-xs font-medium px-4">Teklifi kaydettikten sonra müşteriye WhatsApp üzerinden özel bir imza linki gönderebileceksiniz.</p>
+                              </motion.div>
+                          )}
                       </div>
                     </div>
                   )}
@@ -523,8 +546,8 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                 ) : (
                   <div className="flex gap-2">
                       <button onClick={() => setStep(3)} className="p-3.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold shadow-sm hover:bg-slate-50 active:scale-95 transition-all"><ArrowRight size={18} className="rotate-180" /></button>
-                      <button onClick={handleSubmitClick} disabled={status === 'loading' || !canSubmit} className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95">
-                        {status === 'loading' ? <Loader2 className="animate-spin" size={20} /> : <><Send size={18} /> Onayla ve Kaydet</>}
+                      <button onClick={handleSubmitClick} disabled={status === 'loading' || !canSubmit} className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95">
+                        {status === 'loading' ? <Loader2 className="animate-spin" size={20} /> : <><Send size={18} /> {signMode === 'office' ? 'Kaydet ve Link Gönder' : 'Onayla ve Kaydet'}</>}
                       </button>
                   </div>
                 )}
@@ -533,9 +556,6 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
           </motion.div>
         </div>
       )}
-    
-      <div style={{ display: "none" }}>
-      </div>
     </AnimatePresence>
   );
 }

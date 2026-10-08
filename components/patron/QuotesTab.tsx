@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Loader2, Trash2, FileText, FileSignature, CheckCircle, Clock, Search, X, Download, User, Box, MessageCircle, LayoutTemplate, Monitor, FileSpreadsheet } from 'lucide-react';
+import { Loader2, Trash2, FileText, FileSignature, CheckCircle, Clock, Search, X, Download, User, Box, MessageCircle, LayoutTemplate, Monitor, FileSpreadsheet, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { useReactToPrint } from 'react-to-print';
@@ -18,7 +18,7 @@ const getAuthToken = () => {
   };
   let token = localStorage.getItem('patron_authToken') || getCookie('patron_authToken');
   if (!token) token = localStorage.getItem('staff_authToken') || getCookie('staff_authToken');
-  return token ? token.replace(/^"|"\$/g, '') : '';
+  return token ? token.replace(/^"|"$/g, '') : '';
 };
 
 export default function QuotesTab({ data }: any) {
@@ -29,6 +29,9 @@ export default function QuotesTab({ data }: any) {
     const [selectedQuote, setSelectedQuote] = useState<any>(null);
     const [printTemplate, setPrintTemplate] = useState<'modern' | 'classic' | 'minimal'>('modern'); 
     const printRef = useRef<HTMLDivElement>(null);
+    
+    // 🚀 YENİ: Tarayıcı 'confirm' uyarısı yerine kendi şık modalımızı kullanmak için state
+    const [quoteToDelete, setQuoteToDelete] = useState<string | null>(null);
 
     const handlePrint = useReactToPrint({
         contentRef: printRef,
@@ -59,8 +62,8 @@ export default function QuotesTab({ data }: any) {
         if (companySlug) fetchQuotes();
     }, [companySlug]);
 
-    const handleDelete = async (id: string) => {
-        if (!window.confirm('Bu teklifi/sözleşmeyi silmek istediğinize emin misiniz?')) return;
+    const confirmDelete = async () => {
+        if (!quoteToDelete) return;
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
         const secureToken = getAuthToken();
 
@@ -70,10 +73,11 @@ export default function QuotesTab({ data }: any) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${secureToken}`
             },
-            body: JSON.stringify({ id, company_slug: companySlug })
+            body: JSON.stringify({ id: quoteToDelete, company_slug: companySlug })
         });
-        setQuotes(quotes.filter(q => q.id !== id));
-        if (selectedQuote?.id === id) setSelectedQuote(null);
+        setQuotes(quotes.filter(q => q.id !== quoteToDelete));
+        if (selectedQuote?.id === quoteToDelete) setSelectedQuote(null);
+        setQuoteToDelete(null); // Modalı kapat
     };
 
     let parsedDetails: any = {};
@@ -86,7 +90,7 @@ export default function QuotesTab({ data }: any) {
     }
 
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 min-h-[60vh]">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 min-h-[60vh] relative">
             <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
                 <div>
                   <h2 className="text-2xl font-black text-slate-800">Teklifler ve Sözleşmeler</h2>
@@ -134,7 +138,7 @@ export default function QuotesTab({ data }: any) {
                             </div>
                             <div className="flex justify-end gap-2 mt-5 pt-4 border-t border-slate-200/60">
                                 <button 
-                                  onClick={(e) => { e.stopPropagation(); handleDelete(q.id); }}
+                                  onClick={(e) => { e.stopPropagation(); setQuoteToDelete(q.id); }} // Alert yerine kendi modalımız
                                   className="p-2 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors" title="Sil"
                                 >
                                    <Trash2 size={16} />
@@ -152,9 +156,34 @@ export default function QuotesTab({ data }: any) {
                 </div>
             )}
 
+            {/* 🚀 YENİ: SİLME İŞLEMİ İÇİN ŞIK ONAY MODALI */}
+            <AnimatePresence>
+                {quoteToDelete && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ scale: 0.95, opacity: 0 }} 
+                            animate={{ scale: 1, opacity: 1 }} 
+                            exit={{ scale: 0.95, opacity: 0 }} 
+                            className="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl text-center"
+                        >
+                            <div className="w-20 h-20 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-5 shadow-inner">
+                                <AlertTriangle size={40} />
+                            </div>
+                            <h3 className="text-2xl font-black text-slate-800 mb-2">Emin misiniz?</h3>
+                            <p className="text-slate-500 font-medium mb-8">Bu teklifi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</p>
+                            <div className="flex gap-3">
+                                <button onClick={() => setQuoteToDelete(null)} className="flex-1 bg-slate-100 text-slate-700 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-all active:scale-95">İptal</button>
+                                <button onClick={confirmDelete} className="flex-1 bg-rose-600 text-white font-bold py-3.5 rounded-xl hover:bg-rose-700 shadow-lg shadow-rose-200 transition-all active:scale-95 flex items-center justify-center gap-2">
+                                    <Trash2 size={18} /> Sil
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
             {showQuoteModal && <QuoteModal showQuoteModal={showQuoteModal} setShowQuoteModal={setShowQuoteModal} data={data} setActiveTab={(tab: string) => { if(typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('navTab', { detail: tab })) }} />}
         
-            {/* TEKLİF DETAY VE YAZDIRMA MODALI */}
             <AnimatePresence>
               {selectedQuote && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
@@ -190,13 +219,12 @@ export default function QuotesTab({ data }: any) {
                         <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                             <div className="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-2">Metin / İçerik Detayları</div>
                             <div className="text-xs font-medium text-slate-700 whitespace-pre-wrap max-h-32 overflow-y-auto custom-scrollbar p-1">
-                                {selectedQuote.quote_type === 'Bakım Sözleşmesi' ? (parsedDetails.maintenanceContract || 'Sözleşme metni bulunamadı (Eski Kayıt).') : 
-                                 selectedQuote.quote_type === 'Revizyon Teklifi' ? (parsedDetails.revisionDetails || 'Revizyon detayı bulunamadı (Eski Kayıt).') : 
+                                {selectedQuote.quote_type === 'Bakım Sözleşmesi' ? (parsedDetails.maintenanceContract || 'Sözleşme metni bulunamadı.') : 
+                                 selectedQuote.quote_type === 'Revizyon Teklifi' ? (parsedDetails.revisionDetails || 'Revizyon detayı bulunamadı.') : 
                                  'Montaj teknik detayları PDF belgesindedir.'}
                             </div>
                         </div>
 
-                        {/* 🚀 YENİ: ŞIK ŞABLON SEÇİCİ */}
                         <div className="bg-white border border-slate-200 rounded-xl p-4">
                             <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
                                 <LayoutTemplate size={12} /> Yazdırma Şablonu Seçin
@@ -231,7 +259,7 @@ export default function QuotesTab({ data }: any) {
                     <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0 space-y-3">
                         {selectedQuote.public_token && selectedQuote.status !== 'Müşteri Onayladı' && (
                             <a 
-                                href={`https://wa.me/?text=${encodeURIComponent(`Merhaba \${selectedQuote.customer_name},\n\nSizin için hazırladığımız \${selectedQuote.quote_type} belgemize aşağıdaki bağlantıdan ulaşıp, online olarak inceleyebilir ve imzalayabilirsiniz:\n\n\${typeof window !== 'undefined' ? window.location.origin : ''}/teklif/${selectedQuote.public_token}\n\nSaygılarımızla, ${data?.settings?.company_name || 'Fixlog'}`)}`}
+                                href={`https://wa.me/?text=${encodeURIComponent(`Merhaba ${selectedQuote.customer_name},\n\nSizin için hazırladığımız ${selectedQuote.quote_type} belgemize aşağıdaki bağlantıdan ulaşıp, online olarak inceleyebilir ve imzalayabilirsiniz:\n\n${typeof window !== 'undefined' ? window.location.origin : ''}/teklif/${selectedQuote.public_token}\n\nSaygılarımızla, ${data?.settings?.company_name || 'Fixlog'}`)}`}
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="w-full bg-[#25D366] text-white font-bold text-sm py-4 rounded-xl shadow-lg hover:bg-[#20bd5a] transition-all active:scale-95 flex items-center justify-center gap-2"
@@ -241,7 +269,7 @@ export default function QuotesTab({ data }: any) {
                         )}
 
                         <div className="flex flex-col sm:flex-row gap-2 w-full">
-                            <button onClick={() => handleDelete(selectedQuote.id)} className="p-4 bg-white border border-rose-200 text-rose-600 rounded-xl hover:bg-rose-50 transition-all active:scale-95 flex items-center justify-center shrink-0">
+                            <button onClick={() => setQuoteToDelete(selectedQuote.id)} className="p-4 bg-white border border-rose-200 text-rose-600 rounded-xl hover:bg-rose-50 transition-all active:scale-95 flex items-center justify-center shrink-0">
                                 <Trash2 size={20} />
                             </button>
                             <button onClick={handlePrint} className="flex-1 bg-blue-600 text-white font-bold text-sm py-4 rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2">
@@ -254,31 +282,16 @@ export default function QuotesTab({ data }: any) {
               )}
             </AnimatePresence>
 
-            {/* 🚀 GİZLİ YAZDIRMA ŞABLONU (DİNAMİK TEMALI VE ÇİFT METİN HATASI ÇÖZÜLDÜ) */}
+            {/* GİZLİ YAZDIRMA ŞABLONU */}
             <div style={{ display: "none" }}>
                 {selectedQuote && (
-                <div 
-                    ref={printRef} 
-                    className={`p-10 bg-white max-w-2xl mx-auto 
-                        ${printTemplate === 'classic' ? 'font-serif text-black' : 
-                          printTemplate === 'minimal' ? 'font-mono text-gray-800' : 
-                          'font-sans text-slate-900'}
-                    `}
-                >
-                  <div className={`flex justify-between items-center pb-6 mb-8 
-                      ${printTemplate === 'classic' ? 'border-b-4 border-double border-black' : 
-                        printTemplate === 'modern' ? 'border-b-2 border-slate-900' : 
-                        'border-b border-gray-200'}
-                  `}>
+                <div ref={printRef} className={`p-10 bg-white max-w-2xl mx-auto ${printTemplate === 'classic' ? 'font-serif text-black' : printTemplate === 'minimal' ? 'font-mono text-gray-800' : 'font-sans text-slate-900'}`}>
+                  <div className={`flex justify-between items-center pb-6 mb-8 ${printTemplate === 'classic' ? 'border-b-4 border-double border-black' : printTemplate === 'modern' ? 'border-b-2 border-slate-900' : 'border-b border-gray-200'}`}>
                     <div className="flex items-center gap-4">
                       {data?.settings?.company_logo && <img src={data.settings.company_logo} alt="Logo" className="w-16 h-16 object-contain" />}
                       <div>
-                        <h1 className={`text-3xl ${printTemplate === 'minimal' ? 'font-light tracking-wide' : 'font-black'}`}>
-                            {data?.settings?.company_name || "Firma Adı"}
-                        </h1>
-                        <p className={`text-sm mt-1 ${printTemplate === 'classic' ? 'font-bold uppercase tracking-widest' : 'font-medium'}`}>
-                            {selectedQuote.quote_type}
-                        </p>
+                        <h1 className={`text-3xl ${printTemplate === 'minimal' ? 'font-light tracking-wide' : 'font-black'}`}>{data?.settings?.company_name || "Firma Adı"}</h1>
+                        <p className={`text-sm mt-1 ${printTemplate === 'classic' ? 'font-bold uppercase tracking-widest' : 'font-medium'}`}>{selectedQuote.quote_type}</p>
                       </div>
                     </div>
                     <div className="text-right text-sm">
@@ -296,7 +309,6 @@ export default function QuotesTab({ data }: any) {
                     <div className={`${printTemplate === 'classic' ? 'p-4 border border-black' : printTemplate === 'modern' ? 'p-4 bg-slate-50 rounded-xl' : ''}`}>
                       <h3 className={`mb-3 pb-1 ${printTemplate === 'classic' ? 'font-bold border-b border-black uppercase' : printTemplate === 'minimal' ? 'font-semibold text-gray-500 uppercase tracking-widest text-xs' : 'font-bold border-b border-slate-200'}`}>Sistem Bilgileri</h3>
                       <p><strong>Sistem Adı:</strong> {selectedQuote.asset_name}</p>
-                      {/* 🚀 ÇÖZÜM: Revizyon detayını Sistem Bilgilerinden SİLDİK. Sadece Teknik detayları gösteriyoruz. */}
                       {selectedQuote.quote_type === 'Montaj Teklifi' && (
                         <>
                           <p><strong>Tipi:</strong> {parsedDetails.elevatorType}</p>
