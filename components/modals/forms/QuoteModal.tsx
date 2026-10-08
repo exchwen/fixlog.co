@@ -1,6 +1,6 @@
 "use client";
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { X, Send, ArrowRight, Loader2, CheckCircle, Search, FileText, Download, RotateCcw } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Send, ArrowRight, Loader2, CheckCircle, Search, FileText, Download, RotateCcw, User, Box } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReactToPrint } from 'react-to-print';
 
@@ -17,17 +17,16 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
   const [newCustomerMode, setNewCustomerMode] = useState(false);
   const [searchCustomer, setSearchCustomer] = useState('');
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
 
-  const [maintenanceContract, setMaintenanceContract] = useState('');
-  
   const [searchAsset, setSearchAsset] = useState('');
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [newAssetMode, setNewAssetMode] = useState(false);
   const [newAssetName, setNewAssetName] = useState('');
+  
+  const [maintenanceContract, setMaintenanceContract] = useState('');
   const [revisionDetails, setRevisionDetails] = useState('');
   const [elevatorType, setElevatorType] = useState('');
   const [stopsCount, setStopsCount] = useState('');
@@ -65,9 +64,10 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     setQuoteType('Bakım Sözleşmesi');
     setCustomerName('');
     setCustomerPhone('');
-    setCustomerEmail('');
     setSearchAsset('');
     setSelectedAssetId('');
+    setSelectedCustomerId('');
+    setNewCustomerMode(false);
     setNewAssetMode(false);
     setNewAssetName('');
     setStatus('idle');
@@ -93,57 +93,57 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     return () => window.removeEventListener('keydown', handleEscKey);
   }, [showQuoteModal]);
 
+  // Varlık (Asset) Adını belirleme
+  const finalAssetName = newAssetMode 
+    ? newAssetName 
+    : (data?.assets?.find((a: any) => String(a.id) === selectedAssetId)?.name || 'Bilinmiyor');
+
   const handleSubmit = async () => {
     setStatus('loading');
     try {
       const companySlug = data?.slug || data?.company_slug || (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '');
-      const assetName = newAssetMode ? newAssetName : (data?.assets?.find((a: any) => a.id.toString() === selectedAssetId)?.name || 'Bilinmiyor');
       
       const res = await fetch('/add-quote', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      company_slug: companySlug,
-      quote_type: quoteType,
-      is_new_customer: newCustomerMode,
-      customer_id: newCustomerMode ? null : selectedCustomerId,
-      customer_name: customerName,
-      customer_phone: customerPhone,
-      is_new_asset: newAssetMode,
-      asset_id: newAssetMode ? null : selectedAssetId,
-      asset_name: assetName,
-      quote_details: {
-         revisionDetails,
-         elevatorType,
-         stopsCount,
-         capacity
-      }
-    })
-  });
-  const r = await res.json();
-  if(!r.success) throw new Error(r.error || 'Bilinmeyen Hata');
-  setStatus('success');
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_slug: companySlug,
+          quote_type: quoteType,
+          is_new_customer: newCustomerMode,
+          customer_id: newCustomerMode ? null : selectedCustomerId,
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          is_new_asset: newAssetMode,
+          asset_id: newAssetMode ? null : selectedAssetId,
+          asset_name: finalAssetName,
+          quote_details: {
+             revisionDetails,
+             elevatorType,
+             stopsCount,
+             capacity
+          }
+        })
+      });
+      const r = await res.json();
+      if(!r.success) throw new Error(r.error || 'Bilinmeyen Hata');
+      setStatus('success');
     } catch(e: any) {
       alert('Hata oluştu: ' + (e.message || ''));
       setStatus('idle');
     }
   };
 
-  const isCustomerValid = newCustomerMode ? !!customerName.trim() : !!selectedCustomerId || !!customerName.trim();
+  // Validasyon Kontrolleri
+  const isCustomerValid = newCustomerMode ? !!customerName.trim() : !!selectedCustomerId;
   const isAssetValid = newAssetMode ? !!newAssetName.trim() : !!selectedAssetId;
-  const canSubmit = !!customerName.trim() && (newAssetMode ? !!newAssetName.trim() : !!selectedAssetId) && employerSignature && customerSignature;
+  const canSubmit = isCustomerValid && isAssetValid && employerSignature && customerSignature;
 
   const handleNextFromStep1 = () => {
-    if (!isCustomerValid) return;
+    if (!isCustomerValid || !isAssetValid) return;
     setStep(2);
   };
 
   const handleNextFromStep2 = () => {
-    if (quoteType === 'Bakım Sözleşmesi') {
-      setStep(3);
-      return;
-    }
-    if (!isAssetValid) return;
     setStep(3);
   };
 
@@ -152,6 +152,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     await handleSubmit();
   };
 
+  // İmza Alanı (Canvas) Başlatma
   const initCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>, setHasSignature: (v: boolean) => void) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -241,7 +242,9 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                 </div>
                 <div>
                   <h2 className="font-black text-slate-800 text-base sm:text-lg tracking-tight">Yeni Teklif & Sözleşme</h2>
-                  <p className="text-slate-500 text-[11px] sm:text-xs font-semibold">Müşteriye teklif hazırlayın ve yazdırın</p>
+                  <p className="text-slate-500 text-[11px] sm:text-xs font-semibold">
+                    {step === 1 ? 'Adım 1: Müşteri ve Varlık' : step === 2 ? 'Adım 2: Teklif Türü' : 'Adım 3: Detaylar ve İmza'}
+                  </p>
                 </div>
               </div>
               <button onClick={handleClose} className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-xl transition-colors">
@@ -262,29 +265,32 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                      <button onClick={handlePrint} className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all"><Download size={16}/> PDF Olarak İndir</button>
                      <button onClick={handlePrint} className="w-full px-4 py-3 bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all"><FileText size={16}/> Termal Fiş Yazdır</button>
                   </div>
-<div className="flex flex-col sm:flex-row justify-center gap-3 w-full max-w-sm mx-auto mt-3">
-  <button onClick={() => { setShowQuoteModal(false); if (setActiveTab) setActiveTab('quotes'); else window.location.hash = 'quotes'; }} className="w-full px-4 py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">Sözleşmelere Git</button>
-</div>
-</div>
-) : (
+                  <div className="flex flex-col sm:flex-row justify-center gap-3 w-full max-w-sm mx-auto mt-3">
+                    <button onClick={() => { setShowQuoteModal(false); if (setActiveTab) setActiveTab('quotes'); else window.location.hash = 'quotes'; }} className="w-full px-4 py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">Sözleşmelere Git</button>
+                  </div>
+                </div>
+              ) : (
                 <>
+                  {/* ADIM 1: MÜŞTERİ VE VARLIK SEÇİMİ */}
                   {step === 1 && (
                     <div className="space-y-6">
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 block">Müşteri Seçimi</label>
-                            <div className="flex bg-slate-100 p-1 rounded-xl mb-4">
-                              <button onClick={() => {setNewCustomerMode(false); setSelectedCustomerId('');}} className={"flex-1 py-2 text-xs font-bold rounded-lg transition-all " + (!newCustomerMode ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700")}>Sistemde Var Olanı Seç</button>
-                               <button onClick={() => {setNewCustomerMode(true); setSelectedCustomerId('');}} className={"flex-1 py-2 text-xs font-bold rounded-lg transition-all " + (newCustomerMode ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700")}>+ Yeni Müşteri Ekle</button>
+                        
+                        {/* MÜŞTERİ KISMI */}
+                        <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><User size={14}/> Müşteri / Firma</label>
+                            <div className="flex bg-slate-200/50 p-1 rounded-xl mb-2">
+                              <button onClick={() => {setNewCustomerMode(false); setSelectedCustomerId('');}} className={"flex-1 py-2 text-xs font-bold rounded-lg transition-all " + (!newCustomerMode ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700")}>Kayıtlılardan Seç</button>
+                               <button onClick={() => {setNewCustomerMode(true); setSelectedCustomerId('');}} className={"flex-1 py-2 text-xs font-bold rounded-lg transition-all " + (newCustomerMode ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700")}>+ Yeni Müşteri</button>
                             </div>
 
                             {!newCustomerMode ? (
-                              <div className="space-y-3">
+                              <div className="space-y-2">
                                 <div className="relative">
                                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                  <input type="text" placeholder="Müşteri Ara..." className="w-full pl-9 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500" value={searchCustomer} onChange={e => setSearchCustomer(e.target.value)} />
+                                  <input type="text" placeholder="Müşteri Ara..." className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500" value={searchCustomer} onChange={e => setSearchCustomer(e.target.value)} />
                                 </div>
                                 <div className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
-                                  <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1">
+                                  <div className="max-h-32 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1">
                                     {(data?.customers || []).filter((c: any) => {
                                         const term = (searchCustomer || '').toLowerCase();
                                         const name = (c.name || '').toLowerCase();
@@ -296,177 +302,188 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                                             <button 
                                                 key={c.id} 
                                                 onClick={() => { setSelectedCustomerId(String(c.id)); setCustomerName(c.name || ''); setCustomerPhone(c.contact || c.phone || ''); setSearchCustomer(c.name || ''); }}
-                                                className={"text-left p-3 rounded-lg border transition-all " + (isSelected ? "bg-blue-50 border-blue-200" : "bg-white border-slate-100 hover:border-blue-200")}
+                                                className={"text-left p-2.5 rounded-lg border transition-all " + (isSelected ? "bg-blue-50 border-blue-200" : "bg-white border-transparent hover:bg-slate-50")}
                                             >
                                                 <div className="font-bold text-sm text-slate-800">{c.name}</div>
-                                                {(c.contact || c.phone) && <div className="text-xs text-slate-500 mt-0.5">{c.contact || c.phone}</div>}
+                                                {(c.contact || c.phone) && <div className="text-[11px] text-slate-500">{c.contact || c.phone}</div>}
                                             </button>
                                         )
                                     })}
                                     {(data?.customers || []).length === 0 && (
-                                      <div className="p-4 text-center text-xs text-slate-500">Sistemde kayıtlı müşteri yok. Yeni eklemeyi seçin.</div>
+                                      <div className="p-3 text-center text-xs text-slate-500">Sistemde müşteri yok. Yeni eklemeyi seçin.</div>
                                     )}
                                   </div>
                                 </div>
                               </div>
                             ) : (
-                                <div className="space-y-4 p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
-                                  <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Yeni Müşteri Adı *</label>
-                                    <input required type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Örn: X Apartmanı veya Y Firması" className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
+                                <div className="space-y-3">
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Müşteri Adı *</label>
+                                    <input required type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Örn: X Apartmanı veya Y Firması" className="w-full px-4 py-2.5 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
                                   </div>
-                                  <div className="space-y-1.5">
+                                  <div className="space-y-1">
                                     <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Telefon Numarası</label>
-                                    <input type="tel" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="05XX XXX XX XX" className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
+                                    <input type="tel" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="05XX XXX XX XX" className="w-full px-4 py-2.5 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
                                   </div>
                                 </div>
                             )}
                         </div>
 
-                      <div className="space-y-2 pt-2 border-t border-slate-100">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1 mb-2">Teklif Türü</label>
-                        <div className="grid grid-cols-1 gap-2">
-                          {["Bakım Sözleşmesi", "Revizyon Teklifi", "Montaj Teklifi"].map(type => (
-                            <button 
-                              key={type} 
-                              onClick={() => setQuoteType(type)}
-                              className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${quoteType === type ? 'border-blue-500 bg-blue-50/50 shadow-sm' : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'}`}
-                            >
-                              <div className={`w-5 h-5 rounded-full border-2 flex shrink-0 items-center justify-center ${quoteType === type ? 'border-blue-500 bg-blue-500' : 'border-slate-300'}`}>
-                                {quoteType === type && <div className="w-2 h-2 m-auto bg-white rounded-full"></div>}
-                              </div>
-                              <div>
-                                <div className={`font-bold ${quoteType === type ? 'text-blue-900' : 'text-slate-700'}`}>{type}</div>
-                                <div className="text-xs text-slate-500 font-medium mt-0.5">
-                                  {type === 'Bakım Sözleşmesi' ? 'Periyodik bakım anlaşması oluşturun.' : type === 'Revizyon Teklifi' ? 'Mevcut bir asansör için yenileme teklifi.' : 'Sıfırdan kurulacak yeni bir sistem teklifi.'}
+                        {/* VARLIK (ASANSÖR) KISMI */}
+                        <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><Box size={14}/> Sistem / Varlık (Asansör)</label>
+                            <div className="flex bg-slate-200/50 p-1 rounded-xl mb-2">
+                              <button onClick={() => {setNewAssetMode(false); setSelectedAssetId('');}} className={"flex-1 py-2 text-xs font-bold rounded-lg transition-all " + (!newAssetMode ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700")}>Kayıtlılardan Seç</button>
+                               <button onClick={() => {setNewAssetMode(true); setSelectedAssetId('');}} className={"flex-1 py-2 text-xs font-bold rounded-lg transition-all " + (newAssetMode ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700")}>+ Yeni Varlık</button>
+                            </div>
+
+                            {!newAssetMode ? (
+                              <div className="space-y-2">
+                                <div className="relative">
+                                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                  <input type="text" placeholder="Asansör veya Bina Adı Ara..." className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500" value={searchAsset} onChange={e => setSearchAsset(e.target.value)} />
+                                </div>
+                                <div className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
+                                  <div className="max-h-32 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1">
+                                    {(data?.assets || []).filter((a: any) => {
+                                        // Eğer yeni müşteri değilse ve bir müşteri seçiliyse, sadece o müşterinin varlıklarını veya boştakileri listele
+                                        if (!newCustomerMode && selectedCustomerId && String(a.customer_id) !== selectedCustomerId) return false;
+                                        const term = (searchAsset || '').toLowerCase();
+                                        return (a.name || '').toLowerCase().includes(term) || (a.apartmentName || '').toLowerCase().includes(term);
+                                    }).map((a: any) => {
+                                        const aptName = a.apartmentName || a.apartment_name || '';
+                                        const isSelected = selectedAssetId === String(a.id);
+                                        return (
+                                            <button 
+                                                key={a.id} 
+                                                type="button"
+                                                onClick={() => setSelectedAssetId(String(a.id))}
+                                                className={`text-left p-2.5 rounded-lg transition-all flex flex-col gap-0.5 border ${isSelected ? 'bg-blue-50 border-blue-200' : 'bg-white border-transparent hover:bg-slate-50'}`}
+                                            >
+                                                <div className={`text-sm ${isSelected ? 'text-blue-800 font-bold' : 'text-slate-800 font-bold'}`}>{aptName || a.name}</div>
+                                                {aptName && <div className={`text-[11px] ${isSelected ? 'text-blue-600 font-semibold' : 'text-slate-500 font-medium'}`}>{a.name}</div>}
+                                            </button>
+                                        )
+                                    })}
+                                    {(data?.assets || []).filter((a: any) => (!newCustomerMode && selectedCustomerId) ? String(a.customer_id) === selectedCustomerId : true).length === 0 && (
+                                      <div className="p-3 text-center text-xs text-slate-500">Uygun varlık yok. Yeni eklemeyi seçin.</div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </button>
-                          ))}
+                            ) : (
+                                <div className="space-y-1">
+                                  <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Yeni Asansör Adı / Bilgisi *</label>
+                                  <input required type="text" value={newAssetName} onChange={e => setNewAssetName(e.target.value)} placeholder="Örn: A Blok Sağ Asansör" className="w-full px-4 py-2.5 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
+                                </div>
+                            )}
                         </div>
+                    </div>
+                  )}
+
+                  {/* ADIM 2: TEKLİF TÜRÜ SEÇİMİ */}
+                  {step === 2 && (
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1 mb-2">Hangi tür teklif oluşturacaksınız?</label>
+                      <div className="grid grid-cols-1 gap-3">
+                        {["Bakım Sözleşmesi", "Revizyon Teklifi", "Montaj Teklifi"].map(type => (
+                          <button 
+                            key={type} 
+                            onClick={() => setQuoteType(type)}
+                            className={`w-full flex items-center gap-4 p-5 rounded-xl border-2 transition-all text-left ${quoteType === type ? 'border-blue-500 bg-blue-50/50 shadow-sm' : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'}`}
+                          >
+                            <div className={`w-5 h-5 rounded-full border-2 flex shrink-0 items-center justify-center ${quoteType === type ? 'border-blue-500 bg-blue-500' : 'border-slate-300'}`}>
+                              {quoteType === type && <div className="w-2 h-2 m-auto bg-white rounded-full"></div>}
+                            </div>
+                            <div>
+                              <div className={`font-bold text-base ${quoteType === type ? 'text-blue-900' : 'text-slate-700'}`}>{type}</div>
+                              <div className="text-xs text-slate-500 font-medium mt-1">
+                                {type === 'Bakım Sözleşmesi' ? 'Aylık periyodik bakım anlaşması metni hazırlayın.' : type === 'Revizyon Teklifi' ? 'Mevcut bir asansör için yenileme/tamirat teklifi.' : 'Sıfırdan kurulacak yeni bir sistem için montaj teklifi.'}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
                       </div>
                     </div>
                   )}
 
-                  {step === 2 && (
-                    <div className="space-y-5">
-                      {quoteType === 'Bakım Sözleşmesi' ? (
+                  {/* ADIM 3: DETAYLAR VE İMZA */}
+                  {step === 3 && (
+                    <div className="space-y-6">
+                      
+                      {/* Türe Göre İçerik Alanı */}
+                      {quoteType === 'Bakım Sözleşmesi' && (
                         <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 block flex justify-between items-center">
-                            Sözleşme İçeriği
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block flex justify-between items-center">
+                            Sözleşme İçeriği (Düzenlenebilir)
                           </label>
                           <textarea 
-                            rows={12}
+                            rows={8}
                             value={maintenanceContract}
                             onChange={(e) => handleSaveContractTemplate(e.target.value)}
                             className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:bg-white focus:border-blue-500 outline-none transition-all resize-none custom-scrollbar leading-relaxed"
                             placeholder="Sözleşme detaylarını buraya yazın..."
                           />
-                          <p className="text-xs text-slate-400">Bu alanda yapacağınız değişiklikler firmanız için D1 veritabanına kaydedilir ve diğer tüm cihazlardan erişilebilir.</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 block">Sistem Seçimi (Asansör / Varlık)</label>
-                          
-                          <div className="flex bg-slate-100 p-1 rounded-xl mb-4">
-                             <button onClick={() => {setNewAssetMode(false); setSelectedAssetId('');}} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${!newAssetMode ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Sistemde Var Olanı Seç</button>
-                             <button onClick={() => {setNewAssetMode(true); setSelectedAssetId('');}} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${newAssetMode ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>+ Yeni Asansör Ekle</button>
-                          </div>
-
-                          {!newAssetMode ? (
-                            <div className="space-y-3">
-                              <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                <input type="text" placeholder="Asansör veya Bina Adı Ara..." className="w-full pl-9 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500" value={searchAsset} onChange={e => setSearchAsset(e.target.value)} />
-                              </div>
-                              <div className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
-                                <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1">
-                                  {(data?.assets || []).filter((a: any) => {
-                                      if (!newCustomerMode && selectedCustomerId && String(a.customer_id) !== selectedCustomerId) return false;
-                                      const term = (searchAsset || '').toLowerCase();
-                                      return (a.name || '').toLowerCase().includes(term) || (a.apartmentName || '').toLowerCase().includes(term);
-                                  }).map((a: any) => {
-                                      const aptName = a.apartmentName || a.apartment_name || '';
-                                      const isSelected = selectedAssetId === String(a.id);
-                                      return (
-                                          <button 
-                                              key={a.id} 
-                                              type="button"
-                                              onClick={() => setSelectedAssetId(String(a.id))}
-                                              className={`text-left px-4 py-3 rounded-xl transition-all flex flex-col gap-1 border-2 ${isSelected ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50'}`}
-                                          >
-                                              <div className={`text-sm ${isSelected ? 'text-blue-800 font-bold' : 'text-slate-800 font-bold'}`}>{aptName || a.name}</div>
-                                              {aptName && <div className={`text-[11px] ${isSelected ? 'text-blue-600 font-semibold' : 'text-slate-500 font-medium'}`}>{a.name}</div>}
-                                          </button>
-                                      )
-                                  })}
-                                  {(data?.assets || []).filter((a: any) => (!newCustomerMode && selectedCustomerId) ? String(a.customer_id) === selectedCustomerId : true).length === 0 && (
-                                    <div className="p-4 text-center text-xs text-slate-500">Sistemde kayıtlı asansör yok. Yeni eklemeyi seçin.</div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="space-y-4 p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
-                              <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Yeni Asansör Adı / Bilgisi</label>
-                                <input required type="text" value={newAssetName} onChange={e => setNewAssetName(e.target.value)} placeholder="Örn: A Blok Sağ Asansör" className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
-                              </div>
-                              {quoteType === 'Revizyon Teklifi' && (
-                                <div className="space-y-1.5">
-                                  <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Yapılacak İşlerin Detayları</label>
-                                  <textarea rows={3} value={revisionDetails} onChange={e => setRevisionDetails(e.target.value)} placeholder="Örn: Motor değişimi, kabin revizyonu..." className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm resize-none custom-scrollbar" />
-                                </div>
-                              )}
-                              {quoteType === 'Montaj Teklifi' && (
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                  <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Asansör Tipi</label>
-                                    <input type="text" value={elevatorType} onChange={e => setElevatorType(e.target.value)} placeholder="Örn: İnsan" className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
-                                  </div>
-                                  <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Durak Sayısı</label>
-                                    <input type="number" value={stopsCount} onChange={e => setStopsCount(e.target.value)} placeholder="Örn: 5" className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
-                                  </div>
-                                  <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Kapasite</label>
-                                    <input type="text" value={capacity} onChange={e => setCapacity(e.target.value)} placeholder="Örn: 800kg" className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
                         </div>
                       )}
-                    </div>
-                  )}
 
-                  {step === 3 && (
-                    <div className="space-y-6">
-                      <div className="bg-amber-50 text-amber-800 p-4 rounded-xl border border-amber-200 text-sm font-medium">
-                        Lütfen sözleşmeyi onaylamak için imzaları atınız.
+                      {quoteType === 'Revizyon Teklifi' && (
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Yapılacak İşlerin Detayları</label>
+                          <textarea 
+                            rows={5} 
+                            value={revisionDetails} 
+                            onChange={e => setRevisionDetails(e.target.value)} 
+                            placeholder="Örn: Motor değişimi, kabin revizyonu kalemleri vb..." 
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition-all resize-none custom-scrollbar" 
+                          />
+                        </div>
+                      )}
+
+                      {quoteType === 'Montaj Teklifi' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Asansör Tipi</label>
+                            <input type="text" value={elevatorType} onChange={e => setElevatorType(e.target.value)} placeholder="Örn: İnsan Asansörü" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition-all" />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Durak Sayısı</label>
+                            <input type="number" value={stopsCount} onChange={e => setStopsCount(e.target.value)} placeholder="Örn: 5" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition-all" />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Kapasite</label>
+                            <input type="text" value={capacity} onChange={e => setCapacity(e.target.value)} placeholder="Örn: 800kg" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition-all" />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="bg-amber-50 text-amber-800 p-3 rounded-xl border border-amber-200 text-sm font-medium text-center">
+                        Lütfen teklifi onaylamak için imzaları atınız.
                       </div>
                       
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center px-1">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Yetkili (Firma) İmzası</label>
-                            {employerSignature && <button onClick={() => clearCanvas(employerCanvasRef, setEmployerSignature)} className="text-[10px] flex items-center gap-1 text-slate-400 hover:text-rose-500 font-bold uppercase transition-colors"><RotateCcw size={12}/> Temizle</button>}
-                        </div>
-                        <div className={`border-2 border-dashed bg-slate-50 rounded-2xl overflow-hidden touch-none relative ${employerSignature ? 'border-blue-300' : 'border-slate-200'}`}>
-                          <canvas ref={employerCanvasRef} width={450} height={120} className="w-full h-[120px] cursor-crosshair touch-none" />
-                          {!employerSignature && <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-300 font-bold opacity-50">Buraya imzalayın</div>}
-                        </div>
-                      </div>
+                      {/* İmzalar */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center px-1">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Yetkili İmzası</label>
+                                {employerSignature && <button onClick={() => clearCanvas(employerCanvasRef, setEmployerSignature)} className="text-[10px] flex items-center gap-1 text-slate-400 hover:text-rose-500 font-bold uppercase transition-colors"><RotateCcw size={12}/> Temizle</button>}
+                            </div>
+                            <div className={`border-2 border-dashed bg-slate-50 rounded-2xl overflow-hidden touch-none relative ${employerSignature ? 'border-blue-300' : 'border-slate-200'}`}>
+                              <canvas ref={employerCanvasRef} width={450} height={120} className="w-full h-[120px] cursor-crosshair touch-none" />
+                              {!employerSignature && <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-300 font-bold opacity-50">Buraya imzalayın</div>}
+                            </div>
+                          </div>
 
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center px-1">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Müşteri İmzası</label>
-                            {customerSignature && <button onClick={() => clearCanvas(customerCanvasRef, setCustomerSignature)} className="text-[10px] flex items-center gap-1 text-slate-400 hover:text-rose-500 font-bold uppercase transition-colors"><RotateCcw size={12}/> Temizle</button>}
-                        </div>
-                        <div className={`border-2 border-dashed bg-slate-50 rounded-2xl overflow-hidden touch-none relative ${customerSignature ? 'border-emerald-300' : 'border-slate-200'}`}>
-                          <canvas ref={customerCanvasRef} width={450} height={120} className="w-full h-[120px] cursor-crosshair touch-none" />
-                          {!customerSignature && <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-300 font-bold opacity-50">Buraya imzalayın</div>}
-                        </div>
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center px-1">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Müşteri İmzası</label>
+                                {customerSignature && <button onClick={() => clearCanvas(customerCanvasRef, setCustomerSignature)} className="text-[10px] flex items-center gap-1 text-slate-400 hover:text-rose-500 font-bold uppercase transition-colors"><RotateCcw size={12}/> Temizle</button>}
+                            </div>
+                            <div className={`border-2 border-dashed bg-slate-50 rounded-2xl overflow-hidden touch-none relative ${customerSignature ? 'border-emerald-300' : 'border-slate-200'}`}>
+                              <canvas ref={customerCanvasRef} width={450} height={120} className="w-full h-[120px] cursor-crosshair touch-none" />
+                              {!customerSignature && <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-300 font-bold opacity-50">Buraya imzalayın</div>}
+                            </div>
+                          </div>
                       </div>
                     </div>
                   )}
@@ -475,15 +492,16 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
               )}
             </div>
 
+            {/* ALT BUTONLAR */}
             {status !== 'success' && (
               <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0">
                 {step === 1 ? (
                   <button 
                     onClick={handleNextFromStep1} 
-                    disabled={!isCustomerValid}
+                    disabled={!isCustomerValid || !isAssetValid}
                     className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
                   >
-                    Devam Et <ArrowRight size={18} />
+                    Teklif Türü Seçimine Geç <ArrowRight size={18} />
                   </button>
                 ) : step === 2 ? (
                   <div className="flex gap-2">
@@ -492,10 +510,9 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                       </button>
                       <button 
                         onClick={handleNextFromStep2} 
-                        disabled={quoteType === 'Bakım Sözleşmesi' ? !customerName.trim() : !isAssetValid}
-                        className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
+                        className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2 active:scale-95"
                       >
-                        İmza Aşamasına Geç <ArrowRight size={18} />
+                        İçerik ve İmza Aşamasına Geç <ArrowRight size={18} />
                       </button>
                   </div>
                 ) : (
@@ -518,16 +535,17 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
         </div>
       )}
     
+      {/* PDF YAZDIRMA ŞABLONU */}
       <div style={{ display: "none" }}>
         <div ref={printRef} className="p-8 bg-white text-black max-w-2xl mx-auto font-sans">
           <div className="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
             <div className="flex items-center gap-4">
-  {data?.settings?.company_logo && <img src={data.settings.company_logo} alt="Logo" className="w-16 h-16 object-contain" />}
-  <div>
-    <h1 className="text-3xl font-black">{data?.settings?.company_name || "Firma Adı"}</h1>
-    <p className="text-sm font-medium mt-1">{quoteType}</p>
-  </div>
-</div>
+              {data?.settings?.company_logo && <img src={data.settings.company_logo} alt="Logo" className="w-16 h-16 object-contain" />}
+              <div>
+                <h1 className="text-3xl font-black">{data?.settings?.company_name || "Firma Adı"}</h1>
+                <p className="text-sm font-medium mt-1">{quoteType}</p>
+              </div>
+            </div>
             <div className="text-right text-sm">
               <p><strong>Tarih:</strong> {new Date().toLocaleDateString('tr-TR')}</p>
             </div>
@@ -537,12 +555,11 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
             <div>
               <h3 className="font-bold border-b border-black/20 mb-2 pb-1">Müşteri Bilgileri</h3>
               <p><strong>İsim:</strong> {customerName}</p>
-              <p><strong>Telefon:</strong> {customerPhone}</p>
-              {customerEmail && <p><strong>E-posta:</strong> {customerEmail}</p>}
+              {customerPhone && <p><strong>Telefon:</strong> {customerPhone}</p>}
             </div>
             <div>
               <h3 className="font-bold border-b border-black/20 mb-2 pb-1">Sistem Bilgileri</h3>
-              <p><strong>Sistem Adı:</strong> {newAssetMode ? newAssetName : (data?.assets?.find((a: any) => a.id.toString() === selectedAssetId)?.name || 'Bilinmiyor')}</p>
+              <p><strong>Sistem Adı:</strong> {finalAssetName}</p>
               {quoteType === 'Revizyon Teklifi' && <p><strong>Detay:</strong> {revisionDetails}</p>}
               {quoteType === 'Montaj Teklifi' && (
                 <>
@@ -556,7 +573,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
           
           <div className="mb-8">
             <h3 className="font-bold border-b border-black/20 mb-2 pb-1">Sözleşme / Teklif Detayı</h3>
-            <div className="text-sm whitespace-pre-wrap">{maintenanceContract}</div>
+            <div className="text-sm whitespace-pre-wrap">{quoteType === 'Bakım Sözleşmesi' ? maintenanceContract : (quoteType === 'Revizyon Teklifi' ? revisionDetails : 'Montaj detayları yukarıda belirtilmiştir.')}</div>
           </div>
           
           <div className="grid grid-cols-2 gap-8 mt-12 pt-8 border-t-2 border-black text-center">
@@ -576,4 +593,3 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     </AnimatePresence>
   );
 }
-
