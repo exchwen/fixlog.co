@@ -103,12 +103,14 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     return () => window.removeEventListener('keydown', handleEscKey);
   }, [showQuoteModal]);
 
-  // 🚀 DÜZELTME: Apartman adını ve Varlık adını birleştirerek gönderiyoruz
+  // 🚀 DÜZELTME: Apartman adını ve Varlık adını en doğru şekilde birleştiriyoruz
   const getFullAssetName = () => {
       if (newAssetMode) return newAssetName;
       const asset = data?.assets?.find((a: any) => String(a.id) === selectedAssetId);
       if (!asset) return 'Bilinmiyor';
-      return asset.apartmentName ? `${asset.apartmentName} (${asset.name})` : asset.name;
+      
+      const aptName = asset.apartmentName || asset.apartment_name;
+      return aptName ? `${aptName} (${asset.name})` : asset.name;
   };
 
   const finalAssetName = getFullAssetName();
@@ -143,7 +145,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
           customer_phone: customerPhone,
           is_new_asset: newAssetMode,
           asset_id: newAssetMode ? null : selectedAssetId,
-          asset_name: finalAssetName, // 🚀 DÜZELTİLDİ: Artık Apartman adı da var
+          asset_name: finalAssetName, 
           status: 'Onaylandı', 
           quote_details: {
              revisionDetails,
@@ -376,7 +378,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                                                 key={a.id} type="button" onClick={() => setSelectedAssetId(String(a.id))}
                                                 className={`text-left p-2.5 rounded-lg transition-all flex flex-col gap-0.5 border ${isSelected ? 'bg-blue-50 border-blue-200' : 'bg-white border-transparent hover:bg-slate-50'}`}
                                             >
-                                                <div className={`text-sm ${isSelected ? 'text-blue-800 font-bold' : 'text-slate-800 font-bold'}`}>{aptName || a.name}</div>
+                                                <div className={`text-sm ${isSelected ? 'text-blue-800 font-bold' : 'text-slate-800 font-bold'}`}>{aptName ? `${aptName} (${a.name})` : a.name}</div>
                                                 {aptName && <div className={`text-[11px] ${isSelected ? 'text-blue-600 font-semibold' : 'text-slate-500 font-medium'}`}>{a.name}</div>}
                                             </button>
                                         )
@@ -533,57 +535,6 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
       )}
     
       <div style={{ display: "none" }}>
-        <div ref={printRef} className="p-8 bg-white text-black max-w-2xl mx-auto font-sans">
-          <div className="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
-            <div className="flex items-center gap-4">
-              {data?.settings?.company_logo && <img src={data.settings.company_logo} alt="Logo" className="w-16 h-16 object-contain" />}
-              <div>
-                <h1 className="text-3xl font-black">{data?.settings?.company_name || "Firma Adı"}</h1>
-                <p className="text-sm font-medium mt-1">{quoteType}</p>
-              </div>
-            </div>
-            <div className="text-right text-sm">
-              <p><strong>Tarih:</strong> {new Date().toLocaleDateString('tr-TR')}</p>
-            </div>
-          </div>
-          
-          <div className="mb-6 grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <h3 className="font-bold border-b border-black/20 mb-2 pb-1">Müşteri Bilgileri</h3>
-              <p><strong>İsim:</strong> {customerName}</p>
-              {customerPhone && <p><strong>Telefon:</strong> {customerPhone}</p>}
-            </div>
-            <div>
-              <h3 className="font-bold border-b border-black/20 mb-2 pb-1">Sistem Bilgileri</h3>
-              <p><strong>Sistem Adı:</strong> {finalAssetName}</p>
-              {quoteType === 'Revizyon Teklifi' && <p><strong>Detay:</strong> {revisionDetails}</p>}
-              {quoteType === 'Montaj Teklifi' && (
-                <>
-                  <p><strong>Tipi:</strong> {elevatorType}</p>
-                  <p><strong>Durak:</strong> {stopsCount}</p>
-                  <p><strong>Kapasite:</strong> {capacity}</p>
-                </>
-              )}
-            </div>
-          </div>
-          
-          <div className="mb-8">
-            <h3 className="font-bold border-b border-black/20 mb-2 pb-1">Sözleşme / Teklif Detayı</h3>
-            <div className="text-sm whitespace-pre-wrap">{quoteType === 'Bakım Sözleşmesi' ? maintenanceContract : (quoteType === 'Revizyon Teklifi' ? revisionDetails : 'Montaj detayları yukarıda belirtilmiştir.')}</div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-8 mt-12 pt-8 border-t-2 border-black text-center">
-            <div>
-              <p className="font-bold mb-16">Yetkili (Firma) İmzası<br/><span className="font-normal text-sm">{data?.ownerName || data?.settings?.owner_name || ""}</span></p>
-              {employerCanvasRef.current && <img src={employerCanvasRef.current.toDataURL()} className="mx-auto h-20 object-contain mix-blend-multiply grayscale" />}
-            </div>
-            <div>
-              <p className="font-bold mb-16">Müşteri İmzası</p>
-              <p className="font-bold mb-2">{customerName}</p>
-              {customerCanvasRef.current && <img src={customerCanvasRef.current.toDataURL()} className="mx-auto h-20 object-contain mix-blend-multiply grayscale" />}
-            </div>
-          </div>
-        </div>
       </div>
     </AnimatePresence>
   );

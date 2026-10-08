@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Loader2, Trash2, FileText, FileSignature, CheckCircle, Clock, Search, X, Download, User, Box, MessageCircle, LayoutTemplate } from 'lucide-react';
+import { Loader2, Trash2, FileText, FileSignature, CheckCircle, Clock, Search, X, Download, User, Box, MessageCircle, LayoutTemplate, Monitor, FileSpreadsheet } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { useReactToPrint } from 'react-to-print';
@@ -27,7 +27,7 @@ export default function QuotesTab({ data }: any) {
     const [showQuoteModal, setShowQuoteModal] = useState(false);
     
     const [selectedQuote, setSelectedQuote] = useState<any>(null);
-    const [printTemplate, setPrintTemplate] = useState('modern'); // 🚀 YENİ: Şablon State'i
+    const [printTemplate, setPrintTemplate] = useState<'modern' | 'classic' | 'minimal'>('modern'); 
     const printRef = useRef<HTMLDivElement>(null);
 
     const handlePrint = useReactToPrint({
@@ -189,27 +189,46 @@ export default function QuotesTab({ data }: any) {
 
                         <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                             <div className="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-2">Metin / İçerik Detayları</div>
-                            <div className="text-xs font-medium text-slate-700 whitespace-pre-wrap max-h-48 overflow-y-auto custom-scrollbar p-1">
+                            <div className="text-xs font-medium text-slate-700 whitespace-pre-wrap max-h-32 overflow-y-auto custom-scrollbar p-1">
                                 {selectedQuote.quote_type === 'Bakım Sözleşmesi' ? (parsedDetails.maintenanceContract || 'Sözleşme metni bulunamadı (Eski Kayıt).') : 
                                  selectedQuote.quote_type === 'Revizyon Teklifi' ? (parsedDetails.revisionDetails || 'Revizyon detayı bulunamadı (Eski Kayıt).') : 
                                  'Montaj teknik detayları PDF belgesindedir.'}
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center flex flex-col justify-center">
-                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Yetkili İmzası</div>
-                                {parsedDetails.employerSignature ? <img src={parsedDetails.employerSignature} alt="Yetkili İmza" className="h-16 mx-auto object-contain mix-blend-multiply" /> : <div className="text-xs text-slate-400 italic py-4">İmza Yok</div>}
+                        {/* 🚀 YENİ: ŞIK ŞABLON SEÇİCİ */}
+                        <div className="bg-white border border-slate-200 rounded-xl p-4">
+                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                                <LayoutTemplate size={12} /> Yazdırma Şablonu Seçin
                             </div>
-                            <div className={`p-4 rounded-xl border text-center flex flex-col justify-center transition-colors ${selectedQuote.status === 'Müşteri Onayladı' ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-100'}`}>
-                                <div className={`text-[10px] font-black uppercase tracking-widest mb-2 ${selectedQuote.status === 'Müşteri Onayladı' ? 'text-emerald-600' : 'text-slate-400'}`}>Müşteri İmzası</div>
-                                {parsedDetails.customerSignature ? <img src={parsedDetails.customerSignature} alt="Müşteri İmza" className="h-16 mx-auto object-contain mix-blend-multiply" /> : <div className="text-xs text-slate-400 italic py-4">İmza Bekleniyor</div>}
+                            <div className="grid grid-cols-3 gap-2">
+                                <button 
+                                    onClick={() => setPrintTemplate('modern')}
+                                    className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${printTemplate === 'modern' ? 'border-blue-500 bg-blue-50/50' : 'border-slate-100 hover:border-slate-200 bg-slate-50'}`}
+                                >
+                                    <Monitor size={20} className={printTemplate === 'modern' ? 'text-blue-600' : 'text-slate-400'} />
+                                    <span className={`text-[10px] font-black ${printTemplate === 'modern' ? 'text-blue-700' : 'text-slate-500'}`}>Modern</span>
+                                </button>
+                                <button 
+                                    onClick={() => setPrintTemplate('classic')}
+                                    className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${printTemplate === 'classic' ? 'border-amber-500 bg-amber-50/50' : 'border-slate-100 hover:border-slate-200 bg-slate-50'}`}
+                                >
+                                    <FileSpreadsheet size={20} className={printTemplate === 'classic' ? 'text-amber-600' : 'text-slate-400'} />
+                                    <span className={`text-[10px] font-black ${printTemplate === 'classic' ? 'text-amber-700' : 'text-slate-500'}`}>Klasik</span>
+                                </button>
+                                <button 
+                                    onClick={() => setPrintTemplate('minimal')}
+                                    className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${printTemplate === 'minimal' ? 'border-emerald-500 bg-emerald-50/50' : 'border-slate-100 hover:border-slate-200 bg-slate-50'}`}
+                                >
+                                    <FileText size={20} className={printTemplate === 'minimal' ? 'text-emerald-600' : 'text-slate-400'} />
+                                    <span className={`text-[10px] font-black ${printTemplate === 'minimal' ? 'text-emerald-700' : 'text-slate-500'}`}>Minimal</span>
+                                </button>
                             </div>
                         </div>
+
                     </div>
 
                     <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0 space-y-3">
-                        {/* 🚀 YENİ: WHATSAPP İLE GÖNDER BUTONU */}
                         {selectedQuote.public_token && selectedQuote.status !== 'Müşteri Onayladı' && (
                             <a 
                                 href={`https://wa.me/?text=${encodeURIComponent(`Merhaba \${selectedQuote.customer_name},\n\nSizin için hazırladığımız \${selectedQuote.quote_type} belgemize aşağıdaki bağlantıdan ulaşıp, online olarak inceleyebilir ve imzalayabilirsiniz:\n\n\${typeof window !== 'undefined' ? window.location.origin : ''}/teklif/${selectedQuote.public_token}\n\nSaygılarımızla, ${data?.settings?.company_name || 'Fixlog'}`)}`}
@@ -225,26 +244,9 @@ export default function QuotesTab({ data }: any) {
                             <button onClick={() => handleDelete(selectedQuote.id)} className="p-4 bg-white border border-rose-200 text-rose-600 rounded-xl hover:bg-rose-50 transition-all active:scale-95 flex items-center justify-center shrink-0">
                                 <Trash2 size={20} />
                             </button>
-                            
-                            <div className="flex-1 flex gap-2">
-                                {/* 🚀 YENİ: ŞABLON SEÇİCİ */}
-                                <div className="relative flex-1">
-                                    <select 
-                                        value={printTemplate} 
-                                        onChange={(e) => setPrintTemplate(e.target.value)}
-                                        className="w-full h-full appearance-none bg-white border border-slate-200 text-slate-700 font-bold text-xs px-4 py-3 rounded-xl outline-none focus:border-blue-500 shadow-sm cursor-pointer"
-                                    >
-                                        <option value="modern">Modern Şablon</option>
-                                        <option value="classic">Klasik Şablon</option>
-                                        <option value="minimal">Minimal Şablon</option>
-                                    </select>
-                                    <LayoutTemplate size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                                </div>
-
-                                <button onClick={handlePrint} className="flex-[1.5] bg-blue-600 text-white font-bold text-sm py-3.5 rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2">
-                                    <Download size={18} /> Yazdır / İndir
-                                </button>
-                            </div>
+                            <button onClick={handlePrint} className="flex-1 bg-blue-600 text-white font-bold text-sm py-4 rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2">
+                                <Download size={18} /> Yazdır veya İndir ({printTemplate === 'modern' ? 'Modern' : printTemplate === 'classic' ? 'Klasik' : 'Minimal'})
+                            </button>
                         </div>
                     </div>
                   </motion.div>
@@ -252,7 +254,7 @@ export default function QuotesTab({ data }: any) {
               )}
             </AnimatePresence>
 
-            {/* 🚀 GİZLİ YAZDIRMA ŞABLONU (DİNAMİK TEMALI) */}
+            {/* 🚀 GİZLİ YAZDIRMA ŞABLONU (DİNAMİK TEMALI VE ÇİFT METİN HATASI ÇÖZÜLDÜ) */}
             <div style={{ display: "none" }}>
                 {selectedQuote && (
                 <div 
@@ -294,7 +296,7 @@ export default function QuotesTab({ data }: any) {
                     <div className={`${printTemplate === 'classic' ? 'p-4 border border-black' : printTemplate === 'modern' ? 'p-4 bg-slate-50 rounded-xl' : ''}`}>
                       <h3 className={`mb-3 pb-1 ${printTemplate === 'classic' ? 'font-bold border-b border-black uppercase' : printTemplate === 'minimal' ? 'font-semibold text-gray-500 uppercase tracking-widest text-xs' : 'font-bold border-b border-slate-200'}`}>Sistem Bilgileri</h3>
                       <p><strong>Sistem Adı:</strong> {selectedQuote.asset_name}</p>
-                      {selectedQuote.quote_type === 'Revizyon Teklifi' && <p><strong>Detay:</strong> {parsedDetails.revisionDetails}</p>}
+                      {/* 🚀 ÇÖZÜM: Revizyon detayını Sistem Bilgilerinden SİLDİK. Sadece Teknik detayları gösteriyoruz. */}
                       {selectedQuote.quote_type === 'Montaj Teklifi' && (
                         <>
                           <p><strong>Tipi:</strong> {parsedDetails.elevatorType}</p>
