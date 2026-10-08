@@ -13,16 +13,15 @@ const getAuthToken = () => {
   };
   let token = localStorage.getItem('patron_authToken') || getCookie('patron_authToken');
   if (!token) token = localStorage.getItem('staff_authToken') || getCookie('staff_authToken');
-  return token ? token.replace(/^"|"\$/g, '') : '';
+  return token ? token.replace(/^"|"$/g, '') : '';
 };
 
 export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, setActiveTab }: any) {
   const [step, setStep] = useState(1);
   const [quoteType, setQuoteType] = useState('Bakım Sözleşmesi');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
-  const [errorMessage, setErrorMessage] = useState(''); // 🚀 YENİ: Tarayıcı 'alert' yerine kullanılacak
+  const [errorMessage, setErrorMessage] = useState(''); 
   
-  // 🚀 YENİ: İmza Yöntemi State'i
   const [signMode, setSignMode] = useState<'field' | 'office'>('field'); 
 
   const [customerName, setCustomerName] = useState('');
@@ -38,9 +37,16 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
   
   const [maintenanceContract, setMaintenanceContract] = useState('');
   const [revisionDetails, setRevisionDetails] = useState('');
+  
+  // 🚀 YENİ: EKSTRA PDF BİLGİLERİ İÇİN STATE'LER
   const [elevatorType, setElevatorType] = useState('');
   const [stopsCount, setStopsCount] = useState('');
   const [capacity, setCapacity] = useState('');
+  const [elevatorSpeed, setElevatorSpeed] = useState('');
+  const [elevatorCount, setElevatorCount] = useState('1');
+  const [monthlyFee, setMonthlyFee] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const employerCanvasRef = useRef<HTMLCanvasElement>(null);
   const customerCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -72,7 +78,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
   const resetForm = () => {
     setStep(1);
     setQuoteType('Bakım Sözleşmesi');
-    setSignMode('field'); // SIFIRLA
+    setSignMode('field'); 
     setCustomerName('');
     setCustomerPhone('');
     setSearchAsset('');
@@ -85,6 +91,8 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     setErrorMessage('');
     setEmployerSignature(false);
     setCustomerSignature(false);
+    // Yeni stateleri sıfırla
+    setElevatorType(''); setStopsCount(''); setCapacity(''); setElevatorSpeed(''); setElevatorCount('1'); setMonthlyFee(''); setStartDate(''); setEndDate('');
   };
 
   const handleClose = () => {
@@ -92,23 +100,23 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     setTimeout(resetForm, 300);
   };
 
+  // 🚀 ESC KAPATMA SORUNU ÇÖZÜMÜ
   useEffect(() => {
     const handleEscKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && showQuoteModal) handleClose();
     };
-    if (showQuoteModal) window.addEventListener('keydown', handleEscKey);
-    return () => window.removeEventListener('keydown', handleEscKey);
+    if (showQuoteModal) {
+        window.addEventListener('keydown', handleEscKey, { capture: true });
+    }
+    return () => window.removeEventListener('keydown', handleEscKey, { capture: true });
   }, [showQuoteModal]);
 
   const getFullAssetName = () => {
       if (newAssetMode) return newAssetName;
       const asset = data?.assets?.find((a: any) => String(a.id) === selectedAssetId);
       if (!asset) return 'Bilinmiyor';
-      const aptName = asset.apartmentName || asset.apartment_name;
-      return aptName ? `${aptName} (${asset.name})` : asset.name;
+      return asset.apartmentName ? `${asset.apartmentName} | ${asset.name}` : asset.name; // 🚀 "Apartman | Cihaz" formatı
   };
-
-  const finalAssetName = getFullAssetName();
 
   const handleSubmit = async () => {
     setStatus('loading');
@@ -141,13 +149,18 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
           customer_phone: customerPhone,
           is_new_asset: newAssetMode,
           asset_id: newAssetMode ? null : selectedAssetId,
-          asset_name: finalAssetName, 
-          status: signMode === 'office' ? 'Bekliyor' : 'Müşteri Onayladı', // 🚀 AKILLI STATÜ
+          asset_name: getFullAssetName(), // 🚀 "Apartman | Cihaz" 
+          status: signMode === 'office' ? 'Bekliyor' : 'Müşteri Onayladı',
           quote_details: {
              revisionDetails,
              elevatorType,
              stopsCount,
              capacity,
+             elevatorSpeed,
+             elevatorCount,
+             monthlyFee,
+             startDate,
+             endDate,
              maintenanceContract,
              customerSignature: customerSignBase64,
              employerSignature: employerSignBase64 
@@ -167,8 +180,6 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
 
   const isCustomerValid = newCustomerMode ? !!customerName.trim() : !!selectedCustomerId;
   const isAssetValid = newAssetMode ? !!newAssetName.trim() : !!selectedAssetId;
-  
-  // 🚀 YENİ VALIDASYON: Sadece seçili moda göre imza kontrolü
   const isSignValid = signMode === 'field' ? (employerSignature && customerSignature) : employerSignature;
   const canSubmit = isCustomerValid && isAssetValid && isSignValid;
 
@@ -264,9 +275,8 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
             initial={{ opacity: 0, scale: 0.95 }} 
             animate={{ opacity: 1, scale: 1 }} 
             exit={{ opacity: 0, scale: 0.95 }} 
-            className="bg-white w-full max-w-lg rounded-3xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]"
+            className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]"
           >
-            {/* 🚀 YENİ: Hata Balonu (Alert Yerine) */}
             <AnimatePresence>
                 {errorMessage && (
                     <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} className="absolute top-4 left-4 right-4 bg-rose-100 border border-rose-200 text-rose-700 p-3 rounded-xl z-50 flex justify-between items-center shadow-lg">
@@ -383,7 +393,12 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                                         const isSelected = selectedAssetId === String(a.id);
                                         return (
                                             <button 
-                                                key={a.id} type="button" onClick={() => setSelectedAssetId(String(a.id))}
+                                                key={a.id} type="button" onClick={() => {
+                                                    setSelectedAssetId(String(a.id));
+                                                    // Seçilen asansörden bilgileri otomatik doldur
+                                                    setElevatorType(a.type || '');
+                                                    setCapacity(a.asset_details?.includes('Kapasite') ? '' : ''); // İleride geliştirilebilir
+                                                }}
                                                 className={`text-left p-2.5 rounded-lg transition-all flex flex-col gap-0.5 border ${isSelected ? 'bg-blue-50 border-blue-200' : 'bg-white border-transparent hover:bg-slate-50'}`}
                                             >
                                                 <div className={`text-sm ${isSelected ? 'text-blue-800 font-bold' : 'text-slate-800 font-bold'}`}>{aptName ? `${aptName} (${a.name})` : a.name}</div>
@@ -410,20 +425,17 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                   {step === 2 && (
                     <div className="space-y-4">
                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1 mb-2">Hangi tür teklif oluşturacaksınız?</label>
-                      <div className="grid grid-cols-1 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         {["Bakım Sözleşmesi", "Revizyon Teklifi", "Montaj Teklifi"].map(type => (
                           <button 
                             key={type} onClick={() => setQuoteType(type)}
-                            className={`w-full flex items-center gap-4 p-5 rounded-xl border-2 transition-all text-left ${quoteType === type ? 'border-blue-500 bg-blue-50/50 shadow-sm' : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'}`}
+                            className={`w-full flex flex-col items-center justify-center gap-3 p-5 rounded-2xl border-2 transition-all text-center ${quoteType === type ? 'border-blue-500 bg-blue-50/50 shadow-md' : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'}`}
                           >
-                            <div className={`w-5 h-5 rounded-full border-2 flex shrink-0 items-center justify-center ${quoteType === type ? 'border-blue-500 bg-blue-500' : 'border-slate-300'}`}>
-                              {quoteType === type && <div className="w-2 h-2 m-auto bg-white rounded-full"></div>}
+                            <div className={`w-6 h-6 rounded-full border-2 flex shrink-0 items-center justify-center ${quoteType === type ? 'border-blue-500 bg-blue-500' : 'border-slate-300'}`}>
+                              {quoteType === type && <div className="w-2.5 h-2.5 m-auto bg-white rounded-full"></div>}
                             </div>
                             <div>
-                              <div className={`font-bold text-base ${quoteType === type ? 'text-blue-900' : 'text-slate-700'}`}>{type}</div>
-                              <div className="text-xs text-slate-500 font-medium mt-1">
-                                {type === 'Bakım Sözleşmesi' ? 'Aylık periyodik bakım anlaşması metni hazırlayın.' : type === 'Revizyon Teklifi' ? 'Mevcut bir asansör için yenileme/tamirat teklifi.' : 'Sıfırdan kurulacak yeni bir sistem için montaj teklifi.'}
-                              </div>
+                              <div className={`font-bold text-sm ${quoteType === type ? 'text-blue-900' : 'text-slate-700'}`}>{type}</div>
                             </div>
                           </button>
                         ))}
@@ -433,42 +445,70 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
 
                   {step === 3 && (
                     <div className="space-y-6">
+                      
+                      {/* 🚀 YENİ: ORTAK PDF DETAY ALANLARI */}
+                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4">Sistem Teknik Özellikleri</label>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-600">Asansör Tipi/Cinsi</label>
+                                <input type="text" value={elevatorType} onChange={e => setElevatorType(e.target.value)} placeholder="MRL, Hidrolik vb." className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500" />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-600">Kapasite</label>
+                                <input type="text" value={capacity} onChange={e => setCapacity(e.target.value)} placeholder="Örn: 800 kg / 10 Kişi" className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500" />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-600">Durak Sayısı</label>
+                                <input type="number" value={stopsCount} onChange={e => setStopsCount(e.target.value)} placeholder="Örn: 5" className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500" />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-600">Hızı</label>
+                                <input type="text" value={elevatorSpeed} onChange={e => setElevatorSpeed(e.target.value)} placeholder="Örn: 1.0 m/sn" className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500" />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-600">Asansör Adedi</label>
+                                <input type="number" value={elevatorCount} onChange={e => setElevatorCount(e.target.value)} placeholder="Örn: 1" className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500" />
+                              </div>
+                          </div>
+                      </div>
+
                       {quoteType === 'Bakım Sözleşmesi' && (
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block flex justify-between items-center">
-                            Sözleşme İçeriği (Düzenlenebilir)
-                          </label>
-                          <textarea 
-                            rows={12} value={maintenanceContract} onChange={(e) => handleSaveContractTemplate(e.target.value)}
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:bg-white focus:border-blue-500 outline-none transition-all resize-none custom-scrollbar leading-relaxed"
-                            placeholder="Sözleşme detaylarını buraya yazın..."
-                          />
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-600">Aylık Bakım Bedeli</label>
+                                <input type="text" value={monthlyFee} onChange={e => setMonthlyFee(e.target.value)} placeholder="Örn: 1.500 TL + KDV" className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500" />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-600">Başlangıç Tarihi</label>
+                                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500" />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-600">Bitiş Tarihi</label>
+                                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500" />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block flex justify-between items-center">
+                                Sözleşme İçeriği (Düzenlenebilir)
+                            </label>
+                            <textarea 
+                                rows={8} value={maintenanceContract} onChange={(e) => handleSaveContractTemplate(e.target.value)}
+                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:bg-white focus:border-blue-500 outline-none transition-all resize-none custom-scrollbar leading-relaxed"
+                                placeholder="Sözleşme detaylarını buraya yazın..."
+                            />
+                            </div>
                         </div>
                       )}
                       {quoteType === 'Revizyon Teklifi' && (
                         <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Yapılacak İşlerin Detayları</label>
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Revizyon İşlem Detayları</label>
                           <textarea 
                             rows={8} value={revisionDetails} onChange={e => setRevisionDetails(e.target.value)} 
-                            placeholder="Örn: Motor değişimi, kabin revizyonu kalemleri vb..." 
+                            placeholder="Örn: Motor değişimi, frenler yenilenecek, halatlar değişecek..." 
                             className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition-all resize-none custom-scrollbar" 
                           />
-                        </div>
-                      )}
-                      {quoteType === 'Montaj Teklifi' && (
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Asansör Tipi</label>
-                            <input type="text" value={elevatorType} onChange={e => setElevatorType(e.target.value)} placeholder="Örn: İnsan Asansörü" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition-all" />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Durak Sayısı</label>
-                            <input type="number" value={stopsCount} onChange={e => setStopsCount(e.target.value)} placeholder="Örn: 5" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition-all" />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Kapasite</label>
-                            <input type="text" value={capacity} onChange={e => setCapacity(e.target.value)} placeholder="Örn: 800kg" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition-all" />
-                          </div>
                         </div>
                       )}
                     </div>
@@ -476,7 +516,6 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
 
                   {step === 4 && (
                     <div className="space-y-6">
-                      {/* 🚀 YENİ: SAHA VEYA OFİS (UZAKTAN İMZA) SEÇİMİ */}
                       <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
                           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-3 text-center">İmza Yöntemini Seçin</label>
                           <div className="flex bg-slate-200/50 p-1 rounded-xl">
@@ -485,34 +524,34 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                           </div>
                       </div>
 
-                      <div className="grid grid-cols-1 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                           <div className="space-y-2">
                             <div className="flex justify-between items-center px-1">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Yetkili (Firma) İmzası</label>
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Yetkili İmzası</label>
                                 {employerSignature && <button onClick={() => clearCanvas(employerCanvasRef, setEmployerSignature)} className="text-[10px] flex items-center gap-1 text-slate-400 hover:text-rose-500 font-bold uppercase transition-colors"><RotateCcw size={12}/> Temizle</button>}
                             </div>
                             <div className={`border-2 border-dashed bg-slate-50 rounded-2xl overflow-hidden touch-none relative ${employerSignature ? 'border-blue-300' : 'border-slate-200'}`}>
-                              <canvas ref={employerCanvasRef} className="w-full h-[120px] cursor-crosshair touch-none block" />
+                              <canvas ref={employerCanvasRef} className="w-full h-[140px] cursor-crosshair touch-none block" />
                               {!employerSignature && <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-300 font-bold opacity-50">Buraya imzalayın</div>}
                             </div>
                           </div>
 
                           {signMode === 'field' ? (
-                              <motion.div initial={{opacity:0, height:0}} animate={{opacity:1, height:'auto'}} className="space-y-2">
+                              <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} className="space-y-2">
                                 <div className="flex justify-between items-center px-1">
                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Müşteri İmzası</label>
                                     {customerSignature && <button onClick={() => clearCanvas(customerCanvasRef, setCustomerSignature)} className="text-[10px] flex items-center gap-1 text-slate-400 hover:text-rose-500 font-bold uppercase transition-colors"><RotateCcw size={12}/> Temizle</button>}
                                 </div>
                                 <div className={`border-2 border-dashed bg-slate-50 rounded-2xl overflow-hidden touch-none relative ${customerSignature ? 'border-emerald-300' : 'border-slate-200'}`}>
-                                  <canvas ref={customerCanvasRef} className="w-full h-[120px] cursor-crosshair touch-none block" />
+                                  <canvas ref={customerCanvasRef} className="w-full h-[140px] cursor-crosshair touch-none block" />
                                   {!customerSignature && <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-300 font-bold opacity-50">Buraya imzalayın</div>}
                                 </div>
                               </motion.div>
                           ) : (
-                              <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} className="bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center flex flex-col items-center justify-center">
-                                  <MessageCircle className="text-blue-500 mb-2" size={32} />
-                                  <h4 className="text-blue-800 font-bold text-sm mb-1">Uzaktan İmza Modu Devrede</h4>
-                                  <p className="text-blue-600/80 text-xs font-medium px-4">Teklifi kaydettikten sonra müşteriye WhatsApp üzerinden özel bir imza linki gönderebileceksiniz.</p>
+                              <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} className="bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center flex flex-col items-center justify-center h-[140px] mt-6 sm:mt-5">
+                                  <MessageCircle className="text-blue-500 mb-2" size={24} />
+                                  <h4 className="text-blue-800 font-bold text-xs mb-1">WhatsApp ile Gönderim</h4>
+                                  <p className="text-blue-600/80 text-[10px] font-medium px-2">Kaydettikten sonra müşteriye özel bir imza linki atabileceksiniz.</p>
                               </motion.div>
                           )}
                       </div>
