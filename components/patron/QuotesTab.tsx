@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Loader2, Trash2, FileText, FileSignature, CheckCircle, Clock, Search, X, Download, User, Box } from 'lucide-react';
+import { Loader2, Trash2, FileText, FileSignature, CheckCircle, Clock, Search, X, Download, User, Box, MessageCircle, LayoutTemplate } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { useReactToPrint } from 'react-to-print';
@@ -27,11 +27,12 @@ export default function QuotesTab({ data }: any) {
     const [showQuoteModal, setShowQuoteModal] = useState(false);
     
     const [selectedQuote, setSelectedQuote] = useState<any>(null);
+    const [printTemplate, setPrintTemplate] = useState('modern'); // 🚀 YENİ: Şablon State'i
     const printRef = useRef<HTMLDivElement>(null);
 
     const handlePrint = useReactToPrint({
         contentRef: printRef,
-        documentTitle: selectedQuote ? `${selectedQuote.customer_name}_Teklif` : "Teklif_Belgesi",
+        documentTitle: selectedQuote ? `${selectedQuote.customer_name}_Teklif_Belgesi` : "Teklif_Belgesi",
     });
     
     const companySlug = data?.slug || data?.company_slug || (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '');
@@ -89,7 +90,7 @@ export default function QuotesTab({ data }: any) {
             <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
                 <div>
                   <h2 className="text-2xl font-black text-slate-800">Teklifler ve Sözleşmeler</h2>
-                  <p className="text-sm font-medium text-slate-500 mt-1">Oluşturduğunuz bakım sözleşmeleri ve montaj/revizyon tekliflerini buradan takip edebilirsiniz.</p>
+                  <p className="text-sm font-medium text-slate-500 mt-1">Oluşturduğunuz sözleşmeleri yönetin, müşteriye yollayın veya yazdırın.</p>
                 </div>
                 <button onClick={() => setShowQuoteModal(true)} className="px-4 py-2 bg-slate-900 text-white font-bold text-sm rounded-xl hover:bg-slate-800 transition-all shadow-sm flex items-center gap-2">
                     + Yeni Teklif
@@ -106,14 +107,20 @@ export default function QuotesTab({ data }: any) {
                         <div 
                            key={q.id} 
                            onClick={() => setSelectedQuote(q)}
-                           className="border border-slate-200 p-5 rounded-xl bg-slate-50 flex flex-col justify-between hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group"
+                           className={`border p-5 rounded-xl flex flex-col justify-between transition-all cursor-pointer group shadow-sm hover:shadow-md
+                             ${q.status === 'Müşteri Onayladı' ? 'bg-emerald-50/30 border-emerald-200 hover:border-emerald-400' : 'bg-slate-50 border-slate-200 hover:border-blue-300'}
+                           `}
                         >
                             <div>
                                 <div className="flex justify-between items-start mb-3">
-                                   <div className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg ${q.quote_type === 'Bakım Sözleşmesi' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>
+                                   <div className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg ${q.quote_type === 'Bakım Sözleşmesi' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700'}`}>
                                       {q.quote_type}
                                    </div>
-                                   <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg ${q.status === 'Bekliyor' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                   <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg 
+                                      ${q.status === 'Bekliyor' ? 'bg-amber-100 text-amber-700' : 
+                                        q.status === 'Müşteri Onayladı' ? 'bg-emerald-500 text-white shadow-sm' : 
+                                        'bg-emerald-100 text-emerald-700'}
+                                   `}>
                                       {q.status === 'Bekliyor' ? <Clock size={12}/> : <CheckCircle size={12}/>} {q.status}
                                    </div>
                                 </div>
@@ -125,7 +132,7 @@ export default function QuotesTab({ data }: any) {
                                    Tarih: {new Date(q.created_at).toLocaleDateString('tr-TR')}
                                 </div>
                             </div>
-                            <div className="flex justify-end gap-2 mt-5 pt-4 border-t border-slate-200">
+                            <div className="flex justify-end gap-2 mt-5 pt-4 border-t border-slate-200/60">
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); handleDelete(q.id); }}
                                   className="p-2 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors" title="Sil"
@@ -194,36 +201,82 @@ export default function QuotesTab({ data }: any) {
                                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Yetkili İmzası</div>
                                 {parsedDetails.employerSignature ? <img src={parsedDetails.employerSignature} alt="Yetkili İmza" className="h-16 mx-auto object-contain mix-blend-multiply" /> : <div className="text-xs text-slate-400 italic py-4">İmza Yok</div>}
                             </div>
-                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center flex flex-col justify-center">
-                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Müşteri İmzası</div>
-                                {parsedDetails.customerSignature ? <img src={parsedDetails.customerSignature} alt="Müşteri İmza" className="h-16 mx-auto object-contain mix-blend-multiply" /> : <div className="text-xs text-slate-400 italic py-4">İmza Yok</div>}
+                            <div className={`p-4 rounded-xl border text-center flex flex-col justify-center transition-colors ${selectedQuote.status === 'Müşteri Onayladı' ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-100'}`}>
+                                <div className={`text-[10px] font-black uppercase tracking-widest mb-2 ${selectedQuote.status === 'Müşteri Onayladı' ? 'text-emerald-600' : 'text-slate-400'}`}>Müşteri İmzası</div>
+                                {parsedDetails.customerSignature ? <img src={parsedDetails.customerSignature} alt="Müşteri İmza" className="h-16 mx-auto object-contain mix-blend-multiply" /> : <div className="text-xs text-slate-400 italic py-4">İmza Bekleniyor</div>}
                             </div>
                         </div>
                     </div>
 
-                    <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0 flex gap-2">
-                        <button onClick={() => handleDelete(selectedQuote.id)} className="p-4 bg-white border border-rose-200 text-rose-600 rounded-xl hover:bg-rose-50 transition-all active:scale-95">
-                            <Trash2 size={20} />
-                        </button>
-                        <button onClick={handlePrint} className="flex-1 bg-blue-600 text-white font-bold text-sm py-4 rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2">
-                            <Download size={18} /> Yazdır veya PDF İndir
-                        </button>
+                    <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0 space-y-3">
+                        {/* 🚀 YENİ: WHATSAPP İLE GÖNDER BUTONU */}
+                        {selectedQuote.public_token && selectedQuote.status !== 'Müşteri Onayladı' && (
+                            <a 
+                                href={`https://wa.me/?text=${encodeURIComponent(`Merhaba \${selectedQuote.customer_name},\n\nSizin için hazırladığımız \${selectedQuote.quote_type} belgemize aşağıdaki bağlantıdan ulaşıp, online olarak inceleyebilir ve imzalayabilirsiniz:\n\n\${typeof window !== 'undefined' ? window.location.origin : ''}/teklif/${selectedQuote.public_token}\n\nSaygılarımızla, ${data?.settings?.company_name || 'Fixlog'}`)}`}
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="w-full bg-[#25D366] text-white font-bold text-sm py-4 rounded-xl shadow-lg hover:bg-[#20bd5a] transition-all active:scale-95 flex items-center justify-center gap-2"
+                            >
+                                <MessageCircle size={20} /> Müşteriye WhatsApp'tan Gönder (İmza Linki)
+                            </a>
+                        )}
+
+                        <div className="flex flex-col sm:flex-row gap-2 w-full">
+                            <button onClick={() => handleDelete(selectedQuote.id)} className="p-4 bg-white border border-rose-200 text-rose-600 rounded-xl hover:bg-rose-50 transition-all active:scale-95 flex items-center justify-center shrink-0">
+                                <Trash2 size={20} />
+                            </button>
+                            
+                            <div className="flex-1 flex gap-2">
+                                {/* 🚀 YENİ: ŞABLON SEÇİCİ */}
+                                <div className="relative flex-1">
+                                    <select 
+                                        value={printTemplate} 
+                                        onChange={(e) => setPrintTemplate(e.target.value)}
+                                        className="w-full h-full appearance-none bg-white border border-slate-200 text-slate-700 font-bold text-xs px-4 py-3 rounded-xl outline-none focus:border-blue-500 shadow-sm cursor-pointer"
+                                    >
+                                        <option value="modern">Modern Şablon</option>
+                                        <option value="classic">Klasik Şablon</option>
+                                        <option value="minimal">Minimal Şablon</option>
+                                    </select>
+                                    <LayoutTemplate size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                </div>
+
+                                <button onClick={handlePrint} className="flex-[1.5] bg-blue-600 text-white font-bold text-sm py-3.5 rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2">
+                                    <Download size={18} /> Yazdır / İndir
+                                </button>
+                            </div>
+                        </div>
                     </div>
                   </motion.div>
                 </div>
               )}
             </AnimatePresence>
 
-            {/* GİZLİ YAZDIRMA ŞABLONU */}
+            {/* 🚀 GİZLİ YAZDIRMA ŞABLONU (DİNAMİK TEMALI) */}
             <div style={{ display: "none" }}>
                 {selectedQuote && (
-                <div ref={printRef} className="p-8 bg-white text-black max-w-2xl mx-auto font-sans">
-                  <div className="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
+                <div 
+                    ref={printRef} 
+                    className={`p-10 bg-white max-w-2xl mx-auto 
+                        ${printTemplate === 'classic' ? 'font-serif text-black' : 
+                          printTemplate === 'minimal' ? 'font-mono text-gray-800' : 
+                          'font-sans text-slate-900'}
+                    `}
+                >
+                  <div className={`flex justify-between items-center pb-6 mb-8 
+                      ${printTemplate === 'classic' ? 'border-b-4 border-double border-black' : 
+                        printTemplate === 'modern' ? 'border-b-2 border-slate-900' : 
+                        'border-b border-gray-200'}
+                  `}>
                     <div className="flex items-center gap-4">
                       {data?.settings?.company_logo && <img src={data.settings.company_logo} alt="Logo" className="w-16 h-16 object-contain" />}
                       <div>
-                        <h1 className="text-3xl font-black">{data?.settings?.company_name || "Firma Adı"}</h1>
-                        <p className="text-sm font-medium mt-1">{selectedQuote.quote_type}</p>
+                        <h1 className={`text-3xl ${printTemplate === 'minimal' ? 'font-light tracking-wide' : 'font-black'}`}>
+                            {data?.settings?.company_name || "Firma Adı"}
+                        </h1>
+                        <p className={`text-sm mt-1 ${printTemplate === 'classic' ? 'font-bold uppercase tracking-widest' : 'font-medium'}`}>
+                            {selectedQuote.quote_type}
+                        </p>
                       </div>
                     </div>
                     <div className="text-right text-sm">
@@ -232,14 +285,14 @@ export default function QuotesTab({ data }: any) {
                     </div>
                   </div>
                   
-                  <div className="mb-6 grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <h3 className="font-bold border-b border-black/20 mb-2 pb-1">Müşteri Bilgileri</h3>
+                  <div className="mb-8 grid grid-cols-2 gap-8 text-sm">
+                    <div className={`${printTemplate === 'classic' ? 'p-4 border border-black' : printTemplate === 'modern' ? 'p-4 bg-slate-50 rounded-xl' : ''}`}>
+                      <h3 className={`mb-3 pb-1 ${printTemplate === 'classic' ? 'font-bold border-b border-black uppercase' : printTemplate === 'minimal' ? 'font-semibold text-gray-500 uppercase tracking-widest text-xs' : 'font-bold border-b border-slate-200'}`}>Müşteri Bilgileri</h3>
                       <p><strong>İsim:</strong> {selectedQuote.customer_name}</p>
                       {selectedQuote.customer_phone && <p><strong>Telefon:</strong> {selectedQuote.customer_phone}</p>}
                     </div>
-                    <div>
-                      <h3 className="font-bold border-b border-black/20 mb-2 pb-1">Sistem Bilgileri</h3>
+                    <div className={`${printTemplate === 'classic' ? 'p-4 border border-black' : printTemplate === 'modern' ? 'p-4 bg-slate-50 rounded-xl' : ''}`}>
+                      <h3 className={`mb-3 pb-1 ${printTemplate === 'classic' ? 'font-bold border-b border-black uppercase' : printTemplate === 'minimal' ? 'font-semibold text-gray-500 uppercase tracking-widest text-xs' : 'font-bold border-b border-slate-200'}`}>Sistem Bilgileri</h3>
                       <p><strong>Sistem Adı:</strong> {selectedQuote.asset_name}</p>
                       {selectedQuote.quote_type === 'Revizyon Teklifi' && <p><strong>Detay:</strong> {parsedDetails.revisionDetails}</p>}
                       {selectedQuote.quote_type === 'Montaj Teklifi' && (
@@ -252,20 +305,21 @@ export default function QuotesTab({ data }: any) {
                     </div>
                   </div>
                   
-                  <div className="mb-8">
-                    <h3 className="font-bold border-b border-black/20 mb-2 pb-1">Sözleşme / Teklif Detayı</h3>
-                    <div className="text-sm whitespace-pre-wrap">{selectedQuote.quote_type === 'Bakım Sözleşmesi' ? parsedDetails.maintenanceContract : (selectedQuote.quote_type === 'Revizyon Teklifi' ? parsedDetails.revisionDetails : 'Montaj detayları ektedir.')}</div>
+                  <div className={`mb-12 ${printTemplate === 'modern' ? 'bg-slate-50 p-6 rounded-xl' : ''}`}>
+                    <h3 className={`mb-4 pb-2 ${printTemplate === 'classic' ? 'font-bold border-b-2 border-black uppercase text-center' : printTemplate === 'minimal' ? 'font-semibold text-gray-500 uppercase tracking-widest text-xs' : 'font-bold border-b border-slate-200'}`}>Sözleşme / Teklif Detayı</h3>
+                    <div className={`text-sm whitespace-pre-wrap leading-relaxed ${printTemplate === 'classic' ? 'text-justify' : ''}`}>
+                        {selectedQuote.quote_type === 'Bakım Sözleşmesi' ? parsedDetails.maintenanceContract : (selectedQuote.quote_type === 'Revizyon Teklifi' ? parsedDetails.revisionDetails : 'Montaj detayları ektedir.')}
+                    </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-8 mt-12 pt-8 border-t-2 border-black text-center">
+                  <div className="grid grid-cols-2 gap-8 mt-16 pt-8 border-t-2 border-black text-center">
                     <div>
-                      <p className="font-bold mb-16">Yetkili (Firma) İmzası<br/><span className="font-normal text-sm">{data?.ownerName || data?.settings?.owner_name || ""}</span></p>
-                      {parsedDetails.employerSignature && <img src={parsedDetails.employerSignature} className="mx-auto h-20 object-contain mix-blend-multiply grayscale" />}
+                      <p className="font-bold mb-20">Yetkili (Firma) İmzası<br/><span className={`font-normal text-sm ${printTemplate === 'minimal' ? 'italic text-gray-500' : ''}`}>{data?.ownerName || data?.settings?.owner_name || ""}</span></p>
+                      {parsedDetails.employerSignature && <img src={parsedDetails.employerSignature} className="mx-auto h-24 object-contain mix-blend-multiply grayscale" />}
                     </div>
                     <div>
-                      <p className="font-bold mb-16">Müşteri İmzası</p>
-                      <p className="font-bold mb-2">{selectedQuote.customer_name}</p>
-                      {parsedDetails.customerSignature && <img src={parsedDetails.customerSignature} className="mx-auto h-20 object-contain mix-blend-multiply grayscale" />}
+                      <p className="font-bold mb-20">Müşteri İmzası<br/><span className={`font-normal text-sm ${printTemplate === 'minimal' ? 'italic text-gray-500' : ''}`}>{selectedQuote.customer_name}</span></p>
+                      {parsedDetails.customerSignature ? <img src={parsedDetails.customerSignature} className="mx-auto h-24 object-contain mix-blend-multiply grayscale" /> : <div className="text-gray-400 italic">Elektronik İmza Bekleniyor</div>}
                     </div>
                   </div>
                 </div>
