@@ -7,6 +7,16 @@ import dynamic from 'next/dynamic';
 
 const QuoteModal = dynamic(() => import('@/components/modals/forms/QuoteModal'), { ssr: false });
 
+const getAuthToken = () => {
+  if (typeof window === 'undefined') return '';
+  let token = localStorage.getItem('token') || sessionStorage.getItem('token');
+  if (!token) {
+    const match = document.cookie.match(/(?:(?:^|.*;\s*)token\s*\=\s*([^;]*).*$)\vert{}^.*$/);
+    if (match && match[1]) token = match[1];
+  }
+  return token ? token.replace(/^"|"\$/g, '') : '';
+};
+
 export default function QuotesTab({ data }: any) {
     const [quotes, setQuotes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -17,10 +27,9 @@ export default function QuotesTab({ data }: any) {
     const fetchQuotes = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
             const res = await fetch(`${API_URL}/get-quotes?company_slug=${companySlug}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${getAuthToken()}` }
             });
             const r = await res.json();
             if (r.success) setQuotes(r.data);
@@ -36,13 +45,12 @@ export default function QuotesTab({ data }: any) {
 
     const handleDelete = async (id: string) => {
         if (!window.confirm('Bu teklifi/sözleşmeyi silmek istediğinize emin misiniz?')) return;
-        const token = localStorage.getItem('token');
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
         await fetch(`${API_URL}/delete-quote`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${getAuthToken()}`
             },
             body: JSON.stringify({ id, company_slug: companySlug })
         });
@@ -103,7 +111,6 @@ export default function QuotesTab({ data }: any) {
                 </div>
             )}
 
-            {/* QuoteModal Render */}
             {showQuoteModal && <QuoteModal showQuoteModal={showQuoteModal} setShowQuoteModal={setShowQuoteModal} data={data} setActiveTab={(tab: string) => { if(typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('navTab', { detail: tab })) }} />}
         </div>
     );

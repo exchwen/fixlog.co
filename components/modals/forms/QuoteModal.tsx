@@ -4,6 +4,17 @@ import { X, Send, ArrowRight, Loader2, CheckCircle, Search, FileText, Download, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReactToPrint } from 'react-to-print';
 
+// Token'ı Cookie, LocalStorage veya SessionStorage'dan güvenli şekilde bulan yardımcı fonksiyon
+const getAuthToken = () => {
+  if (typeof window === 'undefined') return '';
+  let token = localStorage.getItem('token') || sessionStorage.getItem('token');
+  if (!token) {
+    const match = document.cookie.match(/(?:(?:^|.*;\s*)token\s*\=\s*([^;]*).*$)|^.*$/);
+    if (match && match[1]) token = match[1];
+  }
+  return token ? token.replace(/^"|"$/g, '') : '';
+};
+
 export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, setActiveTab }: any) {
   const [step, setStep] = useState(1);
   const [quoteType, setQuoteType] = useState('Bakım Sözleşmesi');
@@ -48,12 +59,11 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
   const handleSaveContractTemplate = async (val: string) => {
     setMaintenanceContract(val);
     try {
-      const token = localStorage.getItem('token');
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
       const slug = window.location.pathname.split('/')[1];
       await fetch(`${API_URL}/update-maintenance-contract`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
         body: JSON.stringify({ slug, template: val })
       });
     } catch(e) { console.error('Sozlesme kaydedilemedi', e); }
@@ -80,39 +90,32 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     setTimeout(resetForm, 300);
   };
 
-  // ESC tuşu ile kapanma
   useEffect(() => {
     const handleEscKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && showQuoteModal) {
-        handleClose();
-      }
+      if (e.key === 'Escape' && showQuoteModal) handleClose();
     };
-    if (showQuoteModal) {
-      window.addEventListener('keydown', handleEscKey);
-    }
+    if (showQuoteModal) window.addEventListener('keydown', handleEscKey);
     return () => window.removeEventListener('keydown', handleEscKey);
   }, [showQuoteModal]);
 
-  // Varlık (Asset) Adını belirleme
   const finalAssetName = newAssetMode 
     ? newAssetName 
     : (data?.assets?.find((a: any) => String(a.id) === selectedAssetId)?.name || 'Bilinmiyor');
 
-const handleSubmit = async () => {
+  const handleSubmit = async () => {
     setStatus('loading');
     try {
       const companySlug = data?.slug || data?.company_slug || (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '');
-      const token = localStorage.getItem('token');
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
       
       const res = await fetch(`${API_URL}/add-quote`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // Yetkisiz Erişim hatasını çözen güvenlik anahtarı
+          'Authorization': `Bearer ${getAuthToken()}`
         },
         body: JSON.stringify({
-          slug: companySlug, // worker.js güvenlik bariyerini geçmek için zorunlu (Eklendi)
+          slug: companySlug,
           company_slug: companySlug,
           quote_type: quoteType,
           is_new_customer: newCustomerMode,
@@ -122,12 +125,7 @@ const handleSubmit = async () => {
           is_new_asset: newAssetMode,
           asset_id: newAssetMode ? null : selectedAssetId,
           asset_name: finalAssetName,
-          quote_details: {
-             revisionDetails,
-             elevatorType,
-             stopsCount,
-             capacity
-          }
+          quote_details: { revisionDetails, elevatorType, stopsCount, capacity }
         })
       });
       
@@ -136,41 +134,23 @@ const handleSubmit = async () => {
       
       setStatus('success');
     } catch(e: any) {
-      alert('Hata oluştu: ' + (e.message || ''));
+      alert('Hata oluştu: ' + (e.message || 'Yetkisiz erişim veya bağlantı sorunu.'));
       setStatus('idle');
     }
   };
 
-  // Validasyon Kontrolleri
   const isCustomerValid = newCustomerMode ? !!customerName.trim() : !!selectedCustomerId;
   const isAssetValid = newAssetMode ? !!newAssetName.trim() : !!selectedAssetId;
   const canSubmit = isCustomerValid && isAssetValid && employerSignature && customerSignature;
 
-  const handleNextFromStep1 = () => {
-    if (!isCustomerValid || !isAssetValid) return;
-    setStep(2);
-  };
+  const handleNextFromStep1 = () => { if (!isCustomerValid || !isAssetValid) return; setStep(2); };
+  const handleNextFromStep2 = () => { setStep(3); };
+  const handleNextFromStep3 = () => { setStep(4); };
+  const handleSubmitClick = async () => { if (!canSubmit) return; await handleSubmit(); };
 
-  const handleNextFromStep2 = () => {
-    setStep(3);
-  };
-
-  const handleNextFromStep3 = () => {
-    setStep(4);
-  };
-
-  const handleSubmitClick = async () => {
-    if (!canSubmit) return;
-    await handleSubmit();
-  };
-
-  // İMZA ALANI (KAYMA SORUNU ÇÖZÜLDÜ)
   const initCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>, setHasSignature: (v: boolean) => void) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
-    // ÇÖZÜM: Canvas iç çözünürlüğünü, CSS ile ekranda kapladığı boyuta eşitliyoruz.
-    // Bu sayede fare imleci ile çizim yapılan yer arasında kayma olmaz.
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
 
@@ -209,7 +189,6 @@ const handleSubmit = async () => {
     canvas.addEventListener('mousemove', draw);
     canvas.addEventListener('mouseup', stopDrawing);
     canvas.addEventListener('mouseout', stopDrawing);
-
     canvas.addEventListener('touchstart', startDrawing, { passive: false });
     canvas.addEventListener('touchmove', draw, { passive: false });
     canvas.addEventListener('touchend', stopDrawing);
@@ -225,10 +204,8 @@ const handleSubmit = async () => {
     };
   };
 
-  // İmza Alanı sadece 4. Adımda yüklenecek
   useEffect(() => {
     if (showQuoteModal && step === 4) {
-      // Çizim tuvalinin tam oturması için kısa bir gecikme ekleyerek başlatıyoruz
       const timeout = setTimeout(() => {
         initCanvas(employerCanvasRef, setEmployerSignature);
         initCanvas(customerCanvasRef, setCustomerSignature);
@@ -293,18 +270,14 @@ const handleSubmit = async () => {
                 </div>
               ) : (
                 <>
-                  {/* ADIM 1: MÜŞTERİ VE VARLIK SEÇİMİ */}
                   {step === 1 && (
                     <div className="space-y-6">
-                        
-                        {/* MÜŞTERİ KISMI */}
                         <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><User size={14}/> Müşteri / Firma</label>
                             <div className="flex bg-slate-200/50 p-1 rounded-xl mb-2">
                               <button onClick={() => {setNewCustomerMode(false); setSelectedCustomerId('');}} className={"flex-1 py-2 text-xs font-bold rounded-lg transition-all " + (!newCustomerMode ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700")}>Kayıtlılardan Seç</button>
                                <button onClick={() => {setNewCustomerMode(true); setSelectedCustomerId('');}} className={"flex-1 py-2 text-xs font-bold rounded-lg transition-all " + (newCustomerMode ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700")}>+ Yeni Müşteri</button>
                             </div>
-
                             {!newCustomerMode ? (
                               <div className="space-y-2">
                                 <div className="relative">
@@ -312,13 +285,10 @@ const handleSubmit = async () => {
                                   <input type="text" placeholder="Müşteri Ara..." className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500" value={searchCustomer} onChange={e => setSearchCustomer(e.target.value)} />
                                 </div>
                                 <div className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
-                                  {/* Yükseklik max-h-48 (12rem/192px) yapılarak uzun listelerde rahatlık sağlandı */}
                                   <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1">
                                     {(data?.customers || []).filter((c: any) => {
                                         const term = (searchCustomer || '').toLowerCase();
-                                        const name = (c.name || '').toLowerCase();
-                                        const phone = (c.contact || c.phone || '').toLowerCase();
-                                        return name.includes(term) || phone.includes(term);
+                                        return (c.name || '').toLowerCase().includes(term) || (c.contact || c.phone || '').toLowerCase().includes(term);
                                     }).map((c: any) => {
                                         const isSelected = selectedCustomerId === String(c.id);
                                         return (
@@ -352,14 +322,12 @@ const handleSubmit = async () => {
                             )}
                         </div>
 
-                        {/* VARLIK (ASANSÖR) KISMI */}
                         <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><Box size={14}/> Sistem / Varlık (Asansör)</label>
                             <div className="flex bg-slate-200/50 p-1 rounded-xl mb-2">
                               <button onClick={() => {setNewAssetMode(false); setSelectedAssetId('');}} className={"flex-1 py-2 text-xs font-bold rounded-lg transition-all " + (!newAssetMode ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700")}>Kayıtlılardan Seç</button>
                                <button onClick={() => {setNewAssetMode(true); setSelectedAssetId('');}} className={"flex-1 py-2 text-xs font-bold rounded-lg transition-all " + (newAssetMode ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700")}>+ Yeni Varlık</button>
                             </div>
-
                             {!newAssetMode ? (
                               <div className="space-y-2">
                                 <div className="relative">
@@ -367,7 +335,6 @@ const handleSubmit = async () => {
                                   <input type="text" placeholder="Asansör veya Bina Adı Ara..." className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500" value={searchAsset} onChange={e => setSearchAsset(e.target.value)} />
                                 </div>
                                 <div className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
-                                  {/* Yükseklik max-h-48 yapıldı */}
                                   <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1">
                                     {(data?.assets || []).filter((a: any) => {
                                         if (!newCustomerMode && selectedCustomerId && String(a.customer_id) !== selectedCustomerId) return false;
@@ -378,9 +345,7 @@ const handleSubmit = async () => {
                                         const isSelected = selectedAssetId === String(a.id);
                                         return (
                                             <button 
-                                                key={a.id} 
-                                                type="button"
-                                                onClick={() => setSelectedAssetId(String(a.id))}
+                                                key={a.id} type="button" onClick={() => setSelectedAssetId(String(a.id))}
                                                 className={`text-left p-2.5 rounded-lg transition-all flex flex-col gap-0.5 border ${isSelected ? 'bg-blue-50 border-blue-200' : 'bg-white border-transparent hover:bg-slate-50'}`}
                                             >
                                                 <div className={`text-sm ${isSelected ? 'text-blue-800 font-bold' : 'text-slate-800 font-bold'}`}>{aptName || a.name}</div>
@@ -404,15 +369,13 @@ const handleSubmit = async () => {
                     </div>
                   )}
 
-                  {/* ADIM 2: TEKLİF TÜRÜ SEÇİMİ */}
                   {step === 2 && (
                     <div className="space-y-4">
                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1 mb-2">Hangi tür teklif oluşturacaksınız?</label>
                       <div className="grid grid-cols-1 gap-3">
                         {["Bakım Sözleşmesi", "Revizyon Teklifi", "Montaj Teklifi"].map(type => (
                           <button 
-                            key={type} 
-                            onClick={() => setQuoteType(type)}
+                            key={type} onClick={() => setQuoteType(type)}
                             className={`w-full flex items-center gap-4 p-5 rounded-xl border-2 transition-all text-left ${quoteType === type ? 'border-blue-500 bg-blue-50/50 shadow-sm' : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'}`}
                           >
                             <div className={`w-5 h-5 rounded-full border-2 flex shrink-0 items-center justify-center ${quoteType === type ? 'border-blue-500 bg-blue-500' : 'border-slate-300'}`}>
@@ -430,7 +393,6 @@ const handleSubmit = async () => {
                     </div>
                   )}
 
-                  {/* ADIM 3: DETAYLAR */}
                   {step === 3 && (
                     <div className="space-y-6">
                       {quoteType === 'Bakım Sözleşmesi' && (
@@ -439,28 +401,22 @@ const handleSubmit = async () => {
                             Sözleşme İçeriği (Düzenlenebilir)
                           </label>
                           <textarea 
-                            rows={12}
-                            value={maintenanceContract}
-                            onChange={(e) => handleSaveContractTemplate(e.target.value)}
+                            rows={12} value={maintenanceContract} onChange={(e) => handleSaveContractTemplate(e.target.value)}
                             className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:bg-white focus:border-blue-500 outline-none transition-all resize-none custom-scrollbar leading-relaxed"
                             placeholder="Sözleşme detaylarını buraya yazın..."
                           />
                         </div>
                       )}
-
                       {quoteType === 'Revizyon Teklifi' && (
                         <div className="space-y-2">
                           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Yapılacak İşlerin Detayları</label>
                           <textarea 
-                            rows={8} 
-                            value={revisionDetails} 
-                            onChange={e => setRevisionDetails(e.target.value)} 
+                            rows={8} value={revisionDetails} onChange={e => setRevisionDetails(e.target.value)} 
                             placeholder="Örn: Motor değişimi, kabin revizyonu kalemleri vb..." 
                             className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition-all resize-none custom-scrollbar" 
                           />
                         </div>
                       )}
-
                       {quoteType === 'Montaj Teklifi' && (
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           <div className="space-y-1.5">
@@ -480,28 +436,22 @@ const handleSubmit = async () => {
                     </div>
                   )}
 
-                  {/* ADIM 4: İMZALAR */}
                   {step === 4 && (
                     <div className="space-y-6">
                       <div className="bg-amber-50 text-amber-800 p-4 rounded-xl border border-amber-200 text-sm font-medium text-center">
                         Son aşamadasınız. Lütfen teklifi onaylamak için imzaları atınız.
                       </div>
-                      
                       <div className="grid grid-cols-1 gap-6">
-                          {/* Yetkili İmza */}
                           <div className="space-y-2">
                             <div className="flex justify-between items-center px-1">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Yetkili (Firma) İmzası</label>
                                 {employerSignature && <button onClick={() => clearCanvas(employerCanvasRef, setEmployerSignature)} className="text-[10px] flex items-center gap-1 text-slate-400 hover:text-rose-500 font-bold uppercase transition-colors"><RotateCcw size={12}/> Temizle</button>}
                             </div>
                             <div className={`border-2 border-dashed bg-slate-50 rounded-2xl overflow-hidden touch-none relative ${employerSignature ? 'border-blue-300' : 'border-slate-200'}`}>
-                              {/* w-full h-[120px] CSS olarak kalıyor, iç çözünürlüğü initCanvas halledecek */}
                               <canvas ref={employerCanvasRef} className="w-full h-[120px] cursor-crosshair touch-none block" />
                               {!employerSignature && <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-300 font-bold opacity-50">Buraya imzalayın</div>}
                             </div>
                           </div>
-
-                          {/* Müşteri İmza */}
                           <div className="space-y-2">
                             <div className="flex justify-between items-center px-1">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Müşteri İmzası</label>
@@ -520,51 +470,30 @@ const handleSubmit = async () => {
               )}
             </div>
 
-            {/* ALT BUTONLAR */}
             {status !== 'success' && (
               <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0">
                 {step === 1 ? (
-                  <button 
-                    onClick={handleNextFromStep1} 
-                    disabled={!isCustomerValid || !isAssetValid}
-                    className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
-                  >
+                  <button onClick={handleNextFromStep1} disabled={!isCustomerValid || !isAssetValid} className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95">
                     Teklif Türü Seçimine Geç <ArrowRight size={18} />
                   </button>
                 ) : step === 2 ? (
                   <div className="flex gap-2">
-                      <button onClick={() => setStep(1)} className="p-3.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold shadow-sm hover:bg-slate-50 active:scale-95 transition-all">
-                        <ArrowRight size={18} className="rotate-180" />
-                      </button>
-                      <button 
-                        onClick={handleNextFromStep2} 
-                        className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2 active:scale-95"
-                      >
+                      <button onClick={() => setStep(1)} className="p-3.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold shadow-sm hover:bg-slate-50 active:scale-95 transition-all"><ArrowRight size={18} className="rotate-180" /></button>
+                      <button onClick={handleNextFromStep2} className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2 active:scale-95">
                         İçerik Girmeye Geç <ArrowRight size={18} />
                       </button>
                   </div>
                 ) : step === 3 ? (
                   <div className="flex gap-2">
-                      <button onClick={() => setStep(2)} className="p-3.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold shadow-sm hover:bg-slate-50 active:scale-95 transition-all">
-                        <ArrowRight size={18} className="rotate-180" />
-                      </button>
-                      <button 
-                        onClick={handleNextFromStep3} 
-                        className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2 active:scale-95"
-                      >
+                      <button onClick={() => setStep(2)} className="p-3.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold shadow-sm hover:bg-slate-50 active:scale-95 transition-all"><ArrowRight size={18} className="rotate-180" /></button>
+                      <button onClick={handleNextFromStep3} className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2 active:scale-95">
                         İmza ve Onay Aşaması <ArrowRight size={18} />
                       </button>
                   </div>
                 ) : (
                   <div className="flex gap-2">
-                      <button onClick={() => setStep(3)} className="p-3.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold shadow-sm hover:bg-slate-50 active:scale-95 transition-all">
-                        <ArrowRight size={18} className="rotate-180" />
-                      </button>
-                      <button 
-                        onClick={handleSubmitClick} 
-                        disabled={status === 'loading' || !canSubmit}
-                        className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
-                      >
+                      <button onClick={() => setStep(3)} className="p-3.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold shadow-sm hover:bg-slate-50 active:scale-95 transition-all"><ArrowRight size={18} className="rotate-180" /></button>
+                      <button onClick={handleSubmitClick} disabled={status === 'loading' || !canSubmit} className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95">
                         {status === 'loading' ? <Loader2 className="animate-spin" size={20} /> : <><Send size={18} /> Onayla ve Kaydet</>}
                       </button>
                   </div>
@@ -575,7 +504,6 @@ const handleSubmit = async () => {
         </div>
       )}
     
-      {/* PDF YAZDIRMA ŞABLONU */}
       <div style={{ display: "none" }}>
         <div ref={printRef} className="p-8 bg-white text-black max-w-2xl mx-auto font-sans">
           <div className="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
