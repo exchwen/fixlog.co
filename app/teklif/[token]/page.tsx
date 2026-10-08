@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, CheckCircle, FileText, X, Send, User, Box, ShieldCheck, MapPin, AlertCircle, RotateCcw } from 'lucide-react';
+import { Loader2, CheckCircle, FileText, X, Send, User, Box, ShieldCheck, AlertCircle, RotateCcw, Download } from 'lucide-react';
+import { useReactToPrint } from 'react-to-print'; // 🚀 YENİ: Müşterinin PDF indirebilmesi için eklendi
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
 
@@ -20,6 +21,13 @@ export default function CustomerQuotePage() {
     const signatureCanvasRef = useRef<HTMLCanvasElement>(null);
     const [isDrawing, setIsDrawing] = useState(false);
 
+    // 🚀 YENİ: PDF Yazdırma/İndirme Referansı
+    const printRef = useRef<HTMLDivElement>(null);
+    const handlePrint = useReactToPrint({
+        contentRef: printRef,
+        documentTitle: quoteData ? `${companyData?.company_name || 'Firma'}_Sozlesme_Kopyasi` : "Sozlesme",
+    });
+
     // Veriyi Çekme
     useEffect(() => {
         if (!token) return;
@@ -33,7 +41,6 @@ export default function CustomerQuotePage() {
                     throw new Error(r.error || 'Teklif bulunamadı veya süresi dolmuş.');
                 }
 
-                // 🚀 ÇÖZÜM: TypeScript hatasını gidermek için ": any" eklendi
                 let parsedDetails: any = {};
                 try {
                     parsedDetails = typeof r.data.quote_details === 'string' ? JSON.parse(r.data.quote_details) : r.data.quote_details;
@@ -189,6 +196,17 @@ export default function CustomerQuotePage() {
     const { parsedDetails } = quoteData;
     const isAlreadySigned = !!parsedDetails.customerSignature || status === 'success';
 
+    const renderAssetName = (fullName: string) => {
+        if (!fullName) return { apt: '', dev: 'Bilinmeyen Varlık' };
+        if (fullName.includes('|')) {
+            const parts = fullName.split('|');
+            return { apt: parts[0].trim(), dev: parts[1].trim() };
+        }
+        return { apt: '', dev: fullName };
+    };
+
+    const splitAsset = renderAssetName(quoteData.asset_name);
+
     return (
         <div className="min-h-screen bg-[#F8FAFC] text-slate-900 selection:bg-blue-100 font-sans pb-12">
             <div className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
@@ -217,14 +235,23 @@ export default function CustomerQuotePage() {
                 
                 <AnimatePresence>
                     {isAlreadySigned && (
-                        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-emerald-50 border border-emerald-200 p-6 rounded-2xl flex items-start sm:items-center gap-4 shadow-sm">
-                            <div className="bg-emerald-100 text-emerald-600 p-3 rounded-full shrink-0">
-                                <CheckCircle size={28} />
+                        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-emerald-50 border border-emerald-200 p-5 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-emerald-100 text-emerald-600 p-3 rounded-full shrink-0">
+                                    <CheckCircle size={28} />
+                                </div>
+                                <div>
+                                    <h3 className="text-emerald-800 font-black text-lg">Belge Onaylandı</h3>
+                                    <p className="text-emerald-700/80 font-medium text-sm mt-0.5">İmzanız başarıyla alındı. Sözleşmenizin bir kopyasını indirebilirsiniz.</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="text-emerald-800 font-black text-lg">Belge Onaylandı</h3>
-                                <p className="text-emerald-700/80 font-medium text-sm mt-1">İmzanız başarıyla alındı ve sözleşmeniz yürürlüğe girdi. Bizi tercih ettiğiniz için teşekkür ederiz.</p>
-                            </div>
+                            {/* 🚀 YENİ: Müşteri için indirme butonu eklendi */}
+                            <button 
+                                onClick={handlePrint} 
+                                className="w-full sm:w-auto bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-bold px-4 py-3 rounded-xl shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2 shrink-0"
+                            >
+                                <Download size={18} /> PDF İndir
+                            </button>
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -242,8 +269,8 @@ export default function CustomerQuotePage() {
                         <div className="bg-amber-50 text-amber-600 p-2.5 rounded-xl shrink-0"><Box size={20}/></div>
                         <div className="min-w-0">
                             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Varlık (Sistem)</div>
-                            <div className="font-black text-slate-800 text-base truncate">{quoteData.asset_name || 'Belirtilmemiş'}</div>
-                            <div className="text-sm font-medium text-slate-500 mt-0.5 truncate">Detaylar aşağıdadır.</div>
+                            <div className="font-black text-slate-800 text-base truncate">{splitAsset.apt || splitAsset.dev}</div>
+                            {splitAsset.apt && <div className="text-sm font-medium text-slate-500 mt-0.5 truncate">{splitAsset.dev}</div>}
                         </div>
                     </div>
                 </div>
@@ -268,7 +295,7 @@ export default function CustomerQuotePage() {
                         <ShieldCheck className="text-blue-600" size={20} />
                         <h3 className="font-black text-slate-800">Sözleşme Metni</h3>
                     </div>
-                    <div className="p-5 md:p-8 max-h-[400px] overflow-y-auto custom-scrollbar">
+                    <div className="p-5 md:p-8 overflow-y-auto custom-scrollbar">
                         <div className="text-sm font-medium text-slate-700 leading-loose whitespace-pre-wrap">
                             {quoteData.quote_type === 'Bakım Sözleşmesi' 
                                 ? parsedDetails.maintenanceContract 
@@ -337,6 +364,85 @@ export default function CustomerQuotePage() {
                     </div>
                 </div>
             </main>
+
+            {/* 🚀 GİZLİ YAZDIRMA ŞABLONU (Müşteri için PDF çıktısı) */}
+            <div style={{ display: "none" }}>
+                {quoteData && (
+                <div 
+                    ref={printRef} 
+                    className="p-10 bg-white max-w-3xl mx-auto font-serif text-black"
+                >
+                  <div className="flex justify-between items-center pb-6 mb-8 border-b-4 border-double border-black">
+                    <div className="flex items-center gap-4">
+                      {companyData?.logo && <img src={companyData.logo} alt="Logo" className="w-20 h-20 object-contain" />}
+                      <div>
+                        <h1 className="text-4xl font-black">
+                            {companyData?.company_name || "Firma Adı"}
+                        </h1>
+                        <p className="text-base mt-2 font-bold uppercase tracking-widest">
+                            {quoteData.quote_type}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right text-sm leading-relaxed">
+                      <p><strong>Tarih:</strong> {new Date(quoteData.created_at).toLocaleDateString('tr-TR')}</p>
+                      <p><strong>Durum:</strong> {quoteData.status === 'Müşteri Onayladı' || status === 'success' ? 'Onaylandı' : 'Bekliyor'}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-8 grid grid-cols-2 gap-8 text-sm">
+                    <div className="p-5 border border-black">
+                      <h3 className="mb-4 pb-2 font-bold border-b border-black uppercase">Müşteri Bilgileri</h3>
+                      <div className="space-y-2">
+                        <p><strong>İsim:</strong> {quoteData.customer_name}</p>
+                        {quoteData.customer_phone && <p><strong>Telefon:</strong> {quoteData.customer_phone}</p>}
+                      </div>
+                    </div>
+                    
+                    <div className="p-5 border border-black">
+                      <h3 className="mb-4 pb-2 font-bold border-b border-black uppercase">Sistem Teknik Bilgileri</h3>
+                      <div className="space-y-2">
+                        <p><strong>Bina/Varlık:</strong> {splitAsset.apt || splitAsset.dev}</p>
+                        {parsedDetails.elevatorType && <p><strong>Asansör Tipi/Cinsi:</strong> {parsedDetails.elevatorType}</p>}
+                        {parsedDetails.capacity && <p><strong>Kapasite:</strong> {parsedDetails.capacity}</p>}
+                        {parsedDetails.stopsCount && <p><strong>Durak Sayısı:</strong> {parsedDetails.stopsCount}</p>}
+                        {parsedDetails.elevatorSpeed && <p><strong>Hızı:</strong> {parsedDetails.elevatorSpeed}</p>}
+                        {parsedDetails.elevatorCount && <p><strong>Asansör Adedi:</strong> {parsedDetails.elevatorCount}</p>}
+                        
+                        {quoteData.quote_type === 'Bakım Sözleşmesi' && (
+                            <div className="pt-2 mt-2 border-t border-dashed border-gray-300 space-y-2">
+                                {parsedDetails.monthlyFee && <p><strong>Aylık Bakım Bedeli:</strong> {parsedDetails.monthlyFee}</p>}
+                                {(parsedDetails.startDate || parsedDetails.endDate) && (
+                                    <p><strong>Sözleşme Süresi:</strong> {parsedDetails.startDate ? new Date(parsedDetails.startDate).toLocaleDateString('tr-TR') : '-'} / {parsedDetails.endDate ? new Date(parsedDetails.endDate).toLocaleDateString('tr-TR') : '-'}</p>
+                                )}
+                            </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-16">
+                    <h3 className="mb-6 pb-2 font-bold border-b-2 border-black uppercase text-center text-lg">
+                        {quoteData.quote_type === 'Bakım Sözleşmesi' ? 'Asansör Bakım ile İlgili Hususlar' : 'İşlem Detayları'}
+                    </h3>
+                    <div className="text-[13px] whitespace-pre-wrap leading-[1.8] text-justify">
+                        {quoteData.quote_type === 'Bakım Sözleşmesi' ? parsedDetails.maintenanceContract : (quoteData.quote_type === 'Revizyon Teklifi' ? parsedDetails.revisionDetails : 'Montaj detayları ektedir.')}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-12 mt-20 pt-8 border-t-2 border-black text-center">
+                    <div>
+                      <p className="font-bold mb-24 uppercase tracking-widest text-sm">Yüklenici Firma Onayı<br/><span className="font-normal text-xs normal-case mt-2 block">{companyData?.owner_name || ""}</span></p>
+                      {parsedDetails.employerSignature && <img src={parsedDetails.employerSignature} className="mx-auto h-24 object-contain mix-blend-multiply grayscale" />}
+                    </div>
+                    <div>
+                      <p className="font-bold mb-24 uppercase tracking-widest text-sm">Müşteri Onayı<br/><span className="font-normal text-xs normal-case mt-2 block">{quoteData.customer_name}</span></p>
+                      {(signatureImage || parsedDetails.customerSignature) ? <img src={signatureImage || parsedDetails.customerSignature} className="mx-auto h-24 object-contain mix-blend-multiply grayscale" /> : <div className="text-gray-400 italic text-sm">Elektronik İmza Bekleniyor</div>}
+                    </div>
+                  </div>
+                </div>
+                )}
+            </div>
         </div>
     );
 }
