@@ -231,6 +231,7 @@ export default function AddAssetModal({
                   </div>
                 </div>
 
+                {/* 🚀 EKSİKSİZ TEKNİK BİLGİLER */}
                 <div className="p-4 bg-slate-50 border border-slate-200 shadow-sm rounded-xl space-y-3">
                     <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5 mb-2">
                         <Layers size={14} /> Teknik Bilgiler (Sözleşme & Teklif İçin)

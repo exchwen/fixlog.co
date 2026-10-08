@@ -436,11 +436,11 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
           </div>
         </div>
 
-        {/* Sektör & Web Sitesi */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+        {/* Sektör, E-Posta & Web Sitesi */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
           <div>
             <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center justify-between sm:justify-start sm:gap-2">
-              Faaliyet Sektörü <span className="text-[9px] bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-md text-slate-400 font-bold">Değiştirilemez</span>
+              Faaliyet Sektörü <span className="text-[9px] bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-md text-slate-400 font-bold">Sabit</span>
             </label>
             <div className="relative">
               <Briefcase className="absolute left-3 top-3 sm:top-2.5 text-slate-400" size={16} />
@@ -449,6 +449,20 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
                 value={settingsForm?.sector || ''}
                 readOnly
                 placeholder="Sektör"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block">E-Posta Adresi</label>
+            <div className="relative">
+              <span className="absolute left-3 top-3 sm:top-2.5 text-slate-400 font-bold text-sm">@</span>
+              <input 
+                type="email"
+                className="w-full pl-10 pr-3 py-3 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-800 font-semibold"
+                value={settingsForm?.email || ''}
+                onChange={(e) => setSettingsForm({ ...settingsForm, email: e.target.value })}
+                placeholder="iletisim@firmanız.com"
               />
             </div>
           </div>

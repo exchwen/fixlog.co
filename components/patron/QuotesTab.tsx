@@ -93,7 +93,7 @@ export default function QuotesTab({ data }: any) {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${secureToken}`
                 },
-                body: JSON.stringify({ id: quoteToDelete, company_slug: requestSlug })
+                body: JSON.stringify({ id: quoteToDelete, slug: requestSlug, company_slug: requestSlug })
             });
 
             if (res.ok) {
@@ -151,7 +151,7 @@ export default function QuotesTab({ data }: any) {
         return () => window.removeEventListener('keydown', handleEsc);
     }, []);
 
-    const pdfCompanyName = data?.company_name || data?.settings?.company_name || "Firma Adı";
+    const pdfCompanyName = data?.name || data?.company_name || data?.settings?.company_name || "Firma Adı";
     const pdfOwnerName = data?.ownerName || data?.settings?.owner_name || "Firma Yetkilisi";
 
     return (
@@ -489,7 +489,7 @@ export default function QuotesTab({ data }: any) {
                                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><User size={14}/> Müşteri</div>
                                 <div className="font-black text-slate-800 truncate text-base">{selectedQuote.customer_name}</div>
                                 {selectedQuote.customer_phone && <div className="text-xs font-medium text-slate-500 mt-1">{selectedQuote.customer_phone}</div>}
-                                {parsedDetails.customerTaxInfo && <div className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">TC/Vergi: {parsedDetails.customerTaxInfo}</div>}
+                                {(parsedDetails.customerTaxInfo || ((data?.customers || []).find((c: any) => c.name === selectedQuote.customer_name)?.tax_info)) && <div className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">TC/Vergi: {parsedDetails.customerTaxInfo || ((data?.customers || []).find((c: any) => c.name === selectedQuote.customer_name)?.tax_info)}</div>}
                             </div>
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 min-w-0">
                                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><Box size={14}/> İlgili Tesis / Varlık</div>
@@ -576,7 +576,7 @@ export default function QuotesTab({ data }: any) {
                         'border-b border-gray-200'}
                   `}>
                     <div className={`flex items-center gap-4 ${printTemplate === 'elegant' ? 'flex-col text-center' : ''}`}>
-                      {data?.settings?.company_logo && <img src={data.settings.company_logo} alt="Logo" className="w-16 h-16 object-contain" />}
+                      {(data?.logo || data?.settings?.company_logo) && <img src={data?.logo || data?.settings?.company_logo} alt="Logo" className="w-16 h-16 object-contain" />}
                       <div>
                         <h1 className={`text-3xl ${printTemplate === 'minimal' ? 'font-light tracking-widest' : printTemplate === 'elegant' ? 'font-normal tracking-widest uppercase' : 'font-black'}`}>
                             {pdfCompanyName}
@@ -584,6 +584,11 @@ export default function QuotesTab({ data }: any) {
                         <p className={`text-sm mt-1 ${printTemplate === 'classic' ? 'font-bold uppercase tracking-widest' : printTemplate === 'elegant' ? 'italic text-slate-500' : 'font-medium'}`}>
                             {selectedQuote.quote_type}
                         </p>
+                        <div className="text-[10px] mt-2 space-y-0.5 opacity-80">
+                            {(data?.email || data?.settings?.email) && <p><strong>E-Posta:</strong> {data?.email || data?.settings?.email}</p>}
+                            {(data?.website || data?.settings?.website) && <p><strong>Web:</strong> {data?.website || data?.settings?.website}</p>}
+                            {(data?.phone || data?.settings?.phone) && <p><strong>Telefon:</strong> {data?.phone || data?.settings?.phone}</p>}
+                        </div>
                       </div>
                     </div>
                     <div className={`${printTemplate === 'elegant' ? 'text-center w-full mt-4 flex justify-between text-slate-400' : 'text-right'} text-xs`}>
@@ -611,7 +616,7 @@ export default function QuotesTab({ data }: any) {
                       <div className="space-y-1.5">
                         <p><strong>İsim:</strong> {selectedQuote.customer_name}</p>
                         {selectedQuote.customer_phone && <p><strong>Telefon:</strong> {selectedQuote.customer_phone}</p>}
-                        {parsedDetails.customerTaxInfo && <p><strong>TC/Vergi No:</strong> {parsedDetails.customerTaxInfo}</p>}
+                        {(parsedDetails.customerTaxInfo || ((data?.customers || []).find((c: any) => c.name === selectedQuote.customer_name)?.tax_info)) && <p><strong>TC/Vergi No:</strong> {parsedDetails.customerTaxInfo || ((data?.customers || []).find((c: any) => c.name === selectedQuote.customer_name)?.tax_info)}</p>}
                       </div>
                     </div>
                     
