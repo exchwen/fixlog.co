@@ -34,7 +34,8 @@ export default function BomTemplatesModal({ data, onClose }: any) {
         const endpoint = editing?.id ? '/update-bom-template' : '/add-bom-template';
         
         const itemsString = typeof items === 'string' ? items : JSON.stringify(items);
-        const payload = { id, slug: companySlug, name, description: desc, items: itemsString };
+        // Hem slug hem de db sütun adı olan company_slug eklenerek worker'ın işi garantiye alınıyor.
+        const payload = { id, slug: companySlug, company_slug: companySlug, name, description: desc, items: itemsString };
         
         try {
             const response = await fetch(endpoint, { 

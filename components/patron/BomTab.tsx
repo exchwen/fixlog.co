@@ -39,7 +39,8 @@ export default function BomTab({ data }: any) {
         const endpoint = editing?.id ? '/update-bom-template' : '/add-bom-template';
         
         const itemsString = typeof items === 'string' ? items : JSON.stringify(items);
-        const payload = { id, slug: companySlug, name, description: desc, items: itemsString };
+        // Worker'ın hem güvenlik kontrolünü hem de veritabanı yazımını sağlamak için ikisini de gönderiyoruz.
+        const payload = { id, slug: companySlug, company_slug: companySlug, name, description: desc, items: itemsString };
         
         try {
             const response = await fetch(endpoint, { 
