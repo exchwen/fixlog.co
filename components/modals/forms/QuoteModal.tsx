@@ -4,22 +4,17 @@ import { X, Send, ArrowRight, Loader2, CheckCircle, Search, FileText, Download, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReactToPrint } from 'react-to-print';
 
-// 🚀 SİSTEME ÖZEL KESİN ÇÖZÜM: Patron ve Çalışan Token'larını ayırt edebilen mantık
 const getAuthToken = () => {
   if (typeof window === 'undefined') return '';
-  
-  // TypeScript hatalarını çözen güncellenmiş getCookie fonksiyonu
   const getCookie = (name: string) => {
       const value = `; ${document.cookie}`;
       const parts = value.split(`; ${name}=`);
       if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
       return null;
   };
-
   let token = localStorage.getItem('patron_authToken') || getCookie('patron_authToken');
   if (!token) token = localStorage.getItem('staff_authToken') || getCookie('staff_authToken');
-
-  return token ? token.replace(/^"|"\$/g, '') : '';
+  return token ? token.replace(/^"|"$/g, '') : '';
 };
 
 export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, setActiveTab }: any) {
@@ -108,11 +103,17 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     return () => window.removeEventListener('keydown', handleEscKey);
   }, [showQuoteModal]);
 
-  const finalAssetName = newAssetMode 
-    ? newAssetName 
-    : (data?.assets?.find((a: any) => String(a.id) === selectedAssetId)?.name || 'Bilinmiyor');
+  // 🚀 DÜZELTME: Apartman adını ve Varlık adını birleştirerek gönderiyoruz
+  const getFullAssetName = () => {
+      if (newAssetMode) return newAssetName;
+      const asset = data?.assets?.find((a: any) => String(a.id) === selectedAssetId);
+      if (!asset) return 'Bilinmiyor';
+      return asset.apartmentName ? `${asset.apartmentName} (${asset.name})` : asset.name;
+  };
 
-const handleSubmit = async () => {
+  const finalAssetName = getFullAssetName();
+
+  const handleSubmit = async () => {
     setStatus('loading');
     try {
       const companySlug = data?.slug || data?.company_slug || (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '');
@@ -123,7 +124,6 @@ const handleSubmit = async () => {
           throw new Error('Sisteme giriş yapılmamış. Oturum süreniz dolmuş olabilir.');
       }
 
-      // 🚀 EKLENDİ: İmzaları ve metni veritabanına gönderilecek formata çeviriyoruz
       const customerSignBase64 = customerCanvasRef.current?.toDataURL('image/png') || null;
       const employerSignBase64 = employerCanvasRef.current?.toDataURL('image/png') || null;
       
@@ -143,16 +143,16 @@ const handleSubmit = async () => {
           customer_phone: customerPhone,
           is_new_asset: newAssetMode,
           asset_id: newAssetMode ? null : selectedAssetId,
-          asset_name: finalAssetName,
-          status: 'Onaylandı', // 🚀 EKLENDİ: Artık Bekliyor değil Onaylandı olarak kaydedilecek
+          asset_name: finalAssetName, // 🚀 DÜZELTİLDİ: Artık Apartman adı da var
+          status: 'Onaylandı', 
           quote_details: {
              revisionDetails,
              elevatorType,
              stopsCount,
              capacity,
-             maintenanceContract, // 🚀 EKLENDİ: Sözleşme metni
-             customerSignature: customerSignBase64, // 🚀 EKLENDİ: Müşteri imzası
-             employerSignature: employerSignBase64 // 🚀 EKLENDİ: Yetkili imzası
+             maintenanceContract,
+             customerSignature: customerSignBase64,
+             employerSignature: employerSignBase64 
           }
         })
       });
@@ -291,7 +291,6 @@ const handleSubmit = async () => {
                   
                   <div className="flex flex-col sm:flex-row justify-center gap-3 w-full max-w-sm mx-auto">
                      <button onClick={handlePrint} className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all"><Download size={16}/> PDF Olarak İndir</button>
-                     <button onClick={handlePrint} className="w-full px-4 py-3 bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all"><FileText size={16}/> Termal Fiş Yazdır</button>
                   </div>
                   <div className="flex flex-col sm:flex-row justify-center gap-3 w-full max-w-sm mx-auto mt-3">
                     <button onClick={() => { setShowQuoteModal(false); if (setActiveTab) setActiveTab('quotes'); else window.location.hash = 'quotes'; }} className="w-full px-4 py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">Sözleşmelere Git</button>

@@ -26,7 +26,6 @@ export default function QuotesTab({ data }: any) {
     const [loading, setLoading] = useState(true);
     const [showQuoteModal, setShowQuoteModal] = useState(false);
     
-    // 🚀 YENİ: Seçili teklifi görüntülemek için state ve yazdırma ref'i
     const [selectedQuote, setSelectedQuote] = useState<any>(null);
     const printRef = useRef<HTMLDivElement>(null);
 
@@ -76,7 +75,6 @@ export default function QuotesTab({ data }: any) {
         if (selectedQuote?.id === id) setSelectedQuote(null);
     };
 
-    // Seçili teklifin JSON detaylarını güvenle çözer
     let parsedDetails: any = {};
     if (selectedQuote && selectedQuote.quote_details) {
         try {
@@ -107,7 +105,7 @@ export default function QuotesTab({ data }: any) {
                     {quotes.map(q => (
                         <div 
                            key={q.id} 
-                           onClick={() => setSelectedQuote(q)} // Tıklanınca detayı açar
+                           onClick={() => setSelectedQuote(q)}
                            className="border border-slate-200 p-5 rounded-xl bg-slate-50 flex flex-col justify-between hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group"
                         >
                             <div>
@@ -120,8 +118,8 @@ export default function QuotesTab({ data }: any) {
                                    </div>
                                 </div>
                                 <h3 className="font-bold text-slate-800 text-lg line-clamp-1 group-hover:text-blue-700 transition-colors">{q.customer_name}</h3>
-                                <p className="text-sm font-medium text-slate-500 flex items-center gap-1 mt-1">
-                                   <FileSignature size={14} /> {q.asset_name || 'Bilinmeyen Varlık'}
+                                <p className="text-sm font-medium text-slate-500 flex items-center gap-1 mt-1 truncate">
+                                   <FileSignature size={14} className="shrink-0" /> <span className="truncate">{q.asset_name || 'Bilinmeyen Varlık'}</span>
                                 </p>
                                 <div className="mt-3 text-xs text-slate-400">
                                    Tarih: {new Date(q.created_at).toLocaleDateString('tr-TR')}
@@ -129,7 +127,7 @@ export default function QuotesTab({ data }: any) {
                             </div>
                             <div className="flex justify-end gap-2 mt-5 pt-4 border-t border-slate-200">
                                 <button 
-                                  onClick={(e) => { e.stopPropagation(); handleDelete(q.id); }} // Detay açılmasını engellemek için stopPropagation
+                                  onClick={(e) => { e.stopPropagation(); handleDelete(q.id); }}
                                   className="p-2 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors" title="Sil"
                                 >
                                    <Trash2 size={16} />
@@ -149,7 +147,7 @@ export default function QuotesTab({ data }: any) {
 
             {showQuoteModal && <QuoteModal showQuoteModal={showQuoteModal} setShowQuoteModal={setShowQuoteModal} data={data} setActiveTab={(tab: string) => { if(typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('navTab', { detail: tab })) }} />}
         
-            {/* 🚀 YENİ: TEKLİF DETAY VE YAZDIRMA MODALI */}
+            {/* TEKLİF DETAY VE YAZDIRMA MODALI */}
             <AnimatePresence>
               {selectedQuote && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
@@ -171,22 +169,22 @@ export default function QuotesTab({ data }: any) {
 
                     <div className="p-5 sm:p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 min-w-0">
                                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1"><User size={12}/> Müşteri</div>
                                 <div className="font-black text-slate-800 truncate">{selectedQuote.customer_name}</div>
                                 {selectedQuote.customer_phone && <div className="text-xs font-medium text-slate-500 mt-0.5">{selectedQuote.customer_phone}</div>}
                             </div>
-                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 min-w-0">
                                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1"><Box size={12}/> Varlık (Sistem)</div>
-                                <div className="font-black text-slate-800 truncate">{selectedQuote.asset_name || 'Belirtilmemiş'}</div>
+                                <div className="font-black text-slate-800 break-words">{selectedQuote.asset_name || 'Belirtilmemiş'}</div>
                             </div>
                         </div>
 
                         <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                             <div className="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-2">Metin / İçerik Detayları</div>
                             <div className="text-xs font-medium text-slate-700 whitespace-pre-wrap max-h-48 overflow-y-auto custom-scrollbar p-1">
-                                {selectedQuote.quote_type === 'Bakım Sözleşmesi' ? (parsedDetails.maintenanceContract || 'Sözleşme metni bulunamadı.') : 
-                                 selectedQuote.quote_type === 'Revizyon Teklifi' ? (parsedDetails.revisionDetails || 'Revizyon detayı bulunamadı.') : 
+                                {selectedQuote.quote_type === 'Bakım Sözleşmesi' ? (parsedDetails.maintenanceContract || 'Sözleşme metni bulunamadı (Eski Kayıt).') : 
+                                 selectedQuote.quote_type === 'Revizyon Teklifi' ? (parsedDetails.revisionDetails || 'Revizyon detayı bulunamadı (Eski Kayıt).') : 
                                  'Montaj teknik detayları PDF belgesindedir.'}
                             </div>
                         </div>
@@ -216,7 +214,7 @@ export default function QuotesTab({ data }: any) {
               )}
             </AnimatePresence>
 
-            {/* 🚀 YENİ: ARKA PLANDA ÇALIŞAN GİZLİ YAZDIRMA ŞABLONU */}
+            {/* GİZLİ YAZDIRMA ŞABLONU */}
             <div style={{ display: "none" }}>
                 {selectedQuote && (
                 <div ref={printRef} className="p-8 bg-white text-black max-w-2xl mx-auto font-sans">
