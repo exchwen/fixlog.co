@@ -112,16 +112,20 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     ? newAssetName 
     : (data?.assets?.find((a: any) => String(a.id) === selectedAssetId)?.name || 'Bilinmiyor');
 
-  const handleSubmit = async () => {
+const handleSubmit = async () => {
     setStatus('loading');
     try {
       const companySlug = data?.slug || data?.company_slug || (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '');
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
+      const secureToken = getAuthToken(); 
       
-      const secureToken = getAuthToken();
       if (!secureToken) {
           throw new Error('Sisteme giriş yapılmamış. Oturum süreniz dolmuş olabilir.');
       }
+
+      // 🚀 EKLENDİ: İmzaları ve metni veritabanına gönderilecek formata çeviriyoruz
+      const customerSignBase64 = customerCanvasRef.current?.toDataURL('image/png') || null;
+      const employerSignBase64 = employerCanvasRef.current?.toDataURL('image/png') || null;
       
       const res = await fetch(`${API_URL}/add-quote`, {
         method: 'POST',
@@ -140,11 +144,15 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
           is_new_asset: newAssetMode,
           asset_id: newAssetMode ? null : selectedAssetId,
           asset_name: finalAssetName,
+          status: 'Onaylandı', // 🚀 EKLENDİ: Artık Bekliyor değil Onaylandı olarak kaydedilecek
           quote_details: {
              revisionDetails,
              elevatorType,
              stopsCount,
-             capacity
+             capacity,
+             maintenanceContract, // 🚀 EKLENDİ: Sözleşme metni
+             customerSignature: customerSignBase64, // 🚀 EKLENDİ: Müşteri imzası
+             employerSignature: employerSignBase64 // 🚀 EKLENDİ: Yetkili imzası
           }
         })
       });
