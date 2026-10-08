@@ -531,7 +531,7 @@ export default function QuotesTab({ data }: any) {
                     <div className="p-4 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0 space-y-3">
                         {selectedQuote.public_token && selectedQuote.status !== 'Müşteri Onayladı' && (
                             <a 
-                                href={`https://wa.me/?text=${encodeURIComponent(`Merhaba \${selectedQuote.customer_name},\n\nSizin için hazırladığımız \${selectedQuote.quote_type} belgemize aşağıdaki bağlantıdan ulaşıp, online olarak inceleyebilir ve imzalayabilirsiniz:\n\n\${typeof window !== 'undefined' ? window.location.origin : ''}/teklif/${selectedQuote.public_token}\n\nSaygılarımızla, ${data?.settings?.company_name || 'Fixlog'}`)}`}
+                                href={`https://wa.me/?text=${encodeURIComponent(`Merhaba ${selectedQuote.customer_name},\n\nSizin için hazırladığımız ${selectedQuote.quote_type} belgemize aşağıdaki bağlantıdan ulaşıp, online olarak inceleyebilir ve imzalayabilirsiniz:\n\n\${typeof window !== 'undefined' ? window.location.origin : ''}/teklif/${selectedQuote.public_token}\n\nSaygılarımızla, ${data?.settings?.company_name || 'Fixlog'}`)}`}
                                 target="_blank" rel="noopener noreferrer"
                                 className="w-full bg-[#25D366] text-white font-bold text-sm py-3.5 sm:py-4 rounded-xl shadow-md hover:bg-[#20bd5a] transition-all active:scale-95 flex items-center justify-center gap-2"
                             >
