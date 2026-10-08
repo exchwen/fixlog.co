@@ -16,7 +16,7 @@ export default function BomTab({ data }: any) {
 
     useEffect(() => {
         if (!companySlug) return;
-        fetch('/get-bom-templates?company_slug=' + companySlug)
+        fetch('/get-bom-templates?slug=' + companySlug)
             .then(res => res.json())
             .then(res => { if(res.success) setTemplates(res.data); setLoading(false); })
             .catch(() => setLoading(false));
@@ -25,7 +25,7 @@ export default function BomTab({ data }: any) {
     const refreshData = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/get-bom-templates?company_slug=' + companySlug);
+            const res = await fetch('/get-bom-templates?slug=' + companySlug);
             const r = await res.json();
             if(r.success) setTemplates(r.data);
         } catch(e) {}
@@ -38,9 +38,8 @@ export default function BomTab({ data }: any) {
         const id = editing?.id || Date.now().toString();
         const endpoint = editing?.id ? '/update-bom-template' : '/add-bom-template';
         
-        // Malzemeleri veritabanının okuyabileceği JSON formatına çeviriyoruz
         const itemsString = typeof items === 'string' ? items : JSON.stringify(items);
-        const payload = { id, company_slug: companySlug, name, description: desc, items: itemsString };
+        const payload = { id, slug: companySlug, name, description: desc, items: itemsString };
         
         try {
             const response = await fetch(endpoint, { 
@@ -71,7 +70,7 @@ export default function BomTab({ data }: any) {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ id, company_slug: companySlug }) 
+                body: JSON.stringify({ id, slug: companySlug }) 
             });
 
             if(response.ok) {
@@ -85,7 +84,7 @@ export default function BomTab({ data }: any) {
     const handleDuplicate = async (t: any) => {
         const payload = { 
             id: Date.now().toString(), 
-            company_slug: companySlug, 
+            slug: companySlug,
             name: t.name + ' (Kopya)', 
             description: t.description, 
             items: t.items || '[]'
