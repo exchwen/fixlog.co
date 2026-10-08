@@ -38,7 +38,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
   const [maintenanceContract, setMaintenanceContract] = useState('');
   const [revisionDetails, setRevisionDetails] = useState('');
   
-  // 🚀 YENİ: EKSTRA PDF BİLGİLERİ İÇİN STATE'LER
+  // EKSTRA PDF BİLGİLERİ İÇİN STATE'LER
   const [elevatorType, setElevatorType] = useState('');
   const [stopsCount, setStopsCount] = useState('');
   const [capacity, setCapacity] = useState('');
@@ -91,7 +91,6 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     setErrorMessage('');
     setEmployerSignature(false);
     setCustomerSignature(false);
-    // Yeni stateleri sıfırla
     setElevatorType(''); setStopsCount(''); setCapacity(''); setElevatorSpeed(''); setElevatorCount('1'); setMonthlyFee(''); setStartDate(''); setEndDate('');
   };
 
@@ -100,7 +99,6 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     setTimeout(resetForm, 300);
   };
 
-  // 🚀 ESC KAPATMA SORUNU ÇÖZÜMÜ
   useEffect(() => {
     const handleEscKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && showQuoteModal) handleClose();
@@ -115,7 +113,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
       if (newAssetMode) return newAssetName;
       const asset = data?.assets?.find((a: any) => String(a.id) === selectedAssetId);
       if (!asset) return 'Bilinmiyor';
-      return asset.apartmentName ? `${asset.apartmentName} | ${asset.name}` : asset.name; // 🚀 "Apartman | Cihaz" formatı
+      return asset.apartmentName ? `${asset.apartmentName} | ${asset.name}` : asset.name; 
   };
 
   const handleSubmit = async () => {
@@ -149,7 +147,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
           customer_phone: customerPhone,
           is_new_asset: newAssetMode,
           asset_id: newAssetMode ? null : selectedAssetId,
-          asset_name: getFullAssetName(), // 🚀 "Apartman | Cihaz" 
+          asset_name: getFullAssetName(), 
           status: signMode === 'office' ? 'Bekliyor' : 'Müşteri Onayladı',
           quote_details: {
              revisionDetails,
@@ -395,9 +393,13 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                                             <button 
                                                 key={a.id} type="button" onClick={() => {
                                                     setSelectedAssetId(String(a.id));
-                                                    // Seçilen asansörden bilgileri otomatik doldur
-                                                    setElevatorType(a.type || '');
-                                                    setCapacity(a.asset_details?.includes('Kapasite') ? '' : ''); // İleride geliştirilebilir
+                                                    // 🚀 SEÇİLEN VARLIĞIN BİLGİLERİNİ FORMA OTOMATİK DOLDURUR
+                                                    setElevatorType(a.elevator_type || '');
+                                                    setCapacity(a.capacity || '');
+                                                    setStopsCount(a.stops_count || '');
+                                                    setElevatorSpeed(a.elevator_speed || '');
+                                                    setElevatorCount(a.elevator_count || '1');
+                                                    setMonthlyFee(a.maintenance_fee ? String(a.maintenance_fee) : '');
                                                 }}
                                                 className={`text-left p-2.5 rounded-lg transition-all flex flex-col gap-0.5 border ${isSelected ? 'bg-blue-50 border-blue-200' : 'bg-white border-transparent hover:bg-slate-50'}`}
                                             >
@@ -446,7 +448,6 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                   {step === 3 && (
                     <div className="space-y-6">
                       
-                      {/* 🚀 YENİ: ORTAK PDF DETAY ALANLARI */}
                       <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4">Sistem Teknik Özellikleri</label>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">

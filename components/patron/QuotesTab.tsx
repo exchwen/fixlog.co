@@ -370,11 +370,22 @@ export default function QuotesTab({ data }: any) {
               )}
             </AnimatePresence>
 
-            {/* 🚀 GELİŞMİŞ PDF YAZDIRMA ŞABLONU */}
+            {/* 🚀 GİZLİ YAZDIRMA ŞABLONU */}
             <div style={{ display: "none" }}>
                 {selectedQuote && (
-                <div ref={printRef} className={`p-10 bg-white max-w-3xl mx-auto ${printTemplate === 'classic' ? 'font-serif text-black' : printTemplate === 'minimal' ? 'font-mono text-gray-800' : 'font-sans text-slate-900'}`}>
-                  <div className={`flex justify-between items-center pb-6 mb-8 ${printTemplate === 'classic' ? 'border-b-4 border-double border-black' : printTemplate === 'modern' ? 'border-b-2 border-slate-900' : 'border-b border-gray-200'}`}>
+                <div 
+                    ref={printRef} 
+                    className={`p-10 bg-white max-w-3xl mx-auto 
+                        ${printTemplate === 'classic' ? 'font-serif text-black' : 
+                          printTemplate === 'minimal' ? 'font-mono text-gray-800' : 
+                          'font-sans text-slate-900'}
+                    `}
+                >
+                  <div className={`flex justify-between items-center pb-6 mb-8 
+                      ${printTemplate === 'classic' ? 'border-b-4 border-double border-black' : 
+                        printTemplate === 'modern' ? 'border-b-2 border-slate-900' : 
+                        'border-b border-gray-200'}
+                  `}>
                     <div className="flex items-center gap-4">
                       {data?.settings?.company_logo && <img src={data.settings.company_logo} alt="Logo" className="w-20 h-20 object-contain" />}
                       <div>
