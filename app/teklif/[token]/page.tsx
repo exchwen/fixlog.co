@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, CheckCircle, FileText, X, Send, User, Box, ShieldCheck, AlertCircle, RotateCcw, Download } from 'lucide-react';
-import { useReactToPrint } from 'react-to-print'; // 🚀 YENİ: Müşterinin PDF indirebilmesi için eklendi
+import { useReactToPrint } from 'react-to-print';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
 
@@ -21,7 +21,7 @@ export default function CustomerQuotePage() {
     const signatureCanvasRef = useRef<HTMLCanvasElement>(null);
     const [isDrawing, setIsDrawing] = useState(false);
 
-    // 🚀 YENİ: PDF Yazdırma/İndirme Referansı
+    // PDF Yazdırma Referansı
     const printRef = useRef<HTMLDivElement>(null);
     const handlePrint = useReactToPrint({
         contentRef: printRef,
@@ -202,6 +202,12 @@ export default function CustomerQuotePage() {
             const parts = fullName.split('|');
             return { apt: parts[0].trim(), dev: parts[1].trim() };
         }
+        if (fullName.includes('(')) {
+            const firstParen = fullName.indexOf('(');
+            const apt = fullName.substring(0, firstParen).trim();
+            const dev = fullName.substring(firstParen).trim();
+            return { apt, dev };
+        }
         return { apt: '', dev: fullName };
     };
 
@@ -245,7 +251,6 @@ export default function CustomerQuotePage() {
                                     <p className="text-emerald-700/80 font-medium text-sm mt-0.5">İmzanız başarıyla alındı. Sözleşmenizin bir kopyasını indirebilirsiniz.</p>
                                 </div>
                             </div>
-                            {/* 🚀 YENİ: Müşteri için indirme butonu eklendi */}
                             <button 
                                 onClick={handlePrint} 
                                 className="w-full sm:w-auto bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-bold px-4 py-3 rounded-xl shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2 shrink-0"
@@ -365,21 +370,21 @@ export default function CustomerQuotePage() {
                 </div>
             </main>
 
-            {/* 🚀 GİZLİ YAZDIRMA ŞABLONU (Müşteri için PDF çıktısı) */}
+            {/* 🚀 GİZLİ YAZDIRMA ŞABLONU (Müşteri için PDF çıktısı - Modern Şablon) */}
             <div style={{ display: "none" }}>
                 {quoteData && (
                 <div 
                     ref={printRef} 
-                    className="p-10 bg-white max-w-3xl mx-auto font-serif text-black"
+                    className="p-10 bg-white max-w-3xl mx-auto font-sans text-slate-900"
                 >
-                  <div className="flex justify-between items-center pb-6 mb-8 border-b-4 border-double border-black">
+                  <div className="flex justify-between items-center pb-6 mb-8 border-b-2 border-slate-900">
                     <div className="flex items-center gap-4">
                       {companyData?.logo && <img src={companyData.logo} alt="Logo" className="w-20 h-20 object-contain" />}
                       <div>
                         <h1 className="text-4xl font-black">
                             {companyData?.company_name || "Firma Adı"}
                         </h1>
-                        <p className="text-base mt-2 font-bold uppercase tracking-widest">
+                        <p className="text-base mt-2 font-medium">
                             {quoteData.quote_type}
                         </p>
                       </div>
@@ -391,18 +396,20 @@ export default function CustomerQuotePage() {
                   </div>
                   
                   <div className="mb-8 grid grid-cols-2 gap-8 text-sm">
-                    <div className="p-5 border border-black">
-                      <h3 className="mb-4 pb-2 font-bold border-b border-black uppercase">Müşteri Bilgileri</h3>
+                    <div className="p-5 bg-slate-50 rounded-2xl">
+                      <h3 className="mb-4 pb-2 font-bold border-b border-slate-200 text-blue-800">Müşteri Bilgileri</h3>
                       <div className="space-y-2">
                         <p><strong>İsim:</strong> {quoteData.customer_name}</p>
                         {quoteData.customer_phone && <p><strong>Telefon:</strong> {quoteData.customer_phone}</p>}
+                        {parsedDetails.customerTaxInfo && <p><strong>TC/Vergi No:</strong> {parsedDetails.customerTaxInfo}</p>}
                       </div>
                     </div>
                     
-                    <div className="p-5 border border-black">
-                      <h3 className="mb-4 pb-2 font-bold border-b border-black uppercase">Sistem Teknik Bilgileri</h3>
+                    <div className="p-5 bg-slate-50 rounded-2xl">
+                      <h3 className="mb-4 pb-2 font-bold border-b border-slate-200 text-blue-800">Sistem Teknik Bilgileri</h3>
                       <div className="space-y-2">
                         <p><strong>Bina/Varlık:</strong> {splitAsset.apt || splitAsset.dev}</p>
+                        {parsedDetails.assetLocation && <p><strong>Adres/Konum:</strong> {parsedDetails.assetLocation}</p>}
                         {parsedDetails.elevatorType && <p><strong>Asansör Tipi/Cinsi:</strong> {parsedDetails.elevatorType}</p>}
                         {parsedDetails.capacity && <p><strong>Kapasite:</strong> {parsedDetails.capacity}</p>}
                         {parsedDetails.stopsCount && <p><strong>Durak Sayısı:</strong> {parsedDetails.stopsCount}</p>}
@@ -421,11 +428,11 @@ export default function CustomerQuotePage() {
                     </div>
                   </div>
                   
-                  <div className="mb-16">
-                    <h3 className="mb-6 pb-2 font-bold border-b-2 border-black uppercase text-center text-lg">
+                  <div className="mb-16 bg-slate-50 p-8 rounded-2xl">
+                    <h3 className="mb-6 pb-2 font-black border-b border-slate-200 text-blue-800 text-lg">
                         {quoteData.quote_type === 'Bakım Sözleşmesi' ? 'Asansör Bakım ile İlgili Hususlar' : 'İşlem Detayları'}
                     </h3>
-                    <div className="text-[13px] whitespace-pre-wrap leading-[1.8] text-justify">
+                    <div className="text-[13px] whitespace-pre-wrap leading-[1.8]">
                         {quoteData.quote_type === 'Bakım Sözleşmesi' ? parsedDetails.maintenanceContract : (quoteData.quote_type === 'Revizyon Teklifi' ? parsedDetails.revisionDetails : 'Montaj detayları ektedir.')}
                     </div>
                   </div>
