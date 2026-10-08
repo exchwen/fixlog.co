@@ -17,7 +17,11 @@ export default function QuotesTab({ data }: any) {
     const fetchQuotes = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/get-quotes?company_slug=' + companySlug);
+            const token = localStorage.getItem('token');
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
+            const res = await fetch(`${API_URL}/get-quotes?company_slug=${companySlug}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             const r = await res.json();
             if (r.success) setQuotes(r.data);
         } catch (e) {
@@ -32,9 +36,14 @@ export default function QuotesTab({ data }: any) {
 
     const handleDelete = async (id: string) => {
         if (!window.confirm('Bu teklifi/sözleşmeyi silmek istediğinize emin misiniz?')) return;
-        await fetch('/delete-quote', {
+        const token = localStorage.getItem('token');
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
+        await fetch(`${API_URL}/delete-quote`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({ id, company_slug: companySlug })
         });
         setQuotes(quotes.filter(q => q.id !== id));

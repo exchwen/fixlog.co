@@ -103,9 +103,15 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     try {
       const companySlug = data?.slug || data?.company_slug || (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '');
       
-      const res = await fetch('/add-quote', {
+      const token = localStorage.getItem('token');
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
+      
+      const res = await fetch(`${API_URL}/add-quote`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           company_slug: companySlug,
           quote_type: quoteType,
