@@ -19,26 +19,95 @@ export default function BomTemplatesModal({ data, onClose }: any) {
             .catch(() => setLoading(false));
     }, [companySlug]);
 
+    const refreshData = async () => {
+        try {
+            const res = await fetch('/get-bom-templates?company_slug=' + companySlug);
+            const r = await res.json();
+            if(r.success) setTemplates(r.data);
+        } catch(e) {}
+    };
+
     const handleSave = async () => {
         if(!name) return alert('İsim gerekli');
+        
         const id = editing?.id || Date.now().toString();
         const endpoint = editing?.id ? '/update-bom-template' : '/add-bom-template';
-        const payload = { id, company_slug: companySlug, name, description: desc, items };
         
-        await fetch(endpoint, { method: 'POST', body: JSON.stringify(payload) });
-        onClose();
+        const itemsString = typeof items === 'string' ? items : JSON.stringify(items);
+        const payload = { id, company_slug: companySlug, name, description: desc, items: itemsString };
+        
+        try {
+            const response = await fetch(endpoint, { 
+                method: 'POST', 
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload) 
+            });
+
+            if(response.ok) {
+                setEditing(null);
+                refreshData(); 
+            } else {
+                alert('Kaydetme işlemi başarısız oldu.');
+            }
+        } catch(e) {
+            alert('Sunucu ile bağlantı kurulamadı.');
+        }
     };
 
     const handleDelete = async (id: string) => {
         if(!window.confirm('Emin misiniz?')) return;
-        await fetch('/delete-bom-template', { method: 'POST', body: JSON.stringify({ id, company_slug: companySlug }) });
-        setTemplates(templates.filter(t => t.id !== id));
+        
+        try {
+            const response = await fetch('/delete-bom-template', { 
+                method: 'POST', 
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id, company_slug: companySlug }) 
+            });
+
+            if(response.ok) {
+                setTemplates(templates.filter(t => t.id !== id));
+            }
+        } catch(e) {
+            alert('Silme işlemi başarısız oldu.');
+        }
     };
 
     const handleDuplicate = async (t: any) => {
-        const payload = { id: Date.now().toString(), company_slug: companySlug, name: t.name + ' (Kopya)', description: t.description, items: JSON.parse(t.items || '[]') };
-        await fetch('/add-bom-template', { method: 'POST', body: JSON.stringify(payload) });
-        onClose();
+        const payload = { 
+            id: Date.now().toString(), 
+            company_slug: companySlug, 
+            name: t.name + ' (Kopya)', 
+            description: t.description, 
+            items: t.items || '[]' 
+        };
+        
+        try {
+            const response = await fetch('/add-bom-template', { 
+                method: 'POST', 
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload) 
+            });
+
+            if(response.ok) {
+                refreshData();
+            }
+        } catch(e) {
+            alert('Kopyalama başarısız oldu.');
+        }
+    };
+
+    const parseItems = (itemsData: any) => {
+        if (!itemsData) return [];
+        if (typeof itemsData === 'string') {
+            try { return JSON.parse(itemsData); } catch (e) { return []; }
+        }
+        return itemsData;
     };
 
     return (
@@ -51,7 +120,7 @@ export default function BomTemplatesModal({ data, onClose }: any) {
 
                 {!editing ? (
                     <div>
-                        <button onClick={() => setEditing({})} className="bg-emerald-600 text-white px-4 py-2 rounded-xl mb-4 flex items-center gap-2"><Plus size={16} /> Yeni Şablon</button>
+                        <button onClick={() => { setEditing({}); setName(''); setDesc(''); setItems([]); }} className="bg-emerald-600 text-white px-4 py-2 rounded-xl mb-4 flex items-center gap-2"><Plus size={16} /> Yeni Şablon</button>
                         {loading ? <Loader2 className="animate-spin mx-auto" /> : (
                             <div className="grid gap-4">
                                 {templates.map(t => (
@@ -62,7 +131,7 @@ export default function BomTemplatesModal({ data, onClose }: any) {
                                         </div>
                                         <div className="flex gap-2">
                                             <button onClick={() => handleDuplicate(t)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Copy size={18} /></button>
-                                            <button onClick={() => { setEditing(t); setName(t.name); setDesc(t.description); setItems(JSON.parse(t.items || '[]')); }} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg"><Edit2 size={18} /></button>
+                                            <button onClick={() => { setEditing(t); setName(t.name); setDesc(t.description); setItems(parseItems(t.items)); }} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg"><Edit2 size={18} /></button>
                                             <button onClick={() => handleDelete(t.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={18} /></button>
                                         </div>
                                     </div>
