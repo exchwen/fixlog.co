@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MapPin, Box, Briefcase, Calendar, User, AlertCircle, ChevronRight, Edit, Trash2, Save, Loader2, Search, Wrench, Siren, FileText, Building2, Tag, RefreshCw } from 'lucide-react';
+import { X, MapPin, Box, Briefcase, Calendar, User, AlertCircle, ChevronRight, Edit, Trash2, Save, Loader2, Search, Wrench, Siren, FileText, Building2, Tag, RefreshCw, Layers } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
 import sectorsData from '@/lib/data/sectors.json'; 
 
@@ -399,46 +399,78 @@ export default function AssetDetailModal({
                           </div>
                        </div>
                        
-                       {/* 🚀 EKLENDİ: Asansör Teknik Detay Giriş Alanları */}
+                       {/* 🚀 EKSİKSİZ TEKNİK BİLGİLER */}
                        <div className="p-4 bg-slate-50 border border-slate-200 shadow-sm rounded-xl space-y-3">
-                            <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5">
-                                <Box size={14} /> Teknik Bilgiler (Sözleşme İçin)
+                            <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5 mb-2">
+                                <Layers size={14} /> Teknik Bilgiler (Sözleşme & Teklif İçin)
                             </div>
                             <div className="grid grid-cols-2 gap-3">
-                                <input 
-                                    className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-white transition-all" 
-                                    value={editForm.type || ''} onChange={(e) => setEditForm({...editForm, type: e.target.value})} 
-                                    placeholder="Tipi (örn: MRL)" 
-                                />
-                                <input 
-                                    className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-white transition-all" 
-                                    value={editForm.asset_details?.includes('Kapasite') ? '' : ''} onChange={(e) => setEditForm({...editForm, asset_details: `Kapasite: ${e.target.value} | ${editForm.asset_details || ''}`})} 
-                                    placeholder="Kapasite (örn: 800kg)" 
-                                />
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-500 block mb-1 ml-1">Asansör Tipi/Cinsi</label>
+                                    <input 
+                                        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500 bg-white transition-all" 
+                                        value={editForm.elevator_type || ''} onChange={(e) => setEditForm({...editForm, elevator_type: e.target.value})} 
+                                        placeholder="Örn: MRL, Hidrolik" 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-500 block mb-1 ml-1">Kapasite</label>
+                                    <input 
+                                        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500 bg-white transition-all" 
+                                        value={editForm.capacity || ''} onChange={(e) => setEditForm({...editForm, capacity: e.target.value})} 
+                                        placeholder="Örn: 800kg / 10 Kişi" 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-500 block mb-1 ml-1">Durak Sayısı</label>
+                                    <input 
+                                        type="number"
+                                        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500 bg-white transition-all" 
+                                        value={editForm.stops_count || ''} onChange={(e) => setEditForm({...editForm, stops_count: e.target.value})} 
+                                        placeholder="Örn: 5" 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-500 block mb-1 ml-1">Hızı (m/sn)</label>
+                                    <input 
+                                        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500 bg-white transition-all" 
+                                        value={editForm.elevator_speed || ''} onChange={(e) => setEditForm({...editForm, elevator_speed: e.target.value})} 
+                                        placeholder="Örn: 1.0 m/sn" 
+                                    />
+                                </div>
+                                <div className="col-span-2 sm:col-span-1">
+                                    <label className="text-[10px] font-bold text-slate-500 block mb-1 ml-1">Asansör Adedi</label>
+                                    <input 
+                                        type="number"
+                                        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500 bg-white transition-all" 
+                                        value={editForm.elevator_count || '1'} onChange={(e) => setEditForm({...editForm, elevator_count: e.target.value})} 
+                                        placeholder="Örn: 1" 
+                                    />
+                                </div>
                             </div>
                         </div>
 
-                        <div className="p-4 bg-white border border-slate-200 shadow-sm rounded-xl space-y-3">
-                            <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5 mb-1">
-                                <MapPin size={14} /> Konum / Adres Bilgileri
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <select className="px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={selectedCity} onChange={(e) => { setSelectedCity(e.target.value); setSelectedDistrict(''); }}>
-                                    <option value="">İl Seçin</option>
-                                    {Object.keys(CITY_DATA).map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                                <select className="px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none disabled:opacity-50" value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} disabled={!selectedCity}>
-                                    <option value="">İlçe Seçin</option>
-                                    {selectedCity && CITY_DATA[selectedCity]?.map((d:string) => <option key={d} value={d}>{d}</option>)}
-                                </select>
-                            </div>
-                            <div className="flex flex-col sm:flex-row gap-3">
-                                <input className="w-full sm:w-1/3 px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" value={buildingNo} onChange={(e) => setBuildingNo(e.target.value)} placeholder="Bina/Kapı No" />
-                                <textarea rows={2} className="w-full sm:w-2/3 px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all resize-none" placeholder="Mahalle, Cadde veya Sokak Bilgisi" value={editForm.location || ''} onChange={e => setEditForm({...editForm, location: e.target.value})} />
-                            </div>
-                        </div>
+                       <div className="p-4 bg-white border border-slate-200 shadow-sm rounded-xl space-y-3">
+                           <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5 mb-1">
+                               <MapPin size={14} /> Konum / Adres Bilgileri
+                           </div>
+                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                               <select className="px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none" value={selectedCity} onChange={(e) => { setSelectedCity(e.target.value); setSelectedDistrict(''); }}>
+                                   <option value="">İl Seçin</option>
+                                   {Object.keys(CITY_DATA).map(c => <option key={c} value={c}>{c}</option>)}
+                               </select>
+                               <select className="px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all appearance-none disabled:opacity-50" value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} disabled={!selectedCity}>
+                                   <option value="">İlçe Seçin</option>
+                                   {selectedCity && CITY_DATA[selectedCity]?.map((d:string) => <option key={d} value={d}>{d}</option>)}
+                               </select>
+                           </div>
+                           <div className="flex flex-col sm:flex-row gap-3">
+                               <input className="w-full sm:w-1/3 px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" value={buildingNo} onChange={(e) => setBuildingNo(e.target.value)} placeholder="Bina/Kapı No" />
+                               <textarea rows={2} className="w-full sm:w-2/3 px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all resize-none" placeholder="Mahalle, Cadde veya Sokak Bilgisi" value={editForm.location || ''} onChange={e => setEditForm({...editForm, location: e.target.value})} />
+                           </div>
+                       </div>
                        
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                            <div>
                                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Periyot (Gün)</label>
                                <input type="number" className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all" value={editForm.maintenance_period || 30} onChange={e => setEditForm({...editForm, maintenance_period: parseInt(e.target.value) || 30})} />
@@ -466,18 +498,18 @@ export default function AssetDetailModal({
                                    ))}
                                </select>
                            </div>
-                        </div>
+                       </div>
 
-                        <div>
+                       <div>
                            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Varlık / Cihaz Detayları</label>
                            <textarea rows={3} placeholder="Teknik detaylar, kapasite, marka, model veya özel notlar..." className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all resize-none" value={editForm.asset_details || ''} onChange={e => setEditForm({...editForm, asset_details: e.target.value})} />
-                        </div>
+                       </div>
                        
-                        <div className="pt-2">
-                            <button disabled={isSaving} onClick={handleSaveEdit} className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold text-sm shadow-md shadow-emerald-200 hover:bg-emerald-700 transition-all active:scale-95 flex justify-center items-center">
-                                {isSaving ? <Loader2 className="animate-spin" size={18} /> : <><Save size={18} className="mr-2" /> Değişiklikleri Kaydet</>}
-                            </button>
-                        </div>
+                       <div className="pt-2">
+                           <button disabled={isSaving} onClick={handleSaveEdit} className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold text-sm shadow-md shadow-emerald-200 hover:bg-emerald-700 transition-all active:scale-95 flex justify-center items-center">
+                               {isSaving ? <Loader2 className="animate-spin" size={18} /> : <><Save size={18} className="mr-2" /> Değişiklikleri Kaydet</>}
+                           </button>
+                       </div>
                    </motion.div>
                 ) : (
                   <AnimatePresence mode="wait">
@@ -530,10 +562,37 @@ export default function AssetDetailModal({
                               )}
                           </div>
 
+                          {/* 🚀 EKLENDİ: GÖRÜNÜR TEKNİK BİLGİLER BÖLÜMÜ */}
+                          <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
+                             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5"><Layers size={14}/> Sistem Teknik Özellikleri</div>
+                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-3">
+                                <div>
+                                   <div className="text-[10px] font-bold text-slate-400 mb-0.5">Asansör Tipi/Cinsi</div>
+                                   <div className="text-sm font-black text-slate-700">{selectedAsset.elevator_type || '-'}</div>
+                                </div>
+                                <div>
+                                   <div className="text-[10px] font-bold text-slate-400 mb-0.5">Kapasite</div>
+                                   <div className="text-sm font-black text-slate-700">{selectedAsset.capacity || '-'}</div>
+                                </div>
+                                <div>
+                                   <div className="text-[10px] font-bold text-slate-400 mb-0.5">Durak Sayısı</div>
+                                   <div className="text-sm font-black text-slate-700">{selectedAsset.stops_count || '-'}</div>
+                                </div>
+                                <div>
+                                   <div className="text-[10px] font-bold text-slate-400 mb-0.5">Hızı (m/sn)</div>
+                                   <div className="text-sm font-black text-slate-700">{selectedAsset.elevator_speed || '-'}</div>
+                                </div>
+                                <div>
+                                   <div className="text-[10px] font-bold text-slate-400 mb-0.5">Asansör Adedi</div>
+                                   <div className="text-sm font-black text-slate-700">{selectedAsset.elevator_count || '1'}</div>
+                                </div>
+                             </div>
+                          </div>
+
                           {selectedAsset.asset_details && (
                               <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
                                   <div className="p-2 bg-slate-100 text-slate-600 rounded-lg w-fit mb-3"><FileText size={16} /></div>
-                                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Varlık / Cihaz Detayları</div>
+                                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Varlık / Cihaz Ek Notları</div>
                                   <div className="text-sm font-medium text-slate-700 whitespace-pre-wrap">{selectedAsset.asset_details}</div>
                               </div>
                           )}

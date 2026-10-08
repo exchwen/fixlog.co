@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Loader2, Trash2, FileText, FileSignature, CheckCircle, Clock, Search, X, Download, User, Box, MessageCircle, LayoutTemplate, Monitor, FileSpreadsheet, AlertTriangle } from 'lucide-react';
+import { Calendar, Loader2, Trash2, FileText, CheckCircle, Clock, Search, X, Download, User, Box, MessageCircle, LayoutTemplate } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { useReactToPrint } from 'react-to-print';
@@ -25,17 +25,17 @@ export default function QuotesTab({ data }: any) {
     const [quotes, setQuotes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showQuoteModal, setShowQuoteModal] = useState(false);
+    const [showTemplateModal, setShowTemplateModal] = useState(false); 
     
     const [selectedQuote, setSelectedQuote] = useState<any>(null);
     const [quoteToDelete, setQuoteToDelete] = useState<string | null>(null);
 
-    // 🚀 Arama ve Filtre State'leri
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState('Tümü');
     const [filterStatus, setFilterStatus] = useState('Tümü');
 
-    // 🚀 Şablon Seçimi
     const [printTemplate, setPrintTemplate] = useState<'modern' | 'classic' | 'minimal'>('modern'); 
+    
     useEffect(() => {
         const savedTemplate = localStorage.getItem('selectedQuoteTemplate');
         if (savedTemplate === 'classic' || savedTemplate === 'minimal') {
@@ -105,7 +105,6 @@ export default function QuotesTab({ data }: any) {
         } catch(e) {}
     }
 
-    // ARAMA VE FİLTRELEME MANTIĞI
     const filteredQuotes = quotes.filter(q => {
         const matchesSearch = (q.customer_name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                               (q.asset_name || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -131,19 +130,18 @@ export default function QuotesTab({ data }: any) {
                   <p className="text-sm font-medium text-slate-500 mt-1">Oluşturduğunuz sözleşmeleri yönetin, müşteriye yollayın veya yazdırın.</p>
                 </div>
                 <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3">
-                    <div className="hidden lg:flex bg-slate-100 p-1 rounded-xl">
-                        <button onClick={() => handleTemplateChange('modern')} className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all ${printTemplate === 'modern' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Modern</button>
-                        <button onClick={() => handleTemplateChange('classic')} className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all ${printTemplate === 'classic' ? 'bg-white text-amber-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Klasik</button>
-                        <button onClick={() => handleTemplateChange('minimal')} className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all ${printTemplate === 'minimal' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Minimal</button>
-                    </div>
-
+                    <button 
+                        onClick={() => setShowTemplateModal(true)} 
+                        className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold text-sm rounded-xl hover:bg-slate-50 transition-all shadow-sm flex items-center justify-center gap-2"
+                    >
+                        <LayoutTemplate size={18} /> Şablon Seç
+                    </button>
                     <button onClick={() => setShowQuoteModal(true)} className="px-5 py-2.5 bg-slate-900 text-white font-bold text-sm rounded-xl hover:bg-slate-800 transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95 w-full sm:w-auto">
                         + Yeni Teklif
                     </button>
                 </div>
             </div>
 
-            {/* ARAMA VE FİLTRELEME ÇUBUĞU */}
             <div className="flex flex-col sm:flex-row gap-3 mb-6 bg-slate-50 p-3 rounded-xl border border-slate-100">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
@@ -181,46 +179,54 @@ export default function QuotesTab({ data }: any) {
                    <Loader2 className="animate-spin text-blue-600" size={32} />
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                     {filteredQuotes.map(q => {
                         const splitAsset = renderAssetName(q.asset_name);
                         return (
                         <div 
                            key={q.id} 
                            onClick={() => setSelectedQuote(q)}
-                           className={`border p-4 rounded-2xl flex flex-col justify-between transition-all cursor-pointer group shadow-sm hover:shadow-md
-                             ${q.status === 'Müşteri Onayladı' ? 'bg-emerald-50/20 border-emerald-200 hover:border-emerald-400' : 'bg-white border-slate-200 hover:border-blue-300'}
+                           className={`bg-white border rounded-2xl p-5 shadow-sm hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between
+                             ${q.status === 'Müşteri Onayladı' ? 'border-emerald-200 hover:border-emerald-400' : 'border-slate-200 hover:border-blue-400'}
                            `}
                         >
                             <div>
-                                <div className="flex justify-between items-start mb-3">
-                                   <div className={`px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg border ${q.quote_type === 'Bakım Sözleşmesi' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
+                                <div className="flex justify-between items-start mb-4">
+                                   <div className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${q.quote_type === 'Bakım Sözleşmesi' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
                                       {q.quote_type}
                                    </div>
-                                   <div className={`flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-lg border
-                                      ${q.status === 'Bekliyor' ? 'bg-amber-50 text-amber-700 border-amber-200' : 
-                                        q.status === 'Müşteri Onayladı' ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm' : 
-                                        'bg-emerald-50 text-emerald-700 border-emerald-200'}
-                                   `}>
-                                      {q.status === 'Bekliyor' ? <Clock size={10}/> : <CheckCircle size={10}/>} {q.status}
+                                   <div className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-lg border ${q.status === 'Bekliyor' ? 'bg-amber-50 text-amber-700 border-amber-200' : q.status === 'Müşteri Onayladı' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>
+                                      {q.status === 'Bekliyor' ? <Clock size={12}/> : <CheckCircle size={12}/>} {q.status}
                                    </div>
                                 </div>
-                                <h3 className="font-black text-slate-800 text-base leading-tight mb-2 group-hover:text-blue-700 transition-colors line-clamp-2">{q.customer_name}</h3>
                                 
-                                <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-xl">
-                                    {splitAsset.apt && <div className="text-xs font-bold text-slate-700 truncate">{splitAsset.apt}</div>}
-                                    <div className="text-[10px] font-medium text-slate-500 flex items-center gap-1 mt-0.5 truncate">
-                                        <Box size={10} className="shrink-0" /> {splitAsset.dev}
-                                    </div>
+                                <div className="mb-5">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Müşteri / Firma</p>
+                                    <h3 className="font-black text-slate-800 text-lg leading-tight group-hover:text-blue-700 transition-colors line-clamp-2">{q.customer_name}</h3>
+                                </div>
+                                
+                                <div className="bg-slate-50/80 p-3.5 rounded-xl border border-slate-100/80">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">İlgili Tesis / Varlık</p>
+                                    {splitAsset.apt ? (
+                                        <>
+                                            <div className="text-sm font-black text-slate-700 truncate mb-0.5">{splitAsset.apt}</div>
+                                            <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5 truncate"><Box size={12} className="shrink-0 text-slate-400"/> {splitAsset.dev}</div>
+                                        </>
+                                    ) : (
+                                        <div className="text-sm font-black text-slate-700 truncate flex items-center gap-1.5"><Box size={14} className="text-slate-400"/> {splitAsset.dev}</div>
+                                    )}
                                 </div>
                             </div>
-                            <div className="flex justify-between items-center mt-4 pt-3 border-t border-slate-100">
-                                <div className="text-[10px] font-bold text-slate-400">{new Date(q.created_at).toLocaleDateString('tr-TR')}</div>
+                            
+                            <div className="flex justify-between items-center mt-5 pt-4 border-t border-slate-100">
+                                <div className="text-[11px] font-bold text-slate-400 flex items-center gap-1.5">
+                                    <Calendar size={14} /> {new Date(q.created_at).toLocaleDateString('tr-TR')}
+                                </div>
                                 <button 
-                                  onClick={(e) => { e.stopPropagation(); setQuoteToDelete(q.id); }}
-                                  className="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Sil"
+                                    onClick={(e) => { e.stopPropagation(); setQuoteToDelete(q.id); }}
+                                    className="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Sil"
                                 >
-                                   <Trash2 size={16} />
+                                    <Trash2 size={16} />
                                 </button>
                             </div>
                         </div>
@@ -235,6 +241,98 @@ export default function QuotesTab({ data }: any) {
                 </div>
             )}
 
+            {/* HARİKA ŞABLON ÖNİZLEME MODALI */}
+            <AnimatePresence>
+            {showTemplateModal && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+                    <div className="absolute inset-0" onClick={() => setShowTemplateModal(false)}></div>
+                    <motion.div initial={{scale:0.95, opacity:0}} animate={{scale:1, opacity:1}} exit={{scale:0.95, opacity:0}} className="bg-white rounded-3xl shadow-2xl relative w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                            <div>
+                                <h3 className="text-xl font-black text-slate-800">Çıktı Şablonu Seçin</h3>
+                                <p className="text-sm text-slate-500 font-medium mt-1">Teklif ve sözleşmelerinizin PDF veya Yazıcı çıktısında nasıl görüneceğini belirleyin.</p>
+                            </div>
+                            <button onClick={() => setShowTemplateModal(false)} className="p-2 bg-white border border-slate-200 text-slate-500 rounded-xl hover:bg-slate-100 hover:text-slate-700 transition-colors"><X size={20}/></button>
+                        </div>
+                        <div className="p-6 overflow-y-auto bg-slate-100 flex-1 custom-scrollbar">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                
+                                {/* Modern Preview */}
+                                <div onClick={() => handleTemplateChange('modern')} className={`cursor-pointer rounded-2xl border-4 transition-all bg-white overflow-hidden flex flex-col ${printTemplate === 'modern' ? 'border-blue-500 shadow-xl scale-105' : 'border-transparent shadow-md hover:shadow-lg hover:border-blue-200'}`}>
+                                    <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                                        <span className={`font-black tracking-widest ${printTemplate === 'modern' ? 'text-blue-700' : 'text-slate-600'}`}>MODERN</span>
+                                        {printTemplate === 'modern' && <CheckCircle className="text-blue-500" size={24}/>}
+                                    </div>
+                                    <div className="p-6 flex-1 flex justify-center items-center bg-slate-100">
+                                        <div className="w-full max-w-[200px] aspect-[1/1.414] bg-white shadow-sm border border-slate-200 p-4 flex flex-col pointer-events-none">
+                                            <div className="border-b-2 border-blue-900 pb-2 mb-3 flex justify-between">
+                                                <div className="w-8 h-8 bg-blue-100 rounded"></div>
+                                                <div className="w-16 h-2.5 bg-slate-200 mt-2"></div>
+                                            </div>
+                                            <div className="flex gap-2 mb-3">
+                                                <div className="flex-1 bg-slate-50 rounded p-2"><div className="w-10 h-1.5 bg-blue-800 mb-1.5"></div><div className="w-full h-1 bg-slate-300 mb-1"></div><div className="w-2/3 h-1 bg-slate-300"></div></div>
+                                                <div className="flex-1 bg-slate-50 rounded p-2"><div className="w-10 h-1.5 bg-blue-800 mb-1.5"></div><div className="w-full h-1 bg-slate-300 mb-1"></div><div className="w-1/2 h-1 bg-slate-300"></div></div>
+                                            </div>
+                                            <div className="flex-1 bg-slate-50 rounded p-3 mb-3"><div className="w-full h-1 bg-slate-300 mb-1.5"></div><div className="w-full h-1 bg-slate-300 mb-1.5"></div><div className="w-5/6 h-1 bg-slate-300 mb-1.5"></div><div className="w-4/6 h-1 bg-slate-300"></div></div>
+                                            <div className="flex justify-between mt-auto px-2"><div className="w-12 h-1 bg-slate-400"></div><div className="w-12 h-1 bg-slate-400"></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Classic Preview */}
+                                <div onClick={() => handleTemplateChange('classic')} className={`cursor-pointer rounded-2xl border-4 transition-all bg-white overflow-hidden flex flex-col ${printTemplate === 'classic' ? 'border-amber-500 shadow-xl scale-105' : 'border-transparent shadow-md hover:shadow-lg hover:border-amber-200'}`}>
+                                    <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                                        <span className={`font-black tracking-widest ${printTemplate === 'classic' ? 'text-amber-700' : 'text-slate-600'}`}>KLASİK (RESMİ)</span>
+                                        {printTemplate === 'classic' && <CheckCircle className="text-amber-500" size={24}/>}
+                                    </div>
+                                    <div className="p-6 flex-1 flex justify-center items-center bg-slate-100">
+                                        <div className="w-full max-w-[200px] aspect-[1/1.414] bg-white shadow-sm border border-slate-200 p-4 flex flex-col font-serif pointer-events-none">
+                                            <div className="border-b-[3px] border-double border-black pb-2 mb-3 flex flex-col items-center justify-center">
+                                                <div className="w-10 h-10 bg-slate-200 rounded-full mb-1"></div>
+                                                <div className="w-20 h-1.5 bg-black"></div>
+                                            </div>
+                                            <div className="border border-black p-2 mb-3 text-center">
+                                                <div className="w-16 h-1.5 bg-black mx-auto mb-1"></div><div className="w-10 h-1 bg-slate-400 mx-auto"></div>
+                                            </div>
+                                            <div className="flex-1 py-1 space-y-1.5">
+                                                <div className="w-full h-1 bg-slate-300"></div><div className="w-full h-1 bg-slate-300"></div><div className="w-full h-1 bg-slate-300"></div><div className="w-3/4 h-1 bg-slate-300"></div>
+                                            </div>
+                                            <div className="mt-auto grid grid-cols-2 gap-4"><div className="h-6 border-b border-black"></div><div className="h-6 border-b border-black"></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Minimal Preview */}
+                                <div onClick={() => handleTemplateChange('minimal')} className={`cursor-pointer rounded-2xl border-4 transition-all bg-white overflow-hidden flex flex-col ${printTemplate === 'minimal' ? 'border-emerald-500 shadow-xl scale-105' : 'border-transparent shadow-md hover:shadow-lg hover:border-emerald-200'}`}>
+                                    <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                                        <span className={`font-black tracking-widest ${printTemplate === 'minimal' ? 'text-emerald-700' : 'text-slate-600'}`}>MİNİMAL</span>
+                                        {printTemplate === 'minimal' && <CheckCircle className="text-emerald-500" size={24}/>}
+                                    </div>
+                                    <div className="p-6 flex-1 flex justify-center items-center bg-slate-100">
+                                        <div className="w-full max-w-[200px] aspect-[1/1.414] bg-white shadow-sm border border-slate-200 p-5 flex flex-col pointer-events-none">
+                                            <div className="mb-5 text-left">
+                                                <div className="w-16 h-2.5 bg-slate-800 mb-1.5"></div><div className="w-10 h-1 bg-slate-400"></div>
+                                            </div>
+                                            <div className="flex gap-4 mb-4 text-left">
+                                                <div className="flex-1"><div className="w-12 h-1 bg-gray-500 mb-1.5"></div><div className="w-full h-0.5 bg-slate-300"></div></div>
+                                                <div className="flex-1"><div className="w-12 h-1 bg-gray-500 mb-1.5"></div><div className="w-full h-0.5 bg-slate-300"></div></div>
+                                            </div>
+                                            <div className="flex-1 space-y-1.5"><div className="w-full h-0.5 bg-slate-200"></div><div className="w-full h-0.5 bg-slate-200"></div><div className="w-2/3 h-0.5 bg-slate-200"></div></div>
+                                            <div className="mt-auto flex justify-between text-left"><div className="w-12 h-1 bg-slate-400"></div><div className="w-12 h-1 bg-slate-400"></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                        <div className="p-5 border-t border-slate-100 bg-white">
+                            <button onClick={() => setShowTemplateModal(false)} className="w-full max-w-sm mx-auto block bg-slate-900 text-white font-bold text-sm py-3.5 rounded-xl shadow-lg hover:bg-slate-800 transition-all active:scale-95">Seçimi Onayla ve Kapat</button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+            </AnimatePresence>
+
             {/* SİLME MODALI */}
             <AnimatePresence>
                 {quoteToDelete && (
@@ -245,9 +343,6 @@ export default function QuotesTab({ data }: any) {
                             exit={{ scale: 0.95, opacity: 0 }} 
                             className="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl text-center"
                         >
-                            <div className="w-20 h-20 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-5 shadow-inner">
-                                <AlertTriangle size={40} />
-                            </div>
                             <h3 className="text-2xl font-black text-slate-800 mb-2">Emin misiniz?</h3>
                             <p className="text-slate-500 font-medium mb-8">Bu teklifi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</p>
                             <div className="flex gap-3">
@@ -277,23 +372,33 @@ export default function QuotesTab({ data }: any) {
                         <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0"><FileText size={20} /></div>
                         <div>
                           <h2 className="font-black text-slate-800 text-base sm:text-lg tracking-tight">Teklif Detayı</h2>
-                          <p className="text-slate-500 text-[11px] sm:text-xs font-semibold">{selectedQuote.quote_type} - {new Date(selectedQuote.created_at).toLocaleDateString('tr-TR')}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                             <span className="text-slate-500 text-[11px] sm:text-xs font-semibold">{selectedQuote.quote_type}</span>
+                             <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                             <span className="text-slate-500 text-[11px] sm:text-xs font-semibold">{new Date(selectedQuote.created_at).toLocaleDateString('tr-TR')}</span>
+                          </div>
                         </div>
                       </div>
                       <button onClick={() => setSelectedQuote(null)} className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-xl transition-colors"><X size={20} /></button>
                     </div>
 
-                    <div className="p-5 sm:p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4">
+                    <div className="p-5 sm:p-6 overflow-y-auto custom-scrollbar flex-1 space-y-5">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 min-w-0">
-                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1"><User size={12}/> Müşteri</div>
-                                <div className="font-black text-slate-800 truncate">{selectedQuote.customer_name}</div>
-                                {selectedQuote.customer_phone && <div className="text-xs font-medium text-slate-500 mt-0.5">{selectedQuote.customer_phone}</div>}
+                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><User size={14}/> Müşteri</div>
+                                <div className="font-black text-slate-800 truncate text-base">{selectedQuote.customer_name}</div>
+                                {selectedQuote.customer_phone && <div className="text-xs font-medium text-slate-500 mt-1">{selectedQuote.customer_phone}</div>}
                             </div>
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 min-w-0">
-                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1"><Box size={12}/> Varlık (Sistem)</div>
-                                <div className="font-black text-slate-800 truncate">{renderAssetName(selectedQuote.asset_name).apt || renderAssetName(selectedQuote.asset_name).dev}</div>
-                                {renderAssetName(selectedQuote.asset_name).apt && <div className="text-xs font-medium text-slate-500 mt-0.5 truncate">{renderAssetName(selectedQuote.asset_name).dev}</div>}
+                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><Box size={14}/> İlgili Tesis / Varlık</div>
+                                {renderAssetName(selectedQuote.asset_name).apt ? (
+                                    <>
+                                        <div className="font-black text-slate-800 truncate text-base">{renderAssetName(selectedQuote.asset_name).apt}</div>
+                                        <div className="text-xs font-semibold text-slate-500 mt-1 truncate">{renderAssetName(selectedQuote.asset_name).dev}</div>
+                                    </>
+                                ) : (
+                                    <div className="font-black text-slate-800 truncate text-base">{renderAssetName(selectedQuote.asset_name).dev}</div>
+                                )}
                             </div>
                         </div>
 
@@ -308,39 +413,15 @@ export default function QuotesTab({ data }: any) {
 
                         <div className="bg-white border border-slate-200 rounded-2xl p-4">
                             <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-1.5 px-1">
-                                <LayoutTemplate size={12} /> Çıktı Tasarımı Seçin
+                                <LayoutTemplate size={12} /> Çıktı Tasarım Şablonu
                             </div>
-                            <div className="grid grid-cols-3 gap-3">
-                                <button 
-                                    onClick={() => handleTemplateChange('modern')}
-                                    className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${printTemplate === 'modern' ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-slate-100 hover:border-slate-300 bg-white'}`}
-                                >
-                                    {printTemplate === 'modern' && <CheckCircle size={14} className="absolute top-2 right-2 text-blue-500" />}
-                                    <div className={`w-12 h-16 border rounded bg-white flex flex-col p-1 shadow-sm ${printTemplate === 'modern' ? 'border-blue-300' : 'border-slate-200'}`}>
-                                        <div className="w-4 h-1 bg-blue-200 rounded mb-1"></div><div className="w-8 h-8 bg-slate-100 rounded"></div>
-                                    </div>
-                                    <span className={`text-[10px] font-black uppercase ${printTemplate === 'modern' ? 'text-blue-700' : 'text-slate-500'}`}>Modern</span>
+                            <div className="flex gap-2 w-full">
+                                <button onClick={() => setShowTemplateModal(true)} className="flex-1 bg-slate-50 border border-slate-200 hover:border-slate-300 hover:bg-slate-100 rounded-xl py-3 text-xs font-bold text-slate-700 transition-all flex justify-center items-center gap-2">
+                                   Şablonu Değiştir / Önizle
                                 </button>
-                                <button 
-                                    onClick={() => handleTemplateChange('classic')}
-                                    className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${printTemplate === 'classic' ? 'border-amber-500 bg-amber-50 shadow-sm' : 'border-slate-100 hover:border-slate-300 bg-white'}`}
-                                >
-                                    {printTemplate === 'classic' && <CheckCircle size={14} className="absolute top-2 right-2 text-amber-500" />}
-                                    <div className={`w-12 h-16 border rounded bg-white flex flex-col items-center justify-center p-1 shadow-sm ${printTemplate === 'classic' ? 'border-amber-300' : 'border-slate-200'}`}>
-                                        <div className="w-8 h-1 border-y border-slate-300 mb-1"></div><div className="w-full h-px bg-slate-200 my-1"></div>
-                                    </div>
-                                    <span className={`text-[10px] font-black uppercase ${printTemplate === 'classic' ? 'text-amber-700' : 'text-slate-500'}`}>Klasik (Resmi)</span>
-                                </button>
-                                <button 
-                                    onClick={() => handleTemplateChange('minimal')}
-                                    className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${printTemplate === 'minimal' ? 'border-emerald-500 bg-emerald-50 shadow-sm' : 'border-slate-100 hover:border-slate-300 bg-white'}`}
-                                >
-                                    {printTemplate === 'minimal' && <CheckCircle size={14} className="absolute top-2 right-2 text-emerald-500" />}
-                                    <div className={`w-12 h-16 border rounded bg-white flex flex-col p-1 shadow-sm ${printTemplate === 'minimal' ? 'border-emerald-300' : 'border-slate-200'}`}>
-                                        <div className="w-6 h-1 bg-slate-200 mb-2"></div><div className="w-8 h-1 bg-slate-100"></div>
-                                    </div>
-                                    <span className={`text-[10px] font-black uppercase ${printTemplate === 'minimal' ? 'text-emerald-700' : 'text-slate-500'}`}>Minimal</span>
-                                </button>
+                                <div className="bg-slate-100 text-slate-500 text-[10px] font-black tracking-widest px-4 rounded-xl flex items-center uppercase">
+                                   Aktif: {printTemplate === 'classic' ? 'KLASİK' : printTemplate === 'minimal' ? 'MİNİMAL' : 'MODERN'}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -348,7 +429,7 @@ export default function QuotesTab({ data }: any) {
                     <div className="p-4 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0 space-y-3">
                         {selectedQuote.public_token && selectedQuote.status !== 'Müşteri Onayladı' && (
                             <a 
-                                href={`https://wa.me/?text=${encodeURIComponent(`Merhaba ${selectedQuote.customer_name},\n\nSizin için hazırladığımız ${selectedQuote.quote_type} belgemize aşağıdaki bağlantıdan ulaşıp, online olarak inceleyebilir ve imzalayabilirsiniz:\n\n${typeof window !== 'undefined' ? window.location.origin : ''}/teklif/${selectedQuote.public_token}\n\nSaygılarımızla, ${data?.settings?.company_name || 'Fixlog'}`)}`}
+                                href={`https://wa.me/?text=${encodeURIComponent(`Merhaba \${selectedQuote.customer_name},\n\nSizin için hazırladığımız \${selectedQuote.quote_type} belgemize aşağıdaki bağlantıdan ulaşıp, online olarak inceleyebilir ve imzalayabilirsiniz:\n\n\${typeof window !== 'undefined' ? window.location.origin : ''}/teklif/${selectedQuote.public_token}\n\nSaygılarımızla, ${data?.settings?.company_name || 'Fixlog'}`)}`}
                                 target="_blank" rel="noopener noreferrer"
                                 className="w-full bg-[#25D366] text-white font-bold text-sm py-3.5 sm:py-4 rounded-xl shadow-md hover:bg-[#20bd5a] transition-all active:scale-95 flex items-center justify-center gap-2"
                             >

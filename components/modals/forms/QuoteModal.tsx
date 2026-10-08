@@ -57,7 +57,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     if (data?.settings?.maintenance_contract_template) {
       setMaintenanceContract(data.settings.maintenance_contract_template);
     } else {
-      setMaintenanceContract("İşbu sözleşme, taraflar arasında aylık periyodik bakım hizmetlerini kapsamaktadır...\n\n1. Kapsam:\n2. Ücretlendirme:\n3. Yükümlülükler:");
+      setMaintenanceContract("İşbu sözleşme, taraflar arasında aylık periyodik bakım hizmetlerini kapsamaktadır...\n\nKapsam:\n2. Ücretlendirme:\n3. Yükümlülükler:");
     }
   }, [data]);
 

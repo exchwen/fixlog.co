@@ -221,22 +221,54 @@ return (
                   </div>
                 </div>
 
-                {/* 🚀 YENİ: ASANSÖR TEKNİK BİLGİLERİ (Sözleşme & Teklif İçin) */}
+                {/* 🚀 EKSİKSİZ TEKNİK BİLGİLER */}
                 <div className="p-4 bg-slate-50 border border-slate-200 shadow-sm rounded-xl space-y-3">
-                    <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5">
-                        <Box size={14} /> Teknik Bilgiler (Sözleşme İçin)
+                    <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5 mb-2">
+                        <Box size={14} /> Teknik Bilgiler (Sözleşme & Teklif İçin)
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                        <input 
-                            className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-white transition-all" 
-                            value={newAsset.type || ''} onChange={(e) => setNewAsset({...newAsset, type: e.target.value})} 
-                            placeholder="Tipi (örn: MRL)" 
-                        />
-                        <input 
-                            className="w-full px-4 py-3 sm:py-2.5 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-white transition-all" 
-                            value={newAsset.asset_details?.includes('Kapasite') ? '' : ''} onChange={(e) => setNewAsset({...newAsset, asset_details: `Kapasite: ${e.target.value} | ${newAsset.asset_details || ''}`})} 
-                            placeholder="Kapasite (örn: 800kg)" 
-                        />
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-500 block mb-1 ml-1">Asansör Tipi/Cinsi</label>
+                            <input 
+                                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500 bg-white transition-all" 
+                                value={newAsset.elevator_type || ''} onChange={(e) => setNewAsset({...newAsset, elevator_type: e.target.value})} 
+                                placeholder="Örn: MRL, Hidrolik" 
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-500 block mb-1 ml-1">Kapasite</label>
+                            <input 
+                                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500 bg-white transition-all" 
+                                value={newAsset.capacity || ''} onChange={(e) => setNewAsset({...newAsset, capacity: e.target.value})} 
+                                placeholder="Örn: 800kg / 10 Kişi" 
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-500 block mb-1 ml-1">Durak Sayısı</label>
+                            <input 
+                                type="number"
+                                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500 bg-white transition-all" 
+                                value={newAsset.stops_count || ''} onChange={(e) => setNewAsset({...newAsset, stops_count: e.target.value})} 
+                                placeholder="Örn: 5" 
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-500 block mb-1 ml-1">Hızı (m/sn)</label>
+                            <input 
+                                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500 bg-white transition-all" 
+                                value={newAsset.elevator_speed || ''} onChange={(e) => setNewAsset({...newAsset, elevator_speed: e.target.value})} 
+                                placeholder="Örn: 1.0 m/sn" 
+                            />
+                        </div>
+                        <div className="col-span-2 sm:col-span-1">
+                            <label className="text-[10px] font-bold text-slate-500 block mb-1 ml-1">Asansör Adedi</label>
+                            <input 
+                                type="number"
+                                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500 bg-white transition-all" 
+                                value={newAsset.elevator_count || '1'} onChange={(e) => setNewAsset({...newAsset, elevator_count: e.target.value})} 
+                                placeholder="Örn: 1" 
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -336,7 +368,7 @@ return (
                   </label>
                   <textarea
                       rows={3}
-                      placeholder="Teknik detaylar, kapasite, marka, model veya özel notlar..." 
+                      placeholder="Teknik detaylar, marka, model veya özel notlar..." 
                       className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all placeholder:font-medium placeholder:text-slate-400 resize-none" 
                       value={newAsset.asset_details || ''} 
                       onChange={e => setNewAsset({...newAsset, asset_details: e.target.value})} 
