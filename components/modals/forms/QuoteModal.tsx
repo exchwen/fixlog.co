@@ -4,15 +4,22 @@ import { X, Send, ArrowRight, Loader2, CheckCircle, Search, FileText, Download, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReactToPrint } from 'react-to-print';
 
-// Token'ı Cookie, LocalStorage veya SessionStorage'dan güvenli şekilde bulan yardımcı fonksiyon
+// 🚀 SİSTEME ÖZEL KESİN ÇÖZÜM: Patron ve Çalışan Token'larını ayırt edebilen mantık
 const getAuthToken = () => {
   if (typeof window === 'undefined') return '';
-  let token = localStorage.getItem('token') || sessionStorage.getItem('token');
-  if (!token) {
-    const match = document.cookie.match(/(?:(?:^|.*;\s*)token\s*\=\s*([^;]*).*$)|^.*$/);
-    if (match && match[1]) token = match[1];
-  }
-  return token ? token.replace(/^"|"$/g, '') : '';
+  
+  // TypeScript hatalarını çözen güncellenmiş getCookie fonksiyonu
+  const getCookie = (name: string) => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+      return null;
+  };
+
+  let token = localStorage.getItem('patron_authToken') || getCookie('patron_authToken');
+  if (!token) token = localStorage.getItem('staff_authToken') || getCookie('staff_authToken');
+
+  return token ? token.replace(/^"|"\$/g, '') : '';
 };
 
 export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, setActiveTab }: any) {
@@ -61,6 +68,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
       const slug = window.location.pathname.split('/')[1];
+      
       await fetch(`${API_URL}/update-maintenance-contract`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
@@ -92,7 +100,9 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
 
   useEffect(() => {
     const handleEscKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && showQuoteModal) handleClose();
+      if (e.key === 'Escape' && showQuoteModal) {
+        handleClose();
+      }
     };
     if (showQuoteModal) window.addEventListener('keydown', handleEscKey);
     return () => window.removeEventListener('keydown', handleEscKey);
@@ -108,11 +118,16 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
       const companySlug = data?.slug || data?.company_slug || (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '');
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
       
+      const secureToken = getAuthToken();
+      if (!secureToken) {
+          throw new Error('Sisteme giriş yapılmamış. Oturum süreniz dolmuş olabilir.');
+      }
+      
       const res = await fetch(`${API_URL}/add-quote`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
+          'Authorization': `Bearer ${secureToken}` 
         },
         body: JSON.stringify({
           slug: companySlug,
@@ -125,7 +140,12 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
           is_new_asset: newAssetMode,
           asset_id: newAssetMode ? null : selectedAssetId,
           asset_name: finalAssetName,
-          quote_details: { revisionDetails, elevatorType, stopsCount, capacity }
+          quote_details: {
+             revisionDetails,
+             elevatorType,
+             stopsCount,
+             capacity
+          }
         })
       });
       
@@ -134,7 +154,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
       
       setStatus('success');
     } catch(e: any) {
-      alert('Hata oluştu: ' + (e.message || 'Yetkisiz erişim veya bağlantı sorunu.'));
+      alert('Hata oluştu: ' + (e.message || 'Yetkisiz erişim.'));
       setStatus('idle');
     }
   };
@@ -151,6 +171,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
   const initCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>, setHasSignature: (v: boolean) => void) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
 
@@ -557,7 +578,6 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
           </div>
         </div>
       </div>
-
     </AnimatePresence>
   );
 }

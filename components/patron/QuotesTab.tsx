@@ -7,13 +7,21 @@ import dynamic from 'next/dynamic';
 
 const QuoteModal = dynamic(() => import('@/components/modals/forms/QuoteModal'), { ssr: false });
 
+// 🚀 SİSTEME ÖZEL KESİN ÇÖZÜM
 const getAuthToken = () => {
   if (typeof window === 'undefined') return '';
-  let token = localStorage.getItem('token') || sessionStorage.getItem('token');
-  if (!token) {
-    const match = document.cookie.match(/(?:(?:^|.*;\s*)token\s*\=\s*([^;]*).*$)\vert{}^.*$/);
-    if (match && match[1]) token = match[1];
-  }
+  
+  // TypeScript hatalarını çözen güncellenmiş getCookie fonksiyonu
+  const getCookie = (name: string) => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+      return null;
+  };
+
+  let token = localStorage.getItem('patron_authToken') || getCookie('patron_authToken');
+  if (!token) token = localStorage.getItem('staff_authToken') || getCookie('staff_authToken');
+
   return token ? token.replace(/^"|"\$/g, '') : '';
 };
 
@@ -28,8 +36,11 @@ export default function QuotesTab({ data }: any) {
         setLoading(true);
         try {
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
+            const secureToken = getAuthToken();
+            if (!secureToken) return;
+
             const res = await fetch(`${API_URL}/get-quotes?company_slug=${companySlug}`, {
-                headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+                headers: { 'Authorization': `Bearer ${secureToken}` }
             });
             const r = await res.json();
             if (r.success) setQuotes(r.data);
@@ -46,11 +57,13 @@ export default function QuotesTab({ data }: any) {
     const handleDelete = async (id: string) => {
         if (!window.confirm('Bu teklifi/sözleşmeyi silmek istediğinize emin misiniz?')) return;
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
+        const secureToken = getAuthToken();
+
         await fetch(`${API_URL}/delete-quote`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getAuthToken()}`
+                'Authorization': `Bearer ${secureToken}`
             },
             body: JSON.stringify({ id, company_slug: companySlug })
         });
