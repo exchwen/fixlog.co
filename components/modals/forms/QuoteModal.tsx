@@ -147,15 +147,25 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     setStep(3);
   };
 
+  const handleNextFromStep3 = () => {
+    setStep(4);
+  };
+
   const handleSubmitClick = async () => {
     if (!canSubmit) return;
     await handleSubmit();
   };
 
-  // İmza Alanı (Canvas) Başlatma
+  // İMZA ALANI (KAYMA SORUNU ÇÖZÜLDÜ)
   const initCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>, setHasSignature: (v: boolean) => void) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    
+    // ÇÖZÜM: Canvas iç çözünürlüğünü, CSS ile ekranda kapladığı boyuta eşitliyoruz.
+    // Bu sayede fare imleci ile çizim yapılan yer arasında kayma olmaz.
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.lineWidth = 2.5;
@@ -207,11 +217,15 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     };
   };
 
+  // İmza Alanı sadece 4. Adımda yüklenecek
   useEffect(() => {
-    if (showQuoteModal && step === 3) {
-      const clean1 = initCanvas(employerCanvasRef, setEmployerSignature);
-      const clean2 = initCanvas(customerCanvasRef, setCustomerSignature);
-      return () => { if(clean1) clean1(); if(clean2) clean2(); };
+    if (showQuoteModal && step === 4) {
+      // Çizim tuvalinin tam oturması için kısa bir gecikme ekleyerek başlatıyoruz
+      const timeout = setTimeout(() => {
+        initCanvas(employerCanvasRef, setEmployerSignature);
+        initCanvas(customerCanvasRef, setCustomerSignature);
+      }, 100);
+      return () => clearTimeout(timeout);
     }
   }, [showQuoteModal, step]);
 
@@ -243,7 +257,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                 <div>
                   <h2 className="font-black text-slate-800 text-base sm:text-lg tracking-tight">Yeni Teklif & Sözleşme</h2>
                   <p className="text-slate-500 text-[11px] sm:text-xs font-semibold">
-                    {step === 1 ? 'Adım 1: Müşteri ve Varlık' : step === 2 ? 'Adım 2: Teklif Türü' : 'Adım 3: Detaylar ve İmza'}
+                    {step === 1 ? 'Adım 1: Müşteri ve Varlık Seçimi' : step === 2 ? 'Adım 2: Teklif Türü' : step === 3 ? 'Adım 3: Detaylar' : 'Adım 4: İmzalar ve Onay'}
                   </p>
                 </div>
               </div>
@@ -290,7 +304,8 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                                   <input type="text" placeholder="Müşteri Ara..." className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500" value={searchCustomer} onChange={e => setSearchCustomer(e.target.value)} />
                                 </div>
                                 <div className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
-                                  <div className="max-h-32 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1">
+                                  {/* Yükseklik max-h-48 (12rem/192px) yapılarak uzun listelerde rahatlık sağlandı */}
+                                  <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1">
                                     {(data?.customers || []).filter((c: any) => {
                                         const term = (searchCustomer || '').toLowerCase();
                                         const name = (c.name || '').toLowerCase();
@@ -344,9 +359,9 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                                   <input type="text" placeholder="Asansör veya Bina Adı Ara..." className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500" value={searchAsset} onChange={e => setSearchAsset(e.target.value)} />
                                 </div>
                                 <div className="w-full bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
-                                  <div className="max-h-32 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1">
+                                  {/* Yükseklik max-h-48 yapıldı */}
+                                  <div className="max-h-48 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1">
                                     {(data?.assets || []).filter((a: any) => {
-                                        // Eğer yeni müşteri değilse ve bir müşteri seçiliyse, sadece o müşterinin varlıklarını veya boştakileri listele
                                         if (!newCustomerMode && selectedCustomerId && String(a.customer_id) !== selectedCustomerId) return false;
                                         const term = (searchAsset || '').toLowerCase();
                                         return (a.name || '').toLowerCase().includes(term) || (a.apartmentName || '').toLowerCase().includes(term);
@@ -407,18 +422,16 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                     </div>
                   )}
 
-                  {/* ADIM 3: DETAYLAR VE İMZA */}
+                  {/* ADIM 3: DETAYLAR */}
                   {step === 3 && (
                     <div className="space-y-6">
-                      
-                      {/* Türe Göre İçerik Alanı */}
                       {quoteType === 'Bakım Sözleşmesi' && (
                         <div className="space-y-2">
                           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block flex justify-between items-center">
                             Sözleşme İçeriği (Düzenlenebilir)
                           </label>
                           <textarea 
-                            rows={8}
+                            rows={12}
                             value={maintenanceContract}
                             onChange={(e) => handleSaveContractTemplate(e.target.value)}
                             className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:bg-white focus:border-blue-500 outline-none transition-all resize-none custom-scrollbar leading-relaxed"
@@ -431,7 +444,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                         <div className="space-y-2">
                           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Yapılacak İşlerin Detayları</label>
                           <textarea 
-                            rows={5} 
+                            rows={8} 
                             value={revisionDetails} 
                             onChange={e => setRevisionDetails(e.target.value)} 
                             placeholder="Örn: Motor değişimi, kabin revizyonu kalemleri vb..." 
@@ -441,7 +454,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                       )}
 
                       {quoteType === 'Montaj Teklifi' && (
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Asansör Tipi</label>
                             <input type="text" value={elevatorType} onChange={e => setElevatorType(e.target.value)} placeholder="Örn: İnsan Asansörü" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition-all" />
@@ -456,31 +469,38 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                           </div>
                         </div>
                       )}
+                    </div>
+                  )}
 
-                      <div className="bg-amber-50 text-amber-800 p-3 rounded-xl border border-amber-200 text-sm font-medium text-center">
-                        Lütfen teklifi onaylamak için imzaları atınız.
+                  {/* ADIM 4: İMZALAR */}
+                  {step === 4 && (
+                    <div className="space-y-6">
+                      <div className="bg-amber-50 text-amber-800 p-4 rounded-xl border border-amber-200 text-sm font-medium text-center">
+                        Son aşamadasınız. Lütfen teklifi onaylamak için imzaları atınız.
                       </div>
                       
-                      {/* İmzalar */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 gap-6">
+                          {/* Yetkili İmza */}
                           <div className="space-y-2">
                             <div className="flex justify-between items-center px-1">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Yetkili İmzası</label>
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Yetkili (Firma) İmzası</label>
                                 {employerSignature && <button onClick={() => clearCanvas(employerCanvasRef, setEmployerSignature)} className="text-[10px] flex items-center gap-1 text-slate-400 hover:text-rose-500 font-bold uppercase transition-colors"><RotateCcw size={12}/> Temizle</button>}
                             </div>
                             <div className={`border-2 border-dashed bg-slate-50 rounded-2xl overflow-hidden touch-none relative ${employerSignature ? 'border-blue-300' : 'border-slate-200'}`}>
-                              <canvas ref={employerCanvasRef} width={450} height={120} className="w-full h-[120px] cursor-crosshair touch-none" />
+                              {/* w-full h-[120px] CSS olarak kalıyor, iç çözünürlüğü initCanvas halledecek */}
+                              <canvas ref={employerCanvasRef} className="w-full h-[120px] cursor-crosshair touch-none block" />
                               {!employerSignature && <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-300 font-bold opacity-50">Buraya imzalayın</div>}
                             </div>
                           </div>
 
+                          {/* Müşteri İmza */}
                           <div className="space-y-2">
                             <div className="flex justify-between items-center px-1">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Müşteri İmzası</label>
                                 {customerSignature && <button onClick={() => clearCanvas(customerCanvasRef, setCustomerSignature)} className="text-[10px] flex items-center gap-1 text-slate-400 hover:text-rose-500 font-bold uppercase transition-colors"><RotateCcw size={12}/> Temizle</button>}
                             </div>
                             <div className={`border-2 border-dashed bg-slate-50 rounded-2xl overflow-hidden touch-none relative ${customerSignature ? 'border-emerald-300' : 'border-slate-200'}`}>
-                              <canvas ref={customerCanvasRef} width={450} height={120} className="w-full h-[120px] cursor-crosshair touch-none" />
+                              <canvas ref={customerCanvasRef} className="w-full h-[120px] cursor-crosshair touch-none block" />
                               {!customerSignature && <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-300 font-bold opacity-50">Buraya imzalayın</div>}
                             </div>
                           </div>
@@ -512,12 +532,24 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                         onClick={handleNextFromStep2} 
                         className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2 active:scale-95"
                       >
-                        İçerik ve İmza Aşamasına Geç <ArrowRight size={18} />
+                        İçerik Girmeye Geç <ArrowRight size={18} />
+                      </button>
+                  </div>
+                ) : step === 3 ? (
+                  <div className="flex gap-2">
+                      <button onClick={() => setStep(2)} className="p-3.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold shadow-sm hover:bg-slate-50 active:scale-95 transition-all">
+                        <ArrowRight size={18} className="rotate-180" />
+                      </button>
+                      <button 
+                        onClick={handleNextFromStep3} 
+                        className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2 active:scale-95"
+                      >
+                        İmza ve Onay Aşaması <ArrowRight size={18} />
                       </button>
                   </div>
                 ) : (
                   <div className="flex gap-2">
-                      <button onClick={() => setStep(2)} className="p-3.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold shadow-sm hover:bg-slate-50 active:scale-95 transition-all">
+                      <button onClick={() => setStep(3)} className="p-3.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold shadow-sm hover:bg-slate-50 active:scale-95 transition-all">
                         <ArrowRight size={18} className="rotate-180" />
                       </button>
                       <button 
