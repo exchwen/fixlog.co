@@ -26,6 +26,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerTax, setCustomerTax] = useState(''); // Yeni TC / Vergi No alanı
   const [newCustomerMode, setNewCustomerMode] = useState(false);
   const [searchCustomer, setSearchCustomer] = useState('');
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
@@ -34,12 +35,12 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [newAssetMode, setNewAssetMode] = useState(false);
   const [newAssetName, setNewAssetName] = useState('');
+  const [newAssetLoc, setNewAssetLoc] = useState(''); // Yeni Konum alanı
   
   const [maintenanceContract, setMaintenanceContract] = useState('');
   const [revisionDetails, setRevisionDetails] = useState('');
   
   // EKSTRA PDF BİLGİLERİ İÇİN STATE'LER
-  const [elevatorType, setElevatorType] = useState('');
   const [stopsCount, setStopsCount] = useState('');
   const [capacity, setCapacity] = useState('');
   const [elevatorSpeed, setElevatorSpeed] = useState('');
@@ -81,17 +82,19 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
     setSignMode('field'); 
     setCustomerName('');
     setCustomerPhone('');
+    setCustomerTax('');
     setSearchAsset('');
     setSelectedAssetId('');
     setSelectedCustomerId('');
     setNewCustomerMode(false);
     setNewAssetMode(false);
     setNewAssetName('');
+    setNewAssetLoc('');
     setStatus('idle');
     setErrorMessage('');
     setEmployerSignature(false);
     setCustomerSignature(false);
-    setElevatorType(''); setStopsCount(''); setCapacity(''); setElevatorSpeed(''); setElevatorCount('1'); setMonthlyFee(''); setStartDate(''); setEndDate('');
+    setStopsCount(''); setCapacity(''); setElevatorSpeed(''); setElevatorCount('1'); setMonthlyFee(''); setStartDate(''); setEndDate('');
   };
 
   const handleClose = () => {
@@ -128,6 +131,12 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
           throw new Error('Sisteme giriş yapılmamış. Oturum süreniz dolmuş olabilir.');
       }
 
+      const selectedCust = (data?.customers || []).find((c: any) => String(c.id) === selectedCustomerId);
+      const selectedAsset = (data?.assets || []).find((a: any) => String(a.id) === selectedAssetId);
+
+      const finalTaxInfo = newCustomerMode ? customerTax : (selectedCust?.tax_info || selectedCust?.taxInfo || '');
+      const finalAssetLoc = newAssetMode ? newAssetLoc : (selectedAsset?.location || '');
+
       const customerSignBase64 = signMode === 'field' ? (customerCanvasRef.current?.toDataURL('image/png') || null) : null;
       const employerSignBase64 = employerCanvasRef.current?.toDataURL('image/png') || null;
       
@@ -151,7 +160,6 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
           status: signMode === 'office' ? 'Bekliyor' : 'Müşteri Onayladı',
           quote_details: {
              revisionDetails,
-             elevatorType,
              stopsCount,
              capacity,
              elevatorSpeed,
@@ -160,6 +168,8 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
              startDate,
              endDate,
              maintenanceContract,
+             customerTaxInfo: finalTaxInfo,
+             assetLocation: finalAssetLoc,
              customerSignature: customerSignBase64,
              employerSignature: employerSignBase64 
           }
@@ -360,9 +370,15 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                                     <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Müşteri Adı *</label>
                                     <input required type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Örn: X Apartmanı veya Y Firması" className="w-full px-4 py-2.5 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
                                   </div>
-                                  <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Telefon Numarası</label>
-                                    <input type="tel" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="05XX XXX XX XX" className="w-full px-4 py-2.5 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                      <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Telefon Numarası</label>
+                                      <input type="tel" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="05XX XXX XX XX" className="w-full px-4 py-2.5 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">TC / Vergi No</label>
+                                      <input type="text" value={customerTax} onChange={e => setCustomerTax(e.target.value)} placeholder="11 haneli TC veya Vergi No" className="w-full px-4 py-2.5 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
+                                    </div>
                                   </div>
                                 </div>
                             )}
@@ -393,8 +409,6 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                                             <button 
                                                 key={a.id} type="button" onClick={() => {
                                                     setSelectedAssetId(String(a.id));
-                                                    // 🚀 SEÇİLEN VARLIĞIN BİLGİLERİNİ FORMA OTOMATİK DOLDURUR
-                                                    setElevatorType(a.elevator_type || '');
                                                     setCapacity(a.capacity || '');
                                                     setStopsCount(a.stops_count || '');
                                                     setElevatorSpeed(a.elevator_speed || '');
@@ -415,9 +429,15 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                                 </div>
                               </div>
                             ) : (
-                                <div className="space-y-1">
-                                  <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Yeni Asansör Adı / Bilgisi *</label>
-                                  <input required type="text" value={newAssetName} onChange={e => setNewAssetName(e.target.value)} placeholder="Örn: A Blok Sağ Asansör" className="w-full px-4 py-2.5 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
+                                <div className="space-y-3">
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Yeni Asansör Adı / Bilgisi *</label>
+                                    <input required type="text" value={newAssetName} onChange={e => setNewAssetName(e.target.value)} placeholder="Örn: A Blok Sağ Asansör" className="w-full px-4 py-2.5 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Konum / Adres Bilgisi</label>
+                                    <input type="text" value={newAssetLoc} onChange={e => setNewAssetLoc(e.target.value)} placeholder="Mahalle, Cadde, Sokak veya Bina No" className="w-full px-4 py-2.5 bg-white border border-blue-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all shadow-sm" />
+                                  </div>
                                 </div>
                             )}
                         </div>
@@ -450,11 +470,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                       
                       <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4">Sistem Teknik Özellikleri</label>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                              <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-slate-600">Asansör Tipi/Cinsi</label>
-                                <input type="text" value={elevatorType} onChange={e => setElevatorType(e.target.value)} placeholder="MRL, Hidrolik vb." className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500" />
-                              </div>
+                          <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-1">
                                 <label className="text-[10px] font-bold text-slate-600">Kapasite</label>
                                 <input type="text" value={capacity} onChange={e => setCapacity(e.target.value)} placeholder="Örn: 800 kg / 10 Kişi" className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500" />
@@ -464,7 +480,7 @@ export default function QuoteModal({ showQuoteModal, setShowQuoteModal, data, se
                                 <input type="number" value={stopsCount} onChange={e => setStopsCount(e.target.value)} placeholder="Örn: 5" className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500" />
                               </div>
                               <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-slate-600">Hızı</label>
+                                <label className="text-[10px] font-bold text-slate-600">Hızı (m/sn)</label>
                                 <input type="text" value={elevatorSpeed} onChange={e => setElevatorSpeed(e.target.value)} placeholder="Örn: 1.0 m/sn" className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500" />
                               </div>
                               <div className="space-y-1">

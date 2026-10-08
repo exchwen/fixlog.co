@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Box, User, MapPin, FileText, Building2, ChevronDown, Search, Calendar } from 'lucide-react';
+import { X, Loader2, Box, User, MapPin, FileText, Building2, ChevronDown, Search, Calendar, Layers } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
 import sectorsData from '@/lib/data/sectors.json'; 
 
@@ -41,6 +41,25 @@ export default function AddAssetModal({
     if (!showAddCustomer) setIsPushedBack(false);
   }, [showAddCustomer]);
 
+  const handleClose = () => {
+    setShowAddAsset(false);
+    setSelectedCity('');
+    setSelectedDistrict('');
+    setBuildingNo('');
+    setIsCustomerDropdownOpen(false);
+    setCustomerSearch('');
+  };
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+        if (e.key === 'Escape' && showAddAsset && !isPushedBack) {
+            handleClose();
+        }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [showAddAsset, isPushedBack]);
+
   const getFullAddress = (rawAddress: string, bNo: string, city: string, district: string) => {
       let full = rawAddress ? rawAddress.trim() : '';
       if (bNo) full += (full ? ` No:${bNo}` : `No:${bNo}`);
@@ -49,23 +68,14 @@ export default function AddAssetModal({
       return full;
   };
 
-  const handleClose = () => {
-    setShowAddAsset(false);
-    setSelectedCity('');
-    setSelectedDistrict('');
-    setBuildingNo('');
-    setIsCustomerDropdownOpen(false);
-    setCustomerSearch('');
-};
+  const filteredCustomers = (data?.customers || []).filter((c: any) => 
+      c.name?.toLowerCase().includes(customerSearch.toLowerCase())
+  );
 
-const filteredCustomers = (data?.customers || []).filter((c: any) => 
-    c.name?.toLowerCase().includes(customerSearch.toLowerCase())
-);
+  const selectedCustomerObj = (data?.customers || []).find((c: any) => c.id === newAsset.customer_id);
+  const selectedCustomerDisplay = selectedCustomerObj ? selectedCustomerObj.name : 'Bağımsız / Müşteri Yok';
 
-const selectedCustomerObj = (data?.customers || []).find((c: any) => c.id === newAsset.customer_id);
-const selectedCustomerDisplay = selectedCustomerObj ? selectedCustomerObj.name : 'Bağımsız / Müşteri Yok';
-
-return (
+  return (
     <AnimatePresence>
       {showAddAsset && (
         <motion.div 
@@ -97,7 +107,7 @@ return (
             style={{ pointerEvents: (isPushedBack || !showAddAsset) ? 'none' : 'auto' }} 
             className="bg-white w-full max-w-md rounded-2xl p-0 shadow-2xl relative z-10 overflow-hidden border border-slate-200 cursor-default flex flex-col max-h-[90vh]"
           >
-            <div className="flex justify-between items-center p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/50 shrink-0">
+            <div className="flex justify-between items-center p-5 border-b border-slate-100 bg-slate-50/50 shrink-0">
                <div>
                   <h2 className="text-xl font-black text-slate-800 tracking-tight">Yeni Cihaz / Varlık Ekle</h2>
                   <div className="text-xs font-medium text-slate-500 mt-1">Sisteme yeni bir varlık tanımlayın.</div>
@@ -110,7 +120,7 @@ return (
                </button>
             </div>
 
-            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto overscroll-contain custom-scrollbar flex-1">
+            <div className="p-5 space-y-4 overflow-y-auto overscroll-contain custom-scrollbar flex-1">
                 
                 <div>
                   <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
@@ -221,20 +231,11 @@ return (
                   </div>
                 </div>
 
-                {/* 🚀 EKSİKSİZ TEKNİK BİLGİLER */}
                 <div className="p-4 bg-slate-50 border border-slate-200 shadow-sm rounded-xl space-y-3">
                     <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5 mb-2">
-                        <Box size={14} /> Teknik Bilgiler (Sözleşme & Teklif İçin)
+                        <Layers size={14} /> Teknik Bilgiler (Sözleşme & Teklif İçin)
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="text-[10px] font-bold text-slate-500 block mb-1 ml-1">Asansör Tipi/Cinsi</label>
-                            <input 
-                                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500 bg-white transition-all" 
-                                value={newAsset.elevator_type || ''} onChange={(e) => setNewAsset({...newAsset, elevator_type: e.target.value})} 
-                                placeholder="Örn: MRL, Hidrolik" 
-                            />
-                        </div>
                         <div>
                             <label className="text-[10px] font-bold text-slate-500 block mb-1 ml-1">Kapasite</label>
                             <input 
@@ -260,7 +261,7 @@ return (
                                 placeholder="Örn: 1.0 m/sn" 
                             />
                         </div>
-                        <div className="col-span-2 sm:col-span-1">
+                        <div>
                             <label className="text-[10px] font-bold text-slate-500 block mb-1 ml-1">Asansör Adedi</label>
                             <input 
                                 type="number"
@@ -377,7 +378,7 @@ return (
 
             </div>
 
-            <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0">
+            <div className="p-5 border-t border-slate-100 bg-slate-50 shrink-0">
                <button 
                   disabled={isSaving} 
                   onClick={() => {

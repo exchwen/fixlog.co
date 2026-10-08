@@ -399,20 +399,11 @@ export default function AssetDetailModal({
                           </div>
                        </div>
                        
-                       {/* 🚀 EKSİKSİZ TEKNİK BİLGİLER */}
                        <div className="p-4 bg-slate-50 border border-slate-200 shadow-sm rounded-xl space-y-3">
                             <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5 mb-2">
                                 <Layers size={14} /> Teknik Bilgiler (Sözleşme & Teklif İçin)
                             </div>
                             <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="text-[10px] font-bold text-slate-500 block mb-1 ml-1">Asansör Tipi/Cinsi</label>
-                                    <input 
-                                        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:border-blue-500 bg-white transition-all" 
-                                        value={editForm.elevator_type || ''} onChange={(e) => setEditForm({...editForm, elevator_type: e.target.value})} 
-                                        placeholder="Örn: MRL, Hidrolik" 
-                                    />
-                                </div>
                                 <div>
                                     <label className="text-[10px] font-bold text-slate-500 block mb-1 ml-1">Kapasite</label>
                                     <input 
@@ -562,14 +553,9 @@ export default function AssetDetailModal({
                               )}
                           </div>
 
-                          {/* 🚀 EKLENDİ: GÖRÜNÜR TEKNİK BİLGİLER BÖLÜMÜ */}
                           <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5"><Layers size={14}/> Sistem Teknik Özellikleri</div>
                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-3">
-                                <div>
-                                   <div className="text-[10px] font-bold text-slate-400 mb-0.5">Asansör Tipi/Cinsi</div>
-                                   <div className="text-sm font-black text-slate-700">{selectedAsset.elevator_type || '-'}</div>
-                                </div>
                                 <div>
                                    <div className="text-[10px] font-bold text-slate-400 mb-0.5">Kapasite</div>
                                    <div className="text-sm font-black text-slate-700">{selectedAsset.capacity || '-'}</div>
@@ -599,7 +585,7 @@ export default function AssetDetailModal({
                       </motion.div>
                     )}
 
-{activeTab === 'maintenance' && (
+                    {activeTab === 'maintenance' && (
                       <motion.div key="maintenance" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
                           {assetMaintenance.length > 0 ? (
                               <div className="space-y-3 relative before:absolute before:inset-y-0 before:left-[19px] before:w-0.5 before:bg-slate-100">

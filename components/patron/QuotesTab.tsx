@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, Loader2, Trash2, FileText, CheckCircle, Clock, Search, X, Download, User, Box, MessageCircle, LayoutTemplate } from 'lucide-react';
+import { Loader2, Trash2, FileText, CheckCircle, Clock, Search, X, Download, User, Box, MessageCircle, LayoutTemplate, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { useReactToPrint } from 'react-to-print';
@@ -18,7 +18,7 @@ const getAuthToken = () => {
   };
   let token = localStorage.getItem('patron_authToken') || getCookie('patron_authToken');
   if (!token) token = localStorage.getItem('staff_authToken') || getCookie('staff_authToken');
-  return token ? token.replace(/^"|"$/g, '') : '';
+  return token ? token.replace(/^"|"\$/g, '') : '';
 };
 
 export default function QuotesTab({ data }: any) {
@@ -34,16 +34,16 @@ export default function QuotesTab({ data }: any) {
     const [filterType, setFilterType] = useState('Tümü');
     const [filterStatus, setFilterStatus] = useState('Tümü');
 
-    const [printTemplate, setPrintTemplate] = useState<'modern' | 'classic' | 'minimal'>('modern'); 
+    const [printTemplate, setPrintTemplate] = useState<'modern' | 'classic' | 'minimal' | 'corporate' | 'elegant' | 'bold'>('modern'); 
     
     useEffect(() => {
-        const savedTemplate = localStorage.getItem('selectedQuoteTemplate');
-        if (savedTemplate === 'classic' || savedTemplate === 'minimal') {
+        const savedTemplate = localStorage.getItem('selectedQuoteTemplate') as any;
+        if (['modern', 'classic', 'minimal', 'corporate', 'elegant', 'bold'].includes(savedTemplate)) {
             setPrintTemplate(savedTemplate);
         }
     }, []);
 
-    const handleTemplateChange = (tmpl: 'modern' | 'classic' | 'minimal') => {
+    const handleTemplateChange = (tmpl: 'modern' | 'classic' | 'minimal' | 'corporate' | 'elegant' | 'bold') => {
         setPrintTemplate(tmpl);
         localStorage.setItem('selectedQuoteTemplate', tmpl);
     };
@@ -83,17 +83,28 @@ export default function QuotesTab({ data }: any) {
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
         const secureToken = getAuthToken();
 
-        await fetch(`${API_URL}/delete-quote`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${secureToken}`
-            },
-            body: JSON.stringify({ id: quoteToDelete, company_slug: companySlug })
-        });
-        setQuotes(quotes.filter(q => q.id !== quoteToDelete));
-        if (selectedQuote?.id === quoteToDelete) setSelectedQuote(null);
-        setQuoteToDelete(null); 
+        const targetQuote = quotes.find(q => q.id === quoteToDelete);
+        const requestSlug = targetQuote?.company_slug || companySlug;
+
+        try {
+            const res = await fetch(`${API_URL}/delete-quote`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${secureToken}`
+                },
+                body: JSON.stringify({ id: quoteToDelete, company_slug: requestSlug })
+            });
+
+            if (res.ok) {
+                setQuotes(prev => prev.filter(q => q.id !== quoteToDelete));
+                if (selectedQuote?.id === quoteToDelete) setSelectedQuote(null);
+            }
+        } catch (error) {
+            console.error("Silme hatası:", error);
+        } finally {
+            setQuoteToDelete(null); 
+        }
     };
 
     let parsedDetails: any = {};
@@ -119,8 +130,29 @@ export default function QuotesTab({ data }: any) {
             const parts = fullName.split('|');
             return { apt: parts[0].trim(), dev: parts[1].trim() };
         }
+        if (fullName.includes('(')) {
+            const firstParen = fullName.indexOf('(');
+            const apt = fullName.substring(0, firstParen).trim();
+            const dev = fullName.substring(firstParen).trim();
+            return { apt, dev };
+        }
         return { apt: '', dev: fullName };
     };
+
+    useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setShowTemplateModal(false);
+                setQuoteToDelete(null);
+                setSelectedQuote(null);
+            }
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, []);
+
+    const pdfCompanyName = data?.company_name || data?.settings?.company_name || "Firma Adı";
+    const pdfOwnerName = data?.ownerName || data?.settings?.owner_name || "Firma Yetkilisi";
 
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6 min-h-[60vh] relative">
@@ -241,7 +273,7 @@ export default function QuotesTab({ data }: any) {
                 </div>
             )}
 
-            {/* HARİKA ŞABLON ÖNİZLEME MODALI */}
+            {/* HARİKA 6'LI ŞABLON ÖNİZLEME MODALI */}
             <AnimatePresence>
             {showTemplateModal && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
@@ -255,70 +287,139 @@ export default function QuotesTab({ data }: any) {
                             <button onClick={() => setShowTemplateModal(false)} className="p-2 bg-white border border-slate-200 text-slate-500 rounded-xl hover:bg-slate-100 hover:text-slate-700 transition-colors"><X size={20}/></button>
                         </div>
                         <div className="p-6 overflow-y-auto bg-slate-100 flex-1 custom-scrollbar">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 
-                                {/* Modern Preview */}
+                                {/* 1. Modern */}
                                 <div onClick={() => handleTemplateChange('modern')} className={`cursor-pointer rounded-2xl border-4 transition-all bg-white overflow-hidden flex flex-col ${printTemplate === 'modern' ? 'border-blue-500 shadow-xl scale-105' : 'border-transparent shadow-md hover:shadow-lg hover:border-blue-200'}`}>
                                     <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-                                        <span className={`font-black tracking-widest ${printTemplate === 'modern' ? 'text-blue-700' : 'text-slate-600'}`}>MODERN</span>
-                                        {printTemplate === 'modern' && <CheckCircle className="text-blue-500" size={24}/>}
+                                        <span className={`font-black tracking-widest text-xs ${printTemplate === 'modern' ? 'text-blue-700' : 'text-slate-600'}`}>MODERN</span>
+                                        {printTemplate === 'modern' && <CheckCircle className="text-blue-500" size={20}/>}
                                     </div>
                                     <div className="p-6 flex-1 flex justify-center items-center bg-slate-100">
-                                        <div className="w-full max-w-[200px] aspect-[1/1.414] bg-white shadow-sm border border-slate-200 p-4 flex flex-col pointer-events-none">
-                                            <div className="border-b-2 border-blue-900 pb-2 mb-3 flex justify-between">
-                                                <div className="w-8 h-8 bg-blue-100 rounded"></div>
-                                                <div className="w-16 h-2.5 bg-slate-200 mt-2"></div>
+                                        <div className="w-full max-w-[180px] aspect-[1/1.414] bg-white shadow-sm border border-slate-200 p-3 flex flex-col pointer-events-none">
+                                            <div className="border-b border-blue-900 pb-2 mb-2 flex justify-between">
+                                                <div className="w-6 h-6 bg-blue-100 rounded"></div>
+                                                <div className="w-12 h-2 bg-slate-200 mt-1"></div>
                                             </div>
-                                            <div className="flex gap-2 mb-3">
-                                                <div className="flex-1 bg-slate-50 rounded p-2"><div className="w-10 h-1.5 bg-blue-800 mb-1.5"></div><div className="w-full h-1 bg-slate-300 mb-1"></div><div className="w-2/3 h-1 bg-slate-300"></div></div>
-                                                <div className="flex-1 bg-slate-50 rounded p-2"><div className="w-10 h-1.5 bg-blue-800 mb-1.5"></div><div className="w-full h-1 bg-slate-300 mb-1"></div><div className="w-1/2 h-1 bg-slate-300"></div></div>
+                                            <div className="flex gap-2 mb-2">
+                                                <div className="flex-1 bg-slate-50 rounded p-1.5"><div className="w-8 h-1 bg-blue-800 mb-1"></div><div className="w-full h-1 bg-slate-300 mb-1"></div><div className="w-2/3 h-1 bg-slate-300"></div></div>
+                                                <div className="flex-1 bg-slate-50 rounded p-1.5"><div className="w-8 h-1 bg-blue-800 mb-1"></div><div className="w-full h-1 bg-slate-300 mb-1"></div><div className="w-1/2 h-1 bg-slate-300"></div></div>
                                             </div>
-                                            <div className="flex-1 bg-slate-50 rounded p-3 mb-3"><div className="w-full h-1 bg-slate-300 mb-1.5"></div><div className="w-full h-1 bg-slate-300 mb-1.5"></div><div className="w-5/6 h-1 bg-slate-300 mb-1.5"></div><div className="w-4/6 h-1 bg-slate-300"></div></div>
-                                            <div className="flex justify-between mt-auto px-2"><div className="w-12 h-1 bg-slate-400"></div><div className="w-12 h-1 bg-slate-400"></div></div>
+                                            <div className="flex-1 bg-slate-50 rounded p-2 mb-2 space-y-1"><div className="w-full h-1 bg-slate-300"></div><div className="w-full h-1 bg-slate-300"></div><div className="w-5/6 h-1 bg-slate-300"></div></div>
+                                            <div className="flex justify-between mt-auto"><div className="w-10 h-1 bg-slate-400"></div><div className="w-10 h-1 bg-slate-400"></div></div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Classic Preview */}
+                                {/* 2. Classic */}
                                 <div onClick={() => handleTemplateChange('classic')} className={`cursor-pointer rounded-2xl border-4 transition-all bg-white overflow-hidden flex flex-col ${printTemplate === 'classic' ? 'border-amber-500 shadow-xl scale-105' : 'border-transparent shadow-md hover:shadow-lg hover:border-amber-200'}`}>
                                     <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-                                        <span className={`font-black tracking-widest ${printTemplate === 'classic' ? 'text-amber-700' : 'text-slate-600'}`}>KLASİK (RESMİ)</span>
-                                        {printTemplate === 'classic' && <CheckCircle className="text-amber-500" size={24}/>}
+                                        <span className={`font-black tracking-widest text-xs ${printTemplate === 'classic' ? 'text-amber-700' : 'text-slate-600'}`}>KLASİK (RESMİ)</span>
+                                        {printTemplate === 'classic' && <CheckCircle className="text-amber-500" size={20}/>}
                                     </div>
                                     <div className="p-6 flex-1 flex justify-center items-center bg-slate-100">
-                                        <div className="w-full max-w-[200px] aspect-[1/1.414] bg-white shadow-sm border border-slate-200 p-4 flex flex-col font-serif pointer-events-none">
-                                            <div className="border-b-[3px] border-double border-black pb-2 mb-3 flex flex-col items-center justify-center">
-                                                <div className="w-10 h-10 bg-slate-200 rounded-full mb-1"></div>
-                                                <div className="w-20 h-1.5 bg-black"></div>
+                                        <div className="w-full max-w-[180px] aspect-[1/1.414] bg-white shadow-sm border border-slate-200 p-3 flex flex-col font-serif pointer-events-none">
+                                            <div className="border-b-2 border-double border-black pb-2 mb-2 flex flex-col items-center justify-center">
+                                                <div className="w-8 h-8 bg-slate-200 rounded-full mb-1"></div>
+                                                <div className="w-16 h-1 bg-black"></div>
                                             </div>
-                                            <div className="border border-black p-2 mb-3 text-center">
-                                                <div className="w-16 h-1.5 bg-black mx-auto mb-1"></div><div className="w-10 h-1 bg-slate-400 mx-auto"></div>
+                                            <div className="border border-black p-1.5 mb-2 text-center">
+                                                <div className="w-12 h-1 bg-black mx-auto mb-1"></div><div className="w-8 h-1 bg-slate-400 mx-auto"></div>
                                             </div>
-                                            <div className="flex-1 py-1 space-y-1.5">
-                                                <div className="w-full h-1 bg-slate-300"></div><div className="w-full h-1 bg-slate-300"></div><div className="w-full h-1 bg-slate-300"></div><div className="w-3/4 h-1 bg-slate-300"></div>
+                                            <div className="flex-1 py-1 space-y-1">
+                                                <div className="w-full h-0.5 bg-slate-400"></div><div className="w-full h-0.5 bg-slate-400"></div><div className="w-3/4 h-0.5 bg-slate-400"></div>
                                             </div>
-                                            <div className="mt-auto grid grid-cols-2 gap-4"><div className="h-6 border-b border-black"></div><div className="h-6 border-b border-black"></div></div>
+                                            <div className="mt-auto grid grid-cols-2 gap-3"><div className="h-4 border-b border-black"></div><div className="h-4 border-b border-black"></div></div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Minimal Preview */}
+                                {/* 3. Minimal */}
                                 <div onClick={() => handleTemplateChange('minimal')} className={`cursor-pointer rounded-2xl border-4 transition-all bg-white overflow-hidden flex flex-col ${printTemplate === 'minimal' ? 'border-emerald-500 shadow-xl scale-105' : 'border-transparent shadow-md hover:shadow-lg hover:border-emerald-200'}`}>
                                     <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-                                        <span className={`font-black tracking-widest ${printTemplate === 'minimal' ? 'text-emerald-700' : 'text-slate-600'}`}>MİNİMAL</span>
-                                        {printTemplate === 'minimal' && <CheckCircle className="text-emerald-500" size={24}/>}
+                                        <span className={`font-black tracking-widest text-xs ${printTemplate === 'minimal' ? 'text-emerald-700' : 'text-slate-600'}`}>MİNİMAL</span>
+                                        {printTemplate === 'minimal' && <CheckCircle className="text-emerald-500" size={20}/>}
                                     </div>
                                     <div className="p-6 flex-1 flex justify-center items-center bg-slate-100">
-                                        <div className="w-full max-w-[200px] aspect-[1/1.414] bg-white shadow-sm border border-slate-200 p-5 flex flex-col pointer-events-none">
-                                            <div className="mb-5 text-left">
-                                                <div className="w-16 h-2.5 bg-slate-800 mb-1.5"></div><div className="w-10 h-1 bg-slate-400"></div>
+                                        <div className="w-full max-w-[180px] aspect-[1/1.414] bg-white shadow-sm border border-slate-200 p-4 flex flex-col pointer-events-none">
+                                            <div className="mb-4 text-left">
+                                                <div className="w-12 h-2 bg-slate-800 mb-1"></div><div className="w-8 h-1 bg-slate-400"></div>
                                             </div>
-                                            <div className="flex gap-4 mb-4 text-left">
-                                                <div className="flex-1"><div className="w-12 h-1 bg-gray-500 mb-1.5"></div><div className="w-full h-0.5 bg-slate-300"></div></div>
-                                                <div className="flex-1"><div className="w-12 h-1 bg-gray-500 mb-1.5"></div><div className="w-full h-0.5 bg-slate-300"></div></div>
+                                            <div className="flex gap-3 mb-3 text-left">
+                                                <div className="flex-1"><div className="w-10 h-1 bg-gray-500 mb-1"></div><div className="w-full h-0.5 bg-slate-300"></div></div>
+                                                <div className="flex-1"><div className="w-10 h-1 bg-gray-500 mb-1"></div><div className="w-full h-0.5 bg-slate-300"></div></div>
                                             </div>
                                             <div className="flex-1 space-y-1.5"><div className="w-full h-0.5 bg-slate-200"></div><div className="w-full h-0.5 bg-slate-200"></div><div className="w-2/3 h-0.5 bg-slate-200"></div></div>
-                                            <div className="mt-auto flex justify-between text-left"><div className="w-12 h-1 bg-slate-400"></div><div className="w-12 h-1 bg-slate-400"></div></div>
+                                            <div className="mt-auto flex justify-between text-left"><div className="w-10 h-1 bg-slate-400"></div><div className="w-10 h-1 bg-slate-400"></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 4. Corporate */}
+                                <div onClick={() => handleTemplateChange('corporate')} className={`cursor-pointer rounded-2xl border-4 transition-all bg-white overflow-hidden flex flex-col ${printTemplate === 'corporate' ? 'border-indigo-500 shadow-xl scale-105' : 'border-transparent shadow-md hover:shadow-lg hover:border-indigo-200'}`}>
+                                    <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                                        <span className={`font-black tracking-widest text-xs ${printTemplate === 'corporate' ? 'text-indigo-700' : 'text-slate-600'}`}>KURUMSAL (B2B)</span>
+                                        {printTemplate === 'corporate' && <CheckCircle className="text-indigo-500" size={20}/>}
+                                    </div>
+                                    <div className="p-6 flex-1 flex justify-center items-center bg-slate-100">
+                                        <div className="w-full max-w-[180px] aspect-[1/1.414] bg-white shadow-sm border border-slate-200 flex flex-col pointer-events-none overflow-hidden">
+                                            <div className="bg-slate-800 p-3 flex justify-between items-center mb-2">
+                                                <div className="w-6 h-6 bg-slate-600 rounded"></div>
+                                                <div className="w-12 h-1.5 bg-slate-400"></div>
+                                            </div>
+                                            <div className="px-3 flex gap-2 mb-2">
+                                                <div className="flex-1 border border-slate-200 rounded p-1.5"><div className="w-10 h-1 bg-slate-800 mb-1"></div><div className="w-full h-0.5 bg-slate-300 mb-0.5"></div><div className="w-2/3 h-0.5 bg-slate-300"></div></div>
+                                                <div className="flex-1 border border-slate-200 rounded p-1.5"><div className="w-10 h-1 bg-slate-800 mb-1"></div><div className="w-full h-0.5 bg-slate-300 mb-0.5"></div><div className="w-1/2 h-0.5 bg-slate-300"></div></div>
+                                            </div>
+                                            <div className="px-3 flex-1">
+                                                <div className="border border-slate-200 rounded p-2 space-y-1 h-full"><div className="w-full h-1 bg-slate-300"></div><div className="w-full h-1 bg-slate-300"></div><div className="w-4/5 h-1 bg-slate-300"></div></div>
+                                            </div>
+                                            <div className="p-3 border-t border-slate-200 mt-2 flex justify-between"><div className="w-10 h-1 bg-slate-500"></div><div className="w-10 h-1 bg-slate-500"></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 5. Elegant */}
+                                <div onClick={() => handleTemplateChange('elegant')} className={`cursor-pointer rounded-2xl border-4 transition-all bg-white overflow-hidden flex flex-col ${printTemplate === 'elegant' ? 'border-stone-500 shadow-xl scale-105' : 'border-transparent shadow-md hover:shadow-lg hover:border-stone-200'}`}>
+                                    <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                                        <span className={`font-black tracking-widest text-xs ${printTemplate === 'elegant' ? 'text-stone-700' : 'text-slate-600'}`}>ZARİF (VIP)</span>
+                                        {printTemplate === 'elegant' && <CheckCircle className="text-stone-500" size={20}/>}
+                                    </div>
+                                    <div className="p-6 flex-1 flex justify-center items-center bg-slate-100">
+                                        <div className="w-full max-w-[180px] aspect-[1/1.414] bg-white shadow-sm border border-slate-200 p-4 flex flex-col pointer-events-none items-center">
+                                            <div className="w-8 h-8 border border-slate-300 rounded-full mb-2 flex items-center justify-center"><div className="w-4 h-4 bg-slate-200 rounded-full"></div></div>
+                                            <div className="w-20 h-1 bg-slate-800 mb-3"></div>
+                                            <div className="w-full border-t border-slate-200 mb-3"></div>
+                                            <div className="w-full flex gap-4 mb-3">
+                                                <div className="flex-1 text-center"><div className="w-10 h-0.5 bg-slate-400 mx-auto mb-1"></div><div className="w-full h-0.5 bg-slate-200"></div></div>
+                                                <div className="flex-1 text-center"><div className="w-10 h-0.5 bg-slate-400 mx-auto mb-1"></div><div className="w-full h-0.5 bg-slate-200"></div></div>
+                                            </div>
+                                            <div className="w-full flex-1 border-t border-b border-slate-200 py-2 space-y-1.5 flex flex-col items-center">
+                                                <div className="w-full h-0.5 bg-slate-300"></div><div className="w-5/6 h-0.5 bg-slate-300"></div><div className="w-4/6 h-0.5 bg-slate-300"></div>
+                                            </div>
+                                            <div className="w-full flex justify-between mt-3"><div className="w-10 h-0.5 bg-slate-500"></div><div className="w-10 h-0.5 bg-slate-500"></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 6. Bold */}
+                                <div onClick={() => handleTemplateChange('bold')} className={`cursor-pointer rounded-2xl border-4 transition-all bg-white overflow-hidden flex flex-col ${printTemplate === 'bold' ? 'border-red-600 shadow-xl scale-105' : 'border-transparent shadow-md hover:shadow-lg hover:border-red-200'}`}>
+                                    <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                                        <span className={`font-black tracking-widest text-xs ${printTemplate === 'bold' ? 'text-red-700' : 'text-slate-600'}`}>DİNAMİK (ENDÜSTRİ)</span>
+                                        {printTemplate === 'bold' && <CheckCircle className="text-red-600" size={20}/>}
+                                    </div>
+                                    <div className="p-6 flex-1 flex justify-center items-center bg-slate-100">
+                                        <div className="w-full max-w-[180px] aspect-[1/1.414] bg-white shadow-sm border-4 border-black p-3 flex flex-col pointer-events-none">
+                                            <div className="border-b-4 border-black pb-2 mb-2 flex justify-between items-end">
+                                                <div className="w-8 h-8 bg-black"></div>
+                                                <div className="w-16 h-3 bg-black"></div>
+                                            </div>
+                                            <div className="flex gap-2 mb-2">
+                                                <div className="flex-1 border-2 border-black p-1.5"><div className="w-10 h-2 bg-black mb-1"></div><div className="w-full h-1 bg-slate-400"></div></div>
+                                                <div className="flex-1 border-2 border-black p-1.5"><div className="w-10 h-2 bg-black mb-1"></div><div className="w-full h-1 bg-slate-400"></div></div>
+                                            </div>
+                                            <div className="flex-1 border-2 border-black p-2 mb-2 space-y-1.5"><div className="w-full h-1.5 bg-black"></div><div className="w-full h-1.5 bg-black"></div><div className="w-3/4 h-1.5 bg-black"></div></div>
+                                            <div className="flex justify-between border-t-4 border-black pt-2"><div className="w-10 h-1.5 bg-black"></div><div className="w-10 h-1.5 bg-black"></div></div>
                                         </div>
                                     </div>
                                 </div>
@@ -388,6 +489,7 @@ export default function QuotesTab({ data }: any) {
                                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><User size={14}/> Müşteri</div>
                                 <div className="font-black text-slate-800 truncate text-base">{selectedQuote.customer_name}</div>
                                 {selectedQuote.customer_phone && <div className="text-xs font-medium text-slate-500 mt-1">{selectedQuote.customer_phone}</div>}
+                                {parsedDetails.customerTaxInfo && <div className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">TC/Vergi: {parsedDetails.customerTaxInfo}</div>}
                             </div>
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 min-w-0">
                                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><Box size={14}/> İlgili Tesis / Varlık</div>
@@ -415,12 +517,12 @@ export default function QuotesTab({ data }: any) {
                             <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-1.5 px-1">
                                 <LayoutTemplate size={12} /> Çıktı Tasarım Şablonu
                             </div>
-                            <div className="flex gap-2 w-full">
+                            <div className="flex gap-2 w-full flex-col sm:flex-row">
                                 <button onClick={() => setShowTemplateModal(true)} className="flex-1 bg-slate-50 border border-slate-200 hover:border-slate-300 hover:bg-slate-100 rounded-xl py-3 text-xs font-bold text-slate-700 transition-all flex justify-center items-center gap-2">
                                    Şablonu Değiştir / Önizle
                                 </button>
-                                <div className="bg-slate-100 text-slate-500 text-[10px] font-black tracking-widest px-4 rounded-xl flex items-center uppercase">
-                                   Aktif: {printTemplate === 'classic' ? 'KLASİK' : printTemplate === 'minimal' ? 'MİNİMAL' : 'MODERN'}
+                                <div className="bg-slate-100 text-slate-500 text-[10px] font-black tracking-widest px-4 py-3 sm:py-0 rounded-xl flex items-center justify-center uppercase">
+                                   Aktif: {printTemplate.toUpperCase()}
                                 </div>
                             </div>
                         </div>
@@ -429,7 +531,7 @@ export default function QuotesTab({ data }: any) {
                     <div className="p-4 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0 space-y-3">
                         {selectedQuote.public_token && selectedQuote.status !== 'Müşteri Onayladı' && (
                             <a 
-                                href={`https://wa.me/?text=${encodeURIComponent(`Merhaba \${selectedQuote.customer_name},\n\nSizin için hazırladığımız \${selectedQuote.quote_type} belgemize aşağıdaki bağlantıdan ulaşıp, online olarak inceleyebilir ve imzalayabilirsiniz:\n\n\${typeof window !== 'undefined' ? window.location.origin : ''}/teklif/${selectedQuote.public_token}\n\nSaygılarımızla, ${data?.settings?.company_name || 'Fixlog'}`)}`}
+                                href={`https://wa.me/?text=${encodeURIComponent(`Merhaba \${selectedQuote.customer_name},\n\nSizin için hazırladığımız \${selectedQuote.quote_type} belgemize aşağıdaki bağlantıdan ulaşıp, online olarak inceleyebilir ve imzalayabilirsiniz:\n\n\${typeof window !== 'undefined' ? window.location.origin : ''}/teklif/${selectedQuote.public_token}\n\nSaygılarımızla, ${pdfCompanyName}`)}`}
                                 target="_blank" rel="noopener noreferrer"
                                 className="w-full bg-[#25D366] text-white font-bold text-sm py-3.5 sm:py-4 rounded-xl shadow-md hover:bg-[#20bd5a] transition-all active:scale-95 flex items-center justify-center gap-2"
                             >
@@ -451,60 +553,93 @@ export default function QuotesTab({ data }: any) {
               )}
             </AnimatePresence>
 
-            {/* 🚀 GİZLİ YAZDIRMA ŞABLONU */}
+            {/* 🚀 GİZLİ YAZDIRMA ŞABLONU (6 FARKLI STİL İÇERİR) */}
             <div style={{ display: "none" }}>
                 {selectedQuote && (
                 <div 
                     ref={printRef} 
-                    className={`p-10 bg-white max-w-3xl mx-auto 
+                    className={`p-6 bg-white max-w-3xl mx-auto text-[11px] leading-relaxed
                         ${printTemplate === 'classic' ? 'font-serif text-black' : 
                           printTemplate === 'minimal' ? 'font-mono text-gray-800' : 
+                          printTemplate === 'corporate' ? 'font-sans text-slate-800' :
+                          printTemplate === 'elegant' ? 'font-serif text-slate-700' :
+                          printTemplate === 'bold' ? 'font-sans text-black border-8 border-black' :
                           'font-sans text-slate-900'}
                     `}
                 >
-                  <div className={`flex justify-between items-center pb-6 mb-8 
+                  <div className={`flex justify-between ${printTemplate === 'bold' ? 'items-end' : 'items-center'} pb-4 mb-4 
                       ${printTemplate === 'classic' ? 'border-b-4 border-double border-black' : 
                         printTemplate === 'modern' ? 'border-b-2 border-slate-900' : 
+                        printTemplate === 'corporate' ? 'bg-slate-900 text-white p-6 rounded-t-xl mb-6' : 
+                        printTemplate === 'elegant' ? 'flex-col justify-center border-b border-slate-300 pb-6 mb-6' : 
+                        printTemplate === 'bold' ? 'border-b-8 border-black pb-4 mb-6' : 
                         'border-b border-gray-200'}
                   `}>
-                    <div className="flex items-center gap-4">
-                      {data?.settings?.company_logo && <img src={data.settings.company_logo} alt="Logo" className="w-20 h-20 object-contain" />}
+                    <div className={`flex items-center gap-4 ${printTemplate === 'elegant' ? 'flex-col text-center' : ''}`}>
+                      {data?.settings?.company_logo && <img src={data.settings.company_logo} alt="Logo" className="w-16 h-16 object-contain" />}
                       <div>
-                        <h1 className={`text-4xl ${printTemplate === 'minimal' ? 'font-light tracking-widest' : 'font-black'}`}>
-                            {data?.settings?.company_name || "Firma Adı"}
+                        <h1 className={`text-3xl ${printTemplate === 'minimal' ? 'font-light tracking-widest' : printTemplate === 'elegant' ? 'font-normal tracking-widest uppercase' : 'font-black'}`}>
+                            {pdfCompanyName}
                         </h1>
-                        <p className={`text-base mt-2 ${printTemplate === 'classic' ? 'font-bold uppercase tracking-widest' : 'font-medium'}`}>
+                        <p className={`text-sm mt-1 ${printTemplate === 'classic' ? 'font-bold uppercase tracking-widest' : printTemplate === 'elegant' ? 'italic text-slate-500' : 'font-medium'}`}>
                             {selectedQuote.quote_type}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right text-sm leading-relaxed">
+                    <div className={`${printTemplate === 'elegant' ? 'text-center w-full mt-4 flex justify-between text-slate-400' : 'text-right'} text-xs`}>
                       <p><strong>Tarih:</strong> {new Date(selectedQuote.created_at).toLocaleDateString('tr-TR')}</p>
-                      <p><strong>Durum:</strong> {selectedQuote.status}</p>
+                      {printTemplate !== 'elegant' && <p><strong>Durum:</strong> {selectedQuote.status}</p>}
                     </div>
                   </div>
                   
-                  <div className="mb-8 grid grid-cols-2 gap-8 text-sm">
-                    <div className={`${printTemplate === 'classic' ? 'p-5 border border-black' : printTemplate === 'modern' ? 'p-5 bg-slate-50 rounded-2xl' : ''}`}>
-                      <h3 className={`mb-4 pb-2 ${printTemplate === 'classic' ? 'font-bold border-b border-black uppercase' : printTemplate === 'minimal' ? 'font-semibold text-gray-400 uppercase tracking-widest text-xs' : 'font-bold border-b border-slate-200 text-blue-800'}`}>Müşteri Bilgileri</h3>
-                      <div className="space-y-2">
+                  <div className={`mb-4 grid grid-cols-2 gap-6 text-xs ${printTemplate === 'corporate' ? 'px-2' : ''}`}>
+                    <div className={`
+                        ${printTemplate === 'classic' ? 'p-4 border border-black' : 
+                          printTemplate === 'modern' ? 'p-4 bg-slate-50 rounded-2xl' : 
+                          printTemplate === 'corporate' ? 'p-4 border border-slate-300 rounded-lg bg-slate-50' : 
+                          printTemplate === 'bold' ? 'p-4 border-4 border-black' : 
+                          printTemplate === 'elegant' ? 'px-2 py-4' : ''}
+                    `}>
+                      <h3 className={`mb-3 pb-1.5 
+                          ${printTemplate === 'classic' ? 'font-bold border-b border-black uppercase text-[11px]' : 
+                            printTemplate === 'minimal' ? 'font-semibold text-gray-400 uppercase tracking-widest text-[10px]' : 
+                            printTemplate === 'corporate' ? 'font-black text-slate-800 uppercase text-[11px] border-b-2 border-slate-200' : 
+                            printTemplate === 'elegant' ? 'font-bold text-slate-900 uppercase tracking-[0.2em] text-[10px] border-b border-slate-200' : 
+                            printTemplate === 'bold' ? 'font-black text-white bg-black inline-block px-2 py-1 uppercase text-[11px]' : 
+                            'font-bold border-b border-slate-200 text-blue-800 text-[11px]'}
+                      `}>Müşteri Bilgileri</h3>
+                      <div className="space-y-1.5">
                         <p><strong>İsim:</strong> {selectedQuote.customer_name}</p>
                         {selectedQuote.customer_phone && <p><strong>Telefon:</strong> {selectedQuote.customer_phone}</p>}
+                        {parsedDetails.customerTaxInfo && <p><strong>TC/Vergi No:</strong> {parsedDetails.customerTaxInfo}</p>}
                       </div>
                     </div>
                     
-                    <div className={`${printTemplate === 'classic' ? 'p-5 border border-black' : printTemplate === 'modern' ? 'p-5 bg-slate-50 rounded-2xl' : ''}`}>
-                      <h3 className={`mb-4 pb-2 ${printTemplate === 'classic' ? 'font-bold border-b border-black uppercase' : printTemplate === 'minimal' ? 'font-semibold text-gray-400 uppercase tracking-widest text-xs' : 'font-bold border-b border-slate-200 text-blue-800'}`}>Sistem Teknik Bilgileri</h3>
-                      <div className="space-y-2">
+                    <div className={`
+                        ${printTemplate === 'classic' ? 'p-4 border border-black' : 
+                          printTemplate === 'modern' ? 'p-4 bg-slate-50 rounded-2xl' : 
+                          printTemplate === 'corporate' ? 'p-4 border border-slate-300 rounded-lg bg-slate-50' : 
+                          printTemplate === 'bold' ? 'p-4 border-4 border-black' : 
+                          printTemplate === 'elegant' ? 'px-2 py-4' : ''}
+                    `}>
+                      <h3 className={`mb-3 pb-1.5 
+                          ${printTemplate === 'classic' ? 'font-bold border-b border-black uppercase text-[11px]' : 
+                            printTemplate === 'minimal' ? 'font-semibold text-gray-400 uppercase tracking-widest text-[10px]' : 
+                            printTemplate === 'corporate' ? 'font-black text-slate-800 uppercase text-[11px] border-b-2 border-slate-200' : 
+                            printTemplate === 'elegant' ? 'font-bold text-slate-900 uppercase tracking-[0.2em] text-[10px] border-b border-slate-200' : 
+                            printTemplate === 'bold' ? 'font-black text-white bg-black inline-block px-2 py-1 uppercase text-[11px]' : 
+                            'font-bold border-b border-slate-200 text-blue-800 text-[11px]'}
+                      `}>Sistem Teknik Bilgileri</h3>
+                      <div className="space-y-1.5">
                         <p><strong>Bina/Varlık:</strong> {renderAssetName(selectedQuote.asset_name).apt || renderAssetName(selectedQuote.asset_name).dev}</p>
-                        {parsedDetails.elevatorType && <p><strong>Asansör Tipi/Cinsi:</strong> {parsedDetails.elevatorType}</p>}
+                        {parsedDetails.assetLocation && <p><strong>Adres/Konum:</strong> {parsedDetails.assetLocation}</p>}
                         {parsedDetails.capacity && <p><strong>Kapasite:</strong> {parsedDetails.capacity}</p>}
                         {parsedDetails.stopsCount && <p><strong>Durak Sayısı:</strong> {parsedDetails.stopsCount}</p>}
                         {parsedDetails.elevatorSpeed && <p><strong>Hızı:</strong> {parsedDetails.elevatorSpeed}</p>}
                         {parsedDetails.elevatorCount && <p><strong>Asansör Adedi:</strong> {parsedDetails.elevatorCount}</p>}
                         
                         {selectedQuote.quote_type === 'Bakım Sözleşmesi' && (
-                            <div className="pt-2 mt-2 border-t border-dashed border-gray-300 space-y-2">
+                            <div className={`pt-1.5 mt-1.5 space-y-1.5 ${printTemplate === 'bold' ? 'border-t-4 border-black' : 'border-t border-dashed border-gray-300'}`}>
                                 {parsedDetails.monthlyFee && <p><strong>Aylık Bakım Bedeli:</strong> {parsedDetails.monthlyFee}</p>}
                                 {(parsedDetails.startDate || parsedDetails.endDate) && (
                                     <p><strong>Sözleşme Süresi:</strong> {parsedDetails.startDate ? new Date(parsedDetails.startDate).toLocaleDateString('tr-TR') : '-'} / {parsedDetails.endDate ? new Date(parsedDetails.endDate).toLocaleDateString('tr-TR') : '-'}</p>
@@ -515,23 +650,48 @@ export default function QuotesTab({ data }: any) {
                     </div>
                   </div>
                   
-                  <div className={`mb-16 ${printTemplate === 'modern' ? 'bg-slate-50 p-8 rounded-2xl' : ''}`}>
-                    <h3 className={`mb-6 pb-2 ${printTemplate === 'classic' ? 'font-bold border-b-2 border-black uppercase text-center text-lg' : printTemplate === 'minimal' ? 'font-semibold text-gray-400 uppercase tracking-widest text-xs' : 'font-black border-b border-slate-200 text-blue-800 text-lg'}`}>
+                  <div className={`mb-6 
+                      ${printTemplate === 'modern' ? 'bg-slate-50 p-6 rounded-2xl' : 
+                        printTemplate === 'corporate' ? 'border border-slate-300 rounded-lg p-6 mx-2' : 
+                        printTemplate === 'elegant' ? 'border-t border-b border-slate-200 py-6 my-6' : 
+                        printTemplate === 'bold' ? 'border-4 border-black p-6' : ''}
+                  `}>
+                    <h3 className={`mb-4 pb-1.5 
+                        ${printTemplate === 'classic' ? 'font-bold border-b-2 border-black uppercase text-center text-sm' : 
+                          printTemplate === 'minimal' ? 'font-semibold text-gray-400 uppercase tracking-widest text-[10px]' : 
+                          printTemplate === 'corporate' ? 'font-black text-slate-800 uppercase text-sm border-b-2 border-slate-200' : 
+                          printTemplate === 'elegant' ? 'font-bold text-slate-900 uppercase tracking-[0.2em] text-[11px] text-center' : 
+                          printTemplate === 'bold' ? 'font-black text-white bg-black inline-block px-3 py-1 uppercase text-sm' : 
+                          'font-black border-b border-slate-200 text-blue-800 text-sm'}
+                    `}>
                         {selectedQuote.quote_type === 'Bakım Sözleşmesi' ? 'Asansör Bakım ile İlgili Hususlar' : 'İşlem Detayları'}
                     </h3>
-                    <div className={`text-[13px] whitespace-pre-wrap leading-[1.8] ${printTemplate === 'classic' ? 'text-justify' : ''}`}>
+                    <div className={`text-[10px] whitespace-pre-wrap leading-[1.6] ${printTemplate === 'classic' ? 'text-justify' : ''}`}>
                         {selectedQuote.quote_type === 'Bakım Sözleşmesi' ? parsedDetails.maintenanceContract : (selectedQuote.quote_type === 'Revizyon Teklifi' ? parsedDetails.revisionDetails : 'Montaj detayları ektedir.')}
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-12 mt-20 pt-8 border-t-2 border-black text-center">
+                  <div className={`grid grid-cols-2 gap-12 mt-8 pt-6 text-center break-inside-avoid
+                      ${printTemplate === 'corporate' ? 'border-t-2 border-slate-300 mx-2' : 
+                        printTemplate === 'elegant' ? 'border-t border-slate-300 mt-12 pt-8' : 
+                        printTemplate === 'bold' ? 'border-t-8 border-black pt-8' : 
+                        'border-t-2 border-black'}
+                  `}>
                     <div>
-                      <p className="font-bold mb-24 uppercase tracking-widest text-sm">Yüklenici Firma Onayı<br/><span className={`font-normal text-xs normal-case mt-2 block ${printTemplate === 'minimal' ? 'italic text-gray-500' : ''}`}>{data?.ownerName || data?.settings?.owner_name || ""}</span></p>
-                      {parsedDetails.employerSignature && <img src={parsedDetails.employerSignature} className="mx-auto h-24 object-contain mix-blend-multiply grayscale" />}
+                      <p className="font-bold mb-12 uppercase tracking-widest text-xs">
+                          Yüklenici Firma Onayı<br/>
+                          <span className="font-black text-[11px] uppercase block mt-2 leading-tight">{pdfCompanyName}</span>
+                          <span className={`font-medium text-[10px] normal-case mt-0.5 block ${printTemplate === 'minimal' || printTemplate === 'elegant' ? 'italic text-gray-500' : ''}`}>{pdfOwnerName}</span>
+                      </p>
+                      {parsedDetails.employerSignature && <img src={parsedDetails.employerSignature} className="mx-auto h-20 object-contain mix-blend-multiply grayscale" />}
                     </div>
                     <div>
-                      <p className="font-bold mb-24 uppercase tracking-widest text-sm">Müşteri Onayı<br/><span className={`font-normal text-xs normal-case mt-2 block ${printTemplate === 'minimal' ? 'italic text-gray-500' : ''}`}>{selectedQuote.customer_name}</span></p>
-                      {parsedDetails.customerSignature ? <img src={parsedDetails.customerSignature} className="mx-auto h-24 object-contain mix-blend-multiply grayscale" /> : <div className="text-gray-400 italic text-sm">Elektronik İmza Bekleniyor</div>}
+                      <p className="font-bold mb-12 uppercase tracking-widest text-xs">
+                          Müşteri Onayı<br/>
+                          <span className="font-black text-[11px] uppercase block mt-2 leading-tight opacity-0">_</span>
+                          <span className={`font-medium text-[10px] normal-case mt-0.5 block ${printTemplate === 'minimal' || printTemplate === 'elegant' ? 'italic text-gray-500' : ''}`}>{selectedQuote.customer_name}</span>
+                      </p>
+                      {parsedDetails.customerSignature ? <img src={parsedDetails.customerSignature} className="mx-auto h-20 object-contain mix-blend-multiply grayscale" /> : <div className="text-gray-400 italic text-[10px]">Elektronik İmza Bekleniyor</div>}
                     </div>
                   </div>
                 </div>
