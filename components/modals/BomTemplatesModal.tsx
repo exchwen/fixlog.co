@@ -12,8 +12,13 @@ export default function BomTemplatesModal({ data, onClose }: any) {
     
     const companySlug = data?.slug || data?.company_slug;
 
+    // Worker'ın kapısından geçmek için token'ı alıyoruz
+    const getToken = () => typeof window !== 'undefined' ? localStorage.getItem('token') || '' : '';
+
     useEffect(() => {
-        fetch('/get-bom-templates?slug=' + companySlug)
+        fetch('/get-bom-templates?slug=' + companySlug, {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        })
             .then(res => res.json())
             .then(res => { if(res.success) setTemplates(res.data); setLoading(false); })
             .catch(() => setLoading(false));
@@ -21,7 +26,9 @@ export default function BomTemplatesModal({ data, onClose }: any) {
 
     const refreshData = async () => {
         try {
-            const res = await fetch('/get-bom-templates?slug=' + companySlug);
+            const res = await fetch('/get-bom-templates?slug=' + companySlug, {
+                headers: { 'Authorization': `Bearer ${getToken()}` }
+            });
             const r = await res.json();
             if(r.success) setTemplates(r.data);
         } catch(e) {}
@@ -34,14 +41,14 @@ export default function BomTemplatesModal({ data, onClose }: any) {
         const endpoint = editing?.id ? '/update-bom-template' : '/add-bom-template';
         
         const itemsString = typeof items === 'string' ? items : JSON.stringify(items);
-        // Hem slug hem de db sütun adı olan company_slug eklenerek worker'ın işi garantiye alınıyor.
-        const payload = { id, slug: companySlug, company_slug: companySlug, name, description: desc, items: itemsString };
+        const payload = { id, slug: companySlug, name, description: desc, items: itemsString };
         
         try {
             const response = await fetch(endpoint, { 
                 method: 'POST', 
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getToken()}` // Kimlik eklendi
                 },
                 body: JSON.stringify(payload) 
             });
@@ -64,7 +71,8 @@ export default function BomTemplatesModal({ data, onClose }: any) {
             const response = await fetch('/delete-bom-template', { 
                 method: 'POST', 
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getToken()}` // Kimlik eklendi
                 },
                 body: JSON.stringify({ id, slug: companySlug }) 
             });
@@ -90,7 +98,8 @@ export default function BomTemplatesModal({ data, onClose }: any) {
             const response = await fetch('/add-bom-template', { 
                 method: 'POST', 
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getToken()}` // Kimlik eklendi
                 },
                 body: JSON.stringify(payload) 
             });
