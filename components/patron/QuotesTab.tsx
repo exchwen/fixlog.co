@@ -18,7 +18,7 @@ const getAuthToken = () => {
   };
   let token = localStorage.getItem('patron_authToken') || getCookie('patron_authToken');
   if (!token) token = localStorage.getItem('staff_authToken') || getCookie('staff_authToken');
-  return token ? token.replace(/^"|"\$/g, '') : '';
+  return token ? token.replace(/^"|"$/g, '') : '';
 };
 
 export default function QuotesTab({ data }: any) {
@@ -531,7 +531,7 @@ export default function QuotesTab({ data }: any) {
                     <div className="p-4 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0 space-y-3">
                         {selectedQuote.public_token && selectedQuote.status !== 'Müşteri Onayladı' && (
                             <a 
-                                href={`https://wa.me/?text=${encodeURIComponent(`Merhaba ${selectedQuote.customer_name},\n\nSizin için hazırladığımız ${selectedQuote.quote_type} belgemize aşağıdaki bağlantıdan ulaşıp, online olarak inceleyebilir ve imzalayabilirsiniz:\n\n${typeof window !== 'undefined' ? window.location.origin : ''}/teklif/${selectedQuote.public_token}\n\nSaygılarımızla, ${data?.settings?.company_name || 'Fixlog'}`)}`}
+                                href={`https://wa.me/?text=${encodeURIComponent(`Merhaba \${selectedQuote.customer_name},\n\nSizin için hazırladığımız \${selectedQuote.quote_type} belgemize aşağıdaki bağlantıdan ulaşıp, online olarak inceleyebilir ve imzalayabilirsiniz:\n\n\${typeof window !== 'undefined' ? window.location.origin : ''}/teklif/${selectedQuote.public_token}\n\nSaygılarımızla, ${data?.settings?.company_name || 'Fixlog'}`)}`}
                                 target="_blank" rel="noopener noreferrer"
                                 className="w-full bg-[#25D366] text-white font-bold text-sm py-3.5 sm:py-4 rounded-xl shadow-md hover:bg-[#20bd5a] transition-all active:scale-95 flex items-center justify-center gap-2"
                             >
@@ -686,7 +686,9 @@ export default function QuotesTab({ data }: any) {
                       <div className="mb-4">
                          <div className="font-bold uppercase tracking-widest text-xs mb-3">Yüklenici Firma Onayı</div>
                          <div className="font-black text-xs uppercase leading-tight">{pdfCompanyName}</div>
-                         <div className={`font-semibold text-[11px] mt-1 ${printTemplate === 'minimal' || printTemplate === 'elegant' ? 'italic text-gray-500' : 'text-slate-600'}`}>{pdfOwnerName}</div>
+                         <div className={`font-semibold text-[11px] mt-1 ${printTemplate === 'minimal' || printTemplate === 'elegant' ? 'italic text-gray-500' : 'text-slate-600'}`}>
+                             {data?.ownerName || data?.owner_name || data?.settings?.owner_name || ""}
+                         </div>
                       </div>
                       <div className="h-20 flex items-center justify-center">
                          {parsedDetails.employerSignature && <img src={parsedDetails.employerSignature} className="max-h-full object-contain mix-blend-multiply grayscale" />}
@@ -695,8 +697,10 @@ export default function QuotesTab({ data }: any) {
                     <div className="flex flex-col items-center justify-between">
                       <div className="mb-4">
                          <div className="font-bold uppercase tracking-widest text-xs mb-3">Müşteri Onayı</div>
-                         <div className="font-black text-xs uppercase leading-tight opacity-0 select-none">_</div>
-                         <div className={`font-bold text-xs mt-1 ${printTemplate === 'minimal' || printTemplate === 'elegant' ? 'italic text-gray-700' : 'text-slate-800'}`}>{selectedQuote.customer_name}</div>
+                         <div className="font-black text-xs uppercase leading-tight">{renderAssetName(selectedQuote.asset_name).apt || renderAssetName(selectedQuote.asset_name).dev || ""}</div>
+                         <div className={`font-semibold text-[11px] mt-1 ${printTemplate === 'minimal' || printTemplate === 'elegant' ? 'italic text-gray-700' : 'text-slate-800'}`}>
+                             {selectedQuote.customer_name}
+                         </div>
                       </div>
                       <div className="h-20 flex items-center justify-center">
                          {parsedDetails.customerSignature ? <img src={parsedDetails.customerSignature} className="max-h-full object-contain mix-blend-multiply grayscale" /> : <div className="text-gray-400 italic text-[10px] mt-2">Elektronik İmza Bekleniyor</div>}

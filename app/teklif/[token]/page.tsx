@@ -442,7 +442,7 @@ export default function CustomerQuotePage() {
                       <div className="mb-4">
                           <div className="font-bold uppercase tracking-widest text-sm mb-3">Yüklenici Firma Onayı</div>
                           <div className="font-black text-sm uppercase leading-tight">{companyData?.company_name || ""}</div>
-                          <div className="font-semibold text-xs mt-1 text-slate-600">{companyData?.owner_name || companyData?.settings?.owner_name || "Firma Yetkilisi"}</div>
+                          <div className="font-semibold text-xs mt-1 text-slate-600">{companyData?.ownerName || companyData?.owner_name || companyData?.settings?.owner_name || ""}</div>
                       </div>
                       <div className="h-24 flex items-center justify-center">
                           {parsedDetails.employerSignature && <img src={parsedDetails.employerSignature} className="max-h-full object-contain mix-blend-multiply grayscale" />}
@@ -451,8 +451,8 @@ export default function CustomerQuotePage() {
                     <div className="flex flex-col items-center justify-between">
                       <div className="mb-4">
                           <div className="font-bold uppercase tracking-widest text-sm mb-3">Müşteri Onayı</div>
-                          <div className="font-black text-sm uppercase leading-tight opacity-0 select-none">_</div>
-                          <div className="font-bold text-sm mt-1 text-slate-800">{quoteData.customer_name}</div>
+                          <div className="font-black text-sm uppercase leading-tight">{splitAsset.apt || splitAsset.dev || ""}</div>
+                          <div className="font-semibold text-xs mt-1 text-slate-800">{quoteData.customer_name}</div>
                       </div>
                       <div className="h-24 flex items-center justify-center">
                           {(signatureImage || parsedDetails.customerSignature) ? <img src={signatureImage || parsedDetails.customerSignature} className="max-h-full object-contain mix-blend-multiply grayscale" /> : <div className="text-gray-400 italic text-sm mt-2">Elektronik İmza Bekleniyor</div>}
