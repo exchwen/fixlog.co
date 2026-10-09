@@ -438,21 +438,25 @@ export default function CustomerQuotePage() {
                   </div>
                   
                   <div className="grid grid-cols-2 gap-12 mt-12 pt-8 border-t-2 border-black text-center break-inside-avoid">
-                    <div>
-                      <p className="font-bold mb-6 uppercase tracking-widest text-sm">
-                          Yüklenici Firma Onayı<br/>
-                          <span className="font-black text-xs uppercase mt-2 block leading-tight">{companyData?.company_name || ""}</span>
-                          <span className="font-normal text-[11px] normal-case mt-0.5 block">{companyData?.owner_name || ""}</span>
-                      </p>
-                      {parsedDetails.employerSignature && <img src={parsedDetails.employerSignature} className="mx-auto h-24 object-contain mix-blend-multiply grayscale" />}
+                    <div className="flex flex-col items-center justify-between">
+                      <div className="mb-4">
+                          <div className="font-bold uppercase tracking-widest text-sm mb-3">Yüklenici Firma Onayı</div>
+                          <div className="font-black text-sm uppercase leading-tight">{companyData?.company_name || ""}</div>
+                          <div className="font-semibold text-xs mt-1 text-slate-600">{companyData?.owner_name || companyData?.settings?.owner_name || "Firma Yetkilisi"}</div>
+                      </div>
+                      <div className="h-24 flex items-center justify-center">
+                          {parsedDetails.employerSignature && <img src={parsedDetails.employerSignature} className="max-h-full object-contain mix-blend-multiply grayscale" />}
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold mb-6 uppercase tracking-widest text-sm">
-                          Müşteri Onayı<br/>
-                          <span className="font-black text-xs uppercase mt-2 block leading-tight opacity-0">_</span>
-                          <span className="font-normal text-[11px] normal-case mt-0.5 block">{quoteData.customer_name}</span>
-                      </p>
-                      {(signatureImage || parsedDetails.customerSignature) ? <img src={signatureImage || parsedDetails.customerSignature} className="mx-auto h-24 object-contain mix-blend-multiply grayscale" /> : <div className="text-gray-400 italic text-sm mt-8">Elektronik İmza Bekleniyor</div>}
+                    <div className="flex flex-col items-center justify-between">
+                      <div className="mb-4">
+                          <div className="font-bold uppercase tracking-widest text-sm mb-3">Müşteri Onayı</div>
+                          <div className="font-black text-sm uppercase leading-tight opacity-0 select-none">_</div>
+                          <div className="font-bold text-sm mt-1 text-slate-800">{quoteData.customer_name}</div>
+                      </div>
+                      <div className="h-24 flex items-center justify-center">
+                          {(signatureImage || parsedDetails.customerSignature) ? <img src={signatureImage || parsedDetails.customerSignature} className="max-h-full object-contain mix-blend-multiply grayscale" /> : <div className="text-gray-400 italic text-sm mt-2">Elektronik İmza Bekleniyor</div>}
+                      </div>
                     </div>
                   </div>
                 </div>

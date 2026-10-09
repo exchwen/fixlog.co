@@ -682,21 +682,25 @@ export default function QuotesTab({ data }: any) {
                         printTemplate === 'bold' ? 'border-t-8 border-black pt-8' : 
                         'border-t-2 border-black'}
                   `}>
-                    <div>
-                      <p className="font-bold mb-6 uppercase tracking-widest text-xs">
-                          Yüklenici Firma Onayı<br/>
-                          <span className="font-black text-[11px] uppercase block mt-2 leading-tight">{pdfCompanyName}</span>
-                          <span className={`font-medium text-[10px] normal-case mt-0.5 block ${printTemplate === 'minimal' || printTemplate === 'elegant' ? 'italic text-gray-500' : ''}`}>{pdfOwnerName}</span>
-                      </p>
-                      {parsedDetails.employerSignature && <img src={parsedDetails.employerSignature} className="mx-auto h-20 object-contain mix-blend-multiply grayscale" />}
+                    <div className="flex flex-col items-center justify-between">
+                      <div className="mb-4">
+                         <div className="font-bold uppercase tracking-widest text-xs mb-3">Yüklenici Firma Onayı</div>
+                         <div className="font-black text-xs uppercase leading-tight">{pdfCompanyName}</div>
+                         <div className={`font-semibold text-[11px] mt-1 ${printTemplate === 'minimal' || printTemplate === 'elegant' ? 'italic text-gray-500' : 'text-slate-600'}`}>{pdfOwnerName}</div>
+                      </div>
+                      <div className="h-20 flex items-center justify-center">
+                         {parsedDetails.employerSignature && <img src={parsedDetails.employerSignature} className="max-h-full object-contain mix-blend-multiply grayscale" />}
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold mb-6 uppercase tracking-widest text-xs">
-                          Müşteri Onayı<br/>
-                          <span className="font-black text-[11px] uppercase block mt-2 leading-tight opacity-0">_</span>
-                          <span className={`font-medium text-[10px] normal-case mt-0.5 block ${printTemplate === 'minimal' || printTemplate === 'elegant' ? 'italic text-gray-500' : ''}`}>{selectedQuote.customer_name}</span>
-                      </p>
-                      {parsedDetails.customerSignature ? <img src={parsedDetails.customerSignature} className="mx-auto h-20 object-contain mix-blend-multiply grayscale" /> : <div className="text-gray-400 italic text-[10px]">Elektronik İmza Bekleniyor</div>}
+                    <div className="flex flex-col items-center justify-between">
+                      <div className="mb-4">
+                         <div className="font-bold uppercase tracking-widest text-xs mb-3">Müşteri Onayı</div>
+                         <div className="font-black text-xs uppercase leading-tight opacity-0 select-none">_</div>
+                         <div className={`font-bold text-xs mt-1 ${printTemplate === 'minimal' || printTemplate === 'elegant' ? 'italic text-gray-700' : 'text-slate-800'}`}>{selectedQuote.customer_name}</div>
+                      </div>
+                      <div className="h-20 flex items-center justify-center">
+                         {parsedDetails.customerSignature ? <img src={parsedDetails.customerSignature} className="max-h-full object-contain mix-blend-multiply grayscale" /> : <div className="text-gray-400 italic text-[10px] mt-2">Elektronik İmza Bekleniyor</div>}
+                      </div>
                     </div>
                   </div>
                 </div>
