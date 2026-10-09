@@ -459,7 +459,7 @@ export default function QuotesTab({ data }: any) {
 
             {showQuoteModal && <QuoteModal showQuoteModal={showQuoteModal} setShowQuoteModal={setShowQuoteModal} data={data} setActiveTab={(tab: string) => { if(typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('navTab', { detail: tab })) }} />}
         
-            {/* TEKLİF DETAY MODALI */}
+            {/* TEKLİF DETAY MODALI 1 */}
             <AnimatePresence>
               {selectedQuote && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
