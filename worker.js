@@ -266,7 +266,7 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
           const clonedReq = request.clone();
           try {
             const body = await clonedReq.json();
-            requestSlug = body.slug;
+            requestSlug = body.slug || body.company_slug;
           } catch (e) {
           }
         }
@@ -2624,6 +2624,99 @@ Otomatik olarak size atand\u0131!`,
           JSON.stringify({ success: true }),
           { headers: corsHeaders }
         );
+      }
+
+      const purchaseOrderRoles = ["Masterboss", "Patron", "Y\u00f6netici"];
+      const purchaseOrderError = (message, status = 400) => new Response(
+        JSON.stringify({ success: false, error: message }),
+        { status, headers: corsHeaders }
+      );
+      const normalizePurchaseItems = (rawItems) => {
+        let parsed = rawItems;
+        if (typeof parsed === "string") {
+          try { parsed = JSON.parse(parsed); } catch { return null; }
+        }
+        if (!Array.isArray(parsed) || parsed.length === 0) return null;
+        const items = parsed.map((item) => ({
+          stock_id: String(item?.stock_id ?? "").trim(),
+          ordered_quantity: Number(item?.ordered_quantity ?? item?.quantity),
+          received_quantity: Number(item?.received_quantity || 0),
+          unit_price: Number(item?.unit_price || 0)
+        }));
+        if (items.some((item) => !item.stock_id || !Number.isFinite(item.ordered_quantity) || item.ordered_quantity <= 0 || !Number.isFinite(item.received_quantity) || item.received_quantity < 0 || item.received_quantity > item.ordered_quantity || !Number.isFinite(item.unit_price) || item.unit_price < 0)) return null;
+        return items;
+      };
+      const purchaseOrderValue = (items) => items.reduce((sum, item) => sum + item.ordered_quantity * item.unit_price, 0);
+      const purchaseOrderStatus = (items) => {
+        const ordered = items.reduce((sum, item) => sum + item.ordered_quantity, 0);
+        const received = items.reduce((sum, item) => sum + item.received_quantity, 0);
+        if (received <= 0) return "Bekliyor";
+        if (received >= ordered) return "Tamamland\u0131";
+        return "K\u0131smi Teslim";
+      };
+      const canManagePurchaseOrders = userAuth && purchaseOrderRoles.includes(userAuth.role);
+
+      if (url.pathname === "/get-purchase-orders" && method === "GET") {
+        if (!canManagePurchaseOrders) return purchaseOrderError("Satın alma siparişlerini görüntüleme yetkiniz yok.", 403);
+        const requestedSlug = url.searchParams.get("company_slug") || url.searchParams.get("slug");
+        const targetSlug = userAuth.role === "Masterboss" ? requestedSlug : userAuth.slug;
+        if (!targetSlug) return purchaseOrderError("Firma bilgisi bulunamadı.");
+        const orders = await safeAll(env.DB.prepare("SELECT * FROM purchase_orders WHERE company_slug = ? ORDER BY created_at DESC").bind(targetSlug));
+        return new Response(JSON.stringify({ success: true, data: orders || [] }), { headers: corsHeaders });
+      }
+
+      if (url.pathname === "/add-purchase-order" && method === "POST") {
+        const body = await request.json();
+        if (!canManagePurchaseOrders) return purchaseOrderError("Sipariş oluşturma yetkiniz yok.", 403);
+        const targetSlug = userAuth.role === "Masterboss" ? (body.company_slug || body.slug) : userAuth.slug;
+        if (!targetSlug || !body.id || !String(body.name || "").trim() || !body.supplier_id) return purchaseOrderError("Firma, sipariş adı ve tedarikçi zorunludur.");
+        const supplier = await safeFirst(env.DB.prepare("SELECT id FROM suppliers WHERE id = ? AND company_slug = ?").bind(body.supplier_id, targetSlug));
+        if (!supplier) return purchaseOrderError("Seçilen tedarikçi bulunamadı.");
+        const items = normalizePurchaseItems(body.items);
+        if (!items) return purchaseOrderError("Siparişte geçerli en az bir malzeme bulunmalıdır.");
+        for (const item of items) {
+          const stock = await safeFirst(env.DB.prepare("SELECT id FROM stock WHERE id = ? AND company_slug = ?").bind(item.stock_id, targetSlug));
+          if (!stock) return purchaseOrderError("Sipariş kalemlerinden biri bu firmaya ait stoklarda bulunamadı.");
+        }
+        const status = purchaseOrderStatus(items);
+        await env.DB.prepare("INSERT INTO purchase_orders (id, company_slug, name, supplier_id, status, items, total_value) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(String(body.id), targetSlug, String(body.name).trim(), supplier.id, status, JSON.stringify(items), purchaseOrderValue(items)).run();
+        ctx.waitUntil(triggerPusher(`company-${targetSlug}`, "data_updated", {}));
+        return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+      }
+
+      if (url.pathname === "/update-purchase-order" && method === "POST") {
+        const body = await request.json();
+        if (!canManagePurchaseOrders) return purchaseOrderError("Sipariş düzenleme yetkiniz yok.", 403);
+        const targetSlug = userAuth.role === "Masterboss" ? (body.company_slug || body.slug) : userAuth.slug;
+        if (!targetSlug || !body.id || !String(body.name || "").trim() || !body.supplier_id) return purchaseOrderError("Firma, sipariş adı ve tedarikçi zorunludur.");
+        const previous = await safeFirst(env.DB.prepare("SELECT * FROM purchase_orders WHERE id = ? AND company_slug = ?").bind(body.id, targetSlug));
+        if (!previous) return purchaseOrderError("Sipariş bulunamadı.", 404);
+        if (previous.status === "\u0130ptal" || previous.status === "Iptal") return purchaseOrderError("\u0130ptal edilmi\u015f sipari\u015f d\u00fczenlenemez.", 409);
+        const supplier = await safeFirst(env.DB.prepare("SELECT id FROM suppliers WHERE id = ? AND company_slug = ?").bind(body.supplier_id, targetSlug));
+        if (!supplier) return purchaseOrderError("Seçilen tedarikçi bulunamadı.");
+        const items = normalizePurchaseItems(body.items);
+        if (!items) return purchaseOrderError("Siparişte geçerli en az bir malzeme bulunmalıdır.");
+        let previousItems = [];
+        try { previousItems = normalizePurchaseItems(previous.items) || []; } catch {}
+        const oldReceived = new Map();
+        const nextReceived = new Map();
+        previousItems.forEach((item) => oldReceived.set(item.stock_id, (oldReceived.get(item.stock_id) || 0) + item.received_quantity));
+        items.forEach((item) => nextReceived.set(item.stock_id, (nextReceived.get(item.stock_id) || 0) + item.received_quantity));
+        const stockIds = new Set([...oldReceived.keys(), ...nextReceived.keys()]);
+        const adjustments = [];
+        for (const stockId of stockIds) {
+          const delta = (nextReceived.get(stockId) || 0) - (oldReceived.get(stockId) || 0);
+          if (delta === 0) continue;
+          const stock = await safeFirst(env.DB.prepare("SELECT quantity FROM stock WHERE id = ? AND company_slug = ?").bind(stockId, targetSlug));
+          if (!stock) return purchaseOrderError("Teslim alınan malzeme stoklarda bulunamadı.", 404);
+          if (Number(stock.quantity || 0) + delta < 0) return purchaseOrderError("Teslimat miktarı azaltılamadı; ilgili stok miktarı zaten tüketilmiş.", 409);
+          adjustments.push(env.DB.prepare("UPDATE stock SET quantity = quantity + ? WHERE id = ? AND company_slug = ?").bind(delta, stockId, targetSlug));
+        }
+        const status = body.status === "\u0130ptal" || body.status === "Iptal" ? "\u0130ptal" : purchaseOrderStatus(items);
+        adjustments.push(env.DB.prepare("UPDATE purchase_orders SET name = ?, supplier_id = ?, status = ?, items = ?, total_value = ? WHERE id = ? AND company_slug = ?").bind(String(body.name).trim(), supplier.id, status, JSON.stringify(items), purchaseOrderValue(items), body.id, targetSlug));
+        await env.DB.batch(adjustments);
+        ctx.waitUntil(triggerPusher(`company-${targetSlug}`, "data_updated", {}));
+        return new Response(JSON.stringify({ success: true, status }), { headers: corsHeaders });
       }
 
       if (url.pathname === "/update-maintenance-contract" && method === "POST") {

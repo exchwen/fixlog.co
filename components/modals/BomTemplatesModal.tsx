@@ -135,6 +135,12 @@ export default function BomTemplatesModal({ data, onClose }: any) {
         return Array.isArray(itemsData) ? itemsData : [];
     };
 
+    const getTemplateTotal = (templateItems: any[]) => templateItems.reduce((total, item) => {
+        const stock = data?.stock?.find((entry: any) => String(entry.id) === String(item.stock_id));
+        return total + (Number(item.quantity) || 0) * (Number(stock?.unit_price) || 0);
+    }, 0);
+    const formatMoney = (value: number) => `${value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`;
+
     return (
         <div className="fixed inset-0 bg-black/50 z-[999] flex items-center justify-center p-4">
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-2xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -153,6 +159,7 @@ export default function BomTemplatesModal({ data, onClose }: any) {
                                         <div className="min-w-0 flex-1">
                                             <h3 className="font-bold">{t.name}</h3>
                                             <p className="text-sm text-gray-500">{t.description}</p>
+                                            <p className="mt-2 text-sm font-bold text-emerald-700">Tahmini toplam: {formatMoney(getTemplateTotal(parseItems(t.items)))}</p>
                                             {parseItems(t.items).length > 0 && (
                                                 <ul className="mt-3 space-y-1.5 border-t border-slate-200 pt-3">
                                                     {parseItems(t.items).map((item: any, index: number) => {

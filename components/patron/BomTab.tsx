@@ -172,6 +172,13 @@ const handleSave = async () => {
         return Array.isArray(itemsData) ? itemsData : [];
     };
 
+    const getTemplateTotal = (templateItems: any[]) => templateItems.reduce((total, item) => {
+        const stock = data?.stock?.find((entry: any) => String(entry.id) === String(item.stock_id));
+        return total + (Number(item.quantity) || 0) * (Number(stock?.unit_price) || 0);
+    }, 0);
+
+    const formatMoney = (value: number) => `${value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`;
+
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 min-h-[60vh]">
             <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
@@ -191,6 +198,7 @@ const handleSave = async () => {
                                     <div className="mb-4">
                                         <h3 className="font-bold text-slate-800 text-lg">{t.name}</h3>
                                         <p className="text-sm text-slate-500 line-clamp-2">{t.description}</p>
+                                        <p className="mt-3 text-sm font-bold text-emerald-700">Tahmini toplam: {formatMoney(getTemplateTotal(parseItems(t.items)))}</p>
                                         {parseItems(t.items).length > 0 && (
                                             <ul className="mt-3 space-y-1.5 border-t border-slate-200 pt-3">
                                                 {parseItems(t.items).map((item: any, index: number) => {
