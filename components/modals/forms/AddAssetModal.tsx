@@ -10,7 +10,7 @@ const CITY_DATA: any = trCitiesData;
 
 export default function AddAssetModal({
   showAddAsset, setShowAddAsset,
-  showAddCustomer, setShowAddCustomer, 
+  showAddCustomer, setShowAddCustomer, setNewCustomer,
   newAsset, setNewAsset,
   isSaving, handleAction,
   data

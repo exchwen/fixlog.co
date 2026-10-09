@@ -1921,11 +1921,13 @@ ${locText}`;
       }
       if (url.pathname === "/public/trigger-emergency" && method === "POST") {
         const { uuid, company_slug } = await request.json();
-        if (!uuid || !company_slug)
+        if (typeof uuid !== "string" || typeof company_slug !== "string" || !uuid || !company_slug)
           return new Response("Bad Request", { status: 400, headers: corsHeaders });
+        const asset = await safeFirst(env.DB.prepare("SELECT company_slug, name, location, apartmentName FROM assets WHERE uuid = ?").bind(uuid));
+        if (!asset || asset.company_slug !== company_slug)
+          return new Response(JSON.stringify({ error: "Varlık doğrulanamadı." }), { status: 404, headers: corsHeaders });
         const id = crypto.randomUUID();
-        await env.DB.prepare("INSERT INTO emergencies (id, asset_id, company_slug, status) VALUES (?, ?, ?, 'Aktif')").bind(id, uuid, company_slug).run();
-        const asset = await safeFirst(env.DB.prepare("SELECT name, location, apartmentName FROM assets WHERE uuid = ?").bind(uuid));
+        await env.DB.prepare("INSERT INTO emergencies (id, asset_id, company_slug, status) VALUES (?, ?, ?, 'Aktif')").bind(id, uuid, asset.company_slug).run();
         const aptName = asset && asset.apartmentName ? asset.apartmentName : "Bina Belirtilmemi\u015F";
         const assetType = asset && asset.name ? asset.name : "Cihaz T\xFCr\xFC Belirtilmemi\u015F";
         const assetLoc = asset && asset.location ? asset.location : "Konum Belirtilmemi\u015F";
@@ -1943,11 +1945,15 @@ ${locText}`;
       }
       if (url.pathname === "/public/report-fault" && method === "POST") {
         const { uuid, company_slug, name, phone, description } = await request.json();
-        if (!uuid || !company_slug)
+        if (typeof uuid !== "string" || typeof company_slug !== "string" || !uuid || !company_slug)
           return new Response("Bad Request", { status: 400, headers: corsHeaders });
+        if ([name, phone, description].some((value) => value != null && (typeof value !== "string" || value.length > 2000)))
+          return new Response(JSON.stringify({ error: "Form alanlarından biri geçersiz veya çok uzun." }), { status: 400, headers: corsHeaders });
+        const asset = await safeFirst(env.DB.prepare("SELECT id, company_slug, name, location, apartmentName FROM assets WHERE uuid = ?").bind(uuid));
+        if (!asset || asset.company_slug !== company_slug)
+          return new Response(JSON.stringify({ error: "Varlık doğrulanamadı." }), { status: 404, headers: corsHeaders });
         const id = crypto.randomUUID();
-        await env.DB.prepare("INSERT INTO fault_reports (id, asset_id, company_slug, reporter_name, reporter_phone, description, status) VALUES (?, ?, ?, ?, ?, ?, 'Aktif')").bind(id, uuid, company_slug, name || "", phone || "", description || "").run();
-        const asset = await safeFirst(env.DB.prepare("SELECT id, name, location, apartmentName FROM assets WHERE uuid = ?").bind(uuid));
+        await env.DB.prepare("INSERT INTO fault_reports (id, asset_id, company_slug, reporter_name, reporter_phone, description, status) VALUES (?, ?, ?, ?, ?, ?, 'Aktif')").bind(id, uuid, asset.company_slug, name || "", phone || "", description || "").run();
         const aptName = asset && asset.apartmentName ? asset.apartmentName : "Bina Belirtilmemi\u015F";
         const assetType = asset && asset.name ? asset.name : "Cihaz T\xFCr\xFC Belirtilmemi\u015F";
         const assetLoc = asset && asset.location ? asset.location : "Konum Belirtilmemi\u015F";
@@ -2409,7 +2415,15 @@ Otomatik olarak size atand\u0131!`,
       }
 
       if (url.pathname === "/get-quotes" && method === "GET") {
-        const slug = url.searchParams.get("company_slug");
+        const requestedSlug = url.searchParams.get("company_slug");
+        if (!userAuth || !["Masterboss", "Patron", "Yönetici"].includes(userAuth.role)) {
+          return new Response(JSON.stringify({ error: "Teklifleri görüntüleme yetkiniz yok." }), { status: 403, headers: corsHeaders });
+        }
+        if (userAuth.role !== "Masterboss" && requestedSlug && requestedSlug !== userAuth.slug) {
+          return new Response(JSON.stringify({ error: "Sadece kendi firmanızın tekliflerini görüntüleyebilirsiniz." }), { status: 403, headers: corsHeaders });
+        }
+        const slug = userAuth.role === "Masterboss" ? requestedSlug : userAuth.slug;
+        if (!slug) return new Response(JSON.stringify({ error: "Firma bilgisi bulunamadı." }), { status: 400, headers: corsHeaders });
         try {
           const quotes = await safeAll(env.DB.prepare("SELECT * FROM quotes WHERE company_slug = ? ORDER BY created_at DESC").bind(slug));
           return new Response(JSON.stringify({ success: true, data: quotes }), { headers: corsHeaders });
@@ -2434,7 +2448,12 @@ Otomatik olarak size atand\u0131!`,
 
       if (url.pathname === "/public/request-quote" && method === "POST") {
         const { company_slug, name, phone, email, type, message } = await request.json();
-        if (!company_slug || !name) return new Response("Bad Request", { status: 400, headers: corsHeaders });
+        if (typeof company_slug !== "string" || !company_slug || typeof name !== "string" || !name.trim() ||
+            [name, phone, email, type, message].some((value) => value != null && (typeof value !== "string" || value.length > 2000))) {
+          return new Response("Bad Request", { status: 400, headers: corsHeaders });
+        }
+        const company = await safeFirst(env.DB.prepare("SELECT slug FROM companies WHERE slug = ?").bind(company_slug));
+        if (!company) return new Response(JSON.stringify({ error: "Firma bulunamadı." }), { status: 404, headers: corsHeaders });
 
         const id = crypto.randomUUID();
         const now = new Date().toISOString();
@@ -2481,7 +2500,10 @@ Otomatik olarak size atand\u0131!`,
       // 🚀 Müşterinin imzasını atıp kaydetmesi için
       if (url.pathname === "/public/sign-quote" && method === "POST") {
         const { token, signatureBase64 } = await request.json();
-        if (!token || !signatureBase64) return new Response("Eksik veri", { status: 400, headers: corsHeaders });
+        if (typeof token !== "string" || !token || typeof signatureBase64 !== "string" ||
+            signatureBase64.length > 500000 || !/^data:image\/png;base64,[A-Za-z0-9+/]+=*$/.test(signatureBase64)) {
+          return new Response("Eksik veya geçersiz veri", { status: 400, headers: corsHeaders });
+        }
 
         const quote = await safeFirst(env.DB.prepare("SELECT id, company_slug, quote_details FROM quotes WHERE public_token = ?").bind(token));
         if (!quote) return new Response("Bulunamadı", { status: 404, headers: corsHeaders });
