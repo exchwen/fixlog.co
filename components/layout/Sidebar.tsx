@@ -84,24 +84,37 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
     }
   };
 
-  const navItems = [
-    { id: 'home', label: 'Genel Bakış', icon: LayoutDashboard },
-    ...(userRole === 'Yönetici' ? [{ id: 'my-jobs', label: 'Bana Atananlar', icon: UserCircle }] : []),
-    { id: 'quotes', label: 'Teklifler', icon: FileText },
-    { id: 'bom', label: 'BOM Şablonları', icon: List },
-    { id: 'jobs', label: 'İş Emirleri', icon: ClipboardList },
-    { id: 'pending', label: 'Onay Bekleyenler', icon: CheckSquare },
-    { id: 'completed', label: 'Tamamlanan İşler', icon: CheckCircle2 },
-    { id: 'periodic', label: 'Periyodik Bakım', icon: RefreshCw },
-    { id: 'alerts', label: 'Kayıt Geçmişi', icon: Bell },
-    { id: 'team', label: 'Saha Ekibi', icon: Users },
-    { id: 'customers', label: 'Müşteriler', icon: UserPlus },
-    { id: 'assets', label: 'Varlıklar', icon: Box },
-    { id: 'stock', label: 'Stok Takibi', icon: Package },
-    { id: 'finance', label: 'Finans', icon: CreditCard },
-    { id: 'settings', label: 'Firma Ayarları', icon: Settings },
-    { id: 'support', label: 'Destek & Bildirim', icon: HelpCircle },
+    const navGroups = [
+    { id: 'overview', label: 'Genel Bak\u0131\u015f', icon: LayoutDashboard, items: [{ id: 'home', label: 'Genel Bak\u0131\u015f', icon: LayoutDashboard }] },
+    { id: 'sales', label: 'M\u00fc\u015fteri & Sat\u0131\u015f', icon: Users, items: [
+      { id: 'quotes', label: 'Teklifler', icon: FileText },
+      { id: 'customers', label: 'M\u00fc\u015fteriler', icon: UserPlus },
+    ] },
+    { id: 'operations', label: '\u0130\u015f & Bak\u0131m', icon: ClipboardList, items: [
+      ...(userRole === 'Y\u00f6netici' ? [{ id: 'my-jobs', label: 'Bana Atananlar', icon: UserCircle }] : []),
+      { id: 'jobs', label: '\u0130\u015f Emirleri', icon: ClipboardList },
+      { id: 'pending', label: 'Onay Bekleyenler', icon: CheckSquare },
+      { id: 'completed', label: 'Tamamlanan \u0130\u015fler', icon: CheckCircle2 },
+      { id: 'periodic', label: 'Periyodik Bak\u0131m', icon: RefreshCw },
+      { id: 'alerts', label: 'Kay\u0131t Ge\u00e7mi\u015fi', icon: Bell },
+    ] },
+    { id: 'inventory', label: 'Varl\u0131k & Stok', icon: Package, items: [
+      { id: 'assets', label: 'Varl\u0131klar', icon: Box },
+      { id: 'stock', label: 'Stok Takibi', icon: Package },
+      { id: 'bom', label: 'BOM \u015eablonlar\u0131', icon: List },
+    ] },
+    { id: 'management', label: 'Y\u00f6netim', icon: Settings, items: [
+      { id: 'team', label: 'Saha Ekibi', icon: Users },
+      { id: 'finance', label: 'Finans', icon: CreditCard },
+      { id: 'settings', label: 'Firma Ayarlar\u0131', icon: Settings },
+      { id: 'support', label: 'Destek & Bildirim', icon: HelpCircle },
+    ] },
   ];
+
+  useEffect(() => {
+    const activeGroup = navGroups.find(group => group.items.some(item => item.id === activeTab));
+    if (activeGroup) setOpenGroups(current => current.includes(activeGroup.id) ? current : [...current, activeGroup.id]);
+  }, [activeTab, userRole]);
 
   return (
     <>
@@ -133,31 +146,33 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
           </button>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1 mt-2 overflow-y-auto custom-scrollbar">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group/btn relative overflow-hidden ${
-                activeTab === item.id 
-                  ? 'bg-blue-600/10 text-blue-500 font-bold' 
-                  : 'text-slate-400 font-medium hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <div className="relative z-10 shrink-0">
-                <item.icon size={18} />
-                {item.id === 'pending' && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-500 animate-pulse border border-slate-900"></span>
-                )}
-              </div>
-              <span className="whitespace-nowrap z-10 lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[13px]">{item.label}</span>
-              {activeTab === item.id && (
-                <ChevronRight size={14} className="absolute right-4 text-blue-500 z-10 lg:opacity-0 group-hover:opacity-100 transition-opacity" />
-              )}
-            </button>
-          ))}
+        <nav className="flex-1 px-2.5 py-3 space-y-2 mt-1 overflow-y-auto custom-scrollbar">
+          {navGroups.map(group => {
+            const isOpen = openGroups.includes(group.id);
+            const groupIsActive = group.items.some(item => item.id === activeTab);
+            return (
+              <section key={group.id} className="rounded-xl">
+                <button type="button" aria-expanded={isOpen} aria-controls={`sidebar-group-${group.id}`}
+                  onClick={() => setOpenGroups(current => current.includes(group.id) ? current.filter(id => id !== group.id) : [...current, group.id])}
+                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors group/folder ${groupIsActive ? 'text-blue-400' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+                  <group.icon size={18} className="shrink-0" />
+                  <span className="flex-1 text-left whitespace-nowrap text-[12px] font-bold uppercase tracking-wide lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300">{group.label}</span>
+                  <ChevronDown size={14} className={`shrink-0 transition-transform lg:opacity-0 group-hover:opacity-100 ${isOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {isOpen && <div id={`sidebar-group-${group.id}`} className="mt-1 space-y-1 border-l border-slate-700 ml-[21px] pl-2 lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  {group.items.map(item => (
+                    <button key={item.id} type="button" onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }} aria-current={activeTab === item.id ? 'page' : undefined}
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-left transition-colors ${activeTab === item.id ? 'bg-blue-600/15 text-blue-400 font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white font-medium'}`}>
+                      <span className="relative shrink-0"><item.icon size={16} />{item.id === 'pending' && <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full border border-slate-900 bg-amber-500" />}</span>
+                      <span className="flex-1 whitespace-nowrap text-[12px]">{item.label}</span>
+                      {activeTab === item.id && <ChevronRight size={13} className="shrink-0" />}
+                    </button>
+                  ))}
+                </div>}
+              </section>
+            );
+          })}
         </nav>
-
         <div className="p-4 border-t border-slate-800 shrink-0">
           <button 
             onClick={handleLogout}
