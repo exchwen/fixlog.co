@@ -11,7 +11,6 @@ import {
   QrCode,
   Mic,
   Bell,
-  Star,
   ArrowRight,
   ShieldCheck,
   Menu,
@@ -44,36 +43,28 @@ import { auth } from '@/lib/firebase';
 // Sabit veriler
 const SECTORS = [
   'Asansör Bakım & Montaj',
-  //'İklimlendirme (Klima & Kombi)',
-  //'Güvenlik Kamera & Alarm Sistemleri',
-  //'Profesyonel Temizlik Hizmetleri',
-  //'İlaçlama ve Pest Kontrol',
-  //'Yangın Söndürme Sistemleri',
-  //'Su Arıtma Sistemleri',
-  //'Endüstriyel Kapı ve Kepenk',
-  //'Diğer (Özel Sektör)',
 ];
 
-const REVIEWS = [
+const OPERATION_ISSUES = [
   {
-    name: 'Ahmet Y.',
-    role: 'Asansör Bakım & Montaj',
-    text: 'Usta performanslarını ölçmek kârımı %30 artırdı.',
+    name: 'Dağınık bakım kayıtları',
+    role: 'SORUN  /  FIXLOG ÇÖZÜMÜ',
+    text: 'Her asansörün bakım geçmişini, teknik bilgilerini ve servis kayıtlarını tek varlık profilinde toplayın.',
   },
   {
-    name: 'Özkan K.',
-    role: 'Asansör Bakım & Montaj',
-    text: 'Varlık yönetimi ile müşterilere kurumsal bir yüz sunuyoruz.',
+    name: 'Geciken periyodik bakımlar',
+    role: 'PLANLAMA  /  FIXLOG ÇÖZÜMÜ',
+    text: 'Otopilot ile aylık bakım görevlerini oluşturun; iş günleri, ekip kapasitesi ve bölgeye göre planlayın.',
   },
   {
-    name: 'Mehmet D.',
-    role: 'Asansör Bakım & Montaj',
-    text: 'Sesle form doldurma sahadaki işleri çok hızlandırdı.',
+    name: 'Sahadan geç gelen bilgi',
+    role: 'SAHA İLETİŞİMİ  /  FIXLOG ÇÖZÜMÜ',
+    text: 'Ustalar iş emrini mobilden güncellesin; fotoğrafı ve müşteri imzasını aynı kayda eklesin.',
   },
   {
-    name: 'Fatih T.',
-    role: 'Asansör Bakım & Montaj',
-    text: 'Taşeronları tek ekrandan yönetmek harika.',
+    name: 'Arıza bildiriminde belirsizlik',
+    role: 'MÜŞTERİ DENEYİMİ  /  FIXLOG ÇÖZÜMÜ',
+    text: 'Asansöre özel QR etiketiyle müşteriler doğru cihaz için arıza bildirsin; ekip bildirimi anında görsün.',
   },
 ];
 
@@ -123,16 +114,64 @@ const FEATURES = [
     title: 'Performans & Büyüme',
     desc: 'Otomatik hesaplanan büyüme oranları ve personel iş tamamlama istatistikleriyle işletmenizi verilerle büyütün.',
   },
+  {
+    icon: Calendar,
+    title: 'Periyodik Bakım Otopilotu',
+    desc: 'Bakım yapılacak asansörleri çalışma günlerinize, ekip kapasitenize ve bölge/usta eşleşmelerine göre aylık iş planına dönüştürün.',
+  },
+  {
+    icon: CheckCircle2,
+    title: 'Dijital Servis Formu ve İmza',
+    desc: 'Yapılan işlemi, kullanılan malzemeyi, fotoğrafları ve müşteri imzasını iş emrinde saklayın; geçmiş kayıtlara kolayca ulaşın.',
+  },
+  {
+    icon: Briefcase,
+    title: 'Teklif ve Uzaktan Onay',
+    desc: 'Bakım veya revizyon teklifini müşterinize bağlantıyla iletin. Müşteri teklifi görüntüleyip dijital olarak onaylayabilsin.',
+  },
+  {
+    icon: Box,
+    title: 'Asansör Teknik Envanteri',
+    desc: 'Asansör tipi, kapasite, durak sayısı, hız ve cihaz adedi gibi teknik bilgileri bina ve müşteri kayıtlarıyla ilişkilendirin.',
+  },
+  {
+    icon: Package,
+    title: 'Satın Alma ve Malzeme Takibi',
+    desc: 'Depo miktarlarını izleyin, tedarikçi siparişlerini ve sahadan gelen malzeme taleplerini aynı operasyon akışında takip edin.',
+  },
+];
+
+const PAIN_POINTS = [
+  {
+    icon: Calendar,
+    title: 'Bakım takvimi kişilerin hafızasında kalıyor',
+    desc: 'Asansör bazında bakım dönemlerini görün, aylık görevleri planlayın ve gecikme riskini erkenden fark edin.',
+  },
+  {
+    icon: MessageSquareText,
+    title: 'Ofis ile saha arasında bilgi kayboluyor',
+    desc: 'İş emri, atanan usta, durum, fotoğraf ve notlar tek kayıtta bulunsun. Ekip ve merkez aynı güncel bilgiyi görsün.',
+  },
+  {
+    icon: QrCode,
+    title: 'Arıza hangi binadaki hangi asansörde belli olmuyor',
+    desc: 'Cihaza özel QR koduyla müşteriyi doğru asansörün arıza bildirimine ve bakım geçmişine yönlendirin.',
+  },
+  {
+    icon: Package,
+    title: 'Malzeme kullanımı ve maliyetler izlenemiyor',
+    desc: 'İş emrinde kullanılan malzemeleri kaydedin; stok hareketlerini, satın alma siparişlerini ve iş gelirlerini takip edin.',
+  },
 ];
 
 const t = {
   brand: 'FixLog.co',
   login: 'Giriş Yap',
   tryFree: '14 Gün Ücretsiz Dene',
-  heroTitle1: 'İşletmenizi Uçtan Uca,',
-  heroTitle2: 'Sıfır Maliyet Kaybıyla Yönetin',
+  heroTitle1: 'Asansör bakım operasyonunuzu',
+  heroTitle2: 'tek merkezden yönetin',
   heroDesc:
-    'Personelinizi, iş emirlerinizi ve müşteri ağınızı tek ekranda birleştirin. Kurulum yok, donanım yok. Sadece tarayıcınızdan yönetin.',
+    'Periyodik bakım planından arıza bildirimine, usta atamasından müşteri imzasına kadar tüm saha sürecini asansör firmanız için tasarlanmış tek platformda takip edin.',
   explore: 'Özellikleri İncele',
 };
 
@@ -143,7 +182,7 @@ export default function LandingPage() {
   const handleRegister = () => router.push('/register');
 
   const [selectedSector, setSelectedSector] = useState(SECTORS[0]);
-  const [reviewIndex, setReviewIndex] = useState(0);
+  const [issueIndex, setIssueIndex] = useState(0);
 
   const [mockupTab, setMockupTab] = useState('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -247,16 +286,16 @@ export default function LandingPage() {
 
   useEffect(() => {
     const timer = setInterval(
-      () => setReviewIndex((prev) => (prev + 1) % REVIEWS.length),
+      () => setIssueIndex((prev) => (prev + 1) % OPERATION_ISSUES.length),
       5000
     );
     return () => clearInterval(timer);
   }, []);
 
-  const visibleReviews = [
-    REVIEWS[reviewIndex],
-    REVIEWS[(reviewIndex + 1) % REVIEWS.length],
-    REVIEWS[(reviewIndex + 2) % REVIEWS.length],
+  const visibleIssues = [
+    OPERATION_ISSUES[issueIndex],
+    OPERATION_ISSUES[(issueIndex + 1) % OPERATION_ISSUES.length],
+    OPERATION_ISSUES[(issueIndex + 2) % OPERATION_ISSUES.length],
   ];
 
 // 🚀 YENİ: GOOGLE İÇİN ZENGİN ARAMA SONUCU KODU (JSON-LD)
@@ -266,7 +305,7 @@ const jsonLd = {
   "name": "FixLog.co",
   "operatingSystem": "Web, Android, iOS",
   "applicationCategory": "BusinessApplication",
-  "description": "Asansör bakım, iklimlendirme ve saha operasyonlarınızı yönetebileceğiniz yeni nesil iş takip SaaS platformu.",
+  "description": "Asansör bakım firmaları için periyodik bakım planlama, arıza takibi, saha ekip yönetimi ve müşteri onayı platformu.",
   "url": "https://fixlog.co",
   "offers": {
     "@type": "Offer",
@@ -473,7 +512,7 @@ return (
                                   <div key={i} className="flex justify-between items-center py-3 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors rounded-xl px-2 -mx-2">
                                     <div className="truncate pr-2">
                                       <div className="text-sm font-bold text-gray-900 truncate">
-                                        {i === 1 ? 'Merkez Plaza Asansör Bakımı' : i === 2 ? 'A Blok Yangın Tüpü Dolumu' : 'Bina Dış Cephe Temizliği'}
+                                        {i === 1 ? 'Merkez Plaza Periyodik Bakım' : i === 2 ? 'A Blok Asansör Arıza Kontrolü' : 'Gül Apartmanı Revizyon İncelemesi'}
                                       </div>
                                       <div className="text-xs font-medium text-gray-500 mt-0.5">
                                         {i === 1 ? 'Ali Usta • 2 saat sürdü' : i === 2 ? 'Mehmet U. • 45 dk sürdü' : 'Canan T. • 4 saat sürdü'}
@@ -496,9 +535,9 @@ return (
                             </div>
                             <div className="flex flex-col gap-3">
                               {[
-                                { name: 'Klima Motor Değişimi', loc: 'Merkez Plaza', date: 'Yarın, 14:00', status: 'Gelecek', color: 'bg-slate-100 text-slate-600' },
+                                { name: 'Asansör Motor Kontrolü', loc: 'Merkez Plaza', date: 'Yarın, 14:00', status: 'Gelecek', color: 'bg-slate-100 text-slate-600' },
                                 { name: 'Yıllık Periyodik Bakım', loc: 'Gül Apartmanı', date: 'Bugün, 10:00', status: 'Devam Ediyor', color: 'bg-blue-100 text-blue-700' },
-                                { name: 'Güvenlik Kamera Montajı', loc: 'A Blok', date: 'Bekliyor', status: 'Beklemede', color: 'bg-amber-100 text-amber-700' }
+                                { name: 'Kapı Sensörü Kontrolü', loc: 'A Blok', date: 'Bekliyor', status: 'Beklemede', color: 'bg-amber-100 text-amber-700' }
                               ].map((job, idx) => (
                                 <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                   <div>
@@ -523,9 +562,9 @@ return (
                             </div>
                             <div className="flex flex-col gap-3">
                               {[
-                                { name: 'Merkez Plaza Asansör Bakımı', staff: 'Ali Usta', date: '15 Eylül 2024' },
-                                { name: 'A Blok Yangın Tüpü Dolumu', staff: 'Mehmet U.', date: '12 Eylül 2024' },
-                                { name: 'Bina Dış Cephe Temizliği', staff: 'Canan T.', date: '10 Eylül 2024' }
+                                { name: 'Merkez Plaza Asansör Bakımı', staff: 'Ali Usta', date: 'Bugün' },
+                                { name: 'A Blok Kapı Mekanizması Kontrolü', staff: 'Mehmet U.', date: 'Dün' },
+                                { name: 'Gül Apartmanı Periyodik Bakımı', staff: 'Canan T.', date: '3 gün önce' }
                               ].map((job, idx) => (
                                 <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-emerald-300 transition-colors">
                                   <div>
@@ -553,7 +592,7 @@ return (
                               {[
                                 { name: 'Yavuz Ş.', role: 'Yönetici', status: 'Müsait', color: 'bg-emerald-100 text-emerald-700' },
                                 { name: 'Ali M.', role: 'Bakım Ustası', status: 'Sahada (İşte)', color: 'bg-blue-100 text-blue-700' },
-                                { name: 'Canan T.', role: 'Temizlik Şefi', status: 'İzinli', color: 'bg-slate-100 text-slate-500' }
+                                { name: 'Canan T.', role: 'Bakım Ustası', status: 'İzinli', color: 'bg-slate-100 text-slate-500' }
                               ].map((p, idx) => (
                                 <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-3">
                                   <div className="flex items-center gap-3">
@@ -606,7 +645,7 @@ return (
                             <div className="flex flex-col gap-3">
                               {[
                                 { name: 'Merkez Plaza Ana Asansör', code: 'VAR-1892' },
-                                { name: 'A Blok Zemin Kat Klima', code: 'VAR-2041' }
+                                { name: 'A Blok Zemin Kat Asansörü', code: 'VAR-2041' }
                               ].map((v, idx) => (
                                 <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 group">
                                   <div className="flex items-center gap-3">
@@ -709,6 +748,7 @@ return (
                 </div>
               </div>
             </motion.div>
+            <p className="mt-4 text-center text-xs text-gray-400">Ekran önizlemesinde örnek kayıtlar gösterilmektedir.</p>
           </div>
         </section>
 
@@ -723,10 +763,10 @@ return (
             <div className="text-center mb-12 md:mb-20">
               <span className="bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full font-black tracking-widest uppercase text-[10px] mb-4 inline-block shadow-sm">GÜÇLÜ ALTYAPI</span>
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-gray-900 mb-5 tracking-tight">
-                Neden Bizi Seçmelisiniz?
+                Asansör bakım ekibinizin ihtiyaç duyduğu araçlar
               </h2>
               <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto px-2 font-medium leading-relaxed">
-                Saha operasyonlarınızı dijitalleştirirken maliyetlerinizi düşüren, işinize prestij katan benzersiz SaaS özellikleri.
+                Bina ve asansör envanterinden bakım planına, sahadaki servis formundan müşteri onayına kadar iş akışınızı tek yerde birleştirin.
               </p>
             </div>
 
@@ -770,6 +810,34 @@ return (
               ))}
             </motion.div>
 
+          </div>
+        </section>
+
+        {/* ASANSÖR FİRMALARININ ÇÖZDÜĞÜ SORUNLAR */}
+        <section className="py-16 md:py-24 bg-white px-4">
+          <div className="max-w-7xl mx-auto">
+            <div className="max-w-3xl mx-auto text-center mb-12">
+              <span className="bg-amber-100 text-amber-800 px-4 py-1.5 rounded-full font-black tracking-widest uppercase text-[10px] mb-4 inline-block">GÜNLÜK OPERASYONLAR İÇİN</span>
+              <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight mb-4">Fixlog hangi sorunları çözüyor?</h2>
+              <p className="text-gray-600 leading-relaxed">Bakım firmalarında sık karşılaşılan takip ve koordinasyon yükünü, asansör odaklı dijital iş akışlarına dönüştürün.</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {PAIN_POINTS.map((item) => (
+                <article key={item.title} className="rounded-3xl border border-gray-200 bg-gray-50 p-6 hover:border-blue-300 hover:bg-blue-50/50 transition-colors">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center mb-5">
+                    <item.icon className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-base font-black text-gray-900 mb-3 leading-snug">{item.title}</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">{item.desc}</p>
+                </article>
+              ))}
+            </div>
+            <div className="mt-10 text-center">
+              <button onClick={handleRegister} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3.5 text-white font-bold text-sm shadow-lg shadow-blue-600/20 transition-colors">
+                Asansör firmanız için ücretsiz deneyin <ArrowRight className="w-4 h-4" />
+              </button>
+              <p className="mt-3 text-xs text-gray-500">14 günlük deneme · Kredi kartı gerekmez</p>
+            </div>
           </div>
         </section>
 
@@ -821,29 +889,29 @@ return (
               <div className="lg:w-1/2 bg-gray-800 p-8 md:p-14 relative flex flex-col justify-center border-t lg:border-t-0 lg:border-l border-gray-700 z-10">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
                   <h3 className="text-xl font-black text-white flex items-center gap-2">
-                    <Star className="w-6 h-6 text-amber-400 fill-amber-400 shrink-0" />{' '}
-                    Patronlar Ne Diyor?
+                    <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0" />{' '}
+                    Asansör firmalarının karşılaştığı sorunlar
                   </h3>
                   <div className="flex gap-2">
-                    {REVIEWS.map((_, idx) => (
+                    {OPERATION_ISSUES.map((_, idx) => (
                       <button
                         key={idx}
-                        onClick={() => setReviewIndex(idx)}
+                        onClick={() => setIssueIndex(idx)}
                         className={`w-2.5 h-2.5 rounded-full transition-all ${
-                          reviewIndex === idx
+                          issueIndex === idx
                             ? 'bg-blue-500 w-6'
                             : 'bg-gray-600 hover:bg-gray-500'
                         }`}
-                        aria-label={`Yorum ${idx + 1}`}
+                        aria-label={`Sorun ve çözüm ${idx + 1}`}
                       />
                     ))}
                   </div>
                 </div>
                 <div className="flex flex-col gap-4">
                   <AnimatePresence mode="popLayout">
-                    {visibleReviews.map((r, i) => (
+                    {visibleIssues.map((r, i) => (
                       <motion.div
-                        key={r.name + reviewIndex + i}
+                        key={r.name + issueIndex + i}
                         layout
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -852,13 +920,8 @@ return (
                           i === 2 ? 'hidden sm:block' : 'block'
                         }`}
                       >
-                        <div className="flex text-amber-400 mb-3">
-                          {[...Array(5)].map((_, idx) => (
-                            <Star key={idx} className="w-3.5 h-3.5 fill-current" />
-                          ))}
-                        </div>
                         <p className="text-gray-300 text-sm md:text-base mb-5 font-medium leading-relaxed">
-                          &quot;{r.text}&quot;
+                          {r.text}
                         </p>
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 bg-gray-800 border-2 border-gray-700 text-gray-300 rounded-xl flex items-center justify-center font-black text-sm shrink-0">
@@ -1026,7 +1089,7 @@ return (
               </h4>
               <ul className="space-y-4 text-sm text-gray-500 font-medium">
                 <li onClick={() => openInfoModal('Hakkımızda', `Fixlog.co olarak, saha operasyonlarının zorluklarını ve karmaşasını kökünden çözmek amacıyla yola çıktık. Geleneksel iş takip yöntemlerinin, kağıt kürek işlerinin ve ofis ile saha arasındaki iletişim kopukluklarının işletmelere ne kadar zaman ve maliyet kaybettirdiğini çok iyi biliyoruz. Amacımız, sahadaki ekiplerinizle merkez ofisiniz arasında kesintisiz, akıcı ve akıllı bir köprü kurarak sizi sektörünüzde tartışmasız bir numaraya taşımaktır. Vizyonumuz sadece bir yazılım sunmak değil; işletmenizin kalbine yerleşecek, operasyonlarınızı otonom hale getirecek ve büyümenize ivme kazandıracak stratejik bir iş ortağı olmaktır. Fixlog ile karmaşayı geride bırakın, kontrolü tamamen elinize alın ve geleceğin saha yönetimi standartlarına bugünden adım atın.`)} className="hover:text-blue-600 cursor-pointer transition-colors">Hakkımızda</li>
-                <li onClick={() => openInfoModal('Sektörel Çözümler', `Her sektörün kendine has dinamikleri ve zorlukları olduğunun farkındayız. Asansör bakımı, iklimlendirme (HVAC) sistemleri, güvenlik teknolojileri ve periyodik bakım gerektiren tüm alanlar için özel olarak tasarlanmış esnek bir yapı sunuyoruz. Geliştirdiğimiz Fixlog Otopilot teknolojisi sayesinde iş atamalarınız insan hatası olmadan, en doğru teknisyene en doğru zamanda otomatik olarak yönlendirilir. Sahadaki cihazlarınızı ve ekipmanlarınızı QR kod okutarak saniyeler içinde tanıyabilir, geçmiş bakım verilerine anında ulaşabilirsiniz. Ayrıca, teknisyenlerinizin sahada elleri doluyken bile işlerini raporlayabilmeleri için sunduğumuz akıllı sesli form doldurma asistanı ile süreçleri inanılmaz ölçüde hızlandırıyoruz. Hangi sektörde olursanız olun, operasyonel yükünüzü hafifletiyor ve müşteri memnuniyetinizi en üst seviyeye çıkarıyoruz.`)} className="hover:text-blue-600 cursor-pointer transition-colors">Sektörel Çözümler</li>
+                <li onClick={() => openInfoModal('Asansör Firmaları İçin', `Fixlog; asansör bakım ve montaj firmalarının bina ve cihaz envanterini, periyodik bakım planlarını, arıza kayıtlarını, saha ekiplerini ve müşteri iletişimini tek yerde yönetmesine yardımcı olur. Asansörlere özel QR kodlarıyla müşteriler doğru cihaz için arıza bildirebilir ve bakım geçmişini görüntüleyebilir. Ekipler mobil iş emirlerini güncelleyebilir, fotoğraf ve imza ekleyebilir. Yönetim tarafında bakım planlama, stok ve satın alma takibi ile teklif onay süreçleri aynı operasyon akışında izlenir.`)} className="hover:text-blue-600 cursor-pointer transition-colors">Asansör Firmaları İçin</li>
                 <li onClick={() => openInfoModal('Fiyatlandırma', `Büyüme hedeflerinizi destekleyen, şeffaf ve sürpriz maliyetler barındırmayan adil bir fiyatlandırma modeli benimsiyoruz. İşletmenizin ölçeği ne olursa olsun, karmaşık paketler veya gizli ücretlerle uğraşmazsınız. Platformumuzun sunduğu tüm akıllı özelliklere ve sınırsız kullanıcı erişimine aylık sabit 3.000 TL ile sahip olabilirsiniz. Sahada takip etmek istediğiniz, sisteminize eklediğiniz her bir cihaz veya ekipman (varlık) için ise sadece 50 TL gibi düşük bir maliyet yansıtılır.\n\nSisteme adım attığınızda sizden hiçbir ödeme yöntemi istemeden 14 günlük ücretsiz deneme sürenizi başlatıyoruz. Bu sürenin ardından kullanımınız kesintisiz olarak devam eder ve ilk faturanız ay sonunda oluşturulur. Olası bir ödeme gecikmesinde hiçbir veriniz silinmez, yüksek güvenlik standartlarımızla korunmaya devam eder; ancak ödeme tamamlanana kadar sistem erişiminiz kısıtlanarak güvenli moda alınır. İşletmeniz büyüdükçe sizinle birlikte şekillenen bu modelle, yatırımınızın karşılığını ilk günden itibaren almaya başlayacaksınız.`)} className="hover:text-blue-600 cursor-pointer transition-colors">Fiyatlandırma</li>
                 <li onClick={() => openInfoModal('İletişim & Destek', `Saha operasyonlarının 7 gün 24 saat kesintisiz devam etmesi gerektiğinin bilincindeyiz. Bu nedenle Fixlog.co olarak sadece bir hizmet sağlayıcı değil, her an yanınızda olan güvenilir bir destek ekibi olarak konumlanıyoruz. Sisteme adaptasyon sürecinizden günlük kullanımdaki en ufak sorularınıza kadar her adımda size rehberlik etmek için buradayız. Platformumuz üzerinden veya e-posta ve telefon yoluyla bize dilediğiniz an ulaşabilirsiniz. İşletmenizin duraksamaması ve sahadaki ekiplerinizin sorunsuz çalışmaya devam etmesi için uzman ekibimiz, en hızlı ve en etkili çözümleri üretmek üzere arkanızda sağlam bir güç olarak durmaktadır.`)} className="hover:text-blue-600 cursor-pointer transition-colors">İletişim & Destek</li>
               </ul>
