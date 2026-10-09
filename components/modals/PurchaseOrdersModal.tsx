@@ -20,7 +20,7 @@ export default function PurchaseOrdersModal({ data, onClose }: any) {
             .then(res => { if(res.success) setOrders(res.data); })
             .catch(() => {});
         
-        fetch('/get-bom-templates?company_slug=' + companySlug)
+        fetch('/get-bom-templates?company_slug=' + encodeURIComponent(companySlug || ''), { headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` } })
             .then(res => res.json())
             .then(res => { if(res.success) setBomTemplates(res.data); setLoading(false); })
             .catch(() => setLoading(false));
@@ -48,8 +48,9 @@ export default function PurchaseOrdersModal({ data, onClose }: any) {
         const t = bomTemplates.find(x => x.id === templateId);
         if(!t) return;
         try {
-            const parsed = JSON.parse(t.items || '[]');
-            const newItems = parsed.map((pi: any) => ({
+            const parsed = typeof t.items === 'string' ? JSON.parse(t.items || '[]') : t.items;
+            if (!Array.isArray(parsed)) throw new Error('Invalid BOM items');
+            const newItems = parsed.filter((pi: any) => pi.stock_id && Number(pi.quantity) > 0).map((pi: any) => ({
                 stock_id: pi.stock_id,
                 ordered_quantity: pi.quantity,
                 received_quantity: 0,
@@ -74,7 +75,8 @@ export default function PurchaseOrdersModal({ data, onClose }: any) {
                         {loading ? <Loader2 className="animate-spin mx-auto" /> : (
                             <div className="grid gap-4">
                                 {orders.map(o => {
-                                    const parsedItems = JSON.parse(o.items || '[]');
+                                    let parsedItems: any[] = [];
+                                    try { const value = typeof o.items === 'string' ? JSON.parse(o.items || '[]') : o.items; parsedItems = Array.isArray(value) ? value : []; } catch { parsedItems = []; }
                                     const totalOrdered = parsedItems.reduce((acc: number, it: any) => acc + Number(it.ordered_quantity || 0), 0);
                                     const totalReceived = parsedItems.reduce((acc: number, it: any) => acc + Number(it.received_quantity || 0), 0);
                                     const percent = totalOrdered > 0 ? Math.round((totalReceived / totalOrdered) * 100) : 0;

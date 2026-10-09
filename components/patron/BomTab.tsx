@@ -18,19 +18,26 @@ export default function BomTab({ data }: any) {
     const getToken = () => typeof window !== 'undefined' ? localStorage.getItem('token') || '' : '';
 
     useEffect(() => {
-        if (!companySlug) return;
-        fetch('/get-bom-templates?slug=' + companySlug, {
+        let cancelled = false;
+        if (!companySlug) { setTemplates([]); setLoading(false); return; }
+        setLoading(true);
+        fetch('/get-bom-templates?slug=' + encodeURIComponent(companySlug), {
             headers: { 'Authorization': `Bearer ${getToken()}` }
         })
-            .then(res => res.json())
-            .then(res => { if(res.success) setTemplates(res.data); setLoading(false); })
-            .catch(() => setLoading(false));
+            .then(async res => {
+                const result = await res.json();
+                if (!res.ok || result.success === false) throw new Error(result.error || 'BOM sablonlari yuklenemedi.');
+                if (!cancelled) setTemplates(Array.isArray(result.data) ? result.data : []);
+            })
+            .catch(() => { if (!cancelled) setTemplates([]); })
+            .finally(() => { if (!cancelled) setLoading(false); });
+        return () => { cancelled = true; };
     }, [companySlug]);
 
     const refreshData = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/get-bom-templates?slug=' + companySlug, {
+            const res = await fetch('/get-bom-templates?slug=' + encodeURIComponent(companySlug), {
                 headers: { 'Authorization': `Bearer ${getToken()}` }
             });
             const r = await res.json();
@@ -41,7 +48,9 @@ export default function BomTab({ data }: any) {
 
 
 const handleSave = async () => {
-    if (!name) return alert('İsim gerekli');
+    if (!name.trim()) return alert('Sablon adi gerekli.');
+    if (!companySlug) return alert('Firma bilgisi bulunamadi.');
+    if (items.some((item: any) => !item.stock_id || !Number.isFinite(Number(item.quantity)) || Number(item.quantity) <= 0)) return alert('Her malzeme icin stok ve pozitif miktar secin.');
 
     const id = editing?.id || Date.now().toString();
     const endpoint = editing?.id
@@ -54,7 +63,7 @@ const handleSave = async () => {
     const payload = {
         id,
         slug: companySlug,
-        name,
+        name: name.trim(),
         description: desc,
         items: itemsString,
     };
@@ -115,9 +124,9 @@ const handleSave = async () => {
                 body: JSON.stringify({ id, slug: companySlug }) 
             });
 
-            if(response.ok) {
-                setTemplates(templates.filter(t => t.id !== id));
-            }
+            const result = await response.json();
+            if (!response.ok || result.success === false) throw new Error(result.error || 'Template could not be deleted.');
+            setTemplates(current => current.filter(t => t.id !== id));
         } catch(e) {
             alert('Silme işlemi başarısız oldu.');
         }
@@ -209,11 +218,11 @@ const handleSave = async () => {
                         </div>
                         {items.map((it, idx) => (
                             <div key={idx} className="flex gap-2 items-center bg-white p-2 rounded-xl border border-slate-200">
-                                <select value={it.stock_id} onChange={e => { const newI = [...items]; newI[idx].stock_id = e.target.value; setItems(newI); }} className="flex-1 px-3 py-2 text-sm font-bold border-none outline-none">
+                                <select value={it.stock_id} onChange={e => setItems(current => current.map((item, i) => i === idx ? { ...item, stock_id: e.target.value } : item))} className="flex-1 px-3 py-2 text-sm font-bold border-none outline-none">
                                     <option value="">Stoktan Seçiniz...</option>
                                     {data?.stock?.map((s: any) => <option key={s.id} value={s.id}>{s.itemName || s.item_name}</option>)}
                                 </select>
-                                <input type="number" value={it.quantity} onChange={e => { const newI = [...items]; newI[idx].quantity = e.target.value; setItems(newI); }} className="w-20 px-3 py-2 text-sm font-bold border-l border-slate-200 outline-none" min="1" placeholder="Miktar" />
+                                <input type="number" value={it.quantity} onChange={e => setItems(current => current.map((item, i) => i === idx ? { ...item, quantity: e.target.value } : item))} className="w-20 px-3 py-2 text-sm font-bold border-l border-slate-200 outline-none" min="1" placeholder="Miktar" />
                                 <button onClick={() => setItems(items.filter((_, i) => i !== idx))} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg"><Trash2 size={16} /></button>
                             </div>
                         ))}
