@@ -11,6 +11,7 @@ export default function AddCustomerModal({
   showAddCustomer, setShowAddCustomer,
   showAddAsset, setShowAddAsset, // Varlık modalının state'i (Stacking animasyonu için)
   newCustomer, setNewCustomer,
+  newAsset, setNewAsset,
   isSaving, handleAction,
   data 
 }: any) {
@@ -233,7 +234,17 @@ return (
                     {!showAddAsset && (
                       <button 
                         type="button" 
-                        onClick={() => { setIsPushedBack(true); setShowAddAsset && setShowAddAsset(true); }} 
+                        onClick={() => {
+                          const customerAddress = getFullAddress(newCustomer.address || '', buildingNo, selectedCity, selectedDistrict);
+                          if (customerAddress.trim()) {
+                            setNewAsset((prev: any) => ({
+                              ...prev,
+                              location: prev?.location?.trim() ? prev.location : customerAddress
+                            }));
+                          }
+                          setIsPushedBack(true);
+                          setShowAddAsset && setShowAddAsset(true);
+                        }} 
                         className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition-all active:scale-95 flex items-center gap-1"
                       >
                         + Yeni Varlık

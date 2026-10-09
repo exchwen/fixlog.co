@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -16,7 +16,6 @@ import {
   LayoutDashboard,
   Clock,
   CheckCircle2,
-  Quote,
   Zap,
   Users,
 } from 'lucide-react';
@@ -35,42 +34,20 @@ import sectorDataFile from '../../lib/data/sectors.json';
 const API_URL = 'https://api.fixlog.co';
 
 const SECTOR_DATA = sectorDataFile.sectors;
-const SECTORS = Object.keys(SECTOR_DATA);
-
-const REVIEWS = [
-  {
-    name: 'Kadir B.',
-    role: 'Asansör Firma Sahibi',
-    text: 'Kağıt formlardan kurtulmak hızı ikiye katladı.',
-  },
-  {
-    name: 'Zeynep A.',
-    role: 'İklimlendirme Müdürü',
-    text: 'Müşteri memnuniyetimiz %40 arttı, her şey cebimizde.',
-  },
-];
+const ELEVATOR_SECTOR = 'Asansör Bakım & Montaj';
 
 export default function RegisterPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [reviewIdx, setReviewIdx] = useState(0);
   const [formData, setFormData] = useState({
     companyName: '',
-    sector: SECTORS[0],
+    sector: ELEVATOR_SECTOR,
     email: '',
     password: '',
     referredByCode: '',
   });
-
-  useEffect(() => {
-    const timer = setInterval(
-      () => setReviewIdx((prev) => (prev + 1) % REVIEWS.length),
-      5000
-    );
-    return () => clearInterval(timer);
-  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -206,7 +183,7 @@ export default function RegisterPage() {
     }
   };
 
-  const mockup = SECTOR_DATA[formData.sector] || SECTOR_DATA['Diğer (Özel Sektör)'] || { title: 'Yükleniyor', jobs: [], stats: '', color: 'text-gray-400', bg: 'bg-gray-50' };
+  const mockup = SECTOR_DATA[ELEVATOR_SECTOR] || { title: 'Asansör Sistemleri', jobs: [], stats: '', color: 'text-blue-600', bg: 'bg-blue-50' };
 
   return (
     // YENİ: Mobilde klavye açılınca sayfanın bozulmasını önlemek için min-h-[100dvh] eklendi
@@ -275,11 +252,7 @@ export default function RegisterPage() {
                         className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none appearance-none transition-all cursor-pointer"
                         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center' }}
                       >
-                        {SECTORS.map((s) => (
-                          <option key={s} value={s} className="font-medium">
-                            {s}
-                          </option>
-                        ))}
+                        <option value={ELEVATOR_SECTOR}>{ELEVATOR_SECTOR}</option>
                       </select>
                     </div>
                     <div className="relative">
@@ -382,11 +355,7 @@ export default function RegisterPage() {
                         className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none appearance-none transition-all cursor-pointer"
                         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center' }}
                       >
-                        {SECTORS.map((s) => (
-                          <option key={s} value={s} className="font-medium">
-                            {s}
-                          </option>
-                        ))}
+                        <option value={ELEVATOR_SECTOR}>{ELEVATOR_SECTOR}</option>
                       </select>
                   </div>
                   <div className="relative">
@@ -501,43 +470,9 @@ export default function RegisterPage() {
             </div>
           </motion.div>
 
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={reviewIdx}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              className="bg-white/80 backdrop-blur-md border border-white p-6 rounded-3xl shadow-xl relative overflow-hidden max-w-sm mx-auto"
-            >
-              <Quote className="absolute top-4 right-4 w-12 h-12 text-blue-100/50 -z-10" />
-              <div className="relative z-10">
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className="w-4 h-4 fill-amber-400 text-amber-400"
-                    />
-                  ))}
-                </div>
-                <p className="text-sm font-bold text-gray-800 italic leading-relaxed mb-6">
-                  &quot;{REVIEWS[reviewIdx].text}&quot;
-                </p>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-black text-sm shadow-md ring-4 ring-white">
-                    {REVIEWS[reviewIdx].name.charAt(0)}
-                  </div>
-                  <div>
-                    <div className="text-sm font-black text-gray-900">
-                      {REVIEWS[reviewIdx].name}
-                    </div>
-                    <div className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">
-                      {REVIEWS[reviewIdx].role}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
+          <div className="max-w-sm mx-auto text-center text-xs font-semibold text-slate-500">
+            Asansör bakım ve montaj ekipleri için iş takibi, bakım planı ve saha kayıtları.
+          </div>
         </div>
       </div>
 

@@ -32,6 +32,12 @@ import {
   LineChart,
   CheckCircle2,
   Calendar,
+  CalendarDays,
+  Siren,
+  FileText,
+  ShoppingCart,
+  ClipboardList,
+  Headset,
   MapPin,
   User,
   ArrowUpRight
@@ -434,8 +440,14 @@ return (
                     { id: 'musteriler', icon: Users, label: 'Müşteri Bilgileri' },
                     { id: 'varliklar', icon: Box, label: 'Varlık Yönetimi' },
                     { id: 'stok', icon: Package, label: 'Stok & Depo' },
+                    { id: 'bakim', icon: CalendarDays, label: 'Periyodik Bakım' },
+                    { id: 'arizalar', icon: Siren, label: 'Arıza & Acil Durum' },
+                    { id: 'teklifler', icon: FileText, label: 'Teklif & Sözleşmeler' },
+                    { id: 'satinalma', icon: ShoppingCart, label: 'Satın Alma' },
+                    { id: 'formlar', icon: ClipboardList, label: 'Servis Formları' },
                     { id: 'finans', icon: CreditCard, label: 'Finans' },
                     { id: 'mesajlar', icon: MessageSquareText, label: 'Saha İletişimi' },
+                    { id: 'destek', icon: Headset, label: 'Destek & Yardım' },
                   ].map((item) => (
                     <button
                       key={item.id}
@@ -473,7 +485,13 @@ return (
                       {mockupTab === 'musteriler' && 'Müşteri Bilgileri ve Yönetimi'}
                       {mockupTab === 'varliklar' && 'Varlık Yönetimi ve QR İşlemleri'}
                       {mockupTab === 'stok' && 'Depo ve Stok Takibi'}
+                      {mockupTab === 'bakim' && 'Periyodik Bakım Planı'}
+                      {mockupTab === 'arizalar' && 'Arıza ve Acil Durum Takibi'}
+                      {mockupTab === 'teklifler' && 'Teklif ve Sözleşme Yönetimi'}
+                      {mockupTab === 'satinalma' && 'Satın Alma Siparişleri'}
+                      {mockupTab === 'formlar' && 'Dijital Servis Formları'}
                       {mockupTab === 'finans' && 'Gelir / Gider Analizi'}
+                      {mockupTab === 'destek' && 'Destek ve Yardım'}
                     </div>
                     <div className="flex items-center gap-5 text-gray-400 shrink-0">
                       <Search className="w-5 h-5 cursor-pointer hover:text-blue-600 transition-colors" />
@@ -749,6 +767,50 @@ return (
                               <input type="text" placeholder="Cevap yaz..." disabled className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs outline-none focus:border-blue-400 focus:bg-white transition-colors cursor-not-allowed" />
                               <button className="bg-blue-600 text-white p-2.5 rounded-xl opacity-50 cursor-not-allowed"><Send className="w-4 h-4" /></button>
                             </div>
+                          </div>
+                        )}
+
+                        {!['dashboard', 'personel', 'isler', 'completed', 'mesajlar', 'musteriler', 'varliklar', 'stok', 'finans'].includes(mockupTab) && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {(mockupTab === 'bakim' ? [
+                              ['Bakım tarihi yaklaşanlar', 'Yaklaşan asansör bakımlarını tek listede görün.'],
+                              ['Aylık görev planı', 'Bakım işlerini takvime ekleyip ekiplere atayın.'],
+                              ['Otomatik görev oluşturma', 'Otopilottaki cihazlar için dönemsel bakım işleri oluşturun.'],
+                              ['Ekip iş yükü', 'Ustaların görev yoğunluğunu planlarken dikkate alın.'],
+                            ] : mockupTab === 'arizalar' ? [
+                              ['Yeni arıza bildirimleri', 'Bina yöneticisinin bildirimini ilgili asansör kaydıyla görün.'],
+                              ['Acil çağrılar', 'Acil yardım taleplerini ayrı listede takip edin.'],
+                              ['İş emrine dönüştürme', 'Arıza kaydını saha ekibine atanabilir işe çevirin.'],
+                              ['Çözüm geçmişi', 'Tamamlanan arıza ve müdahaleleri cihaz geçmişinde saklayın.'],
+                            ] : mockupTab === 'teklifler' ? [
+                              ['Teklif hazırlama', 'Müşteriye sunacağınız bakım ve revizyon tekliflerini kaydedin.'],
+                              ['Uzaktan onay', 'Teklif bağlantısını paylaşın; müşteri dijital olarak onaylasın.'],
+                              ['Bakım sözleşmeleri', 'Sözleşme bilgilerini müşteri ve asansör kayıtlarıyla ilişkilendirin.'],
+                              ['Talep takibi', 'Web sitenizden gelen teklif taleplerini tek yerde görün.'],
+                            ] : mockupTab === 'satinalma' ? [
+                              ['Tedarikçi siparişleri', 'Siparişleri tedarikçi ve malzeme bazında kaydedin.'],
+                              ['Kısmi teslimat', 'Gelen miktarı işleyin, stok seviyesini güncel tutun.'],
+                              ['Sipariş durumu', 'Bekleyen, kısmi teslim edilen ve tamamlanan siparişleri izleyin.'],
+                              ['Stok bağlantısı', 'Sipariş kalemlerini mevcut depo malzemeleriyle eşleştirin.'],
+                            ] : mockupTab === 'formlar' ? [
+                              ['Sahada dijital form', 'Usta bakım ve arıza kontrol listesini telefondan doldursun.'],
+                              ['Fotoğraf ve notlar', 'Yapılan işi fotoğraf ve açıklamayla kayıt altına alın.'],
+                              ['Müşteri imzası', 'Servis sonunda müşteri imzasını aynı kayda ekleyin.'],
+                              ['Cihaz geçmişi', 'Tamamlanan servis formlarını asansör kaydından tekrar bulun.'],
+                            ] : [
+                              ['Yardım talepleri', 'Sorularınızı ve destek taleplerinizi uygulama içinden iletin.'],
+                              ['Yanıt takibi', 'Destek ekibinden gelen yanıtları aynı ekranda görün.'],
+                              ['Sık kullanılan bilgiler', 'Firma ve ekip yönetimiyle ilgili yardım konularına ulaşın.'],
+                              ['Geri bildirim', 'Ürünle ilgili önerilerinizi doğrudan paylaşın.'],
+                            ]).map(([title, description]) => (
+                              <div key={title} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+                                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3">
+                                  <CheckCircle className="w-4 h-4" />
+                                </div>
+                                <h3 className="font-bold text-gray-900 text-sm mb-1">{title}</h3>
+                                <p className="text-xs leading-relaxed text-gray-500">{description}</p>
+                              </div>
+                            ))}
                           </div>
                         )}
 

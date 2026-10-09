@@ -159,7 +159,17 @@ export default function AddAssetModal({
                       {!showAddCustomer && (
                         <button 
                             type="button" 
-                            onClick={() => { setIsPushedBack(true); setShowAddCustomer && setShowAddCustomer(true); }} 
+                            onClick={() => {
+                              const assetAddress = getFullAddress(newAsset.location || '', buildingNo, selectedCity, selectedDistrict);
+                              if (assetAddress.trim()) {
+                                setNewCustomer((prev: any) => ({
+                                  ...prev,
+                                  address: prev?.address?.trim() ? prev.address : assetAddress
+                                }));
+                              }
+                              setIsPushedBack(true);
+                              setShowAddCustomer && setShowAddCustomer(true);
+                            }} 
                             className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition-all active:scale-95 flex items-center gap-1"
                         >
                             + Yeni Müşteri

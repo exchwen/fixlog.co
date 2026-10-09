@@ -159,7 +159,7 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
                   <span className="flex-1 text-left whitespace-nowrap text-[12px] font-bold uppercase tracking-wide lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300">{group.label}</span>
                   <ChevronDown size={14} className={`shrink-0 transition-transform lg:opacity-0 group-hover:opacity-100 ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
-                {isOpen && <div id={`sidebar-group-${group.id}`} className="mt-1 space-y-1 border-l border-slate-700 ml-[21px] pl-2 lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                {isOpen && <div id={`sidebar-group-${group.id}`} className="mt-1 hidden space-y-1 border-l border-slate-700 ml-[21px] pl-2 lg:group-hover:block">
                   {group.items.map(item => (
                     <button key={item.id} type="button" onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }} aria-current={activeTab === item.id ? 'page' : undefined}
                       className={`w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-left transition-colors ${activeTab === item.id ? 'bg-blue-600/15 text-blue-400 font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white font-medium'}`}>
