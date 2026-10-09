@@ -476,6 +476,7 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
         </div>
 
         {/* İLETİŞİM BİLGİLERİ (4'LÜ GRID) */}
+        <div className="border-t border-slate-200 pt-6"><h4 className="text-sm font-black text-slate-800">İletişim Bilgileri</h4><p className="mt-1 text-xs text-slate-500">İletişim numaralarınızı düzenleyin.</p></div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 border-t border-slate-100 pt-6">
             <div>
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block">İşletme Telefonu (Cep)</label>
@@ -541,6 +542,7 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
         </div>
 
         {/* Adres Yönetimi */}
+        <div className="border-t border-slate-200 pt-6"><h4 className="text-sm font-black text-slate-800">Konum ve Vergi Bilgileri</h4><p className="mt-1 text-xs text-slate-500">Adresinizi ve resmi fatura bilgilerinizi düzenleyin.</p></div>
         <div className="border-t border-slate-100 pt-6">
           <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Konum ve Adres Bilgisi</label>
           <div className="space-y-4 p-4 sm:p-5 bg-slate-50 border border-slate-200 rounded-2xl">
@@ -604,6 +606,7 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
         </div>
 
         {/* 🚀 YENİ: FATURA VE ABONELİK (İYZİCO ENTEGRASYON ALANI) */}
+        <div className="border-t border-slate-200 pt-6"><h4 className="text-sm font-black text-slate-800">Abonelik ve Referans</h4><p className="mt-1 text-xs text-slate-500">Plan durumunuzu ve davet kodu kazanımlarınızı takip edin.</p></div>
         <div className="border-t border-slate-100 pt-6 pb-2">
            <label className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
               <CreditCard size={16} /> Fatura ve Abonelik Yönetimi
@@ -735,6 +738,7 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
         </div>
 
         {/* 🚀 YENİ: ÇALIŞMA GÜNLERİ AYARI (OTOPİLOT İÇİN) */}
+        <div className="border-t border-slate-200 pt-6"><h4 className="text-sm font-black text-slate-800">Çalışma Planı ve Otomasyon</h4><p className="mt-1 text-xs text-slate-500">Otonom planlamada çalışma günlerini ve kapasiteyi belirleyin.</p></div>
         <div className="border-t border-slate-100 pt-6 pb-2">
           <label className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
             <Calendar size={16} /> Firmanın Çalışma Günleri
@@ -795,6 +799,7 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
         </div>
 
         {/* 🚀 YENİ: Periyodik Bakım ve Bildirim Ayarları */}
+        <div className="border-t border-slate-200 pt-6"><h4 className="text-sm font-black text-slate-800">Bildirim ve Hesap Güvenliği</h4><p className="mt-1 text-xs text-slate-500">Bakım uyarılarını ve giriş şifrenizi yönetin.</p></div>
         <div className="border-t border-slate-100 pt-6 pb-2">
           <div className="flex items-center gap-2 mb-4">
              <Bell className="text-amber-500" size={20} />

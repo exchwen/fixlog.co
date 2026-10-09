@@ -149,7 +149,7 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
           <button type="button" onClick={() => { setActiveTab('home'); setIsMobileMenuOpen(false); }} aria-current={activeTab === 'home' ? 'page' : undefined}
             className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${activeTab === 'home' ? 'bg-blue-600/15 text-blue-400 font-bold' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
             <LayoutDashboard size={18} className="shrink-0" />
-            <span className="flex-1 text-left whitespace-nowrap text-[12px] font-bold">Genel Bakış</span>
+            <span className="flex-1 text-left whitespace-nowrap text-[12px] font-bold lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-300">Genel Bakış</span>
             {activeTab === 'home' && <ChevronRight size={13} className="shrink-0" />}
           </button>
           {navGroups.map(group => {
