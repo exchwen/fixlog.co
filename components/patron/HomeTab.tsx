@@ -1170,11 +1170,11 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
             <tbody className="divide-y divide-slate-50">
             {jobs.slice(0, 10).map((j: any) => {
                 
+                const creatorRole = j.creator_role || j.details?.creatorRole || null;
                 const creator = j.creator_name || j.details?.createdBy || (data?.ownerName?.split(' ')[0] || 'Sistem');
+                const creatorDisplay = creatorRole === 'Patron' && (!j.creator_name || creator === 'Yönetici') ? 'Patron' : creator;
                 const manager = j.manager_name || j.details?.managerName || null;
                 const worker = j.worker_name || null;
-
-                const isCreatorSameAsManager = manager && creator === manager;
 
                 const isApproved = j.status === 'Tamamlandı';
                 const staffColor = isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200';
@@ -1215,25 +1215,14 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
                     <td className="px-5 py-4 align-middle">
                       <div className="flex flex-col gap-2 w-fit">
                         
-                      {isCreatorSameAsManager ? (
-                            <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-1.5 w-[130px] shrink-0">
-                                  <ShieldCheck size={14} className="text-blue-600" />
-                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ATAYAN & SORUMLU:</span>
-                                </div>
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${staffColor} whitespace-nowrap shadow-sm`}>
-                                    {manager}
-                                </span>
-                            </div>
-                        ) : (
-                            <>
+                      <>
                                 <div className="flex items-center gap-2">
                                     <div className="flex items-center gap-1.5 w-[130px] shrink-0">
                                       <UserPlus size={14} className="text-slate-400" />
                                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">ATAYAN:</span>
                                     </div>
                                     <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-600 whitespace-nowrap shadow-sm">
-                                        {creator}
+                                        {creatorDisplay}{creatorRole ? ` · ${creatorRole}` : ''}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -1249,8 +1238,7 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
                                         <span className="text-[10px] font-medium text-slate-400 italic px-2 py-0.5">-</span>
                                     )}
                                 </div>
-                            </>
-                        )}
+                      </>
                         <div className="flex items-center gap-2">
                             <div className="flex items-center gap-1.5 w-[130px] shrink-0">
                               <Wrench size={14} className={worker ? 'text-indigo-500' : 'text-slate-400'} />
@@ -1302,11 +1290,11 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
 
         <div className="md:hidden flex flex-col gap-3 p-4 bg-slate-50/50 max-h-[500px] overflow-y-auto custom-scrollbar">
         {jobs.slice(0, 10).map((j: any) => {
+             const creatorRole = j.creator_role || j.details?.creatorRole || null;
              const creator = j.creator_name || j.details?.createdBy || (data?.ownerName?.split(' ')[0] || 'Sistem');
+             const creatorDisplay = creatorRole === 'Patron' && (!j.creator_name || creator === 'Yönetici') ? 'Patron' : creator;
              const manager = j.manager_name || j.details?.managerName || null;
              const worker = j.worker_name || null;
-
-             const isCreatorSameAsManager = manager && creator === manager;
 
              const isApproved = j.status === 'Tamamlandı';
              const staffColor = isApproved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200';
@@ -1350,23 +1338,13 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
                  </div>
 
                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-2.5">
-                    {isCreatorSameAsManager ? (
-                        <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
-                               <ShieldCheck size={10} /> ATAYAN & SORUMLU
-                            </span>
-                            <div className={`text-[11px] font-bold px-2 py-0.5 rounded border ${staffColor}`}>
-                                {manager}
-                            </div>
-                        </div>
-                    ) : (
-                        <>
+                    <>
                           <div className="flex items-center gap-2">
                               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
                                  <UserPlus size={10} /> ATAYAN
                               </span>
                               <div className="text-[11px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
-                                  {creator}
+                                  {creatorDisplay}{creatorRole ? ` · ${creatorRole}` : ''}
                               </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -1377,8 +1355,7 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
                                   {manager || '-'}
                               </div>
                           </div>
-                        </>
-                    )}
+                    </>
                     
                     <div className="flex items-center gap-2 border-t border-slate-200 pt-2 border-dashed">
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 w-[125px] shrink-0">
