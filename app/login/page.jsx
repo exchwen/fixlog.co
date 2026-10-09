@@ -80,9 +80,12 @@ return () => unsubscribe();
         formData.password
       );
 
-      const res = await fetch(
-        `${API_URL}/get-slug?uid=${userCredential.user.uid}`
-      );
+      const idToken = await userCredential.user.getIdToken();
+      const res = await fetch(`${API_URL}/get-slug`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
       const data = await res.json();
 
       if (data.slug && data.token) {
@@ -109,7 +112,12 @@ return () => unsubscribe();
 
       const result = await signInWithPopup(auth, googleProvider);
 
-      const res = await fetch(`${API_URL}/get-slug?uid=${result.user.uid}`);
+      const idToken = await result.user.getIdToken();
+      const res = await fetch(`${API_URL}/get-slug`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
       const data = await res.json();
 
       if (data.slug && data.token) {

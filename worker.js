@@ -56,12 +56,32 @@ var worker_default = {
       const binary = atob(base64);
       return decodeURIComponent(binary.split("").map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join(""));
     }, "fromBase64Url");
+    const verifyFirebaseIdToken = async (idToken) => {
+      try {
+        if (typeof idToken !== "string") return null;
+        const parts = idToken.split(".");
+        if (parts.length !== 3) return null;
+        const header = JSON.parse(fromBase64Url(parts[0]));
+        const claims = JSON.parse(fromBase64Url(parts[1]));
+        if (header.alg !== "RS256" || !header.kid || claims.aud !== "fixlog-co" || claims.iss !== "https://securetoken.google.com/fixlog-co" || !claims.sub || claims.sub.length > 128 || claims.exp <= Date.now() / 1000 || claims.iat > Date.now() / 1000 + 60) return null;
+        const keysResponse = await fetch("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com", { cf: { cacheTtl: 3600, cacheEverything: true } });
+        if (!keysResponse.ok) return null;
+        const keyData = (await keysResponse.json()).keys?.find((key) => key.kid === header.kid);
+        if (!keyData) return null;
+        const publicKey = await crypto.subtle.importKey("jwk", keyData, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+        const valid = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", publicKey, Uint8Array.from(atob(parts[2].replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - parts[2].length % 4) % 4)), (char) => char.charCodeAt(0)), new TextEncoder().encode(`${parts[0]}.${parts[1]}`));
+        return valid ? claims : null;
+      } catch {
+        return null;
+      }
+    };
     const triggerPusher = /* @__PURE__ */ __name(async (channel, event, data) => {
       try {
         console.log(`[Pusher] Tetikleniyor... Kanal: ${channel}, Event: ${event}`);
         const PUSHER_APP_ID = env.PUSHER_APP_ID || "2118585";
         const PUSHER_KEY = env.PUSHER_KEY || "75dfed44245e16eaea0a";
-        const PUSHER_SECRET = env.PUSHER_SECRET || "3e7c62a8460da425c4f4";
+        const PUSHER_SECRET = env.PUSHER_SECRET;
+        if (!PUSHER_SECRET) throw new Error("PUSHER_SECRET yapılandırılmamış.");
         const PUSHER_CLUSTER = "eu";
         const bodyStr = JSON.stringify({ name: event, channels: [channel], data: JSON.stringify(data) });
         const generateMD5 = /* @__PURE__ */ __name((str) => {
@@ -119,7 +139,8 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
         }
       try {
         const BEAMS_INSTANCE_ID = "015accc9-e581-44a3-b37f-5410549611da";
-        const BEAMS_PRIMARY_KEY = "EB43AD23817C10DE923F9A222F19A4E6696642534F2F54DAEB30A6D966DB5DEC";
+        const BEAMS_PRIMARY_KEY = env.BEAMS_PRIMARY_KEY;
+        if (!BEAMS_PRIMARY_KEY) throw new Error("BEAMS_PRIMARY_KEY yapılandırılmamış.");
         let iconUrl = `${APP_URL}/icons/icon-192x192.png`;
         let finalTitle = title;
         if (slug) {
@@ -209,7 +230,6 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
         "/public/trigger-emergency",
         "/public/report-fault",
         "/public/request-quote",
-        "/send-test-push",
         "/public/get-quote",
         "/public/sign-quote",
         "/masterboss-login",
@@ -244,7 +264,11 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
                 }
                 const expectedSignature = btoa(binarySig).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
                 if (signatureB64 === expectedSignature) {
-                  userAuth = payload;
+                  if (payload.role === "Patron" && payload.firebase_verified !== true) {
+                    authErrorReason = "Oturum güvenlik nedeniyle yenilenmeli. Lütfen tekrar giriş yapın.";
+                  } else {
+                    userAuth = payload;
+                  }
                 } else {
                   authErrorReason = "Token imzas\u0131 ge\xE7ersiz (M\xFCh\xFCr uyu\u015Fmuyor).";
                 }
@@ -287,7 +311,7 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
           }
         }
         if (userAuth.role === "Usta") {
-          const allowedForUsta = ["/dashboard-data", "/get-messages", "/send-message", "/read-messages", "/pusher/auth", "/add-job", "/update-job", "/approve-job", "/send-sos", "/request-material", "/add-support-ticket", "/get-my-tickets", "/reply-support-ticket"];
+          const allowedForUsta = ["/dashboard-data", "/get-messages", "/send-message", "/read-messages", "/pusher/auth", "/update-job", "/send-sos", "/request-material", "/add-support-ticket", "/get-my-tickets", "/reply-support-ticket"];
           if (!allowedForUsta.includes(url.pathname)) {
             return new Response(JSON.stringify({ error: "Ye\u015Fil Kart (Usta) Yetkisi S\u0131n\u0131r\u0131!" }), { status: 403, headers: corsHeaders });
           }
@@ -308,21 +332,24 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
         }
       }
       if (url.pathname === "/send-test-push" && method === "POST") {
+        if (!userAuth || userAuth.role !== "Masterboss") return new Response(JSON.stringify({ error: "Yetkisiz işlem." }), { status: 403, headers: corsHeaders });
         const { interests, title, body, link, slug } = await request.json();
+        if (!Array.isArray(interests) || interests.length !== 1 || interests[0] !== "test-kanal") return new Response(JSON.stringify({ error: "Yalnızca test kanalına gönderim yapılabilir." }), { status: 400, headers: corsHeaders });
         const finalLink = link || APP_URL;
         await triggerBeams(interests, title, body, finalLink, slug);
-        return new Response(JSON.stringify({
-          success: true,
-          message: "Bildirim iste\u011Fi Pusher'a iletildi."
-        }), { headers: corsHeaders });
+        return new Response(JSON.stringify({ success: true, message: "Bildirim iste\u011Fi Pusher'a iletildi." }), { headers: corsHeaders });
       }
       if (url.pathname === "/pusher/auth" && method === "POST") {
         const formData = await request.text();
         const params = new URLSearchParams(formData);
         const socketId = params.get("socket_id");
         const channelName = params.get("channel_name");
-        const PUSHER_KEY = env.PUSHER_KEY || "75dfed44245e16eaea0a";
-        const PUSHER_SECRET = env.PUSHER_SECRET || "3e7c62a8460da425c4f4";
+        if (!socketId || !channelName || userAuth.role === "Masterboss" || !userAuth.slug || channelName !== `presence-chat-${userAuth.slug}`) {
+          return new Response(JSON.stringify({ error: "Bu kanala erişim izniniz yok." }), { status: 403, headers: corsHeaders });
+        }
+        const PUSHER_KEY = env.PUSHER_KEY;
+        const PUSHER_SECRET = env.PUSHER_SECRET;
+        if (!PUSHER_KEY || !PUSHER_SECRET) return new Response(JSON.stringify({ error: "Pusher yapılandırması eksik." }), { status: 503, headers: corsHeaders });
         const userId = userAuth.role === "Patron" ? "PATRON" : String(userAuth.id);
         const userInfo = { name: userAuth.name, role: userAuth.role };
         const channelData = JSON.stringify({ user_id: userId, user_info: userInfo });
@@ -337,7 +364,10 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
         return new Response(JSON.stringify(authResponse), { headers: corsHeaders });
       }
       if (url.pathname === "/register" && method === "POST") {
-        const { uid, companyName, sector, slug, ownerName, referredByCode } = await request.json();
+        const { idToken, companyName, sector, slug, referredByCode } = await request.json();
+        const firebaseUser = await verifyFirebaseIdToken(idToken);
+        if (!firebaseUser) return new Response(JSON.stringify({ error: "Firebase oturumu doğrulanamadı. Yeniden giriş yapın." }), { status: 401, headers: corsHeaders });
+        const uid = firebaseUser.user_id || firebaseUser.sub;
         if (!uid || typeof uid !== "string" || uid.trim() === "") {
           return new Response(JSON.stringify({ error: "Oturum bilgisi eksik. L\xFCtfen tekrar giri\u015F yap\u0131n." }), { status: 400, headers: corsHeaders });
         }
@@ -367,7 +397,7 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
             companyName || "",
             slug || "",
             sector || "",
-            ownerName || "Y\xF6netici",
+            firebaseUser.name || firebaseUser.email || "Y\xF6netici",
             trialEndsAt.toISOString(),
             refCode,
             referredById
@@ -421,12 +451,15 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
           discountApplied
         }), { headers: corsHeaders });
       }
-      if (url.pathname === "/get-slug" && method === "GET") {
-        const uid = url.searchParams.get("uid");
-        const company = await safeFirst(env.DB.prepare("SELECT slug, owner_name FROM companies WHERE owner_uid = ?").bind(uid || ""));
+      if (url.pathname === "/get-slug" && method === "POST") {
+        const { idToken } = await request.json();
+        const firebaseUser = await verifyFirebaseIdToken(idToken);
+        if (!firebaseUser) return new Response(JSON.stringify({ success: false, error: "Firebase oturumu doğrulanamadı. Yeniden giriş yapın." }), { status: 401, headers: corsHeaders });
+        const uid = firebaseUser.user_id || firebaseUser.sub;
+        const company = await safeFirst(env.DB.prepare("SELECT slug, owner_name FROM companies WHERE owner_uid = ?").bind(uid));
         if (company) {
           const header = toBase64Url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-          const payload = toBase64Url(JSON.stringify({ id: uid, name: company.owner_name, role: "Patron", slug: company.slug, exp: Date.now() + 1e3 * 60 * 60 * 24 * 30 }));
+          const payload = toBase64Url(JSON.stringify({ id: uid, name: company.owner_name, role: "Patron", slug: company.slug, firebase_verified: true, exp: Date.now() + 1e3 * 60 * 60 * 24 * 30 }));
           const secret = env.JWT_SECRET;
           if (!secret)
             throw new Error("JWT_SECRET eksik!");
@@ -612,7 +645,7 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
             console.error("Referans kodu olu\u015Fturulurken hata:", e);
           }
         }
-        return new Response(JSON.stringify({
+        const dashboardData = {
           growthAdvice,
           // Frontend'de uyarı çubuğunda göstermek için eklendi
           subscription_status: company?.subscription_status || "active",
@@ -703,7 +736,46 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
             return { ...req, parsed_items: parsedItems };
           }),
           finSummary: { income: totalIncome, expense: totalExpense }
-        }), { headers: corsHeaders });
+        };
+        if (userAuth.role === "Usta") {
+          const ownId = String(userAuth.id);
+          const ownJobs = dashboardData.jobs.filter((job) => [job.staff_id, job.worker_id, job.manager_id].some((assignedId) => assignedId != null && String(assignedId) === ownId));
+          const relatedAssetIds = new Set(ownJobs.map((job) => String(job.asset_id)));
+          const ownAssets = dashboardData.assets.filter((asset) => relatedAssetIds.has(String(asset.id)));
+          const ownCustomerIds = new Set(ownAssets.map((asset) => String(asset.customer_id)).filter(Boolean));
+          dashboardData.jobs = ownJobs;
+          dashboardData.assets = ownAssets;
+          dashboardData.staff = dashboardData.staff.filter((staffMember) => String(staffMember.id) === ownId);
+          dashboardData.customers = dashboardData.customers.filter((customer) => ownCustomerIds.has(String(customer.id))).map(({ tax_info, ...customer }) => customer);
+          dashboardData.stock = dashboardData.stock.map(({ supplier_id, unit_price, ...stockItem }) => stockItem);
+          dashboardData.finances = [];
+          dashboardData.suppliers = [];
+          dashboardData.categories = [];
+          dashboardData.activeEmergencies = [];
+          dashboardData.allEmergencies = [];
+          dashboardData.pendingFaults = [];
+          dashboardData.allFaults = [];
+          dashboardData.pendingMaterialRequests = [];
+          dashboardData.allMaterialRequests = [];
+          dashboardData.name = company?.company_name || "İşletme";
+          dashboardData.ownerName = "";
+          dashboardData.address = "";
+          dashboardData.taxInfo = "";
+          dashboardData.phone = "";
+          dashboardData.landlinePhone = "";
+          dashboardData.emergencyPhone = "";
+          dashboardData.whatsappPhone = "";
+          dashboardData.website = "";
+          dashboardData.referralCode = undefined;
+          dashboardData.referral_code = undefined;
+          dashboardData.custom_base_price = undefined;
+          dashboardData.custom_per_asset_price = undefined;
+          dashboardData.free_months_balance = undefined;
+          dashboardData.has_masterboss_gift = undefined;
+          dashboardData.stats = [];
+          dashboardData.finSummary = { income: 0, expense: 0 };
+        }
+        return new Response(JSON.stringify(dashboardData), { headers: corsHeaders });
       }
       if (url.pathname === "/update-settings" && method === "POST") {
         const { slug, companyName, ownerName, sector, address, taxInfo, phone, landlinePhone, emergencyPhone, whatsappPhone, website, logo, work_days, autopilot_daily_capacity_units } = await request.json();
@@ -1528,33 +1600,38 @@ L\xFCtfen detaylar\u0131 kontrol edin.`;
       }
       if (url.pathname === "/send-message" && method === "POST") {
         const { slug, senderId, receiverId, message, tempId } = await request.json();
-        console.log(`[D1 Insert Ba\u015Fl\u0131yor] Sender: ${senderId}, Receiver: ${receiverId}, Msg: ${message}`);
-        const insertResult = await env.DB.prepare("INSERT INTO messages (company_slug, sender_id, receiver_id, message, is_read) VALUES (?, ?, ?, ?, 0) RETURNING id, created_at").bind(slug || "", senderId != null ? String(senderId) : null, receiverId != null ? String(receiverId) : null, message || "").all();
+        const trustedSlug = userAuth?.slug;
+        const trustedSenderId = userAuth?.role === "Patron" ? "PATRON" : String(userAuth?.id || "");
+        if (!trustedSlug || slug !== trustedSlug || !trustedSenderId || !receiverId || typeof message !== "string" || !message.trim() || message.length > 5000) return new Response(JSON.stringify({ error: "Mesaj verisi geçersiz." }), { status: 400, headers: corsHeaders });
+        if (receiverId !== "PATRON") {
+          const recipient = await safeFirst(env.DB.prepare("SELECT id FROM staff WHERE id = ? AND company_slug = ? AND is_active = 1").bind(receiverId, trustedSlug));
+          if (!recipient) return new Response(JSON.stringify({ error: "Alıcı bulunamadı." }), { status: 404, headers: corsHeaders });
+        }
+        const insertResult = await env.DB.prepare("INSERT INTO messages (company_slug, sender_id, receiver_id, message, is_read) VALUES (?, ?, ?, ?, 0) RETURNING id, created_at").bind(trustedSlug, trustedSenderId, String(receiverId), message.trim()).all();
         const insertRow = insertResult?.results?.[0];
-        console.log(`[D1 Insert Bitti] Kay\u0131t Olan Row:`, insertRow);
         let pusherResult = null;
         if (insertRow) {
-          pusherResult = await triggerPusher(`presence-chat-${slug}`, "new-message", {
+          pusherResult = await triggerPusher(`presence-chat-${trustedSlug}`, "new-message", {
             id: insertRow.id,
             _tempId: tempId,
-            sender_id: senderId != null ? String(senderId) : null,
-            receiver_id: receiverId != null ? String(receiverId) : null,
+            sender_id: trustedSenderId,
+            receiver_id: String(receiverId),
             message,
             created_at: insertRow.created_at,
             is_read: 0
           });
           ctx.waitUntil((async () => {
             let senderName = "Yeni Mesaj";
-            if (senderId === "PATRON") {
-              const company = await safeFirst(env.DB.prepare("SELECT owner_name FROM companies WHERE slug = ?").bind(slug));
+            if (trustedSenderId === "PATRON") {
+              const company = await safeFirst(env.DB.prepare("SELECT owner_name FROM companies WHERE slug = ?").bind(trustedSlug));
               senderName = company?.owner_name || "Firma Y\xF6neticisi";
             } else {
-              const staffUser = await safeFirst(env.DB.prepare("SELECT name FROM staff WHERE id = ?").bind(senderId));
+              const staffUser = await safeFirst(env.DB.prepare("SELECT name FROM staff WHERE id = ? AND company_slug = ?").bind(trustedSenderId, trustedSlug));
               if (staffUser)
                 senderName = staffUser.name;
             }
-            const targetInterest = receiverId === "PATRON" ? `user-${slug}-PATRON` : `user-${slug}-${receiverId}`;
-            await triggerBeams([targetInterest], "Yeni Mesaj", `${senderName}: ${message}`, `${APP_URL}/${slug}/manager`, slug);
+            const targetInterest = receiverId === "PATRON" ? `user-${trustedSlug}-PATRON` : `user-${trustedSlug}-${receiverId}`;
+            await triggerBeams([targetInterest], "Yeni Mesaj", `${senderName}: ${message.trim()}`, `${APP_URL}/${trustedSlug}/manager`, trustedSlug);
           })());
         }
         return new Response(JSON.stringify({
@@ -1565,23 +1642,38 @@ L\xFCtfen detaylar\u0131 kontrol edin.`;
       }
       if (url.pathname === "/read-messages" && method === "POST") {
         const { slug, readerId, senderId } = await request.json();
-        await env.DB.prepare("UPDATE messages SET is_read = 1 WHERE company_slug = ? AND receiver_id = ? AND sender_id = ? AND is_read = 0").bind(slug || "", readerId != null ? String(readerId) : null, senderId != null ? String(senderId) : null).run();
-        ctx.waitUntil(triggerPusher(`presence-chat-${slug}`, "messages-read", { readerId: String(readerId), senderId: String(senderId) }));
+        const trustedSlug = userAuth?.slug;
+        const trustedReaderId = userAuth?.role === "Patron" ? "PATRON" : String(userAuth?.id || "");
+        if (!trustedSlug || slug !== trustedSlug || String(readerId) !== trustedReaderId || !senderId) return new Response(JSON.stringify({ error: "Mesaj yetkisi doğrulanamadı." }), { status: 403, headers: corsHeaders });
+        await env.DB.prepare("UPDATE messages SET is_read = 1 WHERE company_slug = ? AND receiver_id = ? AND sender_id = ? AND is_read = 0").bind(trustedSlug, trustedReaderId, String(senderId)).run();
+        ctx.waitUntil(triggerPusher(`presence-chat-${trustedSlug}`, "messages-read", { readerId: trustedReaderId, senderId: String(senderId) }));
         return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
       }
       if (url.pathname === "/get-messages" && method === "GET") {
         const slug = url.searchParams.get("slug");
         const staffId = url.searchParams.get("staffId");
-        const numId = staffId && !isNaN(Number(staffId)) ? Number(staffId) : null;
-        const results = await safeAll(env.DB.prepare("SELECT id, company_slug, sender_id, receiver_id, message, created_at, is_read FROM messages WHERE company_slug = ? AND (sender_id = ? OR receiver_id = ? OR sender_id = ? OR receiver_id = ?) ORDER BY created_at DESC LIMIT 75").bind(slug || "", staffId || null, staffId || null, numId, numId));
+        const trustedSlug = userAuth?.slug;
+        if (!trustedSlug || slug !== trustedSlug) return new Response(JSON.stringify({ error: "Firma doğrulanamadı." }), { status: 403, headers: corsHeaders });
+        const selfId = userAuth.role === "Patron" ? "PATRON" : String(userAuth.id);
+        const results = userAuth.role === "Usta"
+          ? staffId === selfId
+            ? await safeAll(env.DB.prepare("SELECT id, company_slug, sender_id, receiver_id, message, created_at, is_read FROM messages WHERE company_slug = ? AND (sender_id = ? OR receiver_id = ?) ORDER BY created_at DESC LIMIT 75").bind(trustedSlug, selfId, selfId))
+            : await safeAll(env.DB.prepare("SELECT id, company_slug, sender_id, receiver_id, message, created_at, is_read FROM messages WHERE company_slug = ? AND ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)) ORDER BY created_at DESC LIMIT 75").bind(trustedSlug, selfId, staffId, staffId, selfId))
+          : await safeAll(env.DB.prepare("SELECT id, company_slug, sender_id, receiver_id, message, created_at, is_read FROM messages WHERE company_slug = ? AND (sender_id = ? OR receiver_id = ? OR sender_id = ? OR receiver_id = ?) ORDER BY created_at DESC LIMIT 75").bind(trustedSlug, staffId || null, staffId || null, staffId && !isNaN(Number(staffId)) ? Number(staffId) : null, staffId && !isNaN(Number(staffId)) ? Number(staffId) : null));
         return new Response(JSON.stringify(results.reverse()), { headers: corsHeaders });
       }
       if (url.pathname === "/update-job" && method === "POST") {
         const requestBody = await request.json();
         const { slug, id, scheduledDate, staffId, taskNote, status, lastEditedBy, workType, photos, customerName, assetId, signatureName, signatureImage, usedMaterials, paymentStatus, paymentAmount } = requestBody;
-        const currentJob = await safeFirst(env.DB.prepare("SELECT details, photo_urls, manager_id, manager_name, worker_id, worker_name, staff_id, payment_status FROM jobs WHERE id = ? AND company_slug = ?").bind(id, slug || ""));
+        const currentJob = await safeFirst(env.DB.prepare("SELECT details, photo_urls, manager_id, manager_name, worker_id, worker_name, staff_id, payment_status, status FROM jobs WHERE id = ? AND company_slug = ?").bind(id, slug || ""));
         if (!currentJob) {
           return new Response(JSON.stringify({ error: "\u0130\u015F bulunamad\u0131" }), { status: 404, headers: corsHeaders });
+        }
+        if (userAuth.role === "Usta") {
+          const ownId = String(userAuth.id);
+          if (![currentJob.staff_id, currentJob.worker_id, currentJob.manager_id].some((assignedId) => assignedId != null && String(assignedId) === ownId)) return new Response(JSON.stringify({ error: "Bu görev size atanmamış." }), { status: 403, headers: corsHeaders });
+          if ([staffId, workType, customerName, assetId, paymentStatus, paymentAmount].some((value) => value !== undefined)) return new Response(JSON.stringify({ error: "Bu alanları güncelleme yetkiniz yok." }), { status: 403, headers: corsHeaders });
+          if (status !== undefined && !["Devam Ediyor", "Sahada", "Onay Bekliyor", "Tamamland\u0131"].includes(status)) return new Response(JSON.stringify({ error: "Görev durumu geçersiz." }), { status: 400, headers: corsHeaders });
         }
         let details = {};
         try {
@@ -1620,15 +1712,30 @@ L\xFCtfen detaylar\u0131 kontrol edin.`;
           existingPhotos = JSON.parse(currentJob.photo_urls || "[]");
         } catch (e) {
         }
-        const safeUsedMaterials = usedMaterials || [];
+        const safeUsedMaterials = Array.isArray(usedMaterials) ? usedMaterials : [];
+        if (userAuth.role === "Usta" && usedMaterials !== undefined && !Array.isArray(usedMaterials)) return new Response(JSON.stringify({ error: "Kullanılan malzeme listesi geçersiz." }), { status: 400, headers: corsHeaders });
         if (taskNote !== void 0)
           details.note = taskNote;
         if (safeUsedMaterials.length > 0)
           details.usedMaterials = safeUsedMaterials;
-        if ((status === "Tamamland\u0131" || status === "Onay Bekliyor") && safeUsedMaterials.length > 0) {
+        const inventoryTransition = (status === "Tamamland\u0131" || status === "Onay Bekliyor") && currentJob.status !== "Tamamland\u0131" && currentJob.status !== "Onay Bekliyor";
+        if (inventoryTransition && safeUsedMaterials.length > 0) {
+          const materialTotals = new Map();
           for (const mat of safeUsedMaterials) {
-            await env.DB.prepare("UPDATE stock SET quantity = quantity - ? WHERE id = ? AND company_slug = ?").bind(Number(mat.quantity), mat.id, slug).run();
-            const updatedStock = await safeFirst(env.DB.prepare("SELECT item_name, quantity, min_alert, unit_name FROM stock WHERE id = ? AND company_slug = ?").bind(mat.id, slug));
+            const quantity = Number(mat?.quantity);
+            const stockId = String(mat?.id || "");
+            if (!stockId || !Number.isFinite(quantity) || quantity <= 0) return new Response(JSON.stringify({ error: "Kullanılan malzeme miktarı geçersiz." }), { status: 400, headers: corsHeaders });
+            materialTotals.set(stockId, (materialTotals.get(stockId) || 0) + quantity);
+          }
+          const inventoryUpdates = [];
+          for (const [stockId, quantity] of materialTotals) {
+            const stockBefore = await safeFirst(env.DB.prepare("SELECT quantity, item_name, min_alert, unit_name FROM stock WHERE id = ? AND company_slug = ?").bind(stockId, slug));
+            if (!stockBefore || Number(stockBefore.quantity || 0) < quantity) return new Response(JSON.stringify({ error: "Stok miktarı kullanılan malzemeyi karşılamıyor." }), { status: 409, headers: corsHeaders });
+            inventoryUpdates.push(env.DB.prepare("UPDATE stock SET quantity = quantity - ? WHERE id = ? AND company_slug = ? AND quantity >= ?").bind(quantity, stockId, slug, quantity));
+          }
+          await env.DB.batch(inventoryUpdates);
+          for (const [stockId] of materialTotals) {
+            const updatedStock = await safeFirst(env.DB.prepare("SELECT item_name, quantity, min_alert, unit_name FROM stock WHERE id = ? AND company_slug = ?").bind(stockId, slug));
             if (updatedStock && Number(updatedStock.quantity) <= Number(updatedStock.min_alert)) {
               ctx.waitUntil(triggerBeams([`role-${slug}-ADMIN`], "\u26A0\uFE0F Kritik Stok Uyar\u0131s\u0131", `${updatedStock.item_name} t\xFCkenmek \xFCzere! (Kalan: ${updatedStock.quantity} ${updatedStock.unit_name})`, `${APP_URL}/${slug}/manager`, slug));
             }

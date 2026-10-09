@@ -118,7 +118,7 @@ export default function RegisterPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          uid: userCredential.user.uid,
+          idToken: await userCredential.user.getIdToken(),
           companyName: formData.companyName,
           sector: formData.sector,
           slug,
@@ -137,7 +137,7 @@ export default function RegisterPage() {
         return;
       }
 
-      const session = await fetchAndStorePatronSession(API_URL, userCredential.user.uid);
+      const session = await fetchAndStorePatronSession(API_URL, userCredential.user);
       if (!session.ok) {
         setError('Firma oluşturuldu ancak oturum başlatılamadı. Giriş sayfasından giriş yapın.');
         return;
@@ -177,7 +177,7 @@ export default function RegisterPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          uid: user.uid,
+          idToken: await user.getIdToken(),
           companyName: formData.companyName,
           sector: formData.sector,
           slug,
@@ -191,7 +191,7 @@ export default function RegisterPage() {
         return;
       }
 
-      const session = await fetchAndStorePatronSession(API_URL, user.uid);
+      const session = await fetchAndStorePatronSession(API_URL, user);
       if (!session.ok) {
         setError('Firma oluşturuldu ancak oturum başlatılamadı. Giriş sayfasından giriş yapın.');
         return;
