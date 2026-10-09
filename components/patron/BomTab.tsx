@@ -164,9 +164,12 @@ const handleSave = async () => {
     const parseItems = (itemsData: any) => {
         if (!itemsData) return [];
         if (typeof itemsData === 'string') {
-            try { return JSON.parse(itemsData); } catch (e) { return []; }
+            try {
+                const parsed = JSON.parse(itemsData);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) { return []; }
         }
-        return itemsData;
+        return Array.isArray(itemsData) ? itemsData : [];
     };
 
     return (
@@ -188,6 +191,19 @@ const handleSave = async () => {
                                     <div className="mb-4">
                                         <h3 className="font-bold text-slate-800 text-lg">{t.name}</h3>
                                         <p className="text-sm text-slate-500 line-clamp-2">{t.description}</p>
+                                        {parseItems(t.items).length > 0 && (
+                                            <ul className="mt-3 space-y-1.5 border-t border-slate-200 pt-3">
+                                                {parseItems(t.items).map((item: any, index: number) => {
+                                                    const stock = data?.stock?.find((entry: any) => String(entry.id) === String(item.stock_id));
+                                                    return (
+                                                        <li key={`${item.stock_id}-${index}`} className="flex justify-between gap-3 text-sm text-slate-600">
+                                                            <span className="truncate">{stock?.itemName || stock?.item_name || `Stok #${item.stock_id}`}</span>
+                                                            <span className="shrink-0 font-semibold text-slate-800">{item.quantity} adet</span>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        )}
                                     </div>
                                     <div className="flex gap-2 justify-end pt-4 border-t border-slate-200 mt-auto">
                                         <button onClick={() => handleDuplicate(t)} className="p-2.5 text-blue-600 hover:bg-blue-100 rounded-xl transition-colors" title="Kopyala"><Copy size={18} /></button>

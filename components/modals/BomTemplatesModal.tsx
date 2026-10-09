@@ -127,9 +127,12 @@ export default function BomTemplatesModal({ data, onClose }: any) {
     const parseItems = (itemsData: any) => {
         if (!itemsData) return [];
         if (typeof itemsData === 'string') {
-            try { return JSON.parse(itemsData); } catch (e) { return []; }
+            try {
+                const parsed = JSON.parse(itemsData);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) { return []; }
         }
-        return itemsData;
+        return Array.isArray(itemsData) ? itemsData : [];
     };
 
     return (
@@ -146,12 +149,25 @@ export default function BomTemplatesModal({ data, onClose }: any) {
                         {loading ? <Loader2 className="animate-spin mx-auto" /> : (
                             <div className="grid gap-4">
                                 {templates.map(t => (
-                                    <div key={t.id} className="border p-4 rounded-xl flex justify-between items-center">
-                                        <div>
+                                    <div key={t.id} className="border p-4 rounded-xl flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                                        <div className="min-w-0 flex-1">
                                             <h3 className="font-bold">{t.name}</h3>
                                             <p className="text-sm text-gray-500">{t.description}</p>
+                                            {parseItems(t.items).length > 0 && (
+                                                <ul className="mt-3 space-y-1.5 border-t border-slate-200 pt-3">
+                                                    {parseItems(t.items).map((item: any, index: number) => {
+                                                        const stock = data?.stock?.find((entry: any) => String(entry.id) === String(item.stock_id));
+                                                        return (
+                                                            <li key={`${item.stock_id}-${index}`} className="flex justify-between gap-3 text-sm text-slate-600">
+                                                                <span className="truncate">{stock?.itemName || stock?.item_name || `Stok #${item.stock_id}`}</span>
+                                                                <span className="shrink-0 font-semibold text-slate-800">{item.quantity} adet</span>
+                                                            </li>
+                                                        );
+                                                    })}
+                                                </ul>
+                                            )}
                                         </div>
-                                        <div className="flex gap-2">
+                                        <div className="flex gap-2 self-end sm:self-auto shrink-0">
                                             <button onClick={() => handleDuplicate(t)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Copy size={18} /></button>
                                             <button onClick={() => { setEditing(t); setName(t.name); setDesc(t.description); setItems(parseItems(t.items)); }} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg"><Edit2 size={18} /></button>
                                             <button onClick={() => handleDelete(t.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={18} /></button>
