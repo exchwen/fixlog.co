@@ -147,7 +147,7 @@ useEffect(() => {
     router.replace("/masterboss");
   };
 
-  const { companies = [], tickets = [], referrals = [], rewards = [], stats = {}, globalPricing } = data || {};
+  const { companies = [], tickets = [], referrals = [], rewards = [], stats = {}, supportSummary = {}, globalPricing } = data || {};
 
   // Veri yüklendiğinde globalPricing state'ini senkronize et
   useEffect(() => {
@@ -334,26 +334,8 @@ useEffect(() => {
 
   const totalAssets = companies.reduce((acc, c) => acc + (c.total_assets || 0), 0);
   const totalStaff = companies.reduce((acc, c) => acc + (c.total_staff || 0), 0);
-  const activeCompanies = companies.filter(c => c.subscription_status === 'active').length;
-
-  const totalMonthlyRevenue = stats.monthlyRevenue || 0;
-  const totalYearlyRevenue = stats.yearlyRevenue || 0;
-
-  const monthlyExpectedCost = (
-     (stats.monthlyJobs || 0) * 3 * 0.0003 + 
-     (stats.monthlyJobs || 0) * 12 * 0.00005 + 
-     (stats.monthlyPhotos || 0) * 15 * 0.0001 + 
-     (stats.totalPhotos || 0) * 2.5 * 0.001 + 
-     (stats.monthlyJobs || 0) * 15 * 0.00001 
-  );
-
-  const yearlyExpectedCost = (
-     (stats.yearlyJobs || 0) * 3 * 0.0003 + 
-     (stats.yearlyJobs || 0) * 12 * 0.00005 + 
-     (stats.yearlyPhotos || 0) * 15 * 0.0001 + 
-     (stats.totalPhotos || 0) * 2.5 * 0.001 + 
-     (stats.yearlyJobs || 0) * 15 * 0.00001 
-  );
+  const activeCompanies = companies.filter(c => c.subscription_status === 'active' && c.has_masterboss_gift !== 1).length;
+  const exemptCompanies = companies.filter(c => c.has_masterboss_gift === 1).length;
 
   const currentMonthStart = new Date();
   currentMonthStart.setDate(1);
@@ -368,9 +350,9 @@ useEffect(() => {
       return d >= lastMonthStart && d < currentMonthStart;
   }).length;
 
-  const canceledCompanies = companies.filter(c => c.subscription_status === 'canceled').length;
-  const pastDueCompanies = companies.filter(c => c.subscription_status === 'past_due').length;
-  const trialingCompanies = companies.filter(c => c.subscription_status === 'trialing').length;
+  const canceledCompanies = companies.filter(c => c.subscription_status === 'canceled' && c.has_masterboss_gift !== 1).length;
+  const pastDueCompanies = companies.filter(c => c.subscription_status === 'past_due' && c.has_masterboss_gift !== 1).length;
+  const trialingCompanies = companies.filter(c => c.subscription_status === 'trialing' && c.has_masterboss_gift !== 1).length;
 
   const activeRatio = companies.length > 0 ? (activeCompanies / companies.length) * 100 : 0;
   
@@ -468,18 +450,44 @@ useEffect(() => {
 
       <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
         
-        {/* Metric Cards - MOBİLDE 2'Lİ GRID OLARAK GÜNCELLENDİ */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <MetricCard icon={Building2} label="Toplam Firma" value={companies.length} ext={`${activeCompanies} Aktif Üye`} color="from-blue-500 to-indigo-600" />
-          <MetricCard icon={BarChart3} label="Toplam QR (Varlık)" value={totalAssets} ext="Sistemdeki Tüm Cihazlar" color="from-indigo-500 to-purple-600" />
-          <MetricCard icon={Users} label="Sistem Personeli" value={totalStaff} ext="Kayıtlı Saha Çalışanı" color="from-emerald-500 to-teal-600" />
-          <MetricCard icon={Gift} label="Referans Havuzu" value={referrals.filter(r=>r.is_verified===1).length} ext="Başarılı Davet Sayısı" color="from-amber-500 to-orange-600" />
-          
-          <MetricCard icon={Activity} label="Aylık İşlem Hacmi" value={stats.monthlyJobs || 0} ext={`Yıllık: ${stats.yearlyJobs || 0} İşlem`} color="from-blue-500 to-cyan-600" />
-          <MetricCard icon={BarChart3} label="Aylık Foto Yükü" value={stats.monthlyPhotos || 0} ext={`Yıllık: ${stats.yearlyPhotos || 0} Foto`} color="from-fuchsia-500 to-pink-600" />
-          <MetricCard icon={Activity} label="Aylık Net Kazanç" value={`₺${totalMonthlyRevenue.toLocaleString('tr-TR')}`} ext={`Yıllık: ₺${totalYearlyRevenue.toLocaleString('tr-TR')}`} color="from-emerald-500 to-teal-600" />
-          <MetricCard icon={AlertCircle} label="Aylık Gerçek Maliyet" value={`₺${monthlyExpectedCost.toFixed(2).toLocaleString('tr-TR')}`} ext={`Yıllık Toplam: ₺${yearlyExpectedCost.toFixed(2).toLocaleString('tr-TR')}`} color="from-rose-500 to-red-600" />
-        </motion.div>
+        <section className="mb-7 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#171a24] via-[#11131a] to-[#21131c] p-5 shadow-2xl sm:p-7">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-rose-300">Genel Bakış</p>
+              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">Platform durumu</h1>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-400">Sayılar seçili dönemde oluşan kayıtları gösterir. Firma durumları, işlem hacmi ve destek talepleri aşağıda açıkça özetlenir.</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-neutral-300"><span className="font-semibold text-white">{currentMonthNewCompanies}</span> yeni firma · bu ay</div>
+          </div>
+          <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <OverviewCard icon={Building2} label="Kayıtlı firma" value={companies.length} detail={`${activeCompanies} aktif abonelik`} tone="blue" />
+            <OverviewCard icon={AlertCircle} label="Ödeme takibi" value={pastDueCompanies + canceledCompanies} detail={`${pastDueCompanies} gecikmiş · ${canceledCompanies} iptal`} tone="rose" />
+            <OverviewCard icon={Clock} label="Deneme süreci" value={trialingCompanies} detail="Deneme aboneliğindeki firmalar" tone="amber" />
+            <OverviewCard icon={TicketCheck} label="Açık destek" value={supportSummary.open ?? tickets.filter(t => t.status !== 'Çözüldü' && t.status !== 'Resolved').length} detail="Yanıt bekleyen talepler" tone="violet" />
+            <OverviewCard icon={BarChart3} label="Kayıtlı varlık" value={totalAssets} detail="Platformdaki toplam cihaz" tone="indigo" />
+            <OverviewCard icon={Users} label="Saha personeli" value={totalStaff} detail="Tüm firmalardaki personel" tone="emerald" />
+            <OverviewCard icon={Activity} label="İş kaydı · bu ay" value={stats.monthlyJobs || 0} detail={`${Number(stats.yearlyJobs || 0).toLocaleString('tr-TR')} bu yıl`} tone="cyan" />
+            <OverviewCard icon={Gift} label="Başarılı davet" value={referrals.filter(r => r.is_verified === 1).length} detail="Ödülü tanımlanmış referans" tone="orange" />
+          </div>
+          <div className="mt-5 grid gap-4 rounded-2xl border border-white/10 bg-black/20 p-4 sm:grid-cols-[1fr_auto] sm:items-center sm:p-5">
+            <div>
+              <div className="flex items-center justify-between gap-3 text-sm"><span className="font-semibold text-white">Abonelik dağılımı</span><span className="text-neutral-400">{companies.length ? `${activeRatio.toFixed(0)}% aktif` : "Henüz firma yok"}</span></div>
+              <div className="mt-3 flex h-3 overflow-hidden rounded-full bg-white/10" aria-label="Abonelik dağılımı">
+                <div className="bg-emerald-400 transition-all" style={{ width: `${activeRatio}%` }} />
+                <div className="bg-amber-400 transition-all" style={{ width: `${companies.length ? trialingCompanies / companies.length * 100 : 0}%` }} />
+                <div className="bg-rose-400 transition-all" style={{ width: `${companies.length ? (pastDueCompanies + canceledCompanies) / companies.length * 100 : 0}%` }} />
+                <div className="bg-sky-300 transition-all" style={{ width: `${companies.length ? exemptCompanies / companies.length * 100 : 0}%` }} />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-neutral-400">
+                <span><i className="mr-2 inline-block h-2 w-2 rounded-full bg-emerald-400" />Aktif: {activeCompanies}</span>
+                <span><i className="mr-2 inline-block h-2 w-2 rounded-full bg-amber-400" />Deneme: {trialingCompanies}</span>
+                <span><i className="mr-2 inline-block h-2 w-2 rounded-full bg-rose-400" />Gecikmiş / iptal: {pastDueCompanies + canceledCompanies}</span>
+                <span><i className="mr-2 inline-block h-2 w-2 rounded-full bg-sky-300" />Muaf: {exemptCompanies}</span>
+              </div>
+            </div>
+            <div className="border-t border-white/10 pt-3 text-xs leading-relaxed text-neutral-500 sm:max-w-56 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0"><span className="font-semibold text-neutral-300">İşlem hacmi</span><br />Bu ay {Number(stats.monthlyJobs || 0).toLocaleString('tr-TR')} iş, bu yıl {Number(stats.yearlyJobs || 0).toLocaleString('tr-TR')} iş kaydedildi. Fotoğraf sayısı, işlere eklenen dosyaları gösterir.</div>
+          </div>
+        </section>
 
         {/* Tabs - YATAY SCROLL İPTAL EDİLDİ, FLEX-WRAP EKLENDİ */}
         <div className="flex flex-wrap items-center gap-2 mb-6">
@@ -1365,6 +1373,32 @@ useEffect(() => {
       )}
       </AnimatePresence>
 
+    </div>
+  );
+}
+
+function OverviewCard({ icon: Icon, label, value, detail, tone }) {
+  const toneStyles = {
+    blue: "text-blue-300 bg-blue-400/10 border-blue-300/15",
+    rose: "text-rose-300 bg-rose-400/10 border-rose-300/15",
+    amber: "text-amber-300 bg-amber-400/10 border-amber-300/15",
+    violet: "text-violet-300 bg-violet-400/10 border-violet-300/15",
+    indigo: "text-indigo-300 bg-indigo-400/10 border-indigo-300/15",
+    emerald: "text-emerald-300 bg-emerald-400/10 border-emerald-300/15",
+    cyan: "text-cyan-300 bg-cyan-400/10 border-cyan-300/15",
+    orange: "text-orange-300 bg-orange-400/10 border-orange-300/15"
+  };
+
+  return (
+    <div className="min-w-0 rounded-2xl border border-white/[0.08] bg-white/[0.035] p-4 transition-colors hover:bg-white/[0.06]">
+      <div className="flex items-center gap-2.5">
+        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${toneStyles[tone] || toneStyles.blue}`}>
+          <Icon className="h-4 w-4" />
+        </span>
+        <span className="truncate text-xs font-semibold text-neutral-400">{label}</span>
+      </div>
+      <div className="mt-4 truncate text-2xl font-black tracking-tight text-white">{Number(value || 0).toLocaleString("tr-TR")}</div>
+      <div className="mt-1 min-h-8 text-xs leading-relaxed text-neutral-500">{detail}</div>
     </div>
   );
 }

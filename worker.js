@@ -2125,7 +2125,15 @@ Otomatik olarak size atand\u0131!`,
           if (s.key === "global_asset_price")
             globalPricing.asset = Number(s.value);
         });
-        const companies = await safeAll(env.DB.prepare("SELECT c.*, (SELECT COUNT(*) FROM staff WHERE company_slug = c.slug) as total_staff, (SELECT COUNT(*) FROM jobs WHERE company_slug = c.slug) as job_count, (SELECT COUNT(*) FROM assets WHERE company_slug = c.slug) as total_assets FROM companies c ORDER BY c.created_at DESC"));
+        const companies = await safeAll(env.DB.prepare(`
+          SELECT c.id, c.slug, c.company_name, c.owner_name, c.subscription_status,
+                 c.created_at, c.trial_ends_at, c.billing_cycle_anchor, c.referral_code,
+                 c.custom_base_price, c.custom_per_asset_price, c.free_months_balance,
+                 c.has_masterboss_gift,
+                 (SELECT COUNT(*) FROM staff s WHERE s.company_slug = c.slug) as total_staff,
+                 (SELECT COUNT(*) FROM assets a WHERE a.company_slug = c.slug) as total_assets
+          FROM companies c ORDER BY c.created_at DESC
+        `));
         const companyRewards = await safeAll(env.DB.prepare("SELECT * FROM company_rewards"));
         const rewardsMap = {};
         companyRewards.forEach((r) => {
@@ -2140,33 +2148,21 @@ Otomatik olarak size atand\u0131!`,
           has_masterboss_gift: c.has_masterboss_gift || 0
         }));
         const globalStats = await safeFirst(env.DB.prepare(`
-                    SELECT 
-                        (SELECT COUNT(*) FROM jobs) as total_jobs,
-                        (SELECT COUNT(*) FROM jobs WHERE strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')) as monthly_jobs,
-                        (SELECT COUNT(*) FROM jobs WHERE strftime('%Y', created_at) = strftime('%Y', 'now')) as yearly_jobs
-                `));
-        const allJobsWithPhotos = await safeAll(env.DB.prepare("SELECT created_at, photo_urls FROM jobs WHERE photo_urls IS NOT NULL AND photo_urls != '[]' AND photo_urls != ''"));
-        let total_photos = 0;
-        let monthly_photos = 0;
-        let yearly_photos = 0;
-        const currentMonthStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 7);
-        const currentYearStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 4);
-        if (allJobsWithPhotos && allJobsWithPhotos.length > 0) {
-          allJobsWithPhotos.forEach((job) => {
-            try {
-              const photos = JSON.parse(job.photo_urls || "[]");
-              const count = photos.length;
-              total_photos += count;
-              if (job.created_at && job.created_at.startsWith(currentMonthStr)) {
-                monthly_photos += count;
-              }
-              if (job.created_at && job.created_at.startsWith(currentYearStr)) {
-                yearly_photos += count;
-              }
-            } catch (e) {
-            }
-          });
-        }
+          SELECT
+            COUNT(*) as total_jobs,
+            SUM(CASE WHEN created_at >= ? AND created_at < ? THEN 1 ELSE 0 END) as monthly_jobs,
+            SUM(CASE WHEN created_at >= ? AND created_at < ? THEN 1 ELSE 0 END) as yearly_jobs,
+            SUM(CASE WHEN created_at >= ? AND created_at < ? AND json_valid(photo_urls)
+                     THEN json_array_length(photo_urls) ELSE 0 END) as monthly_photos,
+            SUM(CASE WHEN created_at >= ? AND created_at < ? AND json_valid(photo_urls)
+                     THEN json_array_length(photo_urls) ELSE 0 END) as yearly_photos
+          FROM jobs
+        `).bind(
+          `${new Date().toISOString().slice(0, 7)}-01`, `${new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1)).toISOString().slice(0, 10)}`,
+          `${new Date().getUTCFullYear()}-01-01`, `${new Date(Date.UTC(new Date().getUTCFullYear() + 1, 0, 1)).toISOString().slice(0, 10)}`,
+          `${new Date().toISOString().slice(0, 7)}-01`, `${new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1)).toISOString().slice(0, 10)}`,
+          `${new Date().getUTCFullYear()}-01-01`, `${new Date(Date.UTC(new Date().getUTCFullYear() + 1, 0, 1)).toISOString().slice(0, 10)}`
+        ));
         const platformStats = {
           totalCompanies: companies.length,
           activeCompanies: companies.filter((c) => c.subscription_status === "active").length,
@@ -2175,16 +2171,20 @@ Otomatik olarak size atand\u0131!`,
           monthlyJobs: globalStats?.monthly_jobs || 0,
           yearlyJobs: globalStats?.yearly_jobs || 0,
           totalJobs: globalStats?.total_jobs || 0,
-          monthlyPhotos: monthly_photos,
-          yearlyPhotos: yearly_photos,
-          totalPhotos: total_photos
+          monthlyPhotos: globalStats?.monthly_photos || 0,
+          yearlyPhotos: globalStats?.yearly_photos || 0
         };
         const supportTickets = await safeAll(env.DB.prepare(`
                     SELECT s.*, c.company_name, c.phone as company_phone 
                     FROM support_tickets s 
                     LEFT JOIN companies c ON s.company_slug = c.slug 
-                    ORDER BY s.created_at DESC
+                    ORDER BY s.created_at DESC LIMIT 200
                 `));
+        const supportSummary = await safeFirst(env.DB.prepare(`
+          SELECT COUNT(*) as total,
+                 SUM(CASE WHEN status NOT IN ('Çözüldü', 'Resolved') THEN 1 ELSE 0 END) as open
+          FROM support_tickets
+        `));
         let autoReferrals = [];
         try {
           autoReferrals = await safeAll(env.DB.prepare(`
@@ -2206,6 +2206,7 @@ Otomatik olarak size atand\u0131!`,
           companies: companiesWithRewards,
           stats: platformStats,
           tickets: supportTickets,
+          supportSummary: supportSummary || { total: 0, open: 0 },
           referrals: autoReferrals,
           rewards: companyRewards
         }), { headers: corsHeaders });
