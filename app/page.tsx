@@ -45,26 +45,26 @@ const SECTORS = [
   'Asansör Bakım & Montaj',
 ];
 
-const OPERATION_ISSUES = [
+const OPERATION_SCENARIOS = [
   {
-    name: 'Dağınık bakım kayıtları',
-    role: 'SORUN  /  FIXLOG ÇÖZÜMÜ',
-    text: 'Her asansörün bakım geçmişini, teknik bilgilerini ve servis kayıtlarını tek varlık profilinde toplayın.',
+    name: 'Bakım geçmişini bulun',
+    role: 'ÖRNEK KULLANIM',
+    text: 'Bir binadaki asansörün önceki bakımlarını, arıza kayıtlarını ve teknik bilgilerini aynı ekrandan inceleyin.',
   },
   {
-    name: 'Geciken periyodik bakımlar',
-    role: 'PLANLAMA  /  FIXLOG ÇÖZÜMÜ',
-    text: 'Otopilot ile aylık bakım görevlerini oluşturun; iş günleri, ekip kapasitesi ve bölgeye göre planlayın.',
+    name: 'Aylık bakımları planlayın',
+    role: 'ÖRNEK KULLANIM',
+    text: 'Bakımı yaklaşan asansörleri aylık plana ekleyin. Görevleri çalışma günlerinize ve ekiplerinize göre dağıtın.',
   },
   {
-    name: 'Sahadan geç gelen bilgi',
-    role: 'SAHA İLETİŞİMİ  /  FIXLOG ÇÖZÜMÜ',
-    text: 'Ustalar iş emrini mobilden güncellesin; fotoğrafı ve müşteri imzasını aynı kayda eklesin.',
+    name: 'Servis sonucunu sahada kaydedin',
+    role: 'ÖRNEK KULLANIM',
+    text: 'Teknisyen işi telefondan tamamlasın; yapılan işlemi, fotoğrafı ve müşteri imzasını aynı kayda eklesin.',
   },
   {
-    name: 'Arıza bildiriminde belirsizlik',
-    role: 'MÜŞTERİ DENEYİMİ  /  FIXLOG ÇÖZÜMÜ',
-    text: 'Asansöre özel QR etiketiyle müşteriler doğru cihaz için arıza bildirsin; ekip bildirimi anında görsün.',
+    name: 'Arızayı doğru asansöre bağlayın',
+    role: 'ÖRNEK KULLANIM',
+    text: 'Müşteri asansörün QR kodunu okutup arıza bildirsin. Bildirim, ilgili asansör kaydıyla birlikte firmanıza ulaşsın.',
   },
 ];
 
@@ -144,23 +144,23 @@ const FEATURES = [
 const PAIN_POINTS = [
   {
     icon: Calendar,
-    title: 'Bakım takvimi kişilerin hafızasında kalıyor',
-    desc: 'Asansör bazında bakım dönemlerini görün, aylık görevleri planlayın ve gecikme riskini erkenden fark edin.',
+    title: 'Bakım günü unutulabiliyor',
+    desc: 'Bakımı yaklaşan asansörleri aylık listede görün. Görevleri çalışma günlerinize ve ekibinize göre planlayın.',
   },
   {
     icon: MessageSquareText,
-    title: 'Ofis ile saha arasında bilgi kayboluyor',
-    desc: 'İş emri, atanan usta, durum, fotoğraf ve notlar tek kayıtta bulunsun. Ekip ve merkez aynı güncel bilgiyi görsün.',
+    title: 'Sahadaki bilgi ofise geç ulaşıyor',
+    desc: 'Teknisyen işin durumunu telefonundan güncellesin; yapılan işi, fotoğrafı ve müşteri imzasını aynı kayda eklesin.',
   },
   {
     icon: QrCode,
-    title: 'Arıza hangi binadaki hangi asansörde belli olmuyor',
-    desc: 'Cihaza özel QR koduyla müşteriyi doğru asansörün arıza bildirimine ve bakım geçmişine yönlendirin.',
+    title: 'Arızanın hangi asansörde olduğu karışıyor',
+    desc: 'Her asansöre özel QR kodu kullanın. Müşteri kodu okuttuğunda arıza bildirimi doğru cihazla eşleşsin.',
   },
   {
     icon: Package,
-    title: 'Malzeme kullanımı ve maliyetler izlenemiyor',
-    desc: 'İş emrinde kullanılan malzemeleri kaydedin; stok hareketlerini, satın alma siparişlerini ve iş gelirlerini takip edin.',
+    title: 'Depodaki parçalar beklenmedik anda bitiyor',
+    desc: 'Parça miktarlarını takip edin, azalan stoklar için uyarı alın ve tedarik siparişlerinizi kaydedin.',
   },
 ];
 
@@ -286,16 +286,16 @@ export default function LandingPage() {
 
   useEffect(() => {
     const timer = setInterval(
-      () => setIssueIndex((prev) => (prev + 1) % OPERATION_ISSUES.length),
+      () => setIssueIndex((prev) => (prev + 1) % OPERATION_SCENARIOS.length),
       5000
     );
     return () => clearInterval(timer);
   }, []);
 
   const visibleIssues = [
-    OPERATION_ISSUES[issueIndex],
-    OPERATION_ISSUES[(issueIndex + 1) % OPERATION_ISSUES.length],
-    OPERATION_ISSUES[(issueIndex + 2) % OPERATION_ISSUES.length],
+    OPERATION_SCENARIOS[issueIndex],
+    OPERATION_SCENARIOS[(issueIndex + 1) % OPERATION_SCENARIOS.length],
+    OPERATION_SCENARIOS[(issueIndex + 2) % OPERATION_SCENARIOS.length],
   ];
 
 // 🚀 YENİ: GOOGLE İÇİN ZENGİN ARAMA SONUCU KODU (JSON-LD)
@@ -515,7 +515,7 @@ return (
                                         {i === 1 ? 'Merkez Plaza Periyodik Bakım' : i === 2 ? 'A Blok Asansör Arıza Kontrolü' : 'Gül Apartmanı Revizyon İncelemesi'}
                                       </div>
                                       <div className="text-xs font-medium text-gray-500 mt-0.5">
-                                        {i === 1 ? 'Ali Usta • 2 saat sürdü' : i === 2 ? 'Mehmet U. • 45 dk sürdü' : 'Canan T. • 4 saat sürdü'}
+                                        {i === 1 ? 'Ali M. • 2 saat sürdü' : i === 2 ? 'Mehmet U. • 45 dk sürdü' : 'Murat K. • 4 saat sürdü'}
                                       </div>
                                     </div>
                                     <span className="shrink-0 bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-[10px] font-bold tracking-wide">TAMAMLANDI</span>
@@ -564,7 +564,7 @@ return (
                               {[
                                 { name: 'Merkez Plaza Asansör Bakımı', staff: 'Ali Usta', date: 'Bugün' },
                                 { name: 'A Blok Kapı Mekanizması Kontrolü', staff: 'Mehmet U.', date: 'Dün' },
-                                { name: 'Gül Apartmanı Periyodik Bakımı', staff: 'Canan T.', date: '3 gün önce' }
+                                { name: 'Gül Apartmanı Periyodik Bakımı', staff: 'Murat K.', date: '3 gün önce' }
                               ].map((job, idx) => (
                                 <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-emerald-300 transition-colors">
                                   <div>
@@ -585,14 +585,23 @@ return (
                         {mockupTab === 'personel' && (
                           <div className="flex flex-col gap-4">
                             <div className="flex justify-between items-center">
-                              <div className="text-sm font-bold text-slate-800">Aktif Saha Ekibi</div>
+                              <div>
+                                <div className="text-sm font-bold text-slate-800">Aktif Saha Ekibi</div>
+                                <div className="text-xs text-slate-500 mt-1">Görev, bölge ve uygunluk durumunu tek ekranda izleyin.</div>
+                              </div>
                               <button className="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-slate-200">Personel Ekle</button>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="bg-white border border-slate-200 rounded-xl p-3"><div className="text-[10px] uppercase tracking-wide text-slate-500 font-bold">Toplam ekip</div><div className="text-lg font-black text-slate-800 mt-1">8 kişi</div></div>
+                              <div className="bg-white border border-slate-200 rounded-xl p-3"><div className="text-[10px] uppercase tracking-wide text-slate-500 font-bold">Sahada</div><div className="text-lg font-black text-blue-700 mt-1">5 kişi</div></div>
+                              <div className="bg-white border border-slate-200 rounded-xl p-3"><div className="text-[10px] uppercase tracking-wide text-slate-500 font-bold">Müsait</div><div className="text-lg font-black text-emerald-700 mt-1">2 kişi</div></div>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               {[
-                                { name: 'Yavuz Ş.', role: 'Yönetici', status: 'Müsait', color: 'bg-emerald-100 text-emerald-700' },
-                                { name: 'Ali M.', role: 'Bakım Ustası', status: 'Sahada (İşte)', color: 'bg-blue-100 text-blue-700' },
-                                { name: 'Canan T.', role: 'Bakım Ustası', status: 'İzinli', color: 'bg-slate-100 text-slate-500' }
+                                { name: 'Yavuz Ş.', role: 'Yönetici', detail: 'Merkez ofis', status: 'Müsait', color: 'bg-emerald-100 text-emerald-700' },
+                                { name: 'Ali M.', role: 'Bakım Ustası', detail: 'Kadıköy · 3 görev', status: 'Sahada', color: 'bg-blue-100 text-blue-700' },
+                                { name: 'Murat K.', role: 'Bakım Ustası', detail: 'Üsküdar · 2 görev', status: 'İş başında', color: 'bg-blue-100 text-blue-700' },
+                                { name: 'Ece A.', role: 'Planlama Sorumlusu', detail: 'Merkez ofis', status: 'Müsait', color: 'bg-emerald-100 text-emerald-700' }
                               ].map((p, idx) => (
                                 <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-3">
                                   <div className="flex items-center gap-3">
@@ -600,6 +609,7 @@ return (
                                     <div>
                                       <div className="font-bold text-slate-800 text-sm">{p.name}</div>
                                       <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{p.role}</div>
+                                       <div className="text-[10px] text-slate-400 mt-1">{p.detail}</div>
                                     </div>
                                   </div>
                                   <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border border-white/0 shadow-sm ${p.color}`}>{p.status}</span>
@@ -890,10 +900,10 @@ return (
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
                   <h3 className="text-xl font-black text-white flex items-center gap-2">
                     <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0" />{' '}
-                    Asansör firmalarının karşılaştığı sorunlar
+                    Asansör firmaları Fixlog’u nasıl kullanır?
                   </h3>
                   <div className="flex gap-2">
-                    {OPERATION_ISSUES.map((_, idx) => (
+                    {OPERATION_SCENARIOS.map((_, idx) => (
                       <button
                         key={idx}
                         onClick={() => setIssueIndex(idx)}
