@@ -17,7 +17,7 @@ export default function BomTab({ data }: any) {
     const companySlug = data?.slug || data?.company_slug || (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '');
 
     // Worker'ın kapısından geçmek için token'ı alıyoruz
-    const getToken = () => typeof window !== 'undefined' ? localStorage.getItem('token') || '' : '';
+    const getToken = () => typeof window !== 'undefined' ? localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken') || localStorage.getItem('masterbossToken') || '' : '';
 
     useEffect(() => {
         let cancelled = false;

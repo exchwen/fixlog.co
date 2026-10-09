@@ -15,7 +15,7 @@ export default function BomTemplatesModal({ data, onClose }: any) {
     const companySlug = data?.slug || data?.company_slug;
 
     // Worker'ın kapısından geçmek için token'ı alıyoruz
-    const getToken = () => typeof window !== 'undefined' ? localStorage.getItem('token') || '' : '';
+    const getToken = () => typeof window !== 'undefined' ? localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken') || localStorage.getItem('masterbossToken') || '' : '';
 
     useEffect(() => {
         let cancelled = false;

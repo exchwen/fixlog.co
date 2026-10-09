@@ -22,7 +22,7 @@ export default function PurchaseOrdersModal({ data, onClose }: any) {
             .then(res => { if(res.success) setOrders(res.data); })
             .catch(() => {});
         
-        fetch(`${BOM_API_URL}/get-bom-templates?company_slug=${encodeURIComponent(companySlug || '')}`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` } })
+        fetch(`${BOM_API_URL}/get-bom-templates?company_slug=${encodeURIComponent(companySlug || '')}`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken') || localStorage.getItem('masterbossToken') || ''}` } })
             .then(res => res.json())
             .then(res => { if(res.success) setBomTemplates(res.data); setLoading(false); })
             .catch(() => setLoading(false));
