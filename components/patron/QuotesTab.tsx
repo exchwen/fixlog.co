@@ -683,7 +683,7 @@ export default function QuotesTab({ data }: any) {
                         'border-t-2 border-black'}
                   `}>
                     <div>
-                      <p className="font-bold mb-12 uppercase tracking-widest text-xs">
+                      <p className="font-bold mb-6 uppercase tracking-widest text-xs">
                           Yüklenici Firma Onayı<br/>
                           <span className="font-black text-[11px] uppercase block mt-2 leading-tight">{pdfCompanyName}</span>
                           <span className={`font-medium text-[10px] normal-case mt-0.5 block ${printTemplate === 'minimal' || printTemplate === 'elegant' ? 'italic text-gray-500' : ''}`}>{pdfOwnerName}</span>
@@ -691,7 +691,7 @@ export default function QuotesTab({ data }: any) {
                       {parsedDetails.employerSignature && <img src={parsedDetails.employerSignature} className="mx-auto h-20 object-contain mix-blend-multiply grayscale" />}
                     </div>
                     <div>
-                      <p className="font-bold mb-12 uppercase tracking-widest text-xs">
+                      <p className="font-bold mb-6 uppercase tracking-widest text-xs">
                           Müşteri Onayı<br/>
                           <span className="font-black text-[11px] uppercase block mt-2 leading-tight opacity-0">_</span>
                           <span className={`font-medium text-[10px] normal-case mt-0.5 block ${printTemplate === 'minimal' || printTemplate === 'elegant' ? 'italic text-gray-500' : ''}`}>{selectedQuote.customer_name}</span>

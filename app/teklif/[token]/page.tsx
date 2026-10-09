@@ -437,14 +437,22 @@ export default function CustomerQuotePage() {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-12 mt-20 pt-8 border-t-2 border-black text-center">
+                  <div className="grid grid-cols-2 gap-12 mt-12 pt-8 border-t-2 border-black text-center break-inside-avoid">
                     <div>
-                      <p className="font-bold mb-24 uppercase tracking-widest text-sm">Yüklenici Firma Onayı<br/><span className="font-normal text-xs normal-case mt-2 block">{companyData?.owner_name || ""}</span></p>
+                      <p className="font-bold mb-6 uppercase tracking-widest text-sm">
+                          Yüklenici Firma Onayı<br/>
+                          <span className="font-black text-xs uppercase mt-2 block leading-tight">{companyData?.company_name || ""}</span>
+                          <span className="font-normal text-[11px] normal-case mt-0.5 block">{companyData?.owner_name || ""}</span>
+                      </p>
                       {parsedDetails.employerSignature && <img src={parsedDetails.employerSignature} className="mx-auto h-24 object-contain mix-blend-multiply grayscale" />}
                     </div>
                     <div>
-                      <p className="font-bold mb-24 uppercase tracking-widest text-sm">Müşteri Onayı<br/><span className="font-normal text-xs normal-case mt-2 block">{quoteData.customer_name}</span></p>
-                      {(signatureImage || parsedDetails.customerSignature) ? <img src={signatureImage || parsedDetails.customerSignature} className="mx-auto h-24 object-contain mix-blend-multiply grayscale" /> : <div className="text-gray-400 italic text-sm">Elektronik İmza Bekleniyor</div>}
+                      <p className="font-bold mb-6 uppercase tracking-widest text-sm">
+                          Müşteri Onayı<br/>
+                          <span className="font-black text-xs uppercase mt-2 block leading-tight opacity-0">_</span>
+                          <span className="font-normal text-[11px] normal-case mt-0.5 block">{quoteData.customer_name}</span>
+                      </p>
+                      {(signatureImage || parsedDetails.customerSignature) ? <img src={signatureImage || parsedDetails.customerSignature} className="mx-auto h-24 object-contain mix-blend-multiply grayscale" /> : <div className="text-gray-400 italic text-sm mt-8">Elektronik İmza Bekleniyor</div>}
                     </div>
                   </div>
                 </div>
