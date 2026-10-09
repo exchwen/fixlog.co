@@ -85,7 +85,6 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
   };
 
     const navGroups = [
-    { id: 'overview', label: 'Genel Bak\u0131\u015f', icon: LayoutDashboard, items: [{ id: 'home', label: 'Genel Bak\u0131\u015f', icon: LayoutDashboard }] },
     { id: 'sales', label: 'M\u00fc\u015fteri & Sat\u0131\u015f', icon: Users, items: [
       { id: 'quotes', label: 'Teklifler', icon: FileText },
       { id: 'customers', label: 'M\u00fc\u015fteriler', icon: UserPlus },
@@ -133,9 +132,9 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
       >
         <div className="p-6 flex items-center justify-between border-b border-slate-800 shrink-0 bg-slate-900/50">
         <div className="flex items-center gap-3 w-full">
-            <div className="w-8 h-8 flex items-center justify-center shrink-0">
+            <button type="button" aria-label="Genel Bakış'a git" onClick={() => { setActiveTab('home'); setIsMobileMenuOpen(false); }} className="w-8 h-8 flex items-center justify-center shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
                <img src="/favicon.ico" alt="FixLog.co Logo" className="w-full h-full object-contain" />
-            </div>
+            </button>
             <div className="flex-col opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex">
                <span className="font-bold text-white text-sm tracking-tight whitespace-nowrap">FixLog.co</span>
                <span className="text-[10px] text-blue-500 font-bold tracking-widest whitespace-nowrap">{userRole || 'Yönetim'}</span>
@@ -146,7 +145,13 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
           </button>
         </div>
 
-        <nav className="flex-1 px-2.5 py-3 space-y-2 mt-1 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 px-2.5 py-3 space-y-2 mt-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <button type="button" onClick={() => { setActiveTab('home'); setIsMobileMenuOpen(false); }} aria-current={activeTab === 'home' ? 'page' : undefined}
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${activeTab === 'home' ? 'bg-blue-600/15 text-blue-400 font-bold' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+            <LayoutDashboard size={18} className="shrink-0" />
+            <span className="flex-1 text-left whitespace-nowrap text-[12px] font-bold">Genel Bakış</span>
+            {activeTab === 'home' && <ChevronRight size={13} className="shrink-0" />}
+          </button>
           {navGroups.map(group => {
             const isOpen = openGroups.includes(group.id);
             const groupIsActive = group.items.some(item => item.id === activeTab);

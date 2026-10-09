@@ -2,7 +2,6 @@ var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
 // worker.js
-var rateLimitCache = /* @__PURE__ */ new Map();
 var worker_default = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -19,6 +18,39 @@ var worker_default = {
     };
     if (method === "OPTIONS")
       return new Response(null, { headers: corsHeaders });
+    const rateLimitPolicies = {
+      "/staff-login": { limit: 10, windowMs: 15 * 60 * 1e3 },
+      "/masterboss-login": { limit: 10, windowMs: 15 * 60 * 1e3 },
+      "/public/trigger-emergency": { limit: 5, windowMs: 15 * 60 * 1e3 },
+      "/public/report-fault": { limit: 5, windowMs: 15 * 60 * 1e3 },
+      "/public/request-quote": { limit: 5, windowMs: 15 * 60 * 1e3 }
+    };
+    const rateLimitPolicy = method === "POST" ? rateLimitPolicies[url.pathname] : null;
+    let rateLimitKey = null;
+    if (rateLimitPolicy) {
+      try {
+        const ipDigest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(clientIp));
+        const ipHash = Array.from(new Uint8Array(ipDigest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+        const windowStart = Math.floor(Date.now() / rateLimitPolicy.windowMs) * rateLimitPolicy.windowMs;
+        rateLimitKey = `${url.pathname}:${ipHash}:${windowStart}`;
+        const result = await env.DB.prepare(`
+          INSERT INTO api_rate_limits (bucket_key, window_start, attempts)
+          VALUES (?, ?, 1)
+          ON CONFLICT(bucket_key) DO UPDATE SET attempts = attempts + 1
+          RETURNING attempts
+        `).bind(rateLimitKey, windowStart).first();
+        if (!result || result.attempts > rateLimitPolicy.limit) {
+          const retryAfter = Math.max(1, Math.ceil((windowStart + rateLimitPolicy.windowMs - Date.now()) / 1000));
+          return new Response(JSON.stringify({ error: "Çok fazla istek gönderildi. Lütfen daha sonra tekrar deneyin." }), {
+            status: 429,
+            headers: { ...corsHeaders, "Retry-After": String(retryAfter) }
+          });
+        }
+      } catch (error) {
+        console.error("Rate limit kontrolü başarısız:", error);
+        return new Response(JSON.stringify({ error: "İstek şu anda işlenemiyor." }), { status: 503, headers: corsHeaders });
+      }
+    }
     const safeAll = /* @__PURE__ */ __name(async (query) => {
       try {
         const res = await query.all();
@@ -491,23 +523,13 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
         return new Response(JSON.stringify({ error: "Firma bulunamad\u0131" }), { status: 404, headers: corsHeaders });
       }
       if (url.pathname === "/staff-login" && method === "POST") {
-        const now = Date.now();
-        const limitData = rateLimitCache.get(clientIp) || { count: 0, time: now };
-        if (now - limitData.time > 15 * 60 * 1e3) {
-          limitData.count = 0;
-          limitData.time = now;
-        }
-        if (limitData.count >= 10)
-          return new Response(JSON.stringify({ error: "G\xFCvenlik: \xC7ok fazla hatal\u0131 deneme! L\xFCtfen 15 dakika bekleyin." }), { status: 429, headers: corsHeaders });
         const { slug, username, password } = await request.json();
         const hashedPw = await hashPassword(password);
         const staff = await safeFirst(env.DB.prepare("SELECT id, name, role, is_active FROM staff WHERE company_slug = ? AND username = ? AND password_hash = ?").bind(slug, username, hashedPw));
         if (!staff) {
-          limitData.count++;
-          rateLimitCache.set(clientIp, limitData);
           return new Response(JSON.stringify({ error: "Kullan\u0131c\u0131 ad\u0131 veya \u015Fifre hatal\u0131." }), { status: 401, headers: corsHeaders });
         }
-        rateLimitCache.delete(clientIp);
+        if (rateLimitKey) await env.DB.prepare("DELETE FROM api_rate_limits WHERE bucket_key = ?").bind(rateLimitKey).run();
         if (staff.is_active === 0) {
           return new Response(JSON.stringify({ error: "Bu hesap firma y\xF6neticisi taraf\u0131ndan dondurulmu\u015Ftur." }), { status: 403, headers: corsHeaders });
         }
@@ -528,21 +550,13 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
         return new Response(JSON.stringify({ success: true, token, role: staff.role, name: staff.name }), { headers: corsHeaders });
       }
       if (url.pathname === "/masterboss-login" && method === "POST") {
-        const now = Date.now();
-        const limitData = rateLimitCache.get(clientIp) || { count: 0, time: now };
-        if (now - limitData.time > 15 * 60 * 1e3) {
-          limitData.count = 0;
-          limitData.time = now;
-        }
-        if (limitData.count >= 10)
-          return new Response(JSON.stringify({ error: "G\xFCvenlik: \xC7ok fazla hatal\u0131 deneme! L\xFCtfen 15 dakika bekleyin." }), { status: 429, headers: corsHeaders });
         const { masterPassword } = await request.json();
         const MASTERBOSS_PASSWORD = env.MASTERBOSS_PASSWORD;
         if (!MASTERBOSS_PASSWORD) {
           return new Response(JSON.stringify({ error: "Kritik: Sistemde MASTERBOSS_PASSWORD tan\u0131ml\u0131 de\u011Fil!" }), { status: 500, headers: corsHeaders });
         }
         if (masterPassword === MASTERBOSS_PASSWORD) {
-          rateLimitCache.delete(clientIp);
+          if (rateLimitKey) await env.DB.prepare("DELETE FROM api_rate_limits WHERE bucket_key = ?").bind(rateLimitKey).run();
           const header = toBase64Url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
           const payload = toBase64Url(JSON.stringify({
             role: "Masterboss",
@@ -563,8 +577,6 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
           const masterToken = `${header}.${payload}.${signature}`;
           return new Response(JSON.stringify({ success: true, token: masterToken }), { headers: corsHeaders });
         }
-        limitData.count++;
-        rateLimitCache.set(clientIp, limitData);
         return new Response(JSON.stringify({ error: "Ge\xE7ersiz Masterboss \u015Eifresi!" }), { status: 401, headers: corsHeaders });
       }
       if (url.pathname === "/dashboard-data" && method === "GET") {
@@ -946,8 +958,12 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
         }
         const cleanStaffId = staffId && staffId !== "" ? String(staffId) : null;
         const cleanAssetId = assetId && assetId !== "" ? String(assetId) : null;
+        if (cleanAssetId) {
+          const ownedAsset = await safeFirst(env.DB.prepare("SELECT id FROM assets WHERE id = ? AND company_slug = ?").bind(cleanAssetId, slug || ""));
+          if (!ownedAsset) return new Response(JSON.stringify({ error: "Seçilen varlık bu firmaya ait değil veya bulunamadı." }), { status: 404, headers: corsHeaders });
+        }
         if (cleanStaffId) {
-          const assignedStaff = await safeFirst(env.DB.prepare("SELECT name, role FROM staff WHERE id = ?").bind(cleanStaffId));
+          const assignedStaff = await safeFirst(env.DB.prepare("SELECT name, role FROM staff WHERE id = ? AND company_slug = ?").bind(cleanStaffId, slug || ""));
           if (assignedStaff) {
             if (assignedStaff.role === "Y\xF6netici") {
               managerId = cleanStaffId;
@@ -1010,7 +1026,7 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
         if (cleanStaffId) {
           let jobLocationText = `\u{1F464} M\xFC\u015Fteri: ${customerName || "Belirtilmemi\u015F"}`;
           if (cleanAssetId) {
-            const assetDetails = await safeFirst(env.DB.prepare("SELECT name, apartmentName, customer_id FROM assets WHERE id = ?").bind(cleanAssetId));
+            const assetDetails = await safeFirst(env.DB.prepare("SELECT name, apartmentName, customer_id FROM assets WHERE id = ? AND company_slug = ?").bind(cleanAssetId, slug || ""));
             if (assetDetails) {
               if (assetDetails.apartmentName && assetDetails.apartmentName.trim() !== "") {
                 jobLocationText = `\u{1F3E2} Bina: ${assetDetails.apartmentName}
@@ -1018,7 +1034,7 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
               } else {
                 let phone = "Telefon Yok";
                 if (assetDetails.customer_id) {
-                  const cust = await safeFirst(env.DB.prepare("SELECT contact FROM customers WHERE id = ?").bind(assetDetails.customer_id));
+                  const cust = await safeFirst(env.DB.prepare("SELECT contact FROM customers WHERE id = ? AND company_slug = ?").bind(assetDetails.customer_id, slug || ""));
                   if (cust && cust.contact)
                     phone = cust.contact;
                 }
@@ -1686,7 +1702,7 @@ L\xFCtfen detaylar\u0131 kontrol edin.`;
         let newWorkerName = currentJob.worker_name;
         const cleanStaffId = staffId && staffId !== "" ? String(staffId) : null;
         if (cleanStaffId && cleanStaffId !== newWorkerId && cleanStaffId !== newManagerId) {
-          const newStaff = await safeFirst(env.DB.prepare("SELECT name, role FROM staff WHERE id = ?").bind(cleanStaffId));
+          const newStaff = await safeFirst(env.DB.prepare("SELECT name, role FROM staff WHERE id = ? AND company_slug = ?").bind(cleanStaffId, slug || ""));
           if (newStaff) {
             if (newStaff.role === "Y\xF6netici") {
               newManagerId = cleanStaffId;
@@ -1804,6 +1820,10 @@ L\xFCtfen detaylar\u0131 kontrol edin.`;
           params.push(customerName);
         }
         if (assetId !== void 0) {
+          if (assetId !== "") {
+            const selectedAsset = await safeFirst(env.DB.prepare("SELECT id FROM assets WHERE id = ? AND company_slug = ?").bind(assetId, slug || ""));
+            if (!selectedAsset) return new Response(JSON.stringify({ error: "Varlık bu firmada bulunamadı." }), { status: 404, headers: corsHeaders });
+          }
           query += ", asset_id = ?";
           params.push(assetId === "" ? null : assetId);
         }
@@ -2869,6 +2889,7 @@ Otomatik olarak size atand\u0131!`,
     try {
       console.log("Cron Job Global Ar\u015Fivleme ve Abonelik Kontrol\xFC ba\u015Flat\u0131ld\u0131.");
       const now = /* @__PURE__ */ new Date();
+      await env.DB.prepare("DELETE FROM api_rate_limits WHERE window_start < ?").bind(now.getTime() - 24 * 60 * 60 * 1e3).run();
       const lockCutoff = new Date(now);
       lockCutoff.setDate(lockCutoff.getDate() - 1);
       await env.DB.prepare(`
