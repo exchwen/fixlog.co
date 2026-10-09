@@ -29,6 +29,7 @@ import SupportTab from '@/components/patron/SupportTab';
 import PeriodicTab from '@/components/patron/PeriodicTab';
 import QuotesTab from '@/components/patron/QuotesTab';
 import BomTab from '@/components/patron/BomTab';
+import GooglePasswordGate from '@/components/auth/GooglePasswordGate';
 
 const API_URL = 'https://api.fixlog.co';
 
@@ -48,6 +49,21 @@ const parseJwt = (token) => {
 export default function PatronDashboard() {
   const { slug } = useParams();
   const [activeTab, setActiveTab] = useState('home');
+  const [restoredTabSlug, setRestoredTabSlug] = useState(null);
+  useEffect(() => {
+    const currentSlug = String(slug || '');
+    try {
+      const saved = localStorage.getItem(`patron_active_tab_${currentSlug}`);
+      if (['home','quotes','bom','jobs','pending','completed','alerts','team','customers','support','periodic','stock','finance','assets','settings'].includes(saved)) setActiveTab(saved);
+    } catch {}
+    setRestoredTabSlug(currentSlug);
+  }, [slug]);
+  useEffect(() => {
+    const currentSlug = String(slug || '');
+    if (restoredTabSlug !== currentSlug) return;
+    try { localStorage.setItem(`patron_active_tab_${currentSlug}`, activeTab); } catch {}
+  }, [activeTab, restoredTabSlug, slug]);
+
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null); 
   
@@ -120,7 +136,7 @@ export default function PatronDashboard() {
   });
 
   const [newStock, setNewStock] = useState({ 
-    name: '', quantity: '', unit: 'Adet', category: '', min_alert: '' 
+    name: '', quantity: '', unit: 'Adet', unitPrice: '', supplierId: '', category: '', min_alert: ''
   });
 
   const [newSupplier, setNewSupplier] = useState({ 
@@ -585,6 +601,7 @@ return (
         )}
       </AnimatePresence>
 
+      <GooglePasswordGate />
       <div className="flex z-50">
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
       </div>

@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { Save, Calendar, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle, MessageCircle, ImagePlus, CheckCircle, Globe, WifiOff, Bell, CreditCard, KeyRound } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
 import { auth } from '@/lib/firebase';
-import { sendPasswordResetEmail } from 'firebase/auth';
+import { EmailAuthProvider, linkWithCredential, onAuthStateChanged, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CITY_DATA: any = trCitiesData;
@@ -22,6 +22,13 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
   const [isOffline, setIsOffline] = useState(false);
   const [passwordResetSent, setPasswordResetSent] = useState(false);
   const [passwordError, setPasswordError] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [hasPasswordProvider, setHasPasswordProvider] = useState(() => auth.currentUser?.providerData.some(provider => provider.providerId === 'password') ?? false);
+
+  useEffect(() => onAuthStateChanged(auth, user => {
+    setHasPasswordProvider(user?.providerData.some(provider => provider.providerId === 'password') ?? false);
+  }), []);
   
   // 🚀 LOGO ARKA PLAN RENK SİSTEMİ İÇİN STATE
   const [logoBgColor, setLogoBgColor] = useState<string>('#ffffff');
@@ -838,28 +845,41 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
             <KeyRound size={16} /> Şifre Belirleme & Doğrulama
           </label>
           <p className="text-[11px] font-medium text-slate-500 mb-4 leading-relaxed">
-            Google (Gmail) ile kayıt olduysanız veya şifrenizi değiştirmek istiyorsanız aşağıdaki butonu kullanabilirsiniz. Kayıtlı e-posta adresinize bir şifre sıfırlama/belirleme bağlantısı gönderilecektir.
+            Google ile ilk girisinizde parola belirleyin. Sonraki ziyaretlerde bu parola ile de giris yapabilirsiniz.
           </p>
-          <div className="flex items-center gap-3">
-             <button 
-                onClick={async () => {
-                   if (!auth.currentUser?.email) {
-                      setPasswordError('Geçerli bir oturum e-postası bulunamadı.');
-                      return;
-                   }
-                   try {
-                      await sendPasswordResetEmail(auth, auth.currentUser.email);
-                      setPasswordResetSent(true);
-                      setPasswordError('');
-                   } catch(e: any) {
-                      setPasswordError('Hata: ' + e.message);
-                   }
-                }}
-                disabled={passwordResetSent}
-                className="px-4 py-2.5 bg-white border border-rose-200 text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-50 transition-all shadow-sm disabled:opacity-50"
-             >
-                {passwordResetSent ? 'E-posta Gönderildi ✓' : 'Şifre Doğrulama / Sıfırlama E-postası Gönder'}
-             </button>
+          {hasPasswordProvider && (
+            <input type="password" autoComplete="current-password" value={currentPassword} onChange={e => { setCurrentPassword(e.target.value); setPasswordResetSent(false); }} placeholder="Mevcut &#351;ifre" className="w-full max-w-sm px-4 py-3 border border-slate-200 rounded-xl text-sm mb-3" />
+          )}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <input type="password" autoComplete="new-password" minLength={6} value={newPassword} onChange={e => { setNewPassword(e.target.value); setPasswordResetSent(false); }} placeholder="Yeni &#351;ifre (en az 6 karakter)" className="w-full max-w-sm px-4 py-3 border border-slate-200 rounded-xl text-sm" />
+            <button
+              onClick={async () => {
+                const user = auth.currentUser;
+                if (!user?.email) { setPasswordError('Oturum e-postasi bulunamadi.'); return; }
+                if (newPassword.length < 6) { setPasswordError('Sifre en az 6 karakter olmali.'); return; }
+                try {
+                  if (hasPasswordProvider) {
+                    if (!currentPassword) { setPasswordError('Mevcut sifrenizi girin.'); return; }
+                    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+                    await reauthenticateWithCredential(user, credential);
+                    await updatePassword(user, newPassword);
+                  } else {
+                    const credential = EmailAuthProvider.credential(user.email, newPassword);
+                    await linkWithCredential(user, credential);
+                  }
+                  setPasswordError('');
+                  setPasswordResetSent(true);
+                  setCurrentPassword('');
+                  setNewPassword('');
+                } catch (e: any) {
+                  setPasswordError(e.message || 'Sifre belirlenemedi. Tekrar deneyin.');
+                }
+              }}
+              disabled={passwordResetSent}
+              className="px-4 py-3 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700 transition-all shadow-sm disabled:opacity-50"
+            >
+              {passwordResetSent ? 'Şifre kaydedildi' : hasPasswordProvider ? 'Şifreyi değiştir' : 'Şifre belirle'}
+            </button>
           </div>
           {passwordError && <div className="text-[10px] text-rose-500 font-bold mt-2">{passwordError}</div>}
         </div>

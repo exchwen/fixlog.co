@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import OfflineSyncManager from '@/components/OfflineSyncManager';
 import PwaRegistry from '@/components/PwaRegistry';
+import AlertDialogHost from '@/components/ui/AlertDialogHost';
 
 export const viewport: Viewport = {
   themeColor: "#0f172a",
@@ -69,6 +70,7 @@ export default function RootLayout({
       </head>
       <body>
         {children}
+        <AlertDialogHost />
         <OfflineSyncManager />
         <PwaRegistry />
       </body>

@@ -50,6 +50,21 @@ export default function ManagerDashboard() {
   const router = useRouter();
   
   const [activeTab, setActiveTab] = useState('home');
+  const [restoredTabSlug, setRestoredTabSlug] = useState(null);
+  useEffect(() => {
+    const currentSlug = String(slug || '');
+    try {
+      const saved = localStorage.getItem(`manager_active_tab_${currentSlug}`);
+      if (['home','quotes','bom','my-jobs','jobs','pending','completed','alerts','team','customers','support','periodic','stock','finance','assets'].includes(saved)) setActiveTab(saved);
+    } catch {}
+    setRestoredTabSlug(currentSlug);
+  }, [slug]);
+  useEffect(() => {
+    const currentSlug = String(slug || '');
+    if (restoredTabSlug !== currentSlug) return;
+    try { localStorage.setItem(`manager_active_tab_${currentSlug}`, activeTab); } catch {}
+  }, [activeTab, restoredTabSlug, slug]);
+
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
   
@@ -126,7 +141,7 @@ export default function ManagerDashboard() {
   });
 
   const [newStock, setNewStock] = useState({ 
-    name: '', quantity: '', unit: 'Adet', category: '', min_alert: '' 
+    name: '', quantity: '', unit: 'Adet', unitPrice: '', supplierId: '', category: '', min_alert: ''
   });
 
   const [newSupplier, setNewSupplier] = useState({ 

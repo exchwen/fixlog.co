@@ -2,7 +2,7 @@
 
 import React, { useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Package, Hash, Tag, AlertTriangle } from 'lucide-react';
+import { X, Loader2, Package, Hash, Tag, AlertTriangle, Truck, Banknote } from 'lucide-react';
 
 export default function StockModal({
   showStockModal, setShowStockModal,
@@ -148,6 +148,38 @@ export default function StockModal({
                     </div>
                 </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
+                      <Banknote size={14} /> Birim Fiyat (₺)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0,00"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-all"
+                      value={newStock.unitPrice ?? ''}
+                      onChange={e => setNewStock({ ...newStock, unitPrice: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
+                      <Truck size={14} /> Tedarikçi
+                    </label>
+                    <select
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold outline-none bg-slate-50 focus:bg-white focus:border-blue-500 transition-all"
+                      value={newStock.supplierId || ''}
+                      onChange={e => setNewStock({ ...newStock, supplierId: e.target.value })}
+                    >
+                      <option value="">Tedarikçi seçin (opsiyonel)</option>
+                      {(data?.suppliers || []).map((supplier: any) => (
+                        <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 {/* Minimum Stok Uyarısı */}
                 <div>
                   <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
@@ -174,7 +206,7 @@ export default function StockModal({
             <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50 shrink-0">
                <button 
                   disabled={isSaving || !isFormValid} 
-                  onClick={() => handleAction('add-stock', newStock, setShowStockModal, () => setNewStock({ name: '', quantity: '', unit: 'Adet', category: '', min_alert: '' }))} 
+                  onClick={() => handleAction('add-stock', newStock, setShowStockModal, () => setNewStock({ name: '', quantity: '', unit: 'Adet', unitPrice: '', supplierId: '', category: '', min_alert: '' }))}
                   className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:bg-slate-800 transition-all active:scale-95 flex justify-center items-center disabled:opacity-50 disabled:hover:bg-slate-900"
                >
                   {isSaving ? <Loader2 className="animate-spin" size={18} /> : 'Stok Ekle'}
