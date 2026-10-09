@@ -39,35 +39,68 @@ export default function BomTab({ data }: any) {
         setLoading(false);
     };
 
-    const handleSave = async () => {
-        if(!name) return alert('İsim gerekli');
-        
-        const id = editing?.id || Date.now().toString();
-        const endpoint = editing?.id ? '/update-bom-template' : '/add-bom-template';
-        
-        const itemsString = typeof items === 'string' ? items : JSON.stringify(items);
-        const payload = { id, slug: companySlug, name, description: desc, items: itemsString };
-        
-        try {
-            const response = await fetch(endpoint, { 
-                method: 'POST', 
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getToken()}` // Kimlik eklendi
-                },
-                body: JSON.stringify(payload) 
-            });
-            
-            if(response.ok) {
-                setEditing(null);
-                refreshData();
-            } else {
-                alert('Kaydetme işlemi başarısız oldu. Lütfen tekrar deneyin.');
-            }
-        } catch(e) {
-            alert('Sunucu ile iletişim kurulamadı.');
-        }
+
+const handleSave = async () => {
+    if (!name) return alert('İsim gerekli');
+
+    const id = editing?.id || Date.now().toString();
+    const endpoint = editing?.id
+        ? '/update-bom-template'
+        : '/add-bom-template';
+
+    const itemsString =
+        typeof items === 'string' ? items : JSON.stringify(items);
+
+    const payload = {
+        id,
+        slug: companySlug,
+        name,
+        description: desc,
+        items: itemsString,
     };
+
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`,
+            },
+            body: JSON.stringify(payload),
+        });
+
+        const responseText = await response.text();
+
+        let result: any = {};
+        try {
+            result = JSON.parse(responseText);
+        } catch {
+            result = { error: responseText };
+        }
+
+        if (response.ok && result.success !== false) {
+            setEditing(null);
+            await refreshData();
+        } else {
+            console.error('[BOM KAYDETME HATASI]', {
+                endpoint,
+                status: response.status,
+                response: result,
+                payload,
+            });
+
+            alert(
+                `Kaydetme başarısız!\n` +
+                `HTTP: ${response.status}\n` +
+                `Hata: ${result.error || result.message || responseText || 'Bilinmeyen sunucu hatası'}`
+            );
+        }
+    } catch (e) {
+        console.error('[BOM BAĞLANTI HATASI]', e);
+        alert('Sunucu ile iletişim kurulamadı. Konsolu kontrol et.');
+    }
+};
+
 
     const handleDelete = async (id: string) => {
         if(!window.confirm('Emin misiniz?')) return;
