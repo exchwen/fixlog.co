@@ -4,8 +4,8 @@
 import React, { useEffect, useState } from 'react';
 import { Save, Calendar, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle, MessageCircle, ImagePlus, CheckCircle, Globe, WifiOff, Bell, CreditCard, KeyRound } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
-import { auth } from '@/lib/firebase';
-import { EmailAuthProvider, linkWithCredential, onAuthStateChanged, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
+import { auth, googleProvider } from '@/lib/firebase';
+import { EmailAuthProvider, linkWithCredential, onAuthStateChanged, reauthenticateWithCredential, signInWithPopup, signOut, updatePassword } from 'firebase/auth';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CITY_DATA: any = trCitiesData;
@@ -854,11 +854,24 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
             <input type="password" autoComplete="new-password" minLength={6} value={newPassword} onChange={e => { setNewPassword(e.target.value); setPasswordResetSent(false); }} placeholder="Yeni &#351;ifre (en az 6 karakter)" className="w-full max-w-sm px-4 py-3 border border-slate-200 rounded-xl text-sm" />
             <button
               onClick={async () => {
-                const user = auth.currentUser;
-                if (!user?.email) { setPasswordError('Oturum e-postasi bulunamadi.'); return; }
                 if (newPassword.length < 6) { setPasswordError('Sifre en az 6 karakter olmali.'); return; }
                 try {
-                  if (hasPasswordProvider) {
+                  let user = auth.currentUser;
+                  if (!user) {
+                    const result = await signInWithPopup(auth, googleProvider);
+                    user = result.user;
+                    const token = localStorage.getItem('patron_authToken') || '';
+                    const tokenPayload = token.split('.')[1];
+                    const expectedUid = tokenPayload ? JSON.parse(atob(tokenPayload.replace(/-/g, '+').replace(/_/g, '/'))).id : null;
+                    if (expectedUid && user.uid !== expectedUid) {
+                      await signOut(auth);
+                      throw new Error('Farkli bir Google hesabi secildi. Uygulama hesabinizla eslesen hesabi secin.');
+                    }
+                  }
+                  if (!user?.email) throw new Error('Google hesabi e-posta bilgisi vermedi.');
+                  const userHasPassword = user.providerData.some(provider => provider.providerId === 'password');
+                  setHasPasswordProvider(userHasPassword);
+                  if (userHasPassword) {
                     if (!currentPassword) { setPasswordError('Mevcut sifrenizi girin.'); return; }
                     const credential = EmailAuthProvider.credential(user.email, currentPassword);
                     await reauthenticateWithCredential(user, credential);

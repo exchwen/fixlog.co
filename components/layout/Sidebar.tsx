@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, CheckSquare, Bell, HelpCircle, X, CheckCircle2, UserCircle, ChevronRight, RefreshCw, FileText, List } from 'lucide-react';
+import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, CheckSquare, Bell, HelpCircle, X, CheckCircle2, UserCircle, ChevronRight, ChevronDown, RefreshCw, FileText, List } from 'lucide-react';
 import { useParams } from 'next/navigation';
 
 export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen }: any) {
@@ -9,6 +9,7 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
   const { slug } = useParams();
   const [userRole, setUserRole] = useState<string>('');
   const [isDesktop, setIsDesktop] = useState(true);
+  const [openGroups, setOpenGroups] = useState<string[]>(['overview']);
 
   useEffect(() => {
     const isPatronPath = window.location.pathname.includes('/dashboard');
