@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, CheckSquare, Loader2, Save } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+const BOM_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
+
 export default function PurchaseOrdersModal({ data, onClose }: any) {
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -20,7 +22,7 @@ export default function PurchaseOrdersModal({ data, onClose }: any) {
             .then(res => { if(res.success) setOrders(res.data); })
             .catch(() => {});
         
-        fetch('/get-bom-templates?company_slug=' + encodeURIComponent(companySlug || ''), { headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` } })
+        fetch(`${BOM_API_URL}/get-bom-templates?company_slug=${encodeURIComponent(companySlug || '')}`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` } })
             .then(res => res.json())
             .then(res => { if(res.success) setBomTemplates(res.data); setLoading(false); })
             .catch(() => setLoading(false));
@@ -34,7 +36,7 @@ export default function PurchaseOrdersModal({ data, onClose }: any) {
         const totalValue = items.reduce((acc, it) => acc + (Number(it.ordered_quantity) * Number(it.unit_price || 0)), 0);
         const payload = { id, company_slug: companySlug, name, supplier_id: supplierId, status, items, total_value: totalValue };
         
-        await fetch(endpoint, { method: 'POST', body: JSON.stringify(payload) });
+        await fetch(`${BOM_API_URL}${endpoint}`, { method: 'POST', body: JSON.stringify(payload) });
         onClose();
     };
 

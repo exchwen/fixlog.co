@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Edit2, Copy, Loader2, Save } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+const BOM_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixlog.co';
+
 export default function BomTemplatesModal({ data, onClose }: any) {
     const [templates, setTemplates] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -19,7 +21,7 @@ export default function BomTemplatesModal({ data, onClose }: any) {
         let cancelled = false;
         if (!companySlug) { setTemplates([]); setLoading(false); return; }
         setLoading(true);
-        fetch('/get-bom-templates?slug=' + encodeURIComponent(companySlug), {
+        fetch(`${BOM_API_URL}/get-bom-templates?slug=${encodeURIComponent(companySlug)}`, {
             headers: { 'Authorization': `Bearer ${getToken()}` }
         })
             .then(async res => {
@@ -34,7 +36,7 @@ export default function BomTemplatesModal({ data, onClose }: any) {
 
     const refreshData = async () => {
         try {
-            const res = await fetch('/get-bom-templates?slug=' + encodeURIComponent(companySlug), {
+            const res = await fetch(`${BOM_API_URL}/get-bom-templates?slug=${encodeURIComponent(companySlug)}`, {
                 headers: { 'Authorization': `Bearer ${getToken()}` }
             });
             const r = await res.json();
@@ -54,7 +56,7 @@ export default function BomTemplatesModal({ data, onClose }: any) {
         const payload = { id, slug: companySlug, name: name.trim(), description: desc, items: itemsString };
         
         try {
-            const response = await fetch(endpoint, { 
+            const response = await fetch(`${BOM_API_URL}${endpoint}`, { 
                 method: 'POST', 
                 headers: {
                     'Content-Type': 'application/json',
@@ -78,7 +80,7 @@ export default function BomTemplatesModal({ data, onClose }: any) {
         if(!window.confirm('Emin misiniz?')) return;
         
         try {
-            const response = await fetch('/delete-bom-template', { 
+            const response = await fetch(`${BOM_API_URL}/delete-bom-template`, { 
                 method: 'POST', 
                 headers: {
                     'Content-Type': 'application/json',
@@ -105,7 +107,7 @@ export default function BomTemplatesModal({ data, onClose }: any) {
         };
         
         try {
-            const response = await fetch('/add-bom-template', { 
+            const response = await fetch(`${BOM_API_URL}/add-bom-template`, { 
                 method: 'POST', 
                 headers: {
                     'Content-Type': 'application/json',
