@@ -548,7 +548,7 @@ export default function AssetDetailModal({
                                       }}
                                       className="w-full sm:w-auto bg-slate-50 hover:bg-slate-100 text-blue-600 border border-slate-200 hover:border-blue-200 py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95"
                                   >
-                                      <MapPin size={14} /> Google Haritalar'da Aç
+                                      <MapPin size={14} /> Google Haritalar&apos;da Aç
                                   </button>
                               )}
                           </div>

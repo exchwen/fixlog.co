@@ -932,7 +932,7 @@ const handleStatusUpdate = async (newStatus) => {
                     <span className="font-bold text-sm">Uygulamayı Yükle</span>
                     {isIos ? (
                       <span className="text-[11px] text-slate-400 mt-0.5 leading-tight">
-                        Yüklemek için <Share size={12} className="inline-block mx-0.5 mb-0.5" /> <b>Paylaş</b> ikonuna basıp <br/> <b>Ana Ekrana Ekle</b>'yi seçin.
+                        Yüklemek için <Share size={12} className="inline-block mx-0.5 mb-0.5" /> <b>Paylaş</b> ikonuna basıp <br/> <b>Ana Ekrana Ekle</b>&apos;yi seçin.
                       </span>
                     ) : (
                       <span className="text-xs text-slate-400 mt-0.5">Saha işlemlerini hızlıca yönetin.</span>
@@ -1361,7 +1361,7 @@ const handleStatusUpdate = async (newStatus) => {
                                     if (!rawNote) return null;
                                     
                                     if (!rawNote.includes('---') && !rawNote.includes('Saha Formu')) {
-                                        return <div className="text-xs text-slate-600 italic border-l-2 border-slate-300 pl-3 whitespace-pre-wrap leading-relaxed">"{rawNote}"</div>;
+                                        return <div className="text-xs text-slate-600 italic border-l-2 border-slate-300 pl-3 whitespace-pre-wrap leading-relaxed">&quot;{rawNote}&quot;</div>;
                                     }
 
                                     const lines = rawNote.split('\n');
@@ -1440,7 +1440,7 @@ const handleStatusUpdate = async (newStatus) => {
                                         rel="noopener noreferrer" 
                                         className="mt-4 w-full bg-blue-50 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 text-blue-700 font-bold py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95"
                                     >
-                                        <FileText size={18} /> Yönetici Tarafından Yüklenen PDF'i Aç
+                                        <FileText size={18} /> Yönetici Tarafından Yüklenen PDF&apos;i Aç
                                     </a>
                                 )}
 

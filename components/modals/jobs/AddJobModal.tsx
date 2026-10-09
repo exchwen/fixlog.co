@@ -55,7 +55,7 @@ export default function AddJobModal({
                           <div className="bg-amber-100 p-3 rounded-xl text-amber-600 shrink-0 shadow-sm"><AlertTriangle size={24} /></div>
                           <div>
                               <h3 className="font-black text-amber-900 text-sm sm:text-base">Onay Bekleyen İş Ataması</h3>
-                              <p className="text-xs font-bold text-amber-700/80 mt-1 leading-relaxed">Bu iş patron tarafından atandı. Kabul ettiğinizde "Usta Bekliyor" aşamasına geçecek ve atama yapabileceksiniz.</p>
+                              <p className="text-xs font-bold text-amber-700/80 mt-1 leading-relaxed">Bu iş patron tarafından atandı. Kabul ettiğinizde &quot;Usta Bekliyor&quot; aşamasına geçecek ve atama yapabileceksiniz.</p>
                           </div>
                       </div>
 
@@ -71,7 +71,7 @@ export default function AddJobModal({
                           <div className="flex flex-col gap-1.5">
                               <span className="text-[10px] uppercase font-black text-slate-400 tracking-widest flex items-center gap-1"><User size={12}/> Açıklama / Notlar</span>
                               <div className="font-medium text-slate-600 italic bg-white p-4 rounded-xl border border-slate-200 text-sm leading-relaxed">
-                                  "{selectedJob.details?.note || 'Açıklama girilmemiş.'}"
+                                  &quot;{selectedJob.details?.note || 'Açıklama girilmemiş.'}&quot;
                               </div>
                           </div>
                       </div>

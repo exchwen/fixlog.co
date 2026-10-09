@@ -228,7 +228,7 @@ export default function AlertsTab({ data, handleAction }: AlertsTabProps) {
                                 <span className="flex items-center gap-1.5 shrink-0"><Phone size={14} className="text-slate-400 shrink-0" /> {fault.reporter_phone || 'Tel yok'}</span>
                             </div>
                           </div>
-                          <p className="mt-3 text-sm text-slate-600 italic border-l-4 border-amber-200 pl-3 line-clamp-3">"{fault.description}"</p>
+                          <p className="mt-3 text-sm text-slate-600 italic border-l-4 border-amber-200 pl-3 line-clamp-3">&quot;{fault.description}&quot;</p>
                         </div>
                       </div>
 
@@ -303,7 +303,7 @@ export default function AlertsTab({ data, handleAction }: AlertsTabProps) {
                           </div>
                           <h3 className="font-bold text-slate-800 text-lg leading-tight truncate">{mainTitle}</h3>
                           {subTitle && <div className="text-xs font-semibold text-slate-500 mt-0.5 truncate">{subTitle}</div>}
-                          {isStaffSos && em.message && <div className="text-xs italic text-rose-600 mt-2 border-l-2 border-rose-300 pl-2">"{em.message}"</div>}
+                          {isStaffSos && em.message && <div className="text-xs italic text-rose-600 mt-2 border-l-2 border-rose-300 pl-2">&quot;{em.message}&quot;</div>}
                           <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full text-xs font-semibold text-slate-500 mt-3">
                             <span className="flex items-start gap-1.5 flex-1">
                                 <MapPin size={14} className="text-slate-400 shrink-0 mt-0.5" /> 
@@ -380,7 +380,7 @@ export default function AlertsTab({ data, handleAction }: AlertsTabProps) {
                                    <span className="text-[10px] text-slate-400 font-bold">{new Date(req.created_at).toLocaleString('tr-TR')}</span>
                                </div>
                                <h3 className={`font-black text-lg ${isPending ? 'text-slate-800' : 'text-slate-600'}`}>{req.staff_name || 'Personel'}</h3>
-                               {req.note && <div className="text-sm font-medium text-slate-500 mt-1 italic">"{req.note}"</div>}
+                               {req.note && <div className="text-sm font-medium text-slate-500 mt-1 italic">&quot;{req.note}&quot;</div>}
                                
                                <div className={`mt-3 border rounded-xl p-3 ${isPending ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-100'}`}>
                                    <div className="text-[10px] font-black text-slate-400 uppercase mb-2">İstenen Malzemeler</div>

@@ -13,6 +13,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://fixlog.co'),
   title: 'FixLog.co | Profesyonel Saha ve İş Takip Sistemi',
   description: 'Asansör bakım ve saha operasyonlarınızı sıfır maliyet kaybıyla yönetin. Otonom iş atama, QR varlık takibi ve akıllı stok yönetimi.',
   keywords: ['saha servis yönetimi', 'asansör bakım programı', 'iş takip sistemi', 'teknik servis programı', 'qr barkod sistemi', 'stok takip programı', 'bakım yazılımı', 'saas', 'periyodik bakım', 'asansör', 'teknik servis', 'fixlog', 'fix', 'log', 'fixlog.co', 'fixlog.com', 'asansör bakım', 'elf asansör', 'elevator', 'lift', 'yolcu asansörü', 'asansör parçası', 'uzkan tuna', 'türkiye asansör', 'istanbul asansör', 'asansör firmaları'],

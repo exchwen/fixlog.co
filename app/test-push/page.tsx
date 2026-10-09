@@ -91,11 +91,11 @@ export default function TestPushPage() {
       
       <div className="grid gap-4 mb-6">
         <button onClick={handleRegister} className="bg-blue-600 hover:bg-blue-700 py-3 px-4 rounded font-bold text-left">
-          1. ADIM: Cihazı Kaydet ve 'test-kanal'a Abone Ol
+          1. ADIM: Cihazı Kaydet ve &apos;test-kanal&apos;a Abone Ol
         </button>
         
         <button onClick={handleSend} className="bg-purple-600 hover:bg-purple-700 py-3 px-4 rounded font-bold text-left">
-          2. ADIM: 'test-kanal'a Bildirim Gönder (Worker Üzerinden)
+          2. ADIM: &apos;test-kanal&apos;a Bildirim Gönder (Worker Üzerinden)
         </button>
       </div>
 

@@ -631,7 +631,7 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
                        {activeEmergencies[0]?.staff_id ? activeEmergencies[0].type : (activeEmergencies[0]?.asset_apartment || activeEmergencies[0]?.asset_name || 'Bilinmeyen Varlık')}
                    </div>
                    {activeEmergencies[0]?.staff_id && activeEmergencies[0]?.message && (
-                       <div className="text-sm italic text-rose-100 mb-3 border-l-2 border-rose-400 pl-2">"{activeEmergencies[0].message}"</div>
+                       <div className="text-sm italic text-rose-100 mb-3 border-l-2 border-rose-400 pl-2">&quot;{activeEmergencies[0].message}&quot;</div>
                    )}
                    
                    {/* 🚀 ÜCRETSİZ HARİTA ÖNİZLEMESİ VE YOL TARİFİ - MOBİL UYUMLU SIKIŞTIRILMIŞ TASARIM */}
@@ -719,7 +719,7 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
                           {pendingFaults[0]?.reporter_name || 'İsimsiz'} - {pendingFaults[0]?.reporter_phone || 'Belirtilmemiş'}
                       </div>
                       <div className="text-slate-600 mt-3 text-xs md:text-sm italic border-l-4 border-amber-300 pl-3">
-                          "{pendingFaults[0]?.description || 'Açıklama girilmemiş'}"
+                          &quot;{pendingFaults[0]?.description || 'Açıklama girilmemiş'}&quot;
                       </div>
                   </div>
                   <button onClick={() => handleResolveFault(pendingFaults[0]?.id)} disabled={isSaving} className="mt-2 md:mt-4 w-full bg-slate-900 hover:bg-slate-800 text-amber-400 py-3.5 md:py-4.5 rounded-2xl font-black text-base md:text-lg flex flex-col sm:flex-row items-center justify-center gap-2 transition-all shadow-xl disabled:opacity-50 active:scale-95"><Check size={24} /> {isSaving ? 'Kapatılıyor...' : 'GÖRÜLDÜ / BİLDİRİMİ KAPAT'}</button>

@@ -467,7 +467,7 @@ export default function StaffDetailModal({
                         
                         {jobFilter !== 'Tümü' && (
                             <div className="bg-blue-50 text-blue-700 px-3 py-2 rounded-lg text-xs font-bold mb-4 flex justify-between items-center border border-blue-100 shrink-0">
-                                <span className="flex items-center gap-1.5"><Filter size={14}/> Sadece "{jobFilter}" durumundaki işler gösteriliyor.</span>
+                                <span className="flex items-center gap-1.5"><Filter size={14}/> Sadece &quot;{jobFilter}&quot; durumundaki işler gösteriliyor.</span>
                                 <button onClick={() => setJobFilter('Tümü')} className="text-blue-500 hover:text-blue-800 underline">Tümünü Gör</button>
                             </div>
                         )}
@@ -528,7 +528,7 @@ export default function StaffDetailModal({
                                                 </div>
                                                 {job.details?.note && (
                                                     <div className="mt-3 pt-3 border-t border-slate-100 text-xs font-medium text-slate-600 line-clamp-2 italic">
-                                                        "{job.details.note.replace(/\[📍 Konum Kaydı\].*/g, '')}"
+                                                        &quot;{job.details.note.replace(/\[📍 Konum Kaydı\].*/g, '')}&quot;
                                                     </div>
                                                 )}
                                             </div>

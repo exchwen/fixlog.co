@@ -363,7 +363,7 @@ const handleDownloadTemplate = (e: React.MouseEvent) => {
                                         <Bot size={24} className="text-blue-500" />
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-black text-blue-800">Kendi Excel'imi Yükleyeceğim</h3>
+                                        <h3 className="text-sm font-black text-blue-800">Kendi Excel&apos;imi Yükleyeceğim</h3>
                                         <p className="text-[11px] font-medium text-blue-600 mt-1">Yapay zeka başlıkları tahmin eder.</p>
                                     </div>
                                 </div>
@@ -390,7 +390,7 @@ const handleDownloadTemplate = (e: React.MouseEvent) => {
                                     <div className="w-full mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
                                         <AlertCircle size={20} className="text-amber-600 shrink-0 mt-0.5" />
                                         <div className="text-left">
-                                            <h4 className="text-sm font-black text-amber-800">Kendi Excel'inizi Yüklüyorsunuz</h4>
+                                            <h4 className="text-sm font-black text-amber-800">Kendi Excel&apos;inizi Yüklüyorsunuz</h4>
                                             <p className="text-[11px] text-amber-700 font-medium mt-1 leading-relaxed">
                                                 Akıllı sistemimiz başlıkları analiz edip eşleştirecektir. Ancak yapay zeka karmaşık tablolarda <span className="font-bold underline">hata payı olabilir</span>. Yükleme sonrası eşleşmeleri çok dikkatli kontrol etmeniz gerekmektedir.
                                             </p>
@@ -505,7 +505,7 @@ const handleDownloadTemplate = (e: React.MouseEvent) => {
                         >
                             <FileSpreadsheet size={18} /> Önizleme ve Taslak Tablosunu Oluştur
                         </button>
-                        {(!mappings['apartmentName'] || !mappings['assetType']) && <p className="text-[10px] text-center text-rose-500 font-bold mt-1">Devam etmek için "Bina Adı" ve "Cihaz Türü" eşleştirmeleri zorunludur.</p>}
+                        {(!mappings['apartmentName'] || !mappings['assetType']) && <p className="text-[10px] text-center text-rose-500 font-bold mt-1">Devam etmek için &quot;Bina Adı&quot; ve &quot;Cihaz Türü&quot; eşleştirmeleri zorunludur.</p>}
                     </div>
                 )}
 

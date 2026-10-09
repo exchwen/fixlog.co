@@ -521,7 +521,7 @@ export default function PendingJobsTab({ data, setSelectedJob }: any) {
               </div>
               <div>
                  <h2 className="text-lg font-black text-slate-800 tracking-tight">İşleme Alınmayı Bekleyen Görevler ({waitingForWorkerJobs.length})</h2>
-                 <p className="text-xs font-medium text-slate-500 mt-0.5">Personel atanmış ancak ustaların henüz sahada "İşe Başla" demediği görevler.</p>
+                 <p className="text-xs font-medium text-slate-500 mt-0.5">Personel atanmış ancak ustaların henüz sahada &quot;İşe Başla&quot; demediği görevler.</p>
               </div>
            </div>
 

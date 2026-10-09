@@ -536,7 +536,7 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
                   placeholder="05XX XXX XX XX"
                 />
               </div>
-              <p className="text-[10px] font-medium text-slate-400 mt-1.5 leading-snug">QR kod sayfasındaki "Acil Destek" butonunda bu numara aranır.</p>
+              <p className="text-[10px] font-medium text-slate-400 mt-1.5 leading-snug">QR kod sayfasındaki &quot;Acil Destek&quot; butonunda bu numara aranır.</p>
             </div>
         </div>
 
@@ -900,7 +900,7 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
         {!isFormValid && (
            <div className="bg-amber-50 text-amber-700 p-4 rounded-xl text-[11px] sm:text-xs font-bold border border-amber-200 flex items-start sm:items-center gap-3 mt-4 shadow-sm">
               <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse shrink-0 mt-1 sm:mt-0"></span>
-              <span>Sistemi kullanmaya devam edebilmek için lütfen tüm zorunlu alanları eksiksiz doldurup <strong>"Ayarları Kaydet"</strong> butonuna basın.</span>
+              <span>Sistemi kullanmaya devam edebilmek için lütfen tüm zorunlu alanları eksiksiz doldurup <strong>&quot;Ayarları Kaydet&quot;</strong> butonuna basın.</span>
            </div>
         )}
 

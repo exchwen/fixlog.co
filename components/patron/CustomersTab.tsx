@@ -143,7 +143,7 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
                <tr>
                  <td colSpan={4} className="p-12 text-center text-slate-400 font-medium">
                    {searchTerm ? (
-                     <span>"<span className="font-bold text-slate-700">{searchTerm}</span>" aramasına uygun müşteri bulunamadı.</span>
+                     <span>&quot;<span className="font-bold text-slate-700">{searchTerm}</span>&quot; aramasına uygun müşteri bulunamadı.</span>
                    ) : (
                      'Müşteri kaydı bulunmuyor.'
                    )}
@@ -282,7 +282,7 @@ export default function CustomersTab({ data, setShowAddCustomer, setSelectedCust
                 </div>
                 <h3 className="text-xl font-black text-slate-800 tracking-tight mb-2">Bağlantı Yok!</h3>
                 <p className="text-sm font-medium text-slate-500 mb-6 leading-relaxed">
-                  WhatsApp'a yönlendirilebilmeniz için aktif bir internet bağlantısına ihtiyacınız var. Lütfen bağlantınızı kontrol edip tekrar deneyin.
+                  WhatsApp&apos;a yönlendirilebilmeniz için aktif bir internet bağlantısına ihtiyacınız var. Lütfen bağlantınızı kontrol edip tekrar deneyin.
                 </p>
                 <button 
                   onClick={() => setShowOfflineModal(false)}

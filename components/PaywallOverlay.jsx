@@ -37,7 +37,7 @@ export function PaywallOverlay({ slug, role, onPayClick }) {
           ) : (
              <div className="bg-neutral-800/50 border border-neutral-700/50 p-4 rounded-xl">
                <p className="text-xs text-neutral-300 font-medium tracking-wide">
-                 Bu sorunu çözmek için lütfen iş yeri yetkilinizle ("Patron") iletişime geçin. Sadece yetkili hesaplar ödeme yapabilir.
+                 Bu sorunu çözmek için lütfen iş yeri yetkilinizle (&quot;Patron&quot;) iletişime geçin. Sadece yetkili hesaplar ödeme yapabilir.
                </p>
              </div>
           )}

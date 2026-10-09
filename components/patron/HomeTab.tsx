@@ -459,7 +459,7 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
              </div>
           </div>
           <div className="text-[11px] sm:text-xs font-bold text-blue-600 flex items-center justify-center gap-2 bg-blue-50 px-4 py-3 rounded-lg border border-blue-100 w-full">
-            <Settings size={16} className="shrink-0" /> <span className="text-center">Lütfen sol menüden "Ayarlar" sekmesine gidin.</span>
+            <Settings size={16} className="shrink-0" /> <span className="text-center">Lütfen sol menüden &quot;Ayarlar&quot; sekmesine gidin.</span>
           </div>
         </motion.div>
       </div>
@@ -515,7 +515,7 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
                 </div>
                 <div>
                     <h4 className="text-sm font-black tracking-wide">Yeni Görev Atandı!</h4>
-                    <p className="text-[11px] text-blue-100 font-medium">"{newJobNotification.jobName}" için atama yapıldı.</p>
+                    <p className="text-[11px] text-blue-100 font-medium">&quot;{newJobNotification.jobName}&quot; için atama yapıldı.</p>
                 </div>
             </motion.div>
         )}
@@ -1627,7 +1627,7 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
                           {selectedMaterialRequest.note && (
                               <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl relative">
                                   <div className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">Usta Notu:</div>
-                                  <p className="text-xs font-medium text-amber-900 leading-relaxed italic relative z-10">"{selectedMaterialRequest.note}"</p>
+                                  <p className="text-xs font-medium text-amber-900 leading-relaxed italic relative z-10">&quot;{selectedMaterialRequest.note}&quot;</p>
                               </div>
                           )}
                       </div>

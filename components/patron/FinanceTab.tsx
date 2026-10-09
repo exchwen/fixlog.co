@@ -699,7 +699,7 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
                 {selectedJobDetail.details && selectedJobDetail.details.note && (
                   <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                     <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Sahadan Notlar</div>
-                    <div className="text-sm font-medium text-slate-600 italic border-l-2 border-blue-400 pl-3 leading-relaxed">"{selectedJobDetail.details.note}"</div>
+                    <div className="text-sm font-medium text-slate-600 italic border-l-2 border-blue-400 pl-3 leading-relaxed">&quot;{selectedJobDetail.details.note}&quot;</div>
                   </div>
                 )}
                 </div>
@@ -741,7 +741,7 @@ export default function FinanceTab({ data, userRole = 'Patron' }: any) {
                 {selectedMaintenanceDetail.notes && (
                   <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                     <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Bakım Notları</div>
-                    <div className="text-sm font-medium text-slate-600 italic border-l-2 border-emerald-400 pl-3 leading-relaxed">"{selectedMaintenanceDetail.notes}"</div>
+                    <div className="text-sm font-medium text-slate-600 italic border-l-2 border-emerald-400 pl-3 leading-relaxed">&quot;{selectedMaintenanceDetail.notes}&quot;</div>
                   </div>
                 )}
                 </div>

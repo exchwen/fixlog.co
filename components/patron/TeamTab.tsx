@@ -209,7 +209,7 @@ const openWhatsAppModal = (staff: Staff) => {
               <div className="p-5 sm:p-6 space-y-4">
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
                   <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                    Sistem güvenlik gereği şifreleri saklamaz/çözemez. Personelinizin şifresini biliyorsanız (veya yeni belirlediyseniz) aşağıya yazabilirsiniz. <strong>Boş bırakırsanız</strong> "(Daha önce belirlediğiniz şifre)" olarak iletilecektir.
+                    Sistem güvenlik gereği şifreleri saklamaz/çözemez. Personelinizin şifresini biliyorsanız (veya yeni belirlediyseniz) aşağıya yazabilirsiniz. <strong>Boş bırakırsanız</strong> &quot;(Daha önce belirlediğiniz şifre)&quot; olarak iletilecektir.
                   </p>
                 </div>
 
@@ -240,7 +240,7 @@ const openWhatsAppModal = (staff: Staff) => {
                   onClick={executeWhatsAppSend} 
                   className="flex-[2] bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 transition-all active:scale-95"
                 >
-                  <Send size={16} /> WhatsApp'a Git
+                  <Send size={16} /> WhatsApp&apos;a Git
                 </button>
               </div>
             </motion.div>

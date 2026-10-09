@@ -320,7 +320,7 @@ export default function AssetsTab({ data, setShowAddAsset, setSelectedAsset, set
             <Box size={48} className="text-slate-300" />
             <div className="text-slate-500 font-medium text-sm">
                 {searchTerm ? (
-                   <span>"<span className="font-bold text-slate-700">{searchTerm}</span>" aramasına uygun varlık bulunamadı.</span>
+                   <span>&quot;<span className="font-bold text-slate-700">{searchTerm}</span>&quot; aramasına uygun varlık bulunamadı.</span>
                 ) : (
                    'Henüz sisteme kayıtlı bir varlık bulunmuyor.'
                 )}

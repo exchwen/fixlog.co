@@ -1122,7 +1122,7 @@ useEffect(() => {
                                                                 <FileText size={20} />
                                                             </div>
                                                             <div>
-                                                                <div className="text-sm font-black text-blue-900">Proje / Yönetmelik PDF'i</div>
+                                                                <div className="text-sm font-black text-blue-900">Proje / Yönetmelik PDF&apos;i</div>
                                                                 <div className="text-[11px] font-bold text-blue-700/80 mt-0.5">Sahada referans almak için tıklayıp görüntüleyin.</div>
                                                             </div>
                                                         </div>

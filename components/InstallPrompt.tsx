@@ -134,7 +134,7 @@ export default function InstallPrompt() {
                 <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Smartphone size={32} />
                 </div>
-                <h3 className="text-xl font-black text-slate-800">iPhone'a Yükle</h3>
+                <h3 className="text-xl font-black text-slate-800">iPhone&apos;a Yükle</h3>
                 <p className="text-sm text-slate-500 mt-2">Safari kısıtlamaları nedeniyle uygulamayı manuel olarak ana ekranınıza eklemeniz gerekiyor.</p>
               </div>
 
@@ -149,7 +149,7 @@ export default function InstallPrompt() {
                   <div className="w-8 h-8 bg-white border border-slate-200 rounded-lg flex items-center justify-center shadow-sm shrink-0">
                     <PlusSquare size={18} className="text-slate-700" />
                   </div>
-                  <p className="text-sm text-slate-700 font-medium">2. Çıkan menüde <span className="font-bold">Ana Ekrana Ekle</span>'yi seçin.</p>
+                  <p className="text-sm text-slate-700 font-medium">2. Çıkan menüde <span className="font-bold">Ana Ekrana Ekle</span>&apos;yi seçin.</p>
                 </div>
               </div>
               
