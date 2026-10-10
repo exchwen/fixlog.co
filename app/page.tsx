@@ -195,6 +195,22 @@ export default function LandingPage() {
   
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
   const [staffSlugInput, setStaffSlugInput] = useState('');
+  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
+  const [demoForm, setDemoForm] = useState({ name: '', company: '', phone: '', time: '', note: '' });
+
+  const handleDemoRequest = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const message = [
+      'Merhaba, FixLog için canlı demo talep ediyorum.',
+      `Ad Soyad: ${demoForm.name}`,
+      `Firma: ${demoForm.company}`,
+      `Telefon: ${demoForm.phone}`,
+      `Uygun Zaman: ${demoForm.time || 'Belirtilmedi'}`,
+      demoForm.note ? `Demo hakkında: ${demoForm.note}` : '',
+    ].filter(Boolean).join('\n');
+    window.open(`https://wa.me/905457846752?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+    setIsDemoModalOpen(false);
+  };
 
   const [infoModalContent, setInfoModalContent] = useState<{ title: string, content: string } | null>(null);
 
@@ -360,6 +376,9 @@ return (
             <button onClick={handleLogin} className="flex items-center gap-1.5 text-gray-600 hover:text-blue-600 text-sm font-bold transition-all active:scale-95">
               <LogIn className="w-4 h-4" /> <span className="hidden sm:inline">Patron Girişi</span><span className="sm:hidden">Giriş</span>
             </button>
+            <button onClick={() => setIsDemoModalOpen(true)} className="hidden sm:flex bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-full text-sm font-bold transition-all items-center gap-2 shadow-md shadow-emerald-600/20 active:scale-95">
+              <Headset className="w-4 h-4" /> Canlı Demo İste
+            </button>
             <button onClick={() => setIsStaffModalOpen(true)} className="hidden md:flex items-center gap-1.5 text-gray-600 hover:text-blue-600 text-sm font-bold transition-all active:scale-95">
               <Users className="w-4 h-4" /> Personel Girişi
             </button>
@@ -387,6 +406,9 @@ return (
                 </button>
                 <button onClick={() => { setIsMobileMenuOpen(false); handleRegister(); }} className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 active:scale-95">
                   {t.tryFree}
+                </button>
+                <button onClick={() => { setIsMobileMenuOpen(false); setIsDemoModalOpen(true); }} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 active:scale-95">
+                  <Headset className="w-4 h-4" /> Canlı Demo İste
                 </button>
               </div>
             </motion.div>
@@ -416,6 +438,9 @@ return (
               </button>
               <button onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} className="bg-white border-2 border-gray-200 hover:border-blue-600 text-gray-700 hover:text-blue-600 px-8 py-4 sm:py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 w-full sm:w-auto hover:bg-blue-50 active:scale-95">
                 {t.explore} <ArrowRight className="w-4 h-4" />
+              </button>
+              <button onClick={() => setIsDemoModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 sm:py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 w-full sm:w-auto shadow-lg shadow-emerald-600/20 active:scale-95">
+                <Headset className="w-4 h-4" /> Canlı Demo İste
               </button>
             </motion.div>
 
@@ -1017,6 +1042,58 @@ return (
           </div>
         </section>
         </main>
+
+<AnimatePresence>
+  {isDemoModalOpen && (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm px-4 py-6 overflow-y-auto"
+      onClick={() => setIsDemoModalOpen(false)}
+    >
+      <motion.div
+        initial={{ scale: 0.96, opacity: 0, y: 10 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.96, opacity: 0, y: 10 }}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-3xl p-6 md:p-8 shadow-2xl w-full max-w-lg border border-gray-100 my-auto"
+      >
+        <div className="flex justify-between items-start mb-2">
+          <div>
+            <div className="inline-flex items-center gap-2 text-emerald-700 text-xs font-black uppercase tracking-wider mb-2"><Headset className="w-4 h-4" /> WhatsApp üzerinden</div>
+            <h3 className="text-2xl font-black text-gray-900 tracking-tight">Canlı demo isteyin</h3>
+          </div>
+          <button type="button" onClick={() => setIsDemoModalOpen(false)} aria-label="Kapat" className="text-gray-400 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-xl"><X className="w-5 h-5" /></button>
+        </div>
+        <p className="text-sm text-gray-500 font-medium mb-6">Bilgilerinizi bırakın; demo talebiniz WhatsApp üzerinden bize iletilsin.</p>
+        <form onSubmit={handleDemoRequest} className="space-y-4">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <label className="text-xs font-bold text-gray-600">Ad soyad *
+              <input required autoFocus value={demoForm.name} onChange={(e) => setDemoForm({ ...demoForm, name: e.target.value })} className="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-sm text-gray-900 outline-none focus:border-emerald-500 focus:bg-white" placeholder="Adınız Soyadınız" />
+            </label>
+            <label className="text-xs font-bold text-gray-600">Firma adı *
+              <input required value={demoForm.company} onChange={(e) => setDemoForm({ ...demoForm, company: e.target.value })} className="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-sm text-gray-900 outline-none focus:border-emerald-500 focus:bg-white" placeholder="Firma adınız" />
+            </label>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <label className="text-xs font-bold text-gray-600">Telefon *
+              <input required type="tel" value={demoForm.phone} onChange={(e) => setDemoForm({ ...demoForm, phone: e.target.value })} className="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-sm text-gray-900 outline-none focus:border-emerald-500 focus:bg-white" placeholder="05xx xxx xx xx" />
+            </label>
+            <label className="text-xs font-bold text-gray-600">Uygun olduğunuz zaman
+              <select value={demoForm.time} onChange={(e) => setDemoForm({ ...demoForm, time: e.target.value })} className="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-sm text-gray-900 outline-none focus:border-emerald-500 focus:bg-white">
+                <option value="">Fark etmez</option><option>Hafta içi sabah</option><option>Hafta içi öğleden sonra</option><option>Hafta içi akşam</option>
+              </select>
+            </label>
+          </div>
+          <label className="block text-xs font-bold text-gray-600">Demo sırasında görmek istediğiniz konu (isteğe bağlı)
+            <textarea rows={3} value={demoForm.note} onChange={(e) => setDemoForm({ ...demoForm, note: e.target.value })} className="mt-1.5 w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-sm text-gray-900 outline-none focus:border-emerald-500 focus:bg-white" placeholder="Örn. bakım planlama, ekip takibi, QR arıza bildirimi" />
+          </label>
+          <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 active:scale-[0.99]">
+            WhatsApp’tan demo talep et <ArrowUpRight className="w-4 h-4" />
+          </button>
+          <p className="text-[11px] text-gray-400 text-center">Devam ettiğinizde WhatsApp açılır; mesajı göndermeden önce gözden geçirip düzenleyebilirsiniz.</p>
+        </form>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
 
 <AnimatePresence>
   {isStaffModalOpen && (
