@@ -66,14 +66,14 @@ export default function MasterbossLogin() {
     setLoading(true);
 
     try {
-      const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.fixlog.co";
+      const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "https://api.fixlog.co").replace(/\/+$/, "");
       const res = await fetch(`${BASE_URL}/masterboss-login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, masterPassword: password }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
         localStorage.setItem("masterbossToken", data.token);
         toast.success("Süper Admin Girişi Başarılı!");
