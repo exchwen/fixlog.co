@@ -1,15 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, Mail, ArrowRight, ShieldCheck, User, Download, Share, Check } from "lucide-react";
+import { Lock, ArrowRight, ShieldCheck, User, Download, Share, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import DynamicPWA from "@/components/DynamicPWA";
 
 export default function MasterbossLogin() {
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
   const router = useRouter();
 
   // PWA States
@@ -64,17 +64,23 @@ export default function MasterbossLogin() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setLoginError("");
 
     try {
       const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "https://api.fixlog.co").replace(/\/+$/, "");
       const res = await fetch(`${BASE_URL}/masterboss-login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, masterPassword: password }),
+        body: JSON.stringify({ masterPassword: password }),
       });
 
       const data = await res.json().catch(() => ({}));
-      if (res.ok && data.success) {
+      if (!res.ok || !data.success || !data.token) {
+        setLoginError(data.error || (res.status === 429
+          ? `Çok fazla deneme. ${res.headers.get("Retry-After") || "Biraz"} saniye bekleyip tekrar deneyin.`
+          : `Giriş başarısız (HTTP ${res.status}).`));
+      }
+      if (res.ok && data.success && data.token) {
         localStorage.setItem("masterbossToken", data.token);
         toast.success("Süper Admin Girişi Başarılı!");
         router.push("/masterboss/dashboard");
@@ -82,6 +88,7 @@ export default function MasterbossLogin() {
         toast.error(data.error || "Yetkisiz Giriş!");
       }
     } catch (err) {
+      setLoginError("Sunucuya ulaşılamıyor. İnternet bağlantınızı kontrol edin.");
       toast.error("Sunucuya ulaşılamıyor!");
     } finally {
       setLoading(false);
@@ -139,23 +146,6 @@ export default function MasterbossLogin() {
         <form onSubmit={handleLogin} className="bg-neutral-900/50 backdrop-blur-xl p-8 rounded-3xl border border-neutral-800/50 shadow-2xl">
           <div className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-neutral-300 ml-1">Admin E-Posta</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-neutral-500" />
-                </div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 bg-neutral-950/50 border border-neutral-800/80 rounded-2xl focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 outline-none transition-all text-white placeholder-neutral-600"
-                  placeholder="FixLog.co"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
               <label className="text-sm font-medium text-neutral-300 ml-1">Süper Şifre</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -164,13 +154,19 @@ export default function MasterbossLogin() {
                 <input
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); setLoginError(""); }}
                   className="w-full pl-12 pr-4 py-4 bg-neutral-950/50 border border-neutral-800/80 rounded-2xl focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 outline-none transition-all text-white placeholder-neutral-600"
                   placeholder="••••••••"
                   required
                 />
               </div>
             </div>
+
+            {loginError && (
+              <div role="alert" aria-live="polite" className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm leading-relaxed text-rose-200">
+                {loginError}
+              </div>
+            )}
 
             <button
               type="submit"
