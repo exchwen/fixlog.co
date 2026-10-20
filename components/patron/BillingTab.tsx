@@ -1,10 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CreditCard, CheckCircle } from 'lucide-react';
+import { CreditCard, CheckCircle, Copy, Check } from 'lucide-react';
 
 export default function BillingTab({ data, settingsForm = {} }: any) {
   const [copied, setCopied] = useState(false);
+  const iban = 'TR660006200042500006287276';
+  const copyIban = async () => {
+    try { await navigator.clipboard.writeText(iban); setCopied(true); window.setTimeout(() => setCopied(false), 2000); }
+    catch { alert('IBAN kopyalanamadı. Lütfen elle seçip kopyalayın.'); }
+  };
   const refCode = settingsForm?.referralCode || settingsForm?.referral_code || data?.referralCode || data?.referral_code || 'BEKLENİYOR...';
   
   // 🚀 YENİ: Hometab ile birebir aynı dinamik fatura hesaplaması (Tamamen Agresif Veri Arama)
@@ -86,6 +91,20 @@ export default function BillingTab({ data, settingsForm = {} }: any) {
                      <CreditCard size={16} /> Kart Bilgilerini Gir / Öde
                    </button>
                 </div>
+             </div>
+
+             <div className="w-full rounded-2xl border border-emerald-200 bg-emerald-50 p-4 sm:p-5">
+                <h4 className="text-sm font-black text-emerald-900">Banka Havalesi / EFT</h4>
+                <p className="mt-1 text-xs text-emerald-800">Ödeme açıklamasına firma adınızı yazın.</p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                  <div className="space-y-2 text-sm">
+                    <p><span className="font-bold text-slate-500">Alıcı:</span> <span className="font-bold text-slate-900">Doğukan KAYA</span></p>
+                    <p><span className="font-bold text-slate-500">Banka:</span> <span className="font-bold text-slate-900">Garanti Bankası</span></p>
+                    <p className="break-all"><span className="font-bold text-slate-500">IBAN:</span> <span className="font-mono font-bold tracking-wide text-slate-900">TR66 0006 2000 4250 0006 2872 76</span></p>
+                  </div>
+                  <button type="button" onClick={copyIban} className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-700">{copied ? <Check size={15} /> : <Copy size={15} />}{copied ? 'IBAN Kopyalandı' : 'IBANı Kopyala'}</button>
+                </div>
+                <a href={`https://wa.me/905457846752?text=${encodeURIComponent('Merhaba, banka havalesi dekontumu iletiyorum. Firma adım: ')}`} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#1fb85a] sm:w-auto">Dekont Gönder · WhatsApp</a>
              </div>
 
              <div className="flex-shrink-0 bg-white border border-blue-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">

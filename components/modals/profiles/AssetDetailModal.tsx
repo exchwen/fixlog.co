@@ -302,10 +302,10 @@ export default function AssetDetailModal({
                   </div>
 
                   {!isEditing && (
-                    <div className="flex flex-wrap gap-2 mt-4 w-full border-b border-slate-200 pb-4">
+                    <div className="mt-4 grid w-full grid-cols-2 gap-2 border-b border-slate-200 pb-4 sm:flex sm:flex-wrap sm:gap-2.5">
                         <button 
                             onClick={() => setActiveTab('info')} 
-                            className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 flex-grow sm:flex-grow-0 ${activeTab === 'info' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                            className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 min-w-0 sm:flex-grow-0 ${activeTab === 'info' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                         >
                             Cihaz Bilgisi
                         </button>

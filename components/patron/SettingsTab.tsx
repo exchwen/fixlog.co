@@ -323,7 +323,7 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
           <p className="text-xs font-medium text-slate-500 mt-1">Firma bilgilerinizi buradan güncelleyebilirsiniz.</p>
         </div>
         
-        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-8 z-50 flex sm:block justify-center pointer-events-none sm:pointer-events-auto">
+        <div className="fixed bottom-4 left-auto right-24 z-50 max-w-[calc(100vw-7rem)] flex sm:block justify-center pointer-events-none sm:pointer-events-auto">
           <button 
             disabled={isSaving || !isFormValid} 
             onClick={handleSave} 
