@@ -6,6 +6,8 @@ import { CreditCard, CheckCircle, Copy, Check } from 'lucide-react';
 export default function BillingTab({ data, settingsForm = {}, companySlug = '' }: any) {
   const [copied, setCopied] = useState(false);
   const iban = 'TR660006200042500006287276';
+  const companyName = settingsForm?.companyName || settingsForm?.company_name || data?.companyName || data?.company_name || data?.settings?.company_name || data?.settings?.companyName || 'Firma adı belirtilmedi';
+  const companyCode = companySlug || data?.slug || settingsForm?.slug || 'Belirtilmedi';
   const copyIban = async () => {
     try { await navigator.clipboard.writeText(iban); setCopied(true); window.setTimeout(() => setCopied(false), 2000); }
     catch { alert('IBAN kopyalanamadı. Lütfen elle seçip kopyalayın.'); }
@@ -66,8 +68,16 @@ export default function BillingTab({ data, settingsForm = {}, companySlug = '' }
   }, [data, settingsForm]);
   
 
+  const receiptMessage = [
+    'Merhaba, banka havalesi/EFT dekontumu iletiyorum.',
+    `Firma adı: ${companyName}`,
+    `Firma kodu: ${companyCode}`,
+    `Ödeme tutarı: ${finalBill.toLocaleString('tr-TR')} TL`,
+    'Ödemenin kontrol edilerek aboneliğime işlenmesini rica ederim.'
+  ].join('\n');
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="mx-auto w-full max-w-6xl space-y-6">
         {/* 🚀 YENİ: FATURA VE ABONELİK (İYZİCO ENTEGRASYON ALANI) */}
 
         <div className="border-t border-slate-200 pt-6"><h4 className="text-sm font-black text-slate-800">Abonelik ve Referans</h4><p className="mt-1 text-xs text-slate-500">Plan durumunuzu ve davet kodu kazanımlarınızı takip edin.</p></div>
@@ -75,22 +85,10 @@ export default function BillingTab({ data, settingsForm = {}, companySlug = '' }
            <label className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
               <CreditCard size={16} /> Fatura ve Abonelik Yönetimi
            </label>
-           <div className="bg-blue-50/50 border border-blue-200 p-5 rounded-2xl flex flex-col md:flex-row gap-6 items-center md:items-start shadow-sm">
-             <div className="flex-1 space-y-3 w-full">
+           <div className="grid grid-cols-1 gap-4 rounded-2xl border border-blue-200 bg-blue-50/50 p-4 shadow-sm sm:gap-5 sm:p-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_minmax(200px,.8fr)] xl:items-start">
+             <div className="min-w-0 space-y-3">
                 <h4 className="font-black text-blue-800 text-sm">Sistem Kullanım Durumu</h4>
-                <p className="text-xs text-blue-700/80 font-medium leading-relaxed">
-                  İşletmenizin aktif abonelik durumunu ve faturasını buradan takip edebilir, kredi kartı ile güvenle ödeme yapabilirsiniz veya otomatik ödeme talimatı verebilirsiniz (Iyzico altyapısı ile korunmaktadır).
-                </p>
-                <div className="mt-4 flex flex-col sm:flex-row items-center gap-3">
-                   <button 
-                     onClick={() => {
-                        alert('Güvenli Iyzico ödeme altyapısı entegre edildiğinde kart giriş ekranı burada açılacaktır.');
-                     }}
-                     className="bg-blue-600 text-white font-bold text-xs px-5 py-3 rounded-xl hover:bg-blue-700 shadow-sm active:scale-95 transition-all w-full sm:w-auto flex justify-center items-center gap-2"
-                   >
-                     <CreditCard size={16} /> Kart Bilgilerini Gir / Öde
-                   </button>
-                </div>
+                <p className="text-sm text-blue-800/90 leading-relaxed">Abonelik durumunuzu ve güncel fatura tutarınızı buradan takip edebilirsiniz. Ödemelerinizi aşağıdaki banka bilgileriyle havale veya EFT olarak yapabilirsiniz.</p>
              </div>
 
              <div className="w-full rounded-2xl border border-emerald-200 bg-emerald-50 p-4 sm:p-5">
@@ -104,10 +102,10 @@ export default function BillingTab({ data, settingsForm = {}, companySlug = '' }
                   </div>
                   <button type="button" onClick={copyIban} className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-700">{copied ? <Check size={15} /> : <Copy size={15} />}{copied ? 'IBAN Kopyalandı' : 'IBANı Kopyala'}</button>
                 </div>
-                <a href={`https://wa.me/905457846752?text=${encodeURIComponent('Merhaba, banka havalesi dekontumu iletiyorum. Firma kodum: ' + companySlug)}`} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#1fb85a] sm:w-auto">Dekont Gönder · WhatsApp</a>
+                <a href={`https://wa.me/905457846752?text=${encodeURIComponent(receiptMessage)}`} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#1fb85a] sm:w-auto">Dekont Gönder · WhatsApp</a>
              </div>
 
-             <div className="flex-shrink-0 bg-white border border-blue-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
+             <div className="w-full min-w-0 rounded-xl border border-blue-200 bg-white p-4 text-center shadow-sm">
                 <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Durum</span>
                 
                 {isExempt ? (
