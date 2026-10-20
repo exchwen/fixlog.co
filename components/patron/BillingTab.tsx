@@ -85,27 +85,22 @@ export default function BillingTab({ data, settingsForm = {}, companySlug = '' }
            <label className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
               <CreditCard size={16} /> Fatura ve Abonelik Yönetimi
            </label>
-           <div className="grid grid-cols-1 gap-4 rounded-2xl border border-blue-200 bg-blue-50/50 p-4 shadow-sm sm:gap-5 sm:p-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_minmax(200px,.8fr)] xl:items-start">
-             <div className="min-w-0 space-y-3">
-                <h4 className="font-black text-blue-800 text-sm">Sistem Kullanım Durumu</h4>
-                <p className="text-sm text-blue-800/90 leading-relaxed">Abonelik durumunuzu ve güncel fatura tutarınızı buradan takip edebilirsiniz. Ödemelerinizi aşağıdaki banka bilgileriyle havale veya EFT olarak yapabilirsiniz.</p>
-             </div>
-
-             <div className="w-full rounded-2xl border border-emerald-200 bg-emerald-50 p-4 sm:p-5">
+           <div className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:gap-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-start">
+             <div className="w-full min-w-0 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 sm:p-6">
                 <h4 className="text-sm font-black text-emerald-900">Banka Havalesi / EFT</h4>
                 <p className="mt-1 text-xs text-emerald-800">Ödeme açıklamasına firma adınızı yazın.</p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-                  <div className="space-y-2 text-sm">
-                    <p><span className="font-bold text-slate-500">Alıcı:</span> <span className="font-bold text-slate-900">Doğukan KAYA</span></p>
-                    <p><span className="font-bold text-slate-500">Banka:</span> <span className="font-bold text-slate-900">Garanti Bankası</span></p>
-                    <p className="break-all"><span className="font-bold text-slate-500">IBAN:</span> <span className="font-mono font-bold tracking-wide text-slate-900">TR66 0006 2000 4250 0006 2872 76</span></p>
-                  </div>
-                  <button type="button" onClick={copyIban} className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-700">{copied ? <Check size={15} /> : <Copy size={15} />}{copied ? 'IBAN Kopyalandı' : 'IBANı Kopyala'}</button>
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-emerald-100 bg-white px-4 py-3"><span className="block text-[11px] font-bold uppercase tracking-wide text-slate-500">Alıcı</span><span className="mt-1 block text-sm font-bold text-slate-900">Doğukan KAYA</span></div>
+                  <div className="rounded-xl border border-emerald-100 bg-white px-4 py-3"><span className="block text-[11px] font-bold uppercase tracking-wide text-slate-500">Banka</span><span className="mt-1 block text-sm font-bold text-slate-900">Garanti Bankası</span></div>
+                </div>
+                <div className="mt-3 rounded-xl border border-emerald-100 bg-white p-3 sm:flex sm:items-center sm:justify-between sm:gap-4 sm:px-4">
+                  <div className="min-w-0"><span className="block text-[11px] font-bold uppercase tracking-wide text-slate-500">IBAN</span><span className="mt-1 block break-all font-mono text-sm font-bold tracking-wide text-slate-900 sm:text-base">TR66 0006 2000 4250 0006 2872 76</span></div>
+                  <button type="button" onClick={copyIban} className="mt-3 inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 sm:mt-0 sm:w-auto">{copied ? <Check size={16} /> : <Copy size={16} />}{copied ? 'IBAN Kopyalandı' : 'IBANı Kopyala'}</button>
                 </div>
                 <a href={`https://wa.me/905457846752?text=${encodeURIComponent(receiptMessage)}`} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#1fb85a] sm:w-auto">Dekont Gönder · WhatsApp</a>
              </div>
 
-             <div className="w-full min-w-0 rounded-xl border border-blue-200 bg-white p-4 text-center shadow-sm">
+             <div className="w-full min-w-0 rounded-2xl border border-blue-200 bg-blue-50/60 p-5 text-center shadow-sm lg:p-4">
                 <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Durum</span>
                 
                 {isExempt ? (
