@@ -22,6 +22,7 @@ import StockTab from '@/components/patron/StockTab';
 import FinanceTab from '@/components/patron/FinanceTab';
 import AssetsTab from '@/components/patron/AssetsTab';
 import SettingsTab from '@/components/patron/SettingsTab';
+import BillingTab from '@/components/patron/BillingTab';
 import PendingJobsTab from '@/components/patron/PendingJobsTab'; 
 import CompletedJobsTab from '@/components/patron/CompletedJobsTab';
 import AlertsTab from '@/components/patron/AlertsTab';
@@ -54,7 +55,7 @@ export default function PatronDashboard() {
     const currentSlug = String(slug || '');
     try {
       const saved = localStorage.getItem(`patron_active_tab_${currentSlug}`);
-      if (['home','quotes','bom','jobs','pending','completed','alerts','team','customers','support','periodic','stock','finance','assets','settings'].includes(saved)) setActiveTab(saved);
+      if (['home','quotes','bom','jobs','pending','completed','alerts','team','customers','support','periodic','stock','finance','assets','settings','billing'].includes(saved)) setActiveTab(saved);
     } catch {}
     setRestoredTabSlug(currentSlug);
   }, [slug]);
@@ -640,6 +641,7 @@ return (
           {activeTab === 'finance' && <FinanceTab data={data} />}
           {activeTab === 'assets' && <AssetsTab data={data} setShowAddAsset={setShowAddAsset} setSelectedAsset={setSelectedAsset} setShowQRModal={setShowQRModal} setSelectedQRAsset={setSelectedQRAsset} setShowSmartExcelModal={setShowSmartExcelModal} />}
           {activeTab === 'settings' && <SettingsTab data={data} settingsForm={settingsForm} setSettingsForm={setSettingsForm} handleAction={handleAction} isSaving={isSaving} />}
+          {activeTab === 'billing' && <BillingTab data={data} settingsForm={settingsForm} />}
         </div>
       </main>
 

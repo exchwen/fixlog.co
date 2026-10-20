@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, CheckSquare, Bell, HelpCircle, X, CheckCircle2, UserCircle, ChevronRight, ChevronDown, RefreshCw, FileText, List } from 'lucide-react';
+import { LayoutDashboard, Users, ClipboardList, Settings, Box, Package, CreditCard, UserPlus, LogOut, CheckSquare, Bell, HelpCircle, X, CheckCircle2, UserCircle, ChevronRight, ChevronDown, RefreshCw, FileText, List, Gift } from 'lucide-react';
 import { useParams } from 'next/navigation';
 
 export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen }: any) {
@@ -9,6 +9,7 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
   const { slug } = useParams();
   const [userRole, setUserRole] = useState<string>('');
   const [isDesktop, setIsDesktop] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>(['overview']);
 
   useEffect(() => {
@@ -106,6 +107,7 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
       { id: 'team', label: 'Saha Ekibi', icon: Users },
       { id: 'finance', label: 'Finans', icon: CreditCard },
       { id: 'settings', label: 'Firma Ayarlar\u0131', icon: Settings },
+      { id: 'billing', label: 'Abonelik & Referans', icon: Gift },
       { id: 'support', label: 'Destek & Bildirim', icon: HelpCircle },
     ] },
   ];
@@ -126,16 +128,17 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
       )}
 
       <aside
-        className={`fixed lg:sticky top-0 left-0 h-[100dvh] bg-slate-900 border-r border-slate-800 z-[210] lg:z-40 w-72 lg:w-20 lg:hover:w-64 group flex flex-col overflow-hidden shrink-0 
+        className={`fixed lg:sticky top-0 left-0 h-[100dvh] z-[210] lg:z-40 w-72 lg:w-20 shrink-0 
         ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0 lg:shadow-none'} 
-        max-lg:transition-none lg:transition-all lg:duration-300 lg:ease-in-out`}
+        max-lg:transition-none`}
       >
+        <div onMouseEnter={() => isDesktop && setIsExpanded(true)} onMouseLeave={() => isDesktop && setIsExpanded(false)} className={`absolute inset-y-0 left-0 flex flex-col overflow-hidden border-r border-slate-800 bg-slate-900 shadow-xl transition-[width] duration-200 ease-out ${isDesktop ? (isExpanded ? 'w-64' : 'w-20') : 'w-72'}`}>
         <div className="p-6 flex items-center justify-between border-b border-slate-800 shrink-0 bg-slate-900/50">
         <div className="flex items-center gap-3 w-full">
             <button type="button" aria-label="Genel Bakış'a git" onClick={() => { setActiveTab('home'); setIsMobileMenuOpen(false); }} className="w-8 h-8 flex items-center justify-center shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
                <img src="/favicon.ico" alt="FixLog.co Logo" className="w-full h-full object-contain" />
             </button>
-            <div className="flex-col opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex">
+            <div className={`flex-col transition-opacity duration-150 flex ${isDesktop && !isExpanded ? 'lg:opacity-0' : 'opacity-100'}`}>
                <span className="font-bold text-white text-sm tracking-tight whitespace-nowrap">FixLog.co</span>
                <span className="text-[10px] text-blue-500 font-bold tracking-widest whitespace-nowrap">{userRole || 'Yönetim'}</span>
             </div>
@@ -149,7 +152,7 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
           <button type="button" onClick={() => { setActiveTab('home'); setIsMobileMenuOpen(false); }} aria-current={activeTab === 'home' ? 'page' : undefined}
             className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${activeTab === 'home' ? 'bg-blue-600/15 text-blue-400 font-bold' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
             <LayoutDashboard size={18} className="shrink-0" />
-            <span className="flex-1 text-left whitespace-nowrap text-[12px] font-bold lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-300">Genel Bakış</span>
+            <span className={`flex-1 text-left whitespace-nowrap text-[12px] font-bold transition-opacity duration-150 ${isDesktop && !isExpanded ? 'lg:opacity-0' : 'opacity-100'}`}>Genel Bakış</span>
             {activeTab === 'home' && <ChevronRight size={13} className="shrink-0" />}
           </button>
           {navGroups.map(group => {
@@ -161,10 +164,10 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
                   onClick={() => setOpenGroups(current => current.includes(group.id) ? current.filter(id => id !== group.id) : [...current, group.id])}
                   className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors group/folder ${groupIsActive ? 'text-blue-400' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
                   <group.icon size={18} className="shrink-0" />
-                  <span className="flex-1 text-left whitespace-nowrap text-[12px] font-bold uppercase tracking-wide lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300">{group.label}</span>
-                  <ChevronDown size={14} className={`shrink-0 transition-transform lg:opacity-0 group-hover:opacity-100 ${isOpen ? 'rotate-180' : ''}`} />
+                  <span className={`flex-1 text-left whitespace-nowrap text-[12px] font-bold uppercase tracking-wide transition-opacity duration-150 ${isDesktop && !isExpanded ? 'lg:opacity-0' : 'opacity-100'}`}>{group.label}</span>
+                  <ChevronDown size={14} className={`shrink-0 transition-all ${isDesktop && !isExpanded ? 'lg:opacity-0' : 'opacity-100'} ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
-                {isOpen && <div id={`sidebar-group-${group.id}`} className="mt-1 block space-y-1 border-l border-slate-700 ml-[21px] pl-2 lg:group-hover:block">
+                {isOpen && (!isDesktop || isExpanded) && <div id={`sidebar-group-${group.id}`} className="mt-1 block space-y-1 border-l border-slate-700 ml-[21px] pl-2">
                   {group.items.map(item => (
                     <button key={item.id} type="button" onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }} aria-current={activeTab === item.id ? 'page' : undefined}
                       className={`w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-left transition-colors ${activeTab === item.id ? 'bg-blue-600/15 text-blue-400 font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white font-medium'}`}>
@@ -184,8 +187,9 @@ export default function Sidebar({ activeTab, setActiveTab, isMobileMenuOpen, set
             className="w-full flex items-center gap-3 p-3 rounded-lg text-rose-400 font-bold hover:bg-rose-500/10 transition-colors group/btn"
           >
             <div className="shrink-0"><LogOut size={18} /></div>
-            <span className="whitespace-nowrap lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm">Çıkış Yap</span>
+            <span className={`whitespace-nowrap transition-opacity duration-150 text-sm ${isDesktop && !isExpanded ? 'lg:opacity-0' : 'opacity-100'}`}>Çıkış Yap</span>
           </button>
+        </div>
         </div>
       </aside>
     </>

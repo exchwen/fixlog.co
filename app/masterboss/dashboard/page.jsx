@@ -1,10 +1,15 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Building2, Users, Activity, BarChart3, LogOut, TicketCheck, Gift, AlertCircle, CheckCircle, Database, Plus, ShoppingCart, X, TrendingUp, TrendingDown, Clock, Download, Share, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import DynamicPWA from "@/components/DynamicPWA";
+
+const isResolvedTicket = (status) => {
+  const normalized = String(status || '').trim().toLocaleLowerCase('tr-TR');
+  return normalized === 'resolved' || normalized === String.fromCharCode(231, 246, 122, 252, 108, 252);
+};
 
 export default function MasterbossDashboard() {
   const router = useRouter();
@@ -100,9 +105,14 @@ const [selectedTicket, setSelectedTicket] = useState(null);
 
 // 🚀 YENİ: Firma Filtreleme State'i
 const [companyFilter, setCompanyFilter] = useState("all");
+  const [companySearch, setCompanySearch] = useState("");
+  const [companyPage, setCompanyPage] = useState(1);
+  const companiesPerPage = 40;
 
 // 🚀 YENİ: Ticket (Destek Talebi) Filtreleme State'i
 const [ticketFilter, setTicketFilter] = useState("all");
+const [ticketPage, setTicketPage] = useState(1);
+const ticketsPerPage = 30;
 
 useEffect(() => {
     const fetchDashboard = async () => {
@@ -147,7 +157,26 @@ useEffect(() => {
     router.replace("/masterboss");
   };
 
-  const { companies = [], tickets = [], referrals = [], rewards = [], stats = {}, supportSummary = {}, globalPricing } = data || {};
+  const { companies = [], tickets = [], referrals = [], stats = {}, supportSummary = {}, globalPricing } = data || {};
+
+  const filteredCompanies = useMemo(() => companies.filter(c => {
+    const matchesFilter = companyFilter === "active" ? c.subscription_status === "active" && Number(c.has_masterboss_gift) !== 1
+      : companyFilter === "trialing" ? c.subscription_status === "trialing" && Number(c.has_masterboss_gift) !== 1
+      : companyFilter === "past_due" ? (c.subscription_status === "past_due" || c.subscription_status === "canceled") && Number(c.has_masterboss_gift) !== 1
+      : companyFilter === "exempt" ? Number(c.has_masterboss_gift) === 1
+      : true;
+    const query = companySearch.trim().toLocaleLowerCase("tr-TR");
+    const matchesSearch = !query || `${c.company_name || ""} ${c.owner_name || ""} ${c.slug || ""}`.toLocaleLowerCase("tr-TR").includes(query);
+    return matchesFilter && matchesSearch;
+  }), [companies, companyFilter, companySearch]);
+  const companyPageCount = Math.max(1, Math.ceil(filteredCompanies.length / companiesPerPage));
+  const visibleCompanies = useMemo(() => filteredCompanies.slice((companyPage - 1) * companiesPerPage, companyPage * companiesPerPage), [filteredCompanies, companyPage]);
+  const companyBySlug = useMemo(() => new Map(companies.map(company => [company.slug, company])), [companies]);
+  useEffect(() => setCompanyPage(1), [companyFilter, companySearch]);
+  const filteredTickets = useMemo(() => tickets.filter(ticket => ticketFilter === "open" ? !isResolvedTicket(ticket.status) : ticketFilter === "resolved" ? isResolvedTicket(ticket.status) : true), [tickets, ticketFilter]);
+  const ticketPageCount = Math.max(1, Math.ceil(filteredTickets.length / ticketsPerPage));
+  const visibleTickets = useMemo(() => filteredTickets.slice((ticketPage - 1) * ticketsPerPage, ticketPage * ticketsPerPage), [filteredTickets, ticketPage]);
+  useEffect(() => setTicketPage(1), [ticketFilter]);
 
   // Veri yüklendiğinde globalPricing state'ini senkronize et
   useEffect(() => {
@@ -334,8 +363,8 @@ useEffect(() => {
 
   const totalAssets = companies.reduce((acc, c) => acc + (c.total_assets || 0), 0);
   const totalStaff = companies.reduce((acc, c) => acc + (c.total_staff || 0), 0);
-  const activeCompanies = companies.filter(c => c.subscription_status === 'active' && c.has_masterboss_gift !== 1).length;
-  const exemptCompanies = companies.filter(c => c.has_masterboss_gift === 1).length;
+  const activeCompanies = companies.filter(c => c.subscription_status === 'active' && Number(c.has_masterboss_gift) !== 1).length;
+  const exemptCompanies = companies.filter(c => Number(c.has_masterboss_gift) === 1).length;
 
   const currentMonthStart = new Date();
   currentMonthStart.setDate(1);
@@ -350,9 +379,9 @@ useEffect(() => {
       return d >= lastMonthStart && d < currentMonthStart;
   }).length;
 
-  const canceledCompanies = companies.filter(c => c.subscription_status === 'canceled' && c.has_masterboss_gift !== 1).length;
-  const pastDueCompanies = companies.filter(c => c.subscription_status === 'past_due' && c.has_masterboss_gift !== 1).length;
-  const trialingCompanies = companies.filter(c => c.subscription_status === 'trialing' && c.has_masterboss_gift !== 1).length;
+  const canceledCompanies = companies.filter(c => c.subscription_status === 'canceled' && Number(c.has_masterboss_gift) !== 1).length;
+  const pastDueCompanies = companies.filter(c => c.subscription_status === 'past_due' && Number(c.has_masterboss_gift) !== 1).length;
+  const trialingCompanies = companies.filter(c => c.subscription_status === 'trialing' && Number(c.has_masterboss_gift) !== 1).length;
 
   const activeRatio = companies.length > 0 ? (activeCompanies / companies.length) * 100 : 0;
   
@@ -385,9 +414,6 @@ useEffect(() => {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white selection:bg-rose-500/30 relative overflow-hidden">
       {/* Abstract Animated Background Elements */}
-      <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-rose-600/10 blur-[120px] pointer-events-none" />
-      <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/10 blur-[120px] pointer-events-none" />
-      <div className="fixed top-[40%] right-[10%] w-[30%] h-[30%] rounded-full bg-blue-600/10 blur-[100px] pointer-events-none" />
       <DynamicPWA companyName="FixLog.co" companyLogo="/icons/icon-512x512.png" />
       {/* 🚀 PWA YÜKLEME BALONU EKLENDİ */}
       <AnimatePresence>
@@ -420,7 +446,7 @@ useEffect(() => {
       </AnimatePresence>
 
       {/* Top Navbar */}
-      <motion.nav initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="sticky top-0 z-50 bg-black/40 backdrop-blur-2xl border-b border-white/5">
+      <nav className="sticky top-0 z-50 bg-neutral-950/95 border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center shadow-lg shadow-rose-500/20">
@@ -446,7 +472,7 @@ useEffect(() => {
             </button>
           </div>
         </div>
-      </motion.nav>
+      </nav>
 
       <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
         
@@ -463,11 +489,11 @@ useEffect(() => {
             <OverviewCard icon={Building2} label="Kayıtlı firma" value={companies.length} detail={`${activeCompanies} aktif abonelik`} tone="blue" />
             <OverviewCard icon={AlertCircle} label="Ödeme takibi" value={pastDueCompanies + canceledCompanies} detail={`${pastDueCompanies} gecikmiş · ${canceledCompanies} iptal`} tone="rose" />
             <OverviewCard icon={Clock} label="Deneme süreci" value={trialingCompanies} detail="Deneme aboneliğindeki firmalar" tone="amber" />
-            <OverviewCard icon={TicketCheck} label="Açık destek" value={supportSummary.open ?? tickets.filter(t => t.status !== 'Çözüldü' && t.status !== 'Resolved').length} detail="Yanıt bekleyen talepler" tone="violet" />
+            <OverviewCard icon={TicketCheck} label="Açık destek" value={supportSummary.open ?? tickets.filter(t => !isResolvedTicket(t.status)).length} detail="Yanıt bekleyen talepler" tone="violet" />
             <OverviewCard icon={BarChart3} label="Kayıtlı varlık" value={totalAssets} detail="Platformdaki toplam cihaz" tone="indigo" />
             <OverviewCard icon={Users} label="Saha personeli" value={totalStaff} detail="Tüm firmalardaki personel" tone="emerald" />
             <OverviewCard icon={Activity} label="İş kaydı · bu ay" value={stats.monthlyJobs || 0} detail={`${Number(stats.yearlyJobs || 0).toLocaleString('tr-TR')} bu yıl`} tone="cyan" />
-            <OverviewCard icon={Gift} label="Başarılı davet" value={referrals.filter(r => r.is_verified === 1).length} detail="Ödülü tanımlanmış referans" tone="orange" />
+            <OverviewCard icon={Gift} label="Başarılı davet" value={referrals.filter(r => Number(r.is_verified) === 1).length} detail="Ödülü tanımlanmış referans" tone="orange" />
           </div>
           <div className="mt-5 grid gap-4 rounded-2xl border border-white/10 bg-black/20 p-4 sm:grid-cols-[1fr_auto] sm:items-center sm:p-5">
             <div>
@@ -492,17 +518,12 @@ useEffect(() => {
         {/* Tabs - YATAY SCROLL İPTAL EDİLDİ, FLEX-WRAP EKLENDİ */}
         <div className="flex flex-wrap items-center gap-2 mb-6">
           <TabButton active={activeTab === "companies"} onClick={() => setActiveTab("companies")} icon={Building2} label="Firmalar & Abonelikler" />
-          <TabButton active={activeTab === "tickets"} onClick={() => setActiveTab("tickets")} icon={TicketCheck} label={`Destek Talepleri (${tickets.filter(t=>t.status !== 'Resolved').length})`} />
+          <TabButton active={activeTab === "tickets"} onClick={() => setActiveTab("tickets")} icon={TicketCheck} label={`Destek Talepleri (${tickets.filter(t=>!isResolvedTicket(t.status)).length})`} />
           <TabButton active={activeTab === "referrals"} onClick={() => setActiveTab("referrals")} icon={Gift} label="Hediye Havuzları" />
         </div>
 
         {/* Content Area */}
-        <motion.div 
-          key={activeTab}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white/5 border border-white/5 backdrop-blur-xl rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl"
-        >
+        <div className="bg-white/5 border border-white/5 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl">
           {activeTab === "companies" && (
             <div className="p-4 sm:p-6">
 
@@ -581,10 +602,15 @@ useEffect(() => {
               {/* Firma Filtreleme Sekmeleri - YATAY SCROLL İPTAL, FLEX-WRAP YAPILDI */}
               <div className="flex flex-wrap items-center gap-2 mb-4 sm:mb-6 border-b border-neutral-800 pb-4">
                  <button onClick={() => setCompanyFilter("all")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${companyFilter === "all" ? "bg-white text-black" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Tümü ({companies.length})</button>
-                 <button onClick={() => setCompanyFilter("active")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${companyFilter === "active" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Aktif ({companies.filter(c => c.subscription_status === 'active' && c.has_masterboss_gift !== 1).length})</button>
-                 <button onClick={() => setCompanyFilter("trialing")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${companyFilter === "trialing" ? "bg-blue-500/20 text-blue-400 border border-blue-500/50" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Deneme ({companies.filter(c => c.subscription_status === 'trialing' && c.has_masterboss_gift !== 1).length})</button>
-                 <button onClick={() => setCompanyFilter("past_due")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${companyFilter === "past_due" ? "bg-rose-500/20 text-rose-400 border border-rose-500/50" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Gecikmede ({companies.filter(c => (c.subscription_status === 'past_due' || c.subscription_status === 'canceled') && c.has_masterboss_gift !== 1).length})</button>
-                 <button onClick={() => setCompanyFilter("exempt")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${companyFilter === "exempt" ? "bg-amber-500/20 text-amber-400 border border-amber-500/50" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Muaf (VIP) ({companies.filter(c => c.has_masterboss_gift === 1).length})</button>
+                 <button onClick={() => setCompanyFilter("active")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${companyFilter === "active" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Aktif ({companies.filter(c => c.subscription_status === 'active' && Number(c.has_masterboss_gift) !== 1).length})</button>
+                 <button onClick={() => setCompanyFilter("trialing")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${companyFilter === "trialing" ? "bg-blue-500/20 text-blue-400 border border-blue-500/50" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Deneme ({companies.filter(c => c.subscription_status === 'trialing' && Number(c.has_masterboss_gift) !== 1).length})</button>
+                 <button onClick={() => setCompanyFilter("past_due")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${companyFilter === "past_due" ? "bg-rose-500/20 text-rose-400 border border-rose-500/50" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Gecikmede ({companies.filter(c => (c.subscription_status === 'past_due' || c.subscription_status === 'canceled') && Number(c.has_masterboss_gift) !== 1).length})</button>
+                 <button onClick={() => setCompanyFilter("exempt")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${companyFilter === "exempt" ? "bg-amber-500/20 text-amber-400 border border-amber-500/50" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Muaf (VIP) ({companies.filter(c => Number(c.has_masterboss_gift) === 1).length})</button>
+              </div>
+
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <input value={companySearch} onChange={e => setCompanySearch(e.target.value)} placeholder="Firma, yetkili veya slug ara" className="w-full sm:max-w-sm rounded-xl border border-white/10 bg-neutral-950 px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 outline-none focus:border-blue-500" />
+                <div className="text-xs text-neutral-400">{filteredCompanies.length ? `${(companyPage - 1) * companiesPerPage + 1}–${Math.min(companyPage * companiesPerPage, filteredCompanies.length)} / ${filteredCompanies.length}` : 'Eşleşen firma yok'}</div>
               </div>
 
               {/* Tablo İçeriği (Yatay kaydırma sadece tabloda gerekli) */}
@@ -602,13 +628,7 @@ useEffect(() => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                      {companies.filter(c => {
-                          if (companyFilter === "active") return c.subscription_status === 'active' && c.has_masterboss_gift !== 1;
-                          if (companyFilter === "trialing") return c.subscription_status === 'trialing' && c.has_masterboss_gift !== 1;
-                          if (companyFilter === "past_due") return (c.subscription_status === 'past_due' || c.subscription_status === 'canceled') && c.has_masterboss_gift !== 1;
-                          if (companyFilter === "exempt") return c.has_masterboss_gift === 1;
-                          return true;
-                      }).map((c) => (
+                      {visibleCompanies.map((c) => (
                         <tr key={c.slug} className="hover:bg-white/5 transition-all duration-200">
                           <td className="px-4 py-3 sm:px-6 sm:py-4 font-mono text-neutral-300">
                             {c.slug}
@@ -625,12 +645,12 @@ useEffect(() => {
                           </td>
                           <td className="px-4 py-3 sm:px-6 sm:py-4">
                             <span className={`inline-flex items-center px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium border ${
-                              c.has_masterboss_gift === 1 ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                              Number(c.has_masterboss_gift) === 1 ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
                               c.subscription_status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
                               c.subscription_status === 'trialing' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 
                               'bg-rose-500/10 text-rose-400 border-rose-500/20'
                             }`}>
-                              {c.has_masterboss_gift === 1 ? 'MUAF (HEDİYE)' : c.subscription_status?.toUpperCase() || 'BİLİNMİYOR'}
+                              {Number(c.has_masterboss_gift) === 1 ? 'MUAF (HEDİYE)' : c.subscription_status?.toUpperCase() || 'BİLİNMİYOR'}
                             </span>
                           </td>
                           <td className="px-4 py-3 sm:px-6 sm:py-4 text-neutral-400 text-[11px] sm:text-sm">
@@ -681,7 +701,7 @@ useEffect(() => {
                                   customDiscount: c.custom_base_price !== undefined && c.custom_base_price !== null ? c.custom_base_price : '', 
                                   customAssetPrice: c.custom_per_asset_price !== undefined && c.custom_per_asset_price !== null ? c.custom_per_asset_price : '',
                                   cancelTrial: false,
-                                  hasMasterbossGift: c.has_masterboss_gift === 1
+                                  hasMasterbossGift: Number(c.has_masterboss_gift) === 1
                                 }); 
                                 setShowManageModal(true); 
                               }} 
@@ -692,15 +712,20 @@ useEffect(() => {
                           </td>
                         </tr>
                       ))}
-                      {companies.length === 0 && (
+                      {filteredCompanies.length === 0 && (
                         <tr>
-                          <td colSpan={6} className="px-6 py-12 text-center text-neutral-500">Henüz kayıtlı firma yok.</td>
+                          <td colSpan={6} className="px-6 py-12 text-center text-neutral-500">Eşleşen kayıt bulunamadı.</td>
                         </tr>
                       )}
                     </tbody>
                   </table>
                 </div>
               </div>
+              {companyPageCount > 1 && <div className="mt-4 flex items-center justify-center gap-3">
+                <button disabled={companyPage <= 1} onClick={() => setCompanyPage(page => page - 1)} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">Önceki</button>
+                <span className="text-xs text-neutral-400">Sayfa {companyPage} / {companyPageCount}</span>
+                <button disabled={companyPage >= companyPageCount} onClick={() => setCompanyPage(page => page + 1)} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">Sonraki</button>
+              </div>}
             </div>
           )}
 
@@ -710,16 +735,12 @@ useEffect(() => {
               {/* 🚀 BİLET FİLTRELEME BUTONLARI */}
               <div className="flex flex-wrap items-center gap-2 mb-4 sm:mb-6 border-b border-neutral-800 pb-4">
                  <button onClick={() => setTicketFilter("all")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${ticketFilter === "all" ? "bg-white text-black" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Tümü ({tickets.length})</button>
-                 <button onClick={() => setTicketFilter("open")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${ticketFilter === "open" ? "bg-amber-500/20 text-amber-400 border border-amber-500/50" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Açık ({tickets.filter(t => t.status !== 'Çözüldü' && t.status !== 'Resolved').length})</button>
-                 <button onClick={() => setTicketFilter("resolved")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${ticketFilter === "resolved" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Çözüldü ({tickets.filter(t => t.status === 'Çözüldü' || t.status === 'Resolved').length})</button>
+                 <button onClick={() => setTicketFilter("open")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${ticketFilter === "open" ? "bg-amber-500/20 text-amber-400 border border-amber-500/50" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Açık ({tickets.filter(t => !isResolvedTicket(t.status)).length})</button>
+                 <button onClick={() => setTicketFilter("resolved")} className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${ticketFilter === "resolved" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50" : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10"}`}>Çözüldü ({tickets.filter(t => isResolvedTicket(t.status)).length})</button>
               </div>
 
               <div className="space-y-3 sm:space-y-4">
-                {tickets.filter(t => {
-                    if (ticketFilter === "open") return t.status !== 'Çözüldü' && t.status !== 'Resolved';
-                    if (ticketFilter === "resolved") return t.status === 'Çözüldü' || t.status === 'Resolved';
-                    return true;
-                }).map(t => (
+                {visibleTickets.map(t => (
                   <div key={t.id} className="bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 rounded-2xl backdrop-blur-md p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 transition-colors">
                     <div className="flex gap-3 sm:gap-4 items-start sm:items-center flex-1 min-w-0">
                         <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-neutral-800 flex items-center justify-center shrink-0">
@@ -731,8 +752,8 @@ useEffect(() => {
                               {t.company_name || t.company_slug} 
                               <span className="text-neutral-400 text-[10px] sm:text-xs ml-1 sm:ml-2">- {t.sender_name || 'Bilinmiyor'}</span>
                             </div>
-                            <span className={`shrink-0 text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full uppercase font-bold tracking-wider ${t.status === 'Çözüldü' || t.status === 'Resolved' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
-                              {t.status === 'Çözüldü' || t.status === 'Resolved' ? 'Çözüldü' : 'Açık'}
+                            <span className={`shrink-0 text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full uppercase font-bold tracking-wider ${isResolvedTicket(t.status) ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                              {isResolvedTicket(t.status) ? 'Çözüldü' : 'Açık'}
                             </span>
                           </div>
                           <p className="text-xs sm:text-sm text-neutral-400 truncate">{t.message}</p>
@@ -746,16 +767,21 @@ useEffect(() => {
                     </button>
                   </div>
                 ))}
-                {tickets.length === 0 && <div className="text-center py-12 text-neutral-500">Destek talebi bulunmuyor.</div>}
+                {filteredTickets.length === 0 && <div className="text-center py-12 text-neutral-500">Destek talebi bulunmuyor.</div>}
               </div>
+              {ticketPageCount > 1 && <div className="mt-4 flex items-center justify-center gap-3">
+                <button disabled={ticketPage <= 1} onClick={() => setTicketPage(page => page - 1)} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">Önceki</button>
+                <span className="text-xs text-neutral-400">Sayfa {ticketPage} / {ticketPageCount}</span>
+                <button disabled={ticketPage >= ticketPageCount} onClick={() => setTicketPage(page => page + 1)} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">Sonraki</button>
+              </div>}
             </div>
           )}
 
           {activeTab === "referrals" && (
             <div className="overflow-x-auto">
               <div className="p-4 bg-neutral-800/20 border-b border-neutral-800 text-xs sm:text-sm font-medium text-neutral-300">
-                <span className="text-rose-400 font-bold">{referrals.filter(r=>r.is_verified).length}</span> Onaylı Davet &nbsp;&nbsp;|&nbsp;&nbsp;
-                <span className="text-emerald-400 font-bold">{referrals.filter(r=>!r.is_verified).length}</span> Bekleyen Davet
+                <span className="text-rose-400 font-bold">{referrals.filter(r=>Number(r.is_verified) === 1).length}</span> Onaylı Davet &nbsp;&nbsp;|&nbsp;&nbsp;
+                <span className="text-emerald-400 font-bold">{referrals.filter(r=>Number(r.is_verified) !== 1).length}</span> Bekleyen Davet
               </div>
               <div className="overflow-x-auto -mx-4 sm:mx-0">
                 <div className="inline-block min-w-full align-middle px-4 sm:px-0">
@@ -770,7 +796,7 @@ useEffect(() => {
                     </thead>
                     <tbody className="divide-y divide-white/5">
                       {referrals.map((r) => {
-                        const referrerCompany = companies.find(c => c.slug === r.referrer_company_slug);
+                        const referrerCompany = companyBySlug.get(r.referrer_company_slug);
                         return (
                           <tr key={r.id} className="hover:bg-neutral-800/20 transition-colors">
                             <td className="px-4 py-3 sm:px-6 sm:py-4">
@@ -780,7 +806,7 @@ useEffect(() => {
                               <div className="font-mono font-medium text-blue-400">{r.referred_company_slug}</div>
                             </td>
                             <td className="px-4 py-3 sm:px-6 sm:py-4">
-                              {r.is_verified ? (
+                              {Number(r.is_verified) === 1 ? (
                                 <span className="inline-flex items-center gap-1 sm:gap-1.5 bg-emerald-500/10 text-emerald-400 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium border border-emerald-500/20">
                                   <TicketCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> İlk Ödeme Alındı
                                 </span>
@@ -813,7 +839,7 @@ useEffect(() => {
               </div>
             </div>
           )}
-        </motion.div>
+        </div>
 
       </div>
 
@@ -953,8 +979,8 @@ useEffect(() => {
                 <div>
                     <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight flex flex-wrap items-center gap-2 mb-2 pr-12">
                         {selectedTicket.company_name || selectedTicket.company_slug}
-                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${selectedTicket.status === 'Çözüldü' || selectedTicket.status === 'Resolved' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
-                           {selectedTicket.status === 'Çözüldü' || selectedTicket.status === 'Resolved' ? 'Çözüldü' : 'Açık'}
+                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${isResolvedTicket(selectedTicket.status) ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                           {isResolvedTicket(selectedTicket.status) ? 'Çözüldü' : 'Açık'}
                         </span>
                     </h3>
                     <div className="text-xs sm:text-sm text-neutral-400 font-medium flex flex-wrap items-center gap-2 mb-1">
@@ -995,7 +1021,7 @@ useEffect(() => {
             </div>
 
             {/* Yanıt Gönderme Alanı */}
-            {selectedTicket.status !== 'Çözüldü' && selectedTicket.status !== 'Resolved' ? (
+            {!isResolvedTicket(selectedTicket.status) ? (
                 <div className="p-4 sm:p-6 border-t border-white/10 bg-transparent sm:rounded-b-3xl shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
                     <textarea
                         value={replyTexts[selectedTicket.id] || ""}

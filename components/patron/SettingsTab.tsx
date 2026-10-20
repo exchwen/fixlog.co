@@ -2,7 +2,7 @@
 
 // YENİ: WifiOff ve Bell eklendi
 import React, { useEffect, useState } from 'react';
-import { Save, Calendar, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle, MessageCircle, ImagePlus, CheckCircle, Globe, WifiOff, Bell, CreditCard, KeyRound } from 'lucide-react';
+import { Save, Calendar, Loader2, Building2, User, Phone, MapPin, FileText, Briefcase, AlertTriangle, MessageCircle, ImagePlus, CheckCircle, Globe, WifiOff, Bell, KeyRound } from 'lucide-react';
 import trCitiesData from '@/lib/data/tr-cities.json';
 import { auth, googleProvider } from '@/lib/firebase';
 import { EmailAuthProvider, linkWithCredential, onAuthStateChanged, reauthenticateWithCredential, signInWithPopup, signOut, updatePassword } from 'firebase/auth';
@@ -264,60 +264,6 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
     settingsForm?.taxInfo?.trim();
 
 // 🚀 DÜZELTME: Referans kodunu hem settingsForm hem de data içinden çekiyoruz.
-const refCode = settingsForm?.referralCode || settingsForm?.referral_code || data?.referralCode || data?.referral_code || 'BEKLENİYOR...';
-
-// 🚀 YENİ: Hometab ile birebir aynı dinamik fatura hesaplaması (Tamamen Agresif Veri Arama)
-const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferrals, isExempt, finalBill, subStatus, trialEndsAt } = React.useMemo(() => {
-  
-  // 1. Varlık Sayısı: Undefined veya string gelme ihtimaline karşı Number() ile zorluyoruz
-  const rawAssets = data?.stats?.assets ?? data?.assets?.length ?? settingsForm?.stats?.assets ?? settingsForm?.assets?.length ?? 0;
-  const assetsCount = Number(rawAssets) || 0;
-  
-  // 2. Muafiyet (VIP): API'den "1" (string) gelme riskine karşı Number() === 1 veya text === 'true' kontrolü
-  const rawExempt = data?.has_masterboss_gift ?? settingsForm?.has_masterboss_gift;
-  const exemptStatus = Number(rawExempt) === 1 || String(rawExempt).toLowerCase() === 'true';
-  
-  // 3. Fiyatlandırma
-  const rawBasePrice = data?.custom_base_price ?? settingsForm?.custom_base_price;
-  const bFee = rawBasePrice !== undefined && rawBasePrice !== null 
-               ? Number(rawBasePrice) 
-               : Number(data?.global_base_price || settingsForm?.global_base_price || 3000);
-               
-  const rawAssetPrice = data?.custom_per_asset_price ?? settingsForm?.custom_per_asset_price;
-  const pAssetFee = rawAssetPrice !== undefined && rawAssetPrice !== null 
-                    ? Number(rawAssetPrice) 
-                    : Number(data?.global_asset_price || settingsForm?.global_asset_price || 50);
-
-  // 4. Güncel Kullanım Faturası
-  const cUsageBill = exemptStatus ? 0 : bFee + (assetsCount * pAssetFee);
-  const aReferrals = Number(data?.free_months_balance ?? settingsForm?.free_months_balance ?? 0);
-
-  let fBill = cUsageBill;
-  let rCredits = 0;
-
-  if (exemptStatus) {
-      fBill = 0;
-  } else if (aReferrals > 0) {
-      rCredits = bFee; // Sadece taban ücreti düşer
-      fBill = Math.max(0, cUsageBill - rCredits);
-  }
-  
-  // 5. Abonelik Durumu
-  const sStatus = data?.subscription_status || settingsForm?.subscription_status || 'active';
-  const tEndsAt = data?.trial_ends_at || settingsForm?.trial_ends_at;
-
-  return {
-      totalAssetsCount: assetsCount,
-      baseFee: bFee,
-      perAssetFee: pAssetFee,
-      currentUsageBill: cUsageBill,
-      activeReferrals: aReferrals,
-      isExempt: exemptStatus,
-      finalBill: fBill,
-      subStatus: sStatus,
-      trialEndsAt: tEndsAt
-  };
-}, [data, settingsForm]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 relative pb-20 sm:pb-6">
@@ -377,11 +323,11 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
           <p className="text-xs font-medium text-slate-500 mt-1">Firma bilgilerinizi buradan güncelleyebilirsiniz.</p>
         </div>
         
-        <div className="fixed bottom-4 left-4 right-4 sm:static sm:bottom-auto sm:left-auto sm:right-auto z-50 flex sm:block justify-center pointer-events-none sm:pointer-events-auto">
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-8 z-50 flex sm:block justify-center pointer-events-none sm:pointer-events-auto">
           <button 
             disabled={isSaving || !isFormValid} 
             onClick={handleSave} 
-            className="w-[calc(100vw-32px)] sm:w-auto bg-blue-600 text-white px-6 py-3.5 sm:py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-xl sm:shadow-sm hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed pointer-events-auto"
+            className="w-[calc(100vw-32px)] sm:w-auto bg-blue-600 text-white px-6 py-3.5 sm:py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-xl hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed pointer-events-auto"
           >
             {isSaving ? <Loader2 className="animate-spin" size={18} /> : (isOffline ? <WifiOff size={18} /> : <Save size={18} />)}
             {isOffline ? 'Kuyruğa Al' : 'Ayarları Kaydet'}
@@ -390,6 +336,63 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 space-y-6">
+        <div className="border-t border-slate-100 pt-6 pb-2">
+          <label className="text-[11px] font-black text-rose-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+            <KeyRound size={16} /> Şifre Belirleme & Doğrulama
+          </label>
+          <p className="text-[11px] font-medium text-slate-500 mb-4 leading-relaxed">
+            Google ile ilk girisinizde parola belirleyin. Sonraki ziyaretlerde bu parola ile de giris yapabilirsiniz.
+          </p>
+          {hasPasswordProvider && (
+            <input type="password" autoComplete="current-password" value={currentPassword} onChange={e => { setCurrentPassword(e.target.value); setPasswordResetSent(false); }} placeholder="Mevcut &#351;ifre" className="w-full max-w-sm px-4 py-3 border border-slate-200 rounded-xl text-sm mb-3" />
+          )}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <input type="password" autoComplete="new-password" minLength={6} value={newPassword} onChange={e => { setNewPassword(e.target.value); setPasswordResetSent(false); }} placeholder="Yeni &#351;ifre (en az 6 karakter)" className="w-full max-w-sm px-4 py-3 border border-slate-200 rounded-xl text-sm" />
+            <button
+              onClick={async () => {
+                if (newPassword.length < 6) { setPasswordError('Sifre en az 6 karakter olmali.'); return; }
+                try {
+                  let user = auth.currentUser;
+                  if (!user) {
+                    const result = await signInWithPopup(auth, googleProvider);
+                    user = result.user;
+                    const token = localStorage.getItem('patron_authToken') || '';
+                    const tokenPayload = token.split('.')[1];
+                    const expectedUid = tokenPayload ? JSON.parse(atob(tokenPayload.replace(/-/g, '+').replace(/_/g, '/'))).id : null;
+                    if (expectedUid && user.uid !== expectedUid) {
+                      await signOut(auth);
+                      throw new Error('Farkli bir Google hesabi secildi. Uygulama hesabinizla eslesen hesabi secin.');
+                    }
+                  }
+                  if (!user?.email) throw new Error('Google hesabi e-posta bilgisi vermedi.');
+                  const userHasPassword = user.providerData.some(provider => provider.providerId === 'password');
+                  setHasPasswordProvider(userHasPassword);
+                  if (userHasPassword) {
+                    if (!currentPassword) { setPasswordError('Mevcut sifrenizi girin.'); return; }
+                    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+                    await reauthenticateWithCredential(user, credential);
+                    await updatePassword(user, newPassword);
+                  } else {
+                    const credential = EmailAuthProvider.credential(user.email, newPassword);
+                    await linkWithCredential(user, credential);
+                  }
+                  setPasswordError('');
+                  setPasswordResetSent(true);
+                  setCurrentPassword('');
+                  setNewPassword('');
+                } catch (e: any) {
+                  setPasswordError(e.message || 'Sifre belirlenemedi. Tekrar deneyin.');
+                }
+              }}
+              disabled={passwordResetSent}
+              className="px-4 py-3 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700 transition-all shadow-sm disabled:opacity-50"
+            >
+              {passwordResetSent ? 'Şifre kaydedildi' : hasPasswordProvider ? 'Şifreyi değiştir' : 'Şifre belirle'}
+            </button>
+          </div>
+          {passwordError && <div className="text-[10px] text-rose-500 font-bold mt-2">{passwordError}</div>}
+        </div>
+
         
         {/* Logo Yükleme Alanı */}
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-center sm:items-start bg-slate-50 p-4 border border-slate-200 rounded-xl">
@@ -624,7 +627,6 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
           </div>
         </div>
 
-        {/* 🚀 YENİ: FATURA VE ABONELİK (İYZİCO ENTEGRASYON ALANI) */}
         <section className="border-t border-slate-200 pt-6 space-y-4">
           <div><h4 className="text-sm font-black text-slate-800">Mas GSM SMS Entegrasyonu</h4><p className="mt-1 text-xs text-slate-500">Kendi Mas GSM API hesabınızı bağlayın. API Secret şifreli saklanır ve tarayıcıya geri gönderilmez.</p></div>
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5 space-y-4">
@@ -639,138 +641,6 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
             </div>
           </div>
         </section>
-        <div className="border-t border-slate-200 pt-6"><h4 className="text-sm font-black text-slate-800">Abonelik ve Referans</h4><p className="mt-1 text-xs text-slate-500">Plan durumunuzu ve davet kodu kazanımlarınızı takip edin.</p></div>
-        <div className="border-t border-slate-100 pt-6 pb-2">
-           <label className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-              <CreditCard size={16} /> Fatura ve Abonelik Yönetimi
-           </label>
-           <div className="bg-blue-50/50 border border-blue-200 p-5 rounded-2xl flex flex-col md:flex-row gap-6 items-center md:items-start shadow-sm">
-             <div className="flex-1 space-y-3 w-full">
-                <h4 className="font-black text-blue-800 text-sm">Sistem Kullanım Durumu</h4>
-                <p className="text-xs text-blue-700/80 font-medium leading-relaxed">
-                  İşletmenizin aktif abonelik durumunu ve faturasını buradan takip edebilir, kredi kartı ile güvenle ödeme yapabilirsiniz veya otomatik ödeme talimatı verebilirsiniz (Iyzico altyapısı ile korunmaktadır).
-                </p>
-                <div className="mt-4 flex flex-col sm:flex-row items-center gap-3">
-                   <button 
-                     onClick={() => {
-                        alert('Güvenli Iyzico ödeme altyapısı entegre edildiğinde kart giriş ekranı burada açılacaktır.');
-                     }}
-                     className="bg-blue-600 text-white font-bold text-xs px-5 py-3 rounded-xl hover:bg-blue-700 shadow-sm active:scale-95 transition-all w-full sm:w-auto flex justify-center items-center gap-2"
-                   >
-                     <CreditCard size={16} /> Kart Bilgilerini Gir / Öde
-                   </button>
-                </div>
-             </div>
-
-             <div className="flex-shrink-0 bg-white border border-blue-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
-                <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Durum</span>
-                
-                {isExempt ? (
-                    <>
-                        <span className="block text-lg font-black mb-1 text-purple-600">VIP (Muaf)</span>
-                        <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">
-                            Ücret: ₺0
-                        </span>
-                        <span className="block text-[9px] font-black text-purple-600 tracking-widest leading-tight bg-purple-50 py-1.5 px-2 rounded-lg border border-purple-200 shadow-sm">
-                            Faturanız FixLog.co tarafından karşılanıyor.
-                        </span>
-                    </>
-                ) : subStatus === 'trialing' ? (
-                    <>
-                        <span className="block text-lg font-black mb-1 text-blue-600">Deneme Sürümü</span>
-                        {(() => {
-                            if (!trialEndsAt) return <span className="block text-[10px] font-bold text-slate-500 uppercase">Aylık: Ücretsiz</span>;
-                            const today = new Date();
-                            const endDate = new Date(trialEndsAt);
-                            today.setHours(0, 0, 0, 0);
-                            endDate.setHours(0, 0, 0, 0);
-                            const diff = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                            if (diff <= 0) return <span className="block text-[9px] font-black text-rose-500 tracking-widest leading-tight bg-rose-50 py-1.5 px-2 rounded-lg border border-rose-200">Süreniz Doldu. Ödeme yapmazsanız hesabınız kısıtlanacaktır.</span>;
-                            return <span className="block text-[9px] font-black text-blue-500 tracking-widest leading-tight bg-blue-50 py-1.5 px-2 rounded-lg border border-blue-200">Kalan Süre: {diff} Gün.<br/>Deneme bitince ödeme yapmazsanız hesabınız kısıtlanacaktır.</span>;
-                        })()}
-                    </>
-                ) : subStatus === 'past_due' ? (
-                  <>
-                      <span className="block text-lg font-black mb-1 text-rose-600">Ödeme Bekliyor</span>
-                      <span className="block text-[10px] font-bold text-rose-500 uppercase">Erişim Kısıtlandı</span>
-                  </>
-                ) : subStatus === 'canceled' ? (
-                    <>
-                        <span className="block text-lg font-black mb-1 text-slate-600">İptal Edildi</span>
-                        <span className="block text-[10px] font-bold text-slate-500 uppercase">Hesabınız askıya alındı</span>
-                    </>
-                ) : (
-                    <>
-                        <span className="block text-lg font-black mb-1 text-emerald-600">Aktif</span>
-                        
-                        <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">
-                            Aylık: ₺{finalBill.toLocaleString('tr-TR')}
-                            {activeReferrals > 0 && (
-                                <span className="line-through text-slate-400 ml-1">₺{currentUsageBill.toLocaleString('tr-TR')}</span>
-                            )}
-                        </span>
-                        
-                        {activeReferrals > 0 ? (
-                           <span className="block text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-tight bg-emerald-50 py-1.5 px-2 rounded-lg border border-emerald-200">
-                               🎁 Bu Ay İndirimli Kullanım!<br/>(Kalan Hediye: {activeReferrals} Ay)
-                           </span>
-                        ) : (
-                           <span className="block text-[9px] font-black text-emerald-600 tracking-widest leading-tight bg-emerald-50 py-1.5 px-2 rounded-lg border border-emerald-200">
-                               Ödeme yaptığınız için teşekkürler!
-                           </span>
-                        )}
-                    </>
-                )}
-             </div>
-           </div>
-        </div>
-
-        {/* 🚀 YENİ: REFERANS PROGRAMI (TAVSİYE KODU VE KAZANÇLAR) */}
-        <div className="border-t border-slate-100 pt-6 pb-2">
-           <label className="text-[11px] font-black text-emerald-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-              <CheckCircle size={16} /> Referans Programı
-           </label>
-           <div className="bg-emerald-50/50 border border-emerald-200 p-5 rounded-2xl flex flex-col md:flex-row gap-6 items-center md:items-start shadow-sm">
-             
-             <div className="flex-1 space-y-3 w-full">
-                <h4 className="font-black text-emerald-800 text-sm">Tavsiye Et, Kumbaranda Biriksin!</h4>
-                <p className="text-xs text-emerald-700/80 font-medium leading-relaxed">
-                  Referans kodunuz ile kayıt olan ve ilk ödemesini gerçekleştiren <strong> her firma için kumbaranıza + 1 ay 3000 TL değerinde indirim kazanılır.</strong> Sınır yok, kaç firma getirirseniz o kadar ay indirim kazanırsınız! (Kayıt olan firma da hoş geldin hediyesi olarak 1 ay indirim kazanır).
-                </p>
-                <div className="mt-4 flex flex-col sm:flex-row items-center gap-3">
-                   <div className="flex bg-white border border-emerald-200 rounded-xl overflow-hidden w-full sm:w-auto shadow-sm">
-                      <span className="bg-emerald-100 text-emerald-800 font-bold px-4 py-2 text-xs flex items-center border-r border-emerald-200">Kodunuz</span>
-                      <input 
-                         type="text" 
-                         readOnly 
-                         value={refCode} 
-                         className="px-4 py-2 font-black text-slate-800 text-sm outline-none bg-transparent w-full sm:w-40 text-center"
-                      />
-                   </div>
-                   <button 
-                     disabled={refCode === 'BEKLENİYOR...'}
-                     onClick={() => {
-                       navigator.clipboard.writeText(refCode);
-                       setModalState('success');
-                       setTimeout(()=> setModalState('idle'), 2000);
-                     }}
-                     className="bg-emerald-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl hover:bg-emerald-700 shadow-sm active:scale-95 transition-all w-full sm:w-auto disabled:opacity-50 flex justify-center"
-                   >
-                     Kodu Kopyala
-                   </button>
-                </div>
-             </div>
-
-             <div className="flex-shrink-0 bg-white border border-emerald-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
-                <span className="block text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Kumbarada Biriken</span>
-                <span className="block text-4xl font-black text-emerald-600 mb-1">{activeReferrals}</span>
-                <span className="block text-xs font-bold text-slate-600">Ücretsiz Ay</span>
-             </div>
-
-           </div>
-        </div>
-
-        {/* 🚀 YENİ: ÇALIŞMA GÜNLERİ AYARI (OTOPİLOT İÇİN) */}
         <div className="border-t border-slate-200 pt-6"><h4 className="text-sm font-black text-slate-800">Çalışma Planı ve Otomasyon</h4><p className="mt-1 text-xs text-slate-500">Otonom planlamada çalışma günlerini ve kapasiteyi belirleyin.</p></div>
         <div className="border-t border-slate-100 pt-6 pb-2">
           <label className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
@@ -878,62 +748,6 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
           </div>
         </div>
 
-        <div className="border-t border-slate-100 pt-6 pb-2">
-          <label className="text-[11px] font-black text-rose-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-            <KeyRound size={16} /> Şifre Belirleme & Doğrulama
-          </label>
-          <p className="text-[11px] font-medium text-slate-500 mb-4 leading-relaxed">
-            Google ile ilk girisinizde parola belirleyin. Sonraki ziyaretlerde bu parola ile de giris yapabilirsiniz.
-          </p>
-          {hasPasswordProvider && (
-            <input type="password" autoComplete="current-password" value={currentPassword} onChange={e => { setCurrentPassword(e.target.value); setPasswordResetSent(false); }} placeholder="Mevcut &#351;ifre" className="w-full max-w-sm px-4 py-3 border border-slate-200 rounded-xl text-sm mb-3" />
-          )}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <input type="password" autoComplete="new-password" minLength={6} value={newPassword} onChange={e => { setNewPassword(e.target.value); setPasswordResetSent(false); }} placeholder="Yeni &#351;ifre (en az 6 karakter)" className="w-full max-w-sm px-4 py-3 border border-slate-200 rounded-xl text-sm" />
-            <button
-              onClick={async () => {
-                if (newPassword.length < 6) { setPasswordError('Sifre en az 6 karakter olmali.'); return; }
-                try {
-                  let user = auth.currentUser;
-                  if (!user) {
-                    const result = await signInWithPopup(auth, googleProvider);
-                    user = result.user;
-                    const token = localStorage.getItem('patron_authToken') || '';
-                    const tokenPayload = token.split('.')[1];
-                    const expectedUid = tokenPayload ? JSON.parse(atob(tokenPayload.replace(/-/g, '+').replace(/_/g, '/'))).id : null;
-                    if (expectedUid && user.uid !== expectedUid) {
-                      await signOut(auth);
-                      throw new Error('Farkli bir Google hesabi secildi. Uygulama hesabinizla eslesen hesabi secin.');
-                    }
-                  }
-                  if (!user?.email) throw new Error('Google hesabi e-posta bilgisi vermedi.');
-                  const userHasPassword = user.providerData.some(provider => provider.providerId === 'password');
-                  setHasPasswordProvider(userHasPassword);
-                  if (userHasPassword) {
-                    if (!currentPassword) { setPasswordError('Mevcut sifrenizi girin.'); return; }
-                    const credential = EmailAuthProvider.credential(user.email, currentPassword);
-                    await reauthenticateWithCredential(user, credential);
-                    await updatePassword(user, newPassword);
-                  } else {
-                    const credential = EmailAuthProvider.credential(user.email, newPassword);
-                    await linkWithCredential(user, credential);
-                  }
-                  setPasswordError('');
-                  setPasswordResetSent(true);
-                  setCurrentPassword('');
-                  setNewPassword('');
-                } catch (e: any) {
-                  setPasswordError(e.message || 'Sifre belirlenemedi. Tekrar deneyin.');
-                }
-              }}
-              disabled={passwordResetSent}
-              className="px-4 py-3 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700 transition-all shadow-sm disabled:opacity-50"
-            >
-              {passwordResetSent ? 'Şifre kaydedildi' : hasPasswordProvider ? 'Şifreyi değiştir' : 'Şifre belirle'}
-            </button>
-          </div>
-          {passwordError && <div className="text-[10px] text-rose-500 font-bold mt-2">{passwordError}</div>}
-        </div>
 
         {!isFormValid && (
            <div className="bg-amber-50 text-amber-700 p-4 rounded-xl text-[11px] sm:text-xs font-bold border border-amber-200 flex items-start sm:items-center gap-3 mt-4 shadow-sm">

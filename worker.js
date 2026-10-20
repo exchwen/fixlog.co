@@ -2201,49 +2201,33 @@ Otomatik olarak size atand\u0131!`,
                  c.created_at, c.trial_ends_at, c.billing_cycle_anchor, c.referral_code,
                  c.custom_base_price, c.custom_per_asset_price, c.free_months_balance,
                  c.has_masterboss_gift,
-                 (SELECT COUNT(*) FROM staff s WHERE s.company_slug = c.slug) as total_staff,
-                 (SELECT COUNT(*) FROM assets a WHERE a.company_slug = c.slug) as total_assets
-          FROM companies c ORDER BY c.created_at DESC
+                 COALESCE(staff_counts.total_staff, 0) as total_staff,
+                 COALESCE(asset_counts.total_assets, 0) as total_assets
+          FROM companies c
+          LEFT JOIN (SELECT company_slug, COUNT(*) as total_staff FROM staff GROUP BY company_slug) staff_counts ON staff_counts.company_slug = c.slug
+          LEFT JOIN (SELECT company_slug, COUNT(*) as total_assets FROM assets GROUP BY company_slug) asset_counts ON asset_counts.company_slug = c.slug
+          ORDER BY c.created_at DESC
         `));
-        const companyRewards = await safeAll(env.DB.prepare("SELECT * FROM company_rewards"));
-        const rewardsMap = {};
-        companyRewards.forEach((r) => {
-          rewardsMap[r.company_slug] = {
-            balance: r.free_months_balance,
-            is_gift: r.has_masterboss_gift
-          };
-        });
         const companiesWithRewards = companies.map((c) => ({
           ...c,
           free_months_balance: c.free_months_balance || 0,
           has_masterboss_gift: c.has_masterboss_gift || 0
         }));
-        const globalStats = await safeFirst(env.DB.prepare(`
-          SELECT
-            COUNT(*) as total_jobs,
-            SUM(CASE WHEN created_at >= ? AND created_at < ? THEN 1 ELSE 0 END) as monthly_jobs,
-            SUM(CASE WHEN created_at >= ? AND created_at < ? THEN 1 ELSE 0 END) as yearly_jobs,
-            SUM(CASE WHEN created_at >= ? AND created_at < ? AND json_valid(photo_urls)
-                     THEN json_array_length(photo_urls) ELSE 0 END) as monthly_photos,
-            SUM(CASE WHEN created_at >= ? AND created_at < ? AND json_valid(photo_urls)
-                     THEN json_array_length(photo_urls) ELSE 0 END) as yearly_photos
-          FROM jobs
-        `).bind(
-          `${new Date().toISOString().slice(0, 7)}-01`, `${new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1)).toISOString().slice(0, 10)}`,
-          `${new Date().getUTCFullYear()}-01-01`, `${new Date(Date.UTC(new Date().getUTCFullYear() + 1, 0, 1)).toISOString().slice(0, 10)}`,
-          `${new Date().toISOString().slice(0, 7)}-01`, `${new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1)).toISOString().slice(0, 10)}`,
-          `${new Date().getUTCFullYear()}-01-01`, `${new Date(Date.UTC(new Date().getUTCFullYear() + 1, 0, 1)).toISOString().slice(0, 10)}`
-        ));
+        const currentMonthStart = `${new Date().toISOString().slice(0, 7)}-01`;
+        const nextMonthStart = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1)).toISOString().slice(0, 10);
+        const currentYearStart = `${new Date().getUTCFullYear()}-01-01`;
+        const nextYearStart = new Date(Date.UTC(new Date().getUTCFullYear() + 1, 0, 1)).toISOString().slice(0, 10);
+        const [monthlyJobs, yearlyJobs] = await Promise.all([
+          safeFirst(env.DB.prepare("SELECT COUNT(*) as total FROM jobs WHERE created_at >= ? AND created_at < ?").bind(currentMonthStart, nextMonthStart)),
+          safeFirst(env.DB.prepare("SELECT COUNT(*) as total FROM jobs WHERE created_at >= ? AND created_at < ?").bind(currentYearStart, nextYearStart))
+        ]);
         const platformStats = {
           totalCompanies: companies.length,
           activeCompanies: companies.filter((c) => c.subscription_status === "active").length,
           trialCompanies: companies.filter((c) => c.subscription_status === "trialing").length,
           totalPlatformRevenue: 0,
-          monthlyJobs: globalStats?.monthly_jobs || 0,
-          yearlyJobs: globalStats?.yearly_jobs || 0,
-          totalJobs: globalStats?.total_jobs || 0,
-          monthlyPhotos: globalStats?.monthly_photos || 0,
-          yearlyPhotos: globalStats?.yearly_photos || 0
+          monthlyJobs: monthlyJobs?.total || 0,
+          yearlyJobs: yearlyJobs?.total || 0,
         };
         const supportTickets = await safeAll(env.DB.prepare(`
                     SELECT s.*, c.company_name, c.phone as company_phone 
@@ -2253,7 +2237,7 @@ Otomatik olarak size atand\u0131!`,
                 `));
         const supportSummary = await safeFirst(env.DB.prepare(`
           SELECT COUNT(*) as total,
-                 SUM(CASE WHEN status NOT IN ('Çözüldü', 'Resolved') THEN 1 ELSE 0 END) as open
+                 SUM(CASE WHEN status NOT IN (char(199)||char(246)||'z'||char(252)||'ld'||char(252), 'Resolved') THEN 1 ELSE 0 END) as open
           FROM support_tickets
         `));
         let autoReferrals = [];
@@ -2279,7 +2263,7 @@ Otomatik olarak size atand\u0131!`,
           tickets: supportTickets,
           supportSummary: supportSummary || { total: 0, open: 0 },
           referrals: autoReferrals,
-          rewards: companyRewards
+          rewards: []
         }), { headers: corsHeaders });
       }
       if (url.pathname === "/masterboss-resolve-ticket" && method === "POST") {
@@ -2329,13 +2313,15 @@ Otomatik olarak size atand\u0131!`,
         const targetSlug = url.searchParams.get("slug");
         if (!targetSlug)
           return new Response(JSON.stringify({ error: "Slug gerekli!" }), { status: 400, headers: corsHeaders });
+        const currentMonthStart = `${new Date().toISOString().slice(0, 7)}-01`;
+        const nextMonthStart = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1)).toISOString().slice(0, 10);
+        const currentYearStart = `${new Date().getUTCFullYear()}-01-01`;
+        const nextYearStart = new Date(Date.UTC(new Date().getUTCFullYear() + 1, 0, 1)).toISOString().slice(0, 10);
         const [
           staffCount,
           assetCount,
           stockCount,
-          totalJobs,
-          monthlyJobs,
-          yearlyJobs,
+          jobStats,
           income,
           expense,
           customerCount,
@@ -2344,14 +2330,12 @@ Otomatik olarak size atand\u0131!`,
           activeEmergencies,
           totalFaults,
           activeFaults,
-          jobsWithPhotos
+          photoStats
         ] = await Promise.all([
           safeFirst(env.DB.prepare("SELECT COUNT(*) as total FROM staff WHERE company_slug = ?").bind(targetSlug)),
           safeFirst(env.DB.prepare("SELECT COUNT(*) as total FROM assets WHERE company_slug = ?").bind(targetSlug)),
           safeFirst(env.DB.prepare("SELECT COUNT(*) as total FROM stock WHERE company_slug = ?").bind(targetSlug)),
-          safeFirst(env.DB.prepare("SELECT COUNT(*) as total FROM jobs WHERE company_slug = ?").bind(targetSlug)),
-          safeFirst(env.DB.prepare("SELECT COUNT(*) as total FROM jobs WHERE company_slug = ? AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')").bind(targetSlug)),
-          safeFirst(env.DB.prepare("SELECT COUNT(*) as total FROM jobs WHERE company_slug = ? AND strftime('%Y', created_at) = strftime('%Y', 'now')").bind(targetSlug)),
+          safeFirst(env.DB.prepare("SELECT COUNT(*) as total, SUM(CASE WHEN created_at >= ? AND created_at < ? THEN 1 ELSE 0 END) as monthly, SUM(CASE WHEN created_at >= ? AND created_at < ? THEN 1 ELSE 0 END) as yearly FROM jobs WHERE company_slug = ?").bind(currentMonthStart, nextMonthStart, currentYearStart, nextYearStart, targetSlug)),
           safeFirst(env.DB.prepare("SELECT SUM(amount) as total FROM finances WHERE company_slug = ? AND type = 'Gelir'").bind(targetSlug)),
           safeFirst(env.DB.prepare("SELECT SUM(amount) as total FROM finances WHERE company_slug = ? AND type = 'Gider'").bind(targetSlug)),
           safeFirst(env.DB.prepare("SELECT COUNT(*) as total FROM customers WHERE company_slug = ?").bind(targetSlug)),
@@ -2360,24 +2344,8 @@ Otomatik olarak size atand\u0131!`,
           safeFirst(env.DB.prepare("SELECT COUNT(*) as total FROM emergencies WHERE company_slug = ? AND status = 'Aktif'").bind(targetSlug)),
           safeFirst(env.DB.prepare("SELECT COUNT(*) as total FROM fault_reports WHERE company_slug = ?").bind(targetSlug)),
           safeFirst(env.DB.prepare("SELECT COUNT(*) as total FROM fault_reports WHERE company_slug = ? AND status = 'Aktif'").bind(targetSlug)),
-          safeAll(env.DB.prepare("SELECT created_at, photo_urls FROM jobs WHERE company_slug = ? AND photo_urls IS NOT NULL AND photo_urls != '[]' AND photo_urls != ''").bind(targetSlug))
+          safeFirst(env.DB.prepare("SELECT SUM(CASE WHEN json_valid(photo_urls) THEN json_array_length(photo_urls) ELSE 0 END) as total, SUM(CASE WHEN created_at >= ? AND created_at < ? AND json_valid(photo_urls) THEN json_array_length(photo_urls) ELSE 0 END) as monthly FROM jobs WHERE company_slug = ? AND photo_urls IS NOT NULL AND photo_urls != '[]' AND photo_urls != ''").bind(currentMonthStart, nextMonthStart, targetSlug))
         ]);
-        let totalPhotos = 0;
-        let monthlyPhotos = 0;
-        const currentMonthStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 7);
-        if (jobsWithPhotos && jobsWithPhotos.length > 0) {
-          jobsWithPhotos.forEach((job) => {
-            try {
-              const photos = JSON.parse(job.photo_urls || "[]");
-              const count = photos.length;
-              totalPhotos += count;
-              if (job.created_at && job.created_at.startsWith(currentMonthStr)) {
-                monthlyPhotos += count;
-              }
-            } catch (e) {
-            }
-          });
-        }
         return new Response(JSON.stringify({
           success: true,
           stats: {
@@ -2387,9 +2355,9 @@ Otomatik olarak size atand\u0131!`,
             customers: customerCount?.total || 0,
             suppliers: supplierCount?.total || 0,
             jobs: {
-              total: totalJobs?.total || 0,
-              monthly: monthlyJobs?.total || 0,
-              yearly: yearlyJobs?.total || 0
+              total: jobStats?.total || 0,
+              monthly: jobStats?.monthly || 0,
+              yearly: jobStats?.yearly || 0
             },
             emergencies: {
               total: totalEmergencies?.total || 0,
@@ -2400,8 +2368,8 @@ Otomatik olarak size atand\u0131!`,
               active: activeFaults?.total || 0
             },
             photos: {
-              total: totalPhotos,
-              monthly: monthlyPhotos
+              total: photoStats?.total || 0,
+              monthly: photoStats?.monthly || 0
             },
             finances: {
               income: income?.total || 0,
