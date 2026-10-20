@@ -239,6 +239,7 @@ CREATE TABLE IF NOT EXISTS company_rewards (
 CREATE TABLE IF NOT EXISTS company_settings (
     company_slug TEXT PRIMARY KEY,
     maintenance_contract_template TEXT,
+    masgsm_credentials_encrypted TEXT,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

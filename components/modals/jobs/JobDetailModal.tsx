@@ -22,6 +22,7 @@ export default function JobDetailModal({
 
 // 🚀 Hangi alt modalın BU modal tarafından açıldığını takip ediyoruz
 const [openedChild, setOpenedChild] = useState<'customer' | 'asset' | null>(null);
+const [isSendingSms, setIsSendingSms] = useState(false);
   
 // 🚀 Yeni Tab State'i (Yönetici Sekmeli Görünüm İçin)
 const [activeTab, setActiveTab] = useState('ozet');
@@ -419,6 +420,25 @@ useEffect(() => {
      const message = `Merhaba *${jobData.customer_name}*,\n\n*${assetName}* için ${workTypeDesc} başarıyla tamamlanmıştır.\n\nServis detaylarını ve kontrol formunu içeren PDF raporunu bu mesaja ek olarak iletiyoruz.\n\n*İşlem Tutarı:* ${price}\n\nİyi günler dileriz.`;
      
      window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  const sendCustomerSms = async (jobData: any) => {
+    const customer = (data?.customers || []).find((c:any) => c.name === jobData.customer_name);
+    if (!customer?.contact) { setNotification({ show: true, msg: 'Bu müşterinin telefon numarası kayıtlı değil.', type: 'error' }); return; }
+    if (!data?.smsConfigured) { setNotification({ show: true, msg: 'Önce Firma Ayarları bölümünden Mas GSM bağlantısını kurun.', type: 'error' }); return; }
+    const assetName = (data?.assets || []).find((a:any) => a.id === jobData.asset_id)?.name || 'Cihazınız';
+    const price = jobData.details?.price || 'Ücretsiz';
+    const currentMonth = new Date().toLocaleString('tr-TR', { month: 'long' });
+    const workTypeDesc = jobData.work_type === 'Periyodik Bakım' ? `${currentMonth} ayı periyodik bakımı` : 'servis işlemi';
+    const message = `Merhaba ${jobData.customer_name}, ${assetName} için ${workTypeDesc} başarıyla tamamlanmıştır. Servis detayları ve kontrol formu için firmamızla iletişime geçebilirsiniz. İşlem tutarı: ${price}. İyi günler dileriz.`;
+    setIsSendingSms(true);
+    try {
+      const token = localStorage.getItem('patron_authToken');
+      const res = await fetch('https://api.fixlog.co/send-sms', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ slug: localStorage.getItem('companySlug'), phone: customer.contact, message }) });
+      const result = await res.json();
+      setNotification({ show: true, msg: result.success ? 'SMS Mas GSM üzerinden gönderildi.' : (result.error || 'SMS gönderilemedi.'), type: result.success ? 'success' : 'error' });
+    } catch { setNotification({ show: true, msg: 'SMS gönderilirken bağlantı hatası oluştu.', type: 'error' }); }
+    finally { setIsSendingSms(false); setTimeout(() => setNotification({ show: false, msg: '', type: 'success' }), 4000); }
   };
 
   // 🚀 YENİ: PDF Oluşturma ve Native Paylaşma State/Fonksiyonları
@@ -927,6 +947,9 @@ useEffect(() => {
                                <button onClick={() => sendCustomerWhatsApp(previewPdfJob)} className="flex-1 bg-emerald-500 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all shadow-md active:scale-95">
                                   <MessageSquareText size={18} /> Mesaj Gönder
                                </button>
+                               {userRole === 'Patron' && data?.smsConfigured && <button disabled={isSendingSms} onClick={() => sendCustomerSms(previewPdfJob)} className="flex-1 bg-sky-600 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-sky-700 transition-all shadow-md active:scale-95 disabled:opacity-50">
+                                  {isSendingSms ? <Loader2 size={18} className="animate-spin" /> : <MessageSquareText size={18} />} SMS Gönder
+                               </button>}
                            </>
                        );
                    })()}

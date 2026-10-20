@@ -88,6 +88,22 @@ var worker_default = {
       const binary = atob(base64);
       return decodeURIComponent(binary.split("").map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join(""));
     }, "fromBase64Url");
+    const encryptCompanySecret = async (value) => {
+      const rawKey = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(env.JWT_SECRET || ""));
+      const key = await crypto.subtle.importKey("raw", rawKey, "AES-GCM", false, ["encrypt"]);
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(value));
+      const bytes = new Uint8Array(iv.length + encrypted.byteLength);
+      bytes.set(iv); bytes.set(new Uint8Array(encrypted), iv.length);
+      return btoa(String.fromCharCode(...bytes));
+    };
+    const decryptCompanySecret = async (value) => {
+      const bytes = Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
+      const rawKey = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(env.JWT_SECRET || ""));
+      const key = await crypto.subtle.importKey("raw", rawKey, "AES-GCM", false, ["decrypt"]);
+      const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes.slice(0, 12) }, key, bytes.slice(12));
+      return new TextDecoder().decode(plain);
+    };
     const verifyFirebaseIdToken = async (idToken) => {
       try {
         if (typeof idToken !== "string") return null;
@@ -659,6 +675,13 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
         }
         const dashboardData = {
           growthAdvice,
+          smsConfig: await (async () => {
+            if (userAuth?.role !== "Patron") return null;
+            const smsRow = await safeFirst(env.DB.prepare("SELECT masgsm_credentials_encrypted FROM company_settings WHERE company_slug = ?").bind(slug));
+            if (!smsRow?.masgsm_credentials_encrypted) return null;
+            try { const config = JSON.parse(await decryptCompanySecret(smsRow.masgsm_credentials_encrypted)); return { username: config.username, header: config.header }; } catch { return null; }
+          })(),
+          smsConfigured: userAuth?.role === "Patron" ? !!(await safeFirst(env.DB.prepare("SELECT masgsm_credentials_encrypted FROM company_settings WHERE company_slug = ?").bind(slug)))?.masgsm_credentials_encrypted : false,
           // Frontend'de uyarı çubuğunda göstermek için eklendi
           subscription_status: company?.subscription_status || "active",
           // 🚀 YENİ: Paywall kontrolü
@@ -817,6 +840,54 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
         }
         await env.DB.prepare("UPDATE companies SET company_name = ?, owner_name = ?, sector = ?, address = ?, tax_info = ?, phone = ?, landline_phone = ?, emergency_phone = ?, whatsapp_phone = ?, website = ?, logo = ?, work_days = ?, autopilot_daily_capacity_units = ? WHERE slug = ?").bind(companyName || "", ownerName || "", sector || "", address || "", taxInfo || "", phone || "", landlinePhone || "", emergencyPhone || "", whatsappPhone || "", website || "", finalLogoUrl || "", workDaysStr, capUnits, slug || "").run();
         return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+      }
+      if (url.pathname === "/update-sms-settings" && method === "POST") {
+        if (userAuth?.role !== "Patron") return new Response(JSON.stringify({ error: "SMS ayarlarını yalnızca firma sahibi değiştirebilir." }), { status: 403, headers: corsHeaders });
+        const { username, apiSecret, header } = await request.json();
+        if (!String(username || "").trim() || !String(header || "").trim() || (apiSecret !== undefined && typeof apiSecret !== "string"))
+          return new Response(JSON.stringify({ error: "Mas GSM kullanıcı adı ve onaylı mesaj başlığı gerekli." }), { status: 400, headers: corsHeaders });
+        if (String(username).length > 120 || String(apiSecret || "").length > 256 || String(header).length > 11)
+          return new Response(JSON.stringify({ error: "Mas GSM alanlarından biri izin verilen uzunluğu aşıyor." }), { status: 400, headers: corsHeaders });
+        if (!/^[A-Za-z0-9._@-]+$/.test(String(username).trim()) || !/^[A-Za-z0-9]+$/.test(String(header).trim()) || (apiSecret && !/^[A-Za-z0-9._-]+$/.test(apiSecret)))
+          return new Response(JSON.stringify({ error: "Mas GSM kullanıcı adı, API Secret veya başlık biçimi geçersiz." }), { status: 400, headers: corsHeaders });
+        const current = await safeFirst(env.DB.prepare("SELECT masgsm_credentials_encrypted FROM company_settings WHERE company_slug = ?").bind(userAuth.slug));
+        let secret = String(apiSecret || "");
+        if (!secret && current?.masgsm_credentials_encrypted) {
+          try { secret = JSON.parse(await decryptCompanySecret(current.masgsm_credentials_encrypted)).apiSecret || ""; } catch {}
+        }
+        if (!secret) return new Response(JSON.stringify({ error: "API Secret gerekli. Mevcut kayıtlı şifreyi değiştirmeden bırakmak için alanı boş bırakın." }), { status: 400, headers: corsHeaders });
+        try {
+          const encrypted = await encryptCompanySecret(JSON.stringify({ username: String(username).trim(), apiSecret: secret, header: String(header).trim() }));
+          await env.DB.prepare("INSERT INTO company_settings (company_slug, masgsm_credentials_encrypted, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(company_slug) DO UPDATE SET masgsm_credentials_encrypted = excluded.masgsm_credentials_encrypted, updated_at = CURRENT_TIMESTAMP").bind(userAuth.slug, encrypted).run();
+          return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+        } catch (error) {
+          console.error("Mas GSM ayarları kaydedilemedi:", error);
+          return new Response(JSON.stringify({ error: "SMS ayarları kaydedilemedi. Veritabanı migration'ının uygulandığını kontrol edin." }), { status: 500, headers: corsHeaders });
+        }
+      }
+      if (url.pathname === "/send-sms" && method === "POST") {
+        if (!userAuth?.slug || userAuth.role !== "Patron") return new Response(JSON.stringify({ error: "SMS gönderimini yalnızca firma sahibi başlatabilir." }), { status: 403, headers: corsHeaders });
+        const { phone, message } = await request.json();
+        let normalizedPhone = String(phone || "").replace(/[^0-9]/g, "");
+        if (normalizedPhone.startsWith("0")) normalizedPhone = `90${normalizedPhone.slice(1)}`;
+        else if (normalizedPhone.startsWith("5") && normalizedPhone.length === 10) normalizedPhone = `90${normalizedPhone}`;
+        const smsText = String(message || "").trim();
+        if (!/^905[0-9]{9}$/.test(normalizedPhone) || !smsText || smsText.length > 882)
+          return new Response(JSON.stringify({ error: "Geçerli bir Türkiye cep telefonu ve 1–882 karakter arası mesaj girin." }), { status: 400, headers: corsHeaders });
+        const stored = await safeFirst(env.DB.prepare("SELECT masgsm_credentials_encrypted FROM company_settings WHERE company_slug = ?").bind(userAuth.slug));
+        if (!stored?.masgsm_credentials_encrypted) return new Response(JSON.stringify({ error: "Önce Firma Ayarları bölümünden Mas GSM bağlantısını kurun." }), { status: 400, headers: corsHeaders });
+        try {
+          const config = JSON.parse(await decryptCompanySecret(stored.masgsm_credentials_encrypted));
+          const cdataSafe = smsText.replace(/]]>/g, "]]]]><![CDATA[>");
+          const xml = `<sms><username>${config.username}</username><password>${config.apiSecret}</password><header>${config.header}</header><validity>2880</validity><message><gsm><no>${normalizedPhone}</no></gsm><msg><![CDATA[${cdataSafe}]]></msg></message></sms>`;
+          const response = await fetch("https://api.senagsm.com.tr/api/smspost/v1", { method: "POST", headers: { "Content-Type": "text/xml; charset=UTF-8" }, body: xml, signal: AbortSignal.timeout(10000) });
+          const result = (await response.text()).trim();
+          if (!response.ok || !result.startsWith("00")) return new Response(JSON.stringify({ error: `Mas GSM SMS gönderimini reddetti (kod: ${result.slice(0, 8) || response.status}).` }), { status: 502, headers: corsHeaders });
+          return new Response(JSON.stringify({ success: true, campaignId: result.slice(2).trim() }), { headers: corsHeaders });
+        } catch (error) {
+          console.error("Mas GSM isteği başarısız:", error);
+          return new Response(JSON.stringify({ error: "Mas GSM servisine ulaşılamadı. Biraz sonra tekrar deneyin." }), { status: 502, headers: corsHeaders });
+        }
       }
       if (url.pathname === "/add-support-ticket" && method === "POST") {
         const { type, message } = await request.json();

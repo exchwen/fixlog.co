@@ -17,6 +17,10 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
   const [localDetail, setLocalDetail] = useState('');
   
   const [modalState, setModalState] = useState<'idle' | 'success' | 'error'>('idle');
+  const [masUsername, setMasUsername] = useState('');
+  const [masSecret, setMasSecret] = useState('');
+  const [masHeader, setMasHeader] = useState('');
+  const [masSaving, setMasSaving] = useState(false);
   
   // Çevrimdışı kontrolü için State
   const [isOffline, setIsOffline] = useState(false);
@@ -29,6 +33,13 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
   useEffect(() => onAuthStateChanged(auth, user => {
     setHasPasswordProvider(user?.providerData.some(provider => provider.providerId === 'password') ?? false);
   }), []);
+
+  useEffect(() => {
+    if (data?.smsConfig) {
+      setMasUsername(data.smsConfig.username || '');
+      setMasHeader(data.smsConfig.header || '');
+    }
+  }, [data?.smsConfig?.username, data?.smsConfig?.header]);
   
   // 🚀 LOGO ARKA PLAN RENK SİSTEMİ İÇİN STATE
   const [logoBgColor, setLogoBgColor] = useState<string>('#ffffff');
@@ -233,6 +244,14 @@ export default function SettingsTab({ settingsForm = {}, setSettingsForm, handle
     } else {
       setModalState('error');
     }
+  };
+
+  const saveMasGsm = async () => {
+    setMasSaving(true);
+    const ok = await handleAction('update-sms-settings', { username: masUsername, apiSecret: masSecret, header: masHeader });
+    if (ok) { setMasSecret(''); setModalState('success'); setTimeout(() => setModalState('idle'), 3000); }
+    else setModalState('error');
+    setMasSaving(false);
   };
 
   const isFormValid = 
@@ -606,6 +625,20 @@ const { totalAssetsCount, baseFee, perAssetFee, currentUsageBill, activeReferral
         </div>
 
         {/* 🚀 YENİ: FATURA VE ABONELİK (İYZİCO ENTEGRASYON ALANI) */}
+        <section className="border-t border-slate-200 pt-6 space-y-4">
+          <div><h4 className="text-sm font-black text-slate-800">Mas GSM SMS Entegrasyonu</h4><p className="mt-1 text-xs text-slate-500">Kendi Mas GSM API hesabınızı bağlayın. API Secret şifreli saklanır ve tarayıcıya geri gönderilmez.</p></div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <label className="text-xs font-bold text-slate-600">Mas GSM kullanıcı adı<input autoComplete="off" value={masUsername} onChange={e => setMasUsername(e.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium outline-none focus:border-blue-500" placeholder="API kullanıcı adınız" /></label>
+              <label className="text-xs font-bold text-slate-600">API Secret<input autoComplete="new-password" type="password" value={masSecret} onChange={e => setMasSecret(e.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium outline-none focus:border-blue-500" placeholder={data?.smsConfigured ? 'Değiştirmek için yeni Secret girin' : 'Mas GSM API Secret'} /></label>
+              <label className="text-xs font-bold text-slate-600">Onaylı SMS başlığı<input maxLength={11} value={masHeader} onChange={e => setMasHeader(e.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium outline-none focus:border-blue-500" placeholder="Örn. FIRMAADI" /></label>
+            </div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <p className="text-[11px] text-slate-500">{data?.smsConfigured ? 'Mas GSM bağlantısı kayıtlı. Secret alanını boş bırakırsanız mevcut Secret korunur.' : 'Mas GSM panelinden oluşturduğunuz API Secret ve onaylı başlığı girin.'}</p>
+              <button type="button" disabled={masSaving || !masUsername.trim() || !masHeader.trim()} onClick={saveMasGsm} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50">{masSaving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />} SMS Bağlantısını Kaydet</button>
+            </div>
+          </div>
+        </section>
         <div className="border-t border-slate-200 pt-6"><h4 className="text-sm font-black text-slate-800">Abonelik ve Referans</h4><p className="mt-1 text-xs text-slate-500">Plan durumunuzu ve davet kodu kazanımlarınızı takip edin.</p></div>
         <div className="border-t border-slate-100 pt-6 pb-2">
            <label className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
