@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { CreditCard, CheckCircle, Copy, Check } from 'lucide-react';
 
-export default function BillingTab({ data, settingsForm = {} }: any) {
+export default function BillingTab({ data, settingsForm = {}, companySlug = '' }: any) {
   const [copied, setCopied] = useState(false);
   const iban = 'TR660006200042500006287276';
   const copyIban = async () => {
@@ -104,7 +104,7 @@ export default function BillingTab({ data, settingsForm = {} }: any) {
                   </div>
                   <button type="button" onClick={copyIban} className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-700">{copied ? <Check size={15} /> : <Copy size={15} />}{copied ? 'IBAN Kopyalandı' : 'IBANı Kopyala'}</button>
                 </div>
-                <a href={`https://wa.me/905457846752?text=${encodeURIComponent('Merhaba, banka havalesi dekontumu iletiyorum. Firma adım: ')}`} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#1fb85a] sm:w-auto">Dekont Gönder · WhatsApp</a>
+                <a href={`https://wa.me/905457846752?text=${encodeURIComponent('Merhaba, banka havalesi dekontumu iletiyorum. Firma kodum: ' + companySlug)}`} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#1fb85a] sm:w-auto">Dekont Gönder · WhatsApp</a>
              </div>
 
              <div className="flex-shrink-0 bg-white border border-blue-200 p-4 rounded-xl w-full md:w-48 text-center shadow-sm">
