@@ -424,9 +424,11 @@ useEffect(() => {
      const currentMonth = new Date().toLocaleString('tr-TR', { month: 'long' });
      const workTypeDesc = jobData.work_type === 'Periyodik Bakım' ? `${currentMonth} ayı periyodik bakımı` : 'servis işlemi';
      
-     const message = `Merhaba *${jobData.customer_name}*,\n\n*${assetName}* için ${workTypeDesc} başarıyla tamamlanmıştır.\n\nServis detaylarını ve kontrol formunu içeren PDF raporunu bu mesaja ek olarak iletiyoruz.\n\n*İşlem Tutarı:* ${price}\n\nİyi günler dileriz.`;
+     const message = `Merhaba *${jobData.customer_name}*,\n\n*${assetName}* için ${workTypeDesc} başarıyla tamamlanmıştır.\n\nServis detaylarını ve kontrol formunu içeren PDF raporunu aşağıdaki bağlantıdan görüntüleyebilirsiniz.\n\n*İşlem Tutarı:* ${price}\n\nİyi günler dileriz.`;
      
-     const shareMessage = pdfUrl ? `${message}\n\n📎 Servis raporu PDF: ${pdfUrl}` : message;
+     const shareMessage = pdfUrl
+       ? `${message}\n\n📎 Servis raporu PDF: ${pdfUrl}`
+       : `Merhaba *${jobData.customer_name}*,\n\n*${assetName}* için ${workTypeDesc} başarıyla tamamlanmıştır.\n\n*İşlem Tutarı:* ${price}\n\nİyi günler dileriz.`;
      window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(shareMessage)}`, '_blank');
   };
 
@@ -584,9 +586,14 @@ useEffect(() => {
                 console.warn('PDF WhatsApp paylaşım bağlantısı oluşturulamadı:', uploadError);
             }
 
-            pdf.save(safeFileName);
-            sendCustomerWhatsApp(jobData, pdfUrl);
-            setNotification({ show: true, msg: pdfUrl ? 'PDF indirildi ve WhatsApp mesajina PDF baglantisi eklendi.' : 'PDF indirildi; WhatsApp mesaji acildi.', type: 'success' });
+            if (pdfUrl) {
+                sendCustomerWhatsApp(jobData, pdfUrl);
+                setNotification({ show: true, msg: 'PDF bağlantısı oluşturuldu ve WhatsApp mesajına eklendi.', type: 'success' });
+            } else {
+                pdf.save(safeFileName);
+                sendCustomerWhatsApp(jobData);
+                setNotification({ show: true, msg: 'PDF bağlantısı oluşturulamadı; dosya indirildi ve WhatsApp mesajı açıldı.', type: 'success' });
+            }
             setTimeout(() => setNotification({ show: false, msg: '', type: 'success' }), 6000);
             }
     } catch (error) {
