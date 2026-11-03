@@ -465,6 +465,36 @@ useEffect(() => {
                .replace(/ç/g, 'c').replace(/Ç/g, 'C');
   };
 
+  const uploadPdfForShare = async (pdf: jsPDF, jobData: any) => {
+    const readCookie = (name: string) => document.cookie
+      .split('; ')
+      .find((cookie) => cookie.startsWith(`${name}=`))
+      ?.split('=').slice(1).join('=') || '';
+    const tokens = Array.from(new Set([
+      localStorage.getItem('patron_authToken'),
+      localStorage.getItem('staff_authToken'),
+      readCookie('patron_authToken'),
+      readCookie('staff_authToken')
+    ].filter(Boolean) as string[]));
+    const companySlug = data?.slug || data?.company_slug || localStorage.getItem('patron_userSlug') || localStorage.getItem('staff_userSlug') || window.location.pathname.split('/')[1];
+
+    for (const token of tokens) {
+      const uploadRes = await fetch(`${API_URL}/upload-share-pdf`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ slug: companySlug, jobId: jobData.id, pdfData: pdf.output('datauristring') })
+      });
+      const uploadData = await uploadRes.json().catch(() => ({}));
+      if (uploadRes.ok && uploadData?.url) return uploadData.url as string;
+      if (![401, 403].includes(uploadRes.status)) {
+        console.warn('PDF paylaşım bağlantısı oluşturulamadı:', uploadData?.error || `HTTP ${uploadRes.status}`);
+        break;
+      }
+    }
+
+    return '';
+  };
+
   const handleSharePDF = async (jobData: any) => {
         setIsGeneratingPdf(true);
         try {
@@ -547,19 +577,7 @@ useEffect(() => {
 
         if (canSharePdfFile) {
             let pdfUrl = '';
-            try {
-                const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
-                const companySlug = localStorage.getItem('patron_userSlug') || localStorage.getItem('staff_userSlug') || window.location.pathname.split('/')[1];
-                const uploadRes = await fetch(`${API_URL}/upload-share-pdf`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ slug: companySlug, jobId: jobData.id, pdfData: pdf.output('datauristring') })
-                });
-                if (uploadRes.ok) {
-                    const uploadData = await uploadRes.json();
-                    pdfUrl = uploadData?.url || '';
-                }
-            } catch (uploadError) {
+            try { pdfUrl = await uploadPdfForShare(pdf, jobData); } catch (uploadError) {
                 console.warn('PDF paylaşım bağlantısı oluşturulamadı:', uploadError);
             }
             const shareTextWithPdf = pdfUrl ? `${shareText}\n\n📎 Servis raporu PDF: ${pdfUrl}` : shareText;
@@ -570,19 +588,7 @@ useEffect(() => {
                 });
             } else {
             let pdfUrl = '';
-            try {
-                const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
-                const companySlug = localStorage.getItem('patron_userSlug') || localStorage.getItem('staff_userSlug') || window.location.pathname.split('/')[1];
-                const uploadRes = await fetch(`${API_URL}/upload-share-pdf`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ slug: companySlug, jobId: jobData.id, pdfData: pdf.output('datauristring') })
-                });
-                if (uploadRes.ok) {
-                    const uploadData = await uploadRes.json();
-                    pdfUrl = uploadData?.url || '';
-                }
-            } catch (uploadError) {
+            try { pdfUrl = await uploadPdfForShare(pdf, jobData); } catch (uploadError) {
                 console.warn('PDF WhatsApp paylaşım bağlantısı oluşturulamadı:', uploadError);
             }
 
