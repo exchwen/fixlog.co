@@ -237,16 +237,16 @@ const [activeTab, setActiveTab] = useState('ozet');
 
 // Dışarıdan modal kapandığında local state'i temizle
 useEffect(() => {
-    if ((!selectedCustomer || !isAnyProfileDetailOpen) && openedChild === 'customer') {
+    if (!selectedCustomer && openedChild === 'customer') {
         setOpenedChild(null);
     }
-  }, [selectedCustomer, isAnyProfileDetailOpen, openedChild]);
+  }, [selectedCustomer, openedChild]);
 
   useEffect(() => {
-    if ((!selectedAsset || !isAnyProfileDetailOpen) && openedChild === 'asset') {
+    if (!selectedAsset && openedChild === 'asset') {
         setOpenedChild(null);
     }
-  }, [selectedAsset, isAnyProfileDetailOpen, openedChild]);
+  }, [selectedAsset, openedChild]);
 
   // 🚀 AKILLI VE KADEMELİ KAPATMA MANTIĞI
   const handleSmartClose = useCallback((e?: any) => {
@@ -401,15 +401,17 @@ useEffect(() => {
   };
 
   const sendCustomerWhatsApp = (jobData: any) => {
-    const custPhone = (data?.customers || []).find((c:any) => c.name === jobData.customer_name)?.contact;
+    const customer = findCustomerForJob(jobData);
+    const custPhone = customer?.contact || customer?.phone || customer?.whatsapp_phone;
     if(!custPhone) { 
         setNotification({show: true, msg: "Bu müşterinin sistemde kayıtlı bir telefon numarası bulunamadı!", type: 'error'});
         setTimeout(() => setNotification({show: false, msg: '', type: 'success'}), 3000);
         return; 
     }
     
-    let formattedPhone = custPhone.replace(/\s+/g, '');
+    let formattedPhone = String(custPhone).replace(/\D/g, '');
     if (formattedPhone.startsWith('0')) formattedPhone = '90' + formattedPhone.substring(1);
+    else if (formattedPhone.length === 10) formattedPhone = '90' + formattedPhone;
      
      const assetName = (data?.assets || []).find((a:any) => a.id === jobData.asset_id)?.name || 'Cihazınız';
      const price = jobData.details?.price || 'Ücretsiz';
@@ -423,7 +425,8 @@ useEffect(() => {
   };
 
   const sendCustomerSms = async (jobData: any) => {
-    const customer = (data?.customers || []).find((c:any) => c.name === jobData.customer_name);
+    const matchedCustomer = findCustomerForJob(jobData);
+    const customer = matchedCustomer ? { ...matchedCustomer, contact: matchedCustomer.contact || matchedCustomer.phone || matchedCustomer.whatsapp_phone } : null;
     if (!customer?.contact) { setNotification({ show: true, msg: 'Bu müşterinin telefon numarası kayıtlı değil.', type: 'error' }); return; }
     if (!data?.smsConfigured) { setNotification({ show: true, msg: 'Önce Firma Ayarları bölümünden Mas GSM bağlantısını kurun.', type: 'error' }); return; }
     const assetName = (data?.assets || []).find((a:any) => a.id === jobData.asset_id)?.name || 'Cihazınız';
@@ -620,6 +623,16 @@ useEffect(() => {
                 setJobTargetMode('CUSTOMER');
             }
           };
+
+  const findCustomerForJob = (job: any) => {
+    const customers = data?.customers || [];
+    const jobCustomerName = String(job?.customer_name || '').trim().toLocaleLowerCase('tr-TR');
+    const directCustomer = customers.find((customer: any) => String(customer?.name || '').trim().toLocaleLowerCase('tr-TR') === jobCustomerName);
+    if (directCustomer) return directCustomer;
+
+    const relatedAsset = (data?.assets || []).find((asset: any) => String(asset?.id) === String(job?.asset_id));
+    return customers.find((customer: any) => String(customer?.id) === String(relatedAsset?.customer_id));
+  };
 
   const isStacked = Boolean(previewPdfJob || fullScreenImage || openedChild !== null);
 
@@ -942,7 +955,8 @@ useEffect(() => {
                    </button>
                    {(() => {
                        const isPdfGeneral = previewPdfJob.work_type === 'Genel Görev' || previewPdfJob.work_type === 'Görev' || !previewPdfJob.customer_name || previewPdfJob.customer_name === 'Genel Görev';
-                       const hasPhone = !!(data?.customers || []).find((c:any) => c.name === previewPdfJob.customer_name)?.contact;
+                       const previewCustomer = findCustomerForJob(previewPdfJob);
+                       const hasPhone = !!(previewCustomer?.contact || previewCustomer?.phone || previewCustomer?.whatsapp_phone);
                        
                        if (isPdfGeneral && (!previewPdfJob.customer_name || previewPdfJob.customer_name === 'Genel Görev' || !hasPhone)) return null;
                        
@@ -1079,8 +1093,11 @@ useEffect(() => {
                                             {!isGeneralTask && (
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                                     <div onClick={() => {
-                                                        const theCustomer = (data?.customers || []).find((c:any) => c.name === selectedJob.customer_name);
-                                                        if(theCustomer && setSelectedCustomer) { setOpenedChild('customer'); setSelectedCustomer(theCustomer); }
+                                                        const theCustomer = findCustomerForJob(selectedJob);
+                                                        if (theCustomer && setSelectedCustomer) {
+                                                            setOpenedChild('customer');
+                                                            setSelectedCustomer(theCustomer);
+                                                        }
                                                     }} className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 transition-colors cursor-pointer group relative">
                                                         <div className="text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-widest">Müşteri Profili</div>
                                                         <div className="text-sm font-black text-slate-800 pr-5">{selectedJob.customer_name}</div>

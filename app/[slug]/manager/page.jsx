@@ -798,6 +798,7 @@ const handleResolveFault = async (id) => handleAction('resolve-fault', { id }, n
         
         selectedCustomer={selectedCustomer} setSelectedCustomer={setSelectedCustomer}
         selectedAsset={selectedAsset} setSelectedAsset={setSelectedAsset}
+        isAnyProfileDetailOpen={Boolean(selectedCustomer || selectedAsset)}
         selectedStaff={selectedStaff} setSelectedStaff={setSelectedStaff}
         
         showAddStaff={showAddStaff} setShowAddStaff={setShowAddStaff}
