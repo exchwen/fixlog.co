@@ -402,16 +402,19 @@ useEffect(() => {
 
   const sendCustomerWhatsApp = (jobData: any) => {
     const customer = findCustomerForJob(jobData);
-    const custPhone = customer?.contact || customer?.phone || customer?.whatsapp_phone;
+    const custPhone = getCustomerPhoneForJob(jobData, customer);
     if(!custPhone) { 
         setNotification({show: true, msg: "Bu müşterinin sistemde kayıtlı bir telefon numarası bulunamadı!", type: 'error'});
         setTimeout(() => setNotification({show: false, msg: '', type: 'success'}), 3000);
         return; 
     }
     
-    let formattedPhone = String(custPhone).replace(/\D/g, '');
-    if (formattedPhone.startsWith('0')) formattedPhone = '90' + formattedPhone.substring(1);
-    else if (formattedPhone.length === 10) formattedPhone = '90' + formattedPhone;
+    const formattedPhone = formatPhoneForWhatsApp(custPhone);
+    if (!formattedPhone) {
+        setNotification({show: true, msg: 'Bu müşterinin telefon numarası WhatsApp için geçerli değil.', type: 'error'});
+        setTimeout(() => setNotification({show: false, msg: '', type: 'success'}), 3000);
+        return;
+    }
      
      const assetName = (data?.assets || []).find((a:any) => a.id === jobData.asset_id)?.name || 'Cihazınız';
      const price = jobData.details?.price || 'Ücretsiz';
@@ -426,7 +429,7 @@ useEffect(() => {
 
   const sendCustomerSms = async (jobData: any) => {
     const matchedCustomer = findCustomerForJob(jobData);
-    const customer = matchedCustomer ? { ...matchedCustomer, contact: matchedCustomer.contact || matchedCustomer.phone || matchedCustomer.whatsapp_phone } : null;
+    const customer = { ...(matchedCustomer || {}), contact: getCustomerPhoneForJob(jobData, matchedCustomer) };
     if (!customer?.contact) { setNotification({ show: true, msg: 'Bu müşterinin telefon numarası kayıtlı değil.', type: 'error' }); return; }
     if (!data?.smsConfigured) { setNotification({ show: true, msg: 'Önce Firma Ayarları bölümünden Mas GSM bağlantısını kurun.', type: 'error' }); return; }
     const assetName = (data?.assets || []).find((a:any) => a.id === jobData.asset_id)?.name || 'Cihazınız';
@@ -624,15 +627,64 @@ useEffect(() => {
             }
           };
 
+  const normalizeCustomerText = (value: any) => String(value ?? '')
+    .trim()
+    .toLocaleLowerCase('tr-TR')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ı/g, 'i')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+  const getCustomerPhone = (...records: any[]) => {
+    const phoneFields = ['contact', 'phone', 'whatsapp_phone', 'mobile_phone', 'telephone', 'customer_phone'];
+    for (const record of records) {
+      if (!record || typeof record !== 'object') continue;
+      for (const field of phoneFields) {
+        const phone = String(record?.[field] ?? '').trim();
+        if (phone) return phone;
+      }
+    }
+    return '';
+  };
+
+  const formatPhoneForWhatsApp = (phone: any) => {
+    let digits = String(phone ?? '').replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.startsWith('00')) digits = digits.slice(2);
+    if (digits.startsWith('90')) return digits;
+    if (digits.startsWith('0')) return `90${digits.slice(1)}`;
+    if (digits.length === 10 && digits.startsWith('5')) return `90${digits}`;
+    return digits;
+  };
+
   const findCustomerForJob = (job: any) => {
     const customers = data?.customers || [];
-    const jobCustomerName = String(job?.customer_name || '').trim().toLocaleLowerCase('tr-TR');
-    const directCustomer = customers.find((customer: any) => String(customer?.name || '').trim().toLocaleLowerCase('tr-TR') === jobCustomerName);
-    if (directCustomer) return directCustomer;
+    const assets = data?.assets || [];
+    const customerId = job?.customer_id ?? job?.customerId ?? job?.details?.customer_id ?? job?.details?.customerId ?? job?.customer?.id;
 
-    const relatedAsset = (data?.assets || []).find((asset: any) => String(asset?.id) === String(job?.asset_id));
-    return customers.find((customer: any) => String(customer?.id) === String(relatedAsset?.customer_id));
+    if (customerId != null && customerId !== '') {
+      const directCustomer = customers.find((customer: any) => String(customer?.id) === String(customerId));
+      if (directCustomer) return directCustomer;
+    }
+
+    const assetId = job?.asset_id ?? job?.assetId ?? job?.details?.asset_id ?? job?.details?.assetId;
+    const relatedAsset = assets.find((asset: any) => [asset?.id, asset?.uuid].some((id: any) => id != null && String(id) === String(assetId)));
+    if (relatedAsset?.customer_id != null) {
+      const assetCustomer = customers.find((customer: any) => String(customer?.id) === String(relatedAsset.customer_id));
+      if (assetCustomer) return assetCustomer;
+    }
+
+    if (job?.customer && typeof job.customer === 'object') return job.customer;
+
+    const jobCustomerName = normalizeCustomerText(job?.customer_name ?? job?.customerName);
+    if (!jobCustomerName) return null;
+    return customers.find((customer: any) => normalizeCustomerText(customer?.name) === jobCustomerName) || null;
   };
+
+  const getCustomerPhoneForJob = (job: any, customer = findCustomerForJob(job)) => (
+    getCustomerPhone(customer, job?.customer, job?.details, job)
+  );
 
   const isStacked = Boolean(previewPdfJob || fullScreenImage || openedChild !== null);
 
@@ -956,7 +1008,7 @@ useEffect(() => {
                    {(() => {
                        const isPdfGeneral = previewPdfJob.work_type === 'Genel Görev' || previewPdfJob.work_type === 'Görev' || !previewPdfJob.customer_name || previewPdfJob.customer_name === 'Genel Görev';
                        const previewCustomer = findCustomerForJob(previewPdfJob);
-                       const hasPhone = !!(previewCustomer?.contact || previewCustomer?.phone || previewCustomer?.whatsapp_phone);
+                       const hasPhone = Boolean(getCustomerPhoneForJob(previewPdfJob, previewCustomer));
                        
                        if (isPdfGeneral && (!previewPdfJob.customer_name || previewPdfJob.customer_name === 'Genel Görev' || !hasPhone)) return null;
                        
