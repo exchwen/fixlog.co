@@ -477,12 +477,17 @@ useEffect(() => {
       readCookie('staff_authToken')
     ].filter(Boolean) as string[]));
     const companySlug = data?.slug || data?.company_slug || localStorage.getItem('patron_userSlug') || localStorage.getItem('staff_userSlug') || window.location.pathname.split('/')[1];
+    const asset = jobData.asset_id ? (data?.assets || []).find((item: any) => String(item.id) === String(jobData.asset_id)) : null;
+    const reportLabel = sanitizeTextForFile(`${asset?.apartmentName || jobData.customer_name || 'servis'}-${jobData.work_type || 'bakim'}-pdf`)
+      .replace(/[^a-zA-Z0-9_-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase();
 
     for (const token of tokens) {
       const uploadRes = await fetch(`${API_URL}/upload-share-pdf`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ slug: companySlug, jobId: jobData.id, pdfData: pdf.output('datauristring') })
+        body: JSON.stringify({ slug: companySlug, jobId: jobData.id, reportLabel, pdfData: pdf.output('datauristring') })
       });
       const uploadData = await uploadRes.json().catch(() => ({}));
       if (uploadRes.ok && uploadData?.url) return uploadData.url as string;
@@ -523,30 +528,28 @@ useEffect(() => {
             receiptElement.style.maxHeight = originalMaxHeight;
             receiptElement.style.overflow = originalOverflow;
             
-            const imgData = canvas.toDataURL('image/jpeg', 0.95);
-            
-            // 🚀 TEK SAYFAYA SIĞDIRMA ÇÖZÜMÜ: Ölçeği daha da küçülterek (0.72) her şeyin 1 sayfada kalmasını sağlıyoruz.
-            const pdfWidth = 210; // A4 Genişliği (mm)
-            const pageHeight = 297; // A4 Yüksekliği (mm)
-            const scaleFactor = 0.72; // İçeriği A4'e tek sayfa olarak sığdırmak için ekstra küçültüyoruz
-            const imgWidth = pdfWidth * scaleFactor;
-            const imgHeight = (canvas.height * pdfWidth) / canvas.width * scaleFactor;
-            
+            // PDF'yi tek büyük görseli her sayfaya tekrar basmak yerine gerçek sayfa dilimlerine ayırıyoruz.
+            // Böylece sayfa sonundaki satırlar bir sonraki sayfanın başında tekrar etmez.
+            const pdfWidth = 210;
+            const pageHeight = 297;
+            const margin = 10;
+            const contentWidth = pdfWidth - (margin * 2);
+            const contentHeight = pageHeight - (margin * 2);
+            const sliceHeightPx = Math.max(1, Math.floor(canvas.width * contentHeight / contentWidth));
             const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-            
-            let heightLeft = imgHeight;
-            let position = 10; // İlk sayfa üstten boşluk
-            const xOffset = (pdfWidth - imgWidth) / 2; // Ortalamak için X ekseni kaydırması
+            const pageCanvas = document.createElement('canvas');
+            const pageContext = pageCanvas.getContext('2d');
+            if (!pageContext) throw new Error('PDF sayfa görüntüsü hazırlanamadı.');
+            pageCanvas.width = canvas.width;
 
-            pdf.addImage(imgData, 'JPEG', xOffset, position, imgWidth, imgHeight);
-            heightLeft -= (pageHeight - 20); // Marjinleri düş
-
-            // İçerik tek bir A4'ten uzunsa otomatik olarak yeni sayfa ekle
-            while (heightLeft > 0) {
-                position = heightLeft - imgHeight + 10;
-                pdf.addPage();
-                pdf.addImage(imgData, 'JPEG', xOffset, position, imgWidth, imgHeight);
-                heightLeft -= (pageHeight - 20);
+            for (let sourceY = 0, pageIndex = 0; sourceY < canvas.height; sourceY += sliceHeightPx, pageIndex += 1) {
+                const currentSliceHeight = Math.min(sliceHeightPx, canvas.height - sourceY);
+                pageCanvas.height = currentSliceHeight;
+                pageContext.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
+                pageContext.drawImage(canvas, 0, sourceY, canvas.width, currentSliceHeight, 0, 0, pageCanvas.width, currentSliceHeight);
+                if (pageIndex > 0) pdf.addPage();
+                const renderedHeight = currentSliceHeight * contentWidth / canvas.width;
+                pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, contentWidth, renderedHeight);
             }
             
             // 🚀 İSİMLENDİRME KURALI ÇÖZÜMÜ: varlıkadı-varlıktürü-tarih-islemtürü

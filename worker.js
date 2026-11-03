@@ -287,7 +287,8 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
         "/masterboss-update-subscription"
       ];
       let userAuth = null;
-      if (!publicRoutes.includes(url.pathname)) {
+      const isSharedPdfRoute = url.pathname.startsWith("/p/");
+      if (!publicRoutes.includes(url.pathname) && !isSharedPdfRoute) {
         const authHeader = request.headers.get("Authorization");
         let authErrorReason = "Token bulunamad\u0131 veya Authorization ba\u015Fl\u0131\u011F\u0131 eksik.";
         if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -395,7 +396,7 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
           return new Response(JSON.stringify({ error: "Dosya deposu yapılandırılmamış." }), { status: 503, headers: corsHeaders });
         }
 
-        const { pdfData, jobId } = await request.json();
+        const { pdfData, jobId, reportLabel } = await request.json();
         if (typeof pdfData !== "string" || !pdfData.startsWith("data:application/pdf")) {
           return new Response(JSON.stringify({ error: "Geçersiz PDF verisi." }), { status: 400, headers: corsHeaders });
         }
@@ -411,7 +412,15 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
         const month = String(now.getMonth() + 1).padStart(2, "0");
         const day = String(now.getDate()).padStart(2, "0");
         const safeJobId = String(jobId || "report").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80) || "report";
-        const fileName = `fixlog/${userAuth.slug}/shared-reports/${year}/${month}/${day}/job-${safeJobId}-${crypto.randomUUID()}.pdf`;
+        const shareToken = crypto.randomUUID().replace(/-/g, "").slice(0, 10);
+        const safeLabel = String(reportLabel || "servis-raporu")
+          .normalize("NFKD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-zA-Z0-9_-]+/g, "-")
+          .replace(/^-+|-+$/g, "")
+          .slice(0, 80) || "servis-raporu";
+        const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
+        const fileName = `shared-pdf/${shareToken}.pdf`;
 
         await env.BUCKET.put(fileName, bytes.buffer, {
           httpMetadata: {
@@ -419,13 +428,29 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
             contentDisposition: "inline",
             cacheControl: "public, max-age=86400"
           },
-          customMetadata: { company: userAuth.slug, jobId: String(jobId || "") }
+          customMetadata: { company: userAuth.slug, jobId: String(jobId || ""), expiresAt: String(expiresAt), reportLabel: safeLabel }
         });
 
         return new Response(JSON.stringify({
           success: true,
-          url: `https://pub-a78064a5e9304242b0982c01b5778197.r2.dev/${fileName}`
+          url: `https://fixlog.co/${userAuth.slug}/${safeLabel}-${shareToken}`
         }), { headers: corsHeaders });
+      }
+      if (isSharedPdfRoute && method === "GET") {
+        const shareToken = url.pathname.slice("/p/".length).replace(/[^a-zA-Z0-9]/g, "").slice(0, 10);
+        if (!shareToken) return new Response("Geçersiz rapor bağlantısı.", { status: 400 });
+        const object = await env.BUCKET?.get(`shared-pdf/${shareToken}.pdf`);
+        if (!object) return new Response("Rapor bulunamadı veya bağlantının süresi doldu.", { status: 404 });
+        const expiresAt = Number(object.customMetadata?.expiresAt || 0);
+        if (expiresAt && Date.now() > expiresAt) {
+          return new Response("Rapor bağlantısının süresi doldu.", { status: 410 });
+        }
+        const headers = new Headers();
+        object.writeHttpMetadata(headers);
+        headers.set("Content-Type", "application/pdf");
+        headers.set("Content-Disposition", 'inline; filename="servis-raporu.pdf"');
+        headers.set("Cache-Control", "public, max-age=86400");
+        return new Response(object.body, { headers });
       }
       if (url.pathname === "/pusher/auth" && method === "POST") {
         const formData = await request.text();
