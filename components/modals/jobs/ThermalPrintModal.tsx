@@ -176,8 +176,12 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName, c
       img.crossOrigin = 'anonymous';
       img.onload = () => {
         const PRINTER_WIDTH = 384;
-        let imgW = img.width;
-        let imgH = img.height;
+        let imgW = img.naturalWidth || img.width;
+        let imgH = img.naturalHeight || img.height;
+        if (!imgW || !imgH) {
+          resolve(new Uint8Array());
+          return;
+        }
         const aspect = imgH / imgW;
         
         if (imgW > targetWidth) {
@@ -199,9 +203,17 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName, c
         if (align === 'center') {
             offsetX = Math.floor((PRINTER_WIDTH - imgW) / 2);
         }
+        ctx.imageSmoothingEnabled = true;
         ctx.drawImage(img, offsetX, 0, imgW, imgH);
-        
-        const imgData = ctx.getImageData(0, 0, PRINTER_WIDTH, imgH).data;
+
+        let imgData: Uint8ClampedArray;
+        try {
+          imgData = ctx.getImageData(0, 0, PRINTER_WIDTH, imgH).data;
+        } catch (error) {
+          console.error('Logo termal baskı için okunamadı:', error);
+          resolve(new Uint8Array());
+          return;
+        }
         const widthBytes = PRINTER_WIDTH / 8; // 48
         const buffer = new Uint8Array(8 + widthBytes * imgH);
         
@@ -217,7 +229,10 @@ export default function ThermalPrintModal({ isOpen, onClose, job, companyName, c
               const px = (y * PRINTER_WIDTH + (x * 8 + bit)) * 4;
               const r = imgData[px]; const g = imgData[px+1]; const b = imgData[px+2];
               // Yüksek threshold (225) kullanarak çok açık renkli / soluk logoların da siyah olarak basılmasını sağlar.
-              if ((r + g + b) / 3 < 225) {
+              const alpha = imgData[px+3] / 255;
+              const luminance = (0.299 * r) + (0.587 * g) + (0.114 * b);
+              const compositedLuminance = (luminance * alpha) + (255 * (1 - alpha));
+              if (compositedLuminance < 245) {
                 byte |= (1 << (7 - bit));
               }
             }

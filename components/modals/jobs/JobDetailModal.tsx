@@ -530,7 +530,11 @@ useEffect(() => {
             const assetName = asset?.name || 'Cihazınız';
             const shareText = `Merhaba ${jobData.customer_name},\n\n${rawAssetName} işleminiz tamamlanmıştır. Servis raporunuzu bu mesaja eklenmiş dosyada bulabilirsiniz.`;
     
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        const canSharePdfFile = typeof navigator.share === 'function' && (
+            typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] })
+        );
+
+        if (canSharePdfFile) {
                 await navigator.share({
                     title: `Servis Raporu #${jobData.id}`,
                     text: shareText,
@@ -538,9 +542,12 @@ useEffect(() => {
                 });
             } else {
                 pdf.save(safeFileName);
-                sendCustomerWhatsApp(jobData);
+            sendCustomerWhatsApp(jobData);
+            setNotification({ show: true, msg: 'Bu tarayıcı dosya paylaşımını desteklemiyor. PDF indirildi; WhatsApp mesajı açıldı. Mobilde PDF ile Paylaş seçeneğinden WhatsApp\'ı seçerek eki tek seferde gönderebilirsiniz.', type: 'success' });
+            setTimeout(() => setNotification({ show: false, msg: '', type: 'success' }), 6000);
             }
-        } catch (error) {
+    } catch (error) {
+        if ((error as any)?.name === 'AbortError') return;
             console.error("PDF oluşturma hatası:", error);
             setNotification({show: true, msg: "PDF dosyası hazırlanırken bir hata oluştu.", type: 'error'});
             setTimeout(() => setNotification({show: false, msg: '', type: 'success'}), 3000);

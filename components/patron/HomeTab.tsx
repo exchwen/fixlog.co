@@ -9,7 +9,21 @@ import {
   Package, AlertTriangle, ShieldCheck, Activity, User, Lock, RefreshCw,
   Settings, X, Wrench, Link as LinkIcon, Check, Database, ImageIcon, ShoppingCart, UserCircle, Briefcase, Loader2, Bell, CheckSquare, UserPlus, UserCheck, MapPin, AlertCircle, Info, ShieldAlert, ArrowRight, Gift, Star, CreditCard, Copy, FileText
 } from 'lucide-react';
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import QuoteModal from '../modals/forms/QuoteModal';
+
+const financeCategoryRules = [
+  { label: 'Bakım', keywords: ['bakım', 'bakim', 'periyodik'] },
+  { label: 'Revizyon', keywords: ['revizyon', 'yenileme', 'onarım', 'onarim'] },
+  { label: 'Montaj', keywords: ['montaj', 'kurulum', 'tesisat'] },
+  { label: 'Servis', keywords: ['servis', 'iş tahsilatı', 'is tahsilati', 'arıza', 'ariza'] },
+  { label: 'Parça / Malzeme', keywords: ['parça', 'parca', 'malzeme', 'yedek'] },
+];
+
+const getFinanceCategory = (finance: any, relatedJob?: any) => {
+  const haystack = `${finance?.category || ''} ${finance?.description || ''} ${relatedJob?.work_type || ''}`.toLocaleLowerCase('tr-TR');
+  return financeCategoryRules.find((rule) => rule.keywords.some((keyword) => haystack.includes(keyword)))?.label || 'Diğer';
+};
 
 export default function HomeTab({ data, setShowJobModal, statusColors, setSelectedJob, setActiveTab, userRole: propRole, handleAction, isMyJobsTab, setJobModalType }: any) {
   
@@ -65,6 +79,8 @@ export default function HomeTab({ data, setShowJobModal, statusColors, setSelect
 
   const [showLowStockModal, setShowLowStockModal] = useState(false);
   const [showOrderMenu, setShowOrderMenu] = useState(false); 
+  const [financeCategoryFilter, setFinanceCategoryFilter] = useState('Tümü');
+  const [financePeriodFilter, setFinancePeriodFilter] = useState('Son 6 Ay');
 
   const jobs = data?.jobs || [];
   const finances = data?.finances || [];
@@ -373,6 +389,55 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
   const totalExpense = data?.finSummary?.expense || 0;
   const netCash = totalIncome - totalExpense;
   const recentFinances = finances.slice(0, 4);
+
+  const financeCategories = useMemo(() => {
+    const categories = new Set<string>();
+    finances.forEach((finance: any) => {
+      const relatedJob = jobs.find((job: any) => String(job.id) === String(finance.job_id));
+      categories.add(getFinanceCategory(finance, relatedJob));
+    });
+
+    return ['Tümü', ...Array.from(categories).sort((a: string, b: string) => a.localeCompare(b, 'tr'))];
+  }, [finances, jobs]);
+
+  const financeChartData = useMemo(() => {
+    const now = new Date();
+    const periodStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    if (financePeriodFilter === 'Bu Ay') {
+      periodStart.setDate(1);
+      periodStart.setMonth(now.getMonth());
+    } else if (financePeriodFilter === 'Bu Yıl') {
+      periodStart.setMonth(0);
+    } else if (financePeriodFilter === 'Tümü') {
+      periodStart.setFullYear(2000, 0, 1);
+    }
+
+    const grouped = new Map<string, { label: string; sortKey: number; gelir: number; gider: number }>();
+    finances.forEach((finance: any) => {
+      if (finance.status === 'Bekliyor') return;
+
+      const date = new Date(finance.created_at);
+      if (Number.isNaN(date.getTime()) || date < periodStart) return;
+
+      const relatedJob = jobs.find((job: any) => String(job.id) === String(finance.job_id));
+      if (financeCategoryFilter !== 'Tümü' && getFinanceCategory(finance, relatedJob) !== financeCategoryFilter) return;
+
+      const sortKey = date.getFullYear() * 12 + date.getMonth();
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const current = grouped.get(key) || {
+        label: date.toLocaleDateString('tr-TR', { month: 'short', year: '2-digit' }),
+        sortKey,
+        gelir: 0,
+        gider: 0,
+      };
+
+      if (finance.type === 'Gelir') current.gelir += Number(finance.amount) || 0;
+      if (finance.type === 'Gider') current.gider += Number(finance.amount) || 0;
+      grouped.set(key, current);
+    });
+
+    return Array.from(grouped.values()).sort((a, b) => a.sortKey - b.sortKey);
+  }, [finances, financeCategoryFilter, financePeriodFilter, jobs]);
 
   const miniChartPoints = useMemo(() => {
     const chartData = [...finances].reverse().slice(-10).map((f: any) => 
@@ -988,6 +1053,58 @@ const aReferrals = data?.free_months_balance || 0; // Kumbarada biriken toplam h
                        </svg>
                      ) : (
                        <div className="text-slate-600 text-[10px] font-bold">Veri Yok</div>
+                     )}
+                   </div>
+                 </div>
+
+                 <div className="z-10 relative mb-5 rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4">
+                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                     <div>
+                       <h3 className="text-sm font-black text-white">Gelir / Gider Grafiği</h3>
+                       <p className="mt-1 text-[10px] font-medium text-slate-400">Bakım, revizyon, montaj ve diğer hareketleri karşılaştırın.</p>
+                     </div>
+                     <div className="grid grid-cols-2 gap-2 sm:flex">
+                       <select
+                         aria-label="Finans kategorisi filtresi"
+                         value={financeCategoryFilter}
+                         onChange={(event) => setFinanceCategoryFilter(event.target.value)}
+                         className="rounded-lg border border-white/10 bg-slate-800 px-2.5 py-2 text-[11px] font-bold text-slate-200 outline-none focus:border-blue-400"
+                       >
+                         {financeCategories.map((category) => <option key={category} value={category}>{category}</option>)}
+                       </select>
+                       <select
+                         aria-label="Finans dönem filtresi"
+                         value={financePeriodFilter}
+                         onChange={(event) => setFinancePeriodFilter(event.target.value)}
+                         className="rounded-lg border border-white/10 bg-slate-800 px-2.5 py-2 text-[11px] font-bold text-slate-200 outline-none focus:border-blue-400"
+                       >
+                         <option value="Bu Ay">Bu Ay</option>
+                         <option value="Son 6 Ay">Son 6 Ay</option>
+                         <option value="Bu Yıl">Bu Yıl</option>
+                         <option value="Tümü">Tüm Zamanlar</option>
+                       </select>
+                     </div>
+                   </div>
+
+                   <div className="mt-4 h-52 w-full">
+                     {financeChartData.length > 0 ? (
+                       <ResponsiveContainer width="100%" height="100%">
+                         <BarChart data={financeChartData} barGap={4} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
+                           <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                           <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} />
+                           <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(value) => `₺${Number(value).toLocaleString('tr-TR')}`} />
+                           <Tooltip
+                             cursor={{ fill: 'rgba(148, 163, 184, 0.08)' }}
+                             contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: 12, color: '#f8fafc', fontSize: 12 }}
+                             formatter={(value, name) => [`₺${Number(value || 0).toLocaleString('tr-TR')}`, name === 'gelir' ? 'Gelir' : 'Gider']}
+                           />
+                           <Legend formatter={(value) => value === 'gelir' ? 'Gelir' : 'Gider'} wrapperStyle={{ fontSize: 11, color: '#cbd5e1' }} />
+                           <Bar dataKey="gelir" name="gelir" fill="#34d399" radius={[4, 4, 0, 0]} maxBarSize={24} />
+                           <Bar dataKey="gider" name="gider" fill="#fb7185" radius={[4, 4, 0, 0]} maxBarSize={24} />
+                         </BarChart>
+                       </ResponsiveContainer>
+                     ) : (
+                       <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-slate-700 text-xs font-semibold text-slate-500">Bu filtrede finans hareketi yok.</div>
                      )}
                    </div>
                  </div>
