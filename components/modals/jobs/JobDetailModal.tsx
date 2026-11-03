@@ -7,6 +7,8 @@ import sectorsData from '@/lib/data/sectors.json';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
+const API_URL = 'https://api.fixlog.co';
+
 export default function JobDetailModal({
   selectedJob, setSelectedJob, previewPdfJob, setPreviewPdfJob,
   fullScreenImage, setFullScreenImage, isEditingJobDetail, setIsEditingJobDetail,
@@ -400,7 +402,7 @@ useEffect(() => {
     }
   };
 
-  const sendCustomerWhatsApp = (jobData: any) => {
+  const sendCustomerWhatsApp = (jobData: any, pdfUrl = '') => {
     const customer = findCustomerForJob(jobData);
     const custPhone = getCustomerPhoneForJob(jobData, customer);
     if(!custPhone) { 
@@ -424,7 +426,8 @@ useEffect(() => {
      
      const message = `Merhaba *${jobData.customer_name}*,\n\n*${assetName}* için ${workTypeDesc} başarıyla tamamlanmıştır.\n\nServis detaylarını ve kontrol formunu içeren PDF raporunu bu mesaja ek olarak iletiyoruz.\n\n*İşlem Tutarı:* ${price}\n\nİyi günler dileriz.`;
      
-     window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
+     const shareMessage = pdfUrl ? `${message}\n\n📎 Servis raporu PDF: ${pdfUrl}` : message;
+     window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(shareMessage)}`, '_blank');
   };
 
   const sendCustomerSms = async (jobData: any) => {
@@ -547,9 +550,26 @@ useEffect(() => {
                     files: [file]
                 });
             } else {
-                pdf.save(safeFileName);
-            sendCustomerWhatsApp(jobData);
-            setNotification({ show: true, msg: 'Bu tarayıcı dosya paylaşımını desteklemiyor. PDF indirildi; WhatsApp mesajı açıldı. Mobilde PDF ile Paylaş seçeneğinden WhatsApp\'ı seçerek eki tek seferde gönderebilirsiniz.', type: 'success' });
+            let pdfUrl = '';
+            try {
+                const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
+                const companySlug = localStorage.getItem('patron_userSlug') || localStorage.getItem('staff_userSlug') || window.location.pathname.split('/')[1];
+                const uploadRes = await fetch(`${API_URL}/upload-share-pdf`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ slug: companySlug, jobId: jobData.id, pdfData: pdf.output('datauristring') })
+                });
+                if (uploadRes.ok) {
+                    const uploadData = await uploadRes.json();
+                    pdfUrl = uploadData?.url || '';
+                }
+            } catch (uploadError) {
+                console.warn('PDF WhatsApp paylaşım bağlantısı oluşturulamadı:', uploadError);
+            }
+
+            pdf.save(safeFileName);
+            sendCustomerWhatsApp(jobData, pdfUrl);
+            setNotification({ show: true, msg: pdfUrl ? 'PDF indirildi ve WhatsApp mesajina PDF baglantisi eklendi.' : 'PDF indirildi; WhatsApp mesaji acildi.', type: 'success' });
             setTimeout(() => setNotification({ show: false, msg: '', type: 'success' }), 6000);
             }
     } catch (error) {

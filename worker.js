@@ -387,6 +387,46 @@ auth_key=${PUSHER_KEY}&auth_timestamp=${timestamp}&auth_version=${authVersion}&b
         await triggerBeams(interests, title, body, finalLink, slug);
         return new Response(JSON.stringify({ success: true, message: "Bildirim iste\u011Fi Pusher'a iletildi." }), { headers: corsHeaders });
       }
+      if (url.pathname === "/upload-share-pdf" && method === "POST") {
+        if (!userAuth || !["Patron", "Yönetici"].includes(userAuth.role)) {
+          return new Response(JSON.stringify({ error: "PDF paylaşımı için yetkiniz yok." }), { status: 403, headers: corsHeaders });
+        }
+        if (!env.BUCKET || !userAuth.slug) {
+          return new Response(JSON.stringify({ error: "Dosya deposu yapılandırılmamış." }), { status: 503, headers: corsHeaders });
+        }
+
+        const { pdfData, jobId } = await request.json();
+        if (typeof pdfData !== "string" || !pdfData.startsWith("data:application/pdf")) {
+          return new Response(JSON.stringify({ error: "Geçersiz PDF verisi." }), { status: 400, headers: corsHeaders });
+        }
+
+        const base64Data = pdfData.split(",")[1] || "";
+        const bytes = Uint8Array.from(atob(base64Data), (char) => char.charCodeAt(0));
+        if (bytes.byteLength === 0 || bytes.byteLength > 15 * 1024 * 1024) {
+          return new Response(JSON.stringify({ error: "PDF boyutu 15 MB'dan küçük olmalıdır." }), { status: 413, headers: corsHeaders });
+        }
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, "0");
+        const day = String(now.getDate()).padStart(2, "0");
+        const safeJobId = String(jobId || "report").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80) || "report";
+        const fileName = `fixlog/${userAuth.slug}/shared-reports/${year}/${month}/${day}/job-${safeJobId}-${crypto.randomUUID()}.pdf`;
+
+        await env.BUCKET.put(fileName, bytes.buffer, {
+          httpMetadata: {
+            contentType: "application/pdf",
+            contentDisposition: "inline",
+            cacheControl: "public, max-age=86400"
+          },
+          customMetadata: { company: userAuth.slug, jobId: String(jobId || "") }
+        });
+
+        return new Response(JSON.stringify({
+          success: true,
+          url: `https://pub-a78064a5e9304242b0982c01b5778197.r2.dev/${fileName}`
+        }), { headers: corsHeaders });
+      }
       if (url.pathname === "/pusher/auth" && method === "POST") {
         const formData = await request.text();
         const params = new URLSearchParams(formData);
