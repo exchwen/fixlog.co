@@ -2185,6 +2185,123 @@ Otomatik olarak size atand\u0131!`,
           return false;
         }
       }, "verifyMasterboss");
+      if (url.pathname === "/masterboss-cloudflare-billing" && method === "GET") {
+        if (!await verifyMasterboss(request))
+          return new Response(JSON.stringify({ error: "Yetkisiz işlem!" }), { status: 403, headers: corsHeaders });
+        const billingHeaders = { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" };
+        const accountId = String(env.CLOUDFLARE_ACCOUNT_ID || "").trim();
+        const apiToken = String(env.CLOUDFLARE_API_TOKEN || "").trim();
+        if (!accountId || !apiToken) {
+          return new Response(JSON.stringify({
+            success: true,
+            configured: false,
+            exactCost: null,
+            message: "Cloudflare Billing API hesabı ve tokenı henüz yapılandırılmadı."
+          }), { headers: billingHeaders });
+        }
+        try {
+          const cloudflareGet = async (path) => {
+            const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}${path}`, {
+              headers: {
+                "Authorization": `Bearer ${apiToken}`,
+                "Accept": "application/json"
+              }
+            });
+            let body = null;
+            try {
+              body = await response.json();
+            } catch {
+              body = null;
+            }
+            return { ok: response.ok, status: response.status, body };
+          };
+          const usdTryRatePromise = fetch("https://www.tcmb.gov.tr/kurlar/today.xml", {
+            headers: { "Accept": "application/xml" }
+          }).then(async (response) => {
+            if (!response.ok) return null;
+            const xml = await response.text();
+            const match = xml.match(/<Currency[^>]*CurrencyCode="USD"[\s\S]*?<ForexSelling>([^<]+)<\/ForexSelling>/i);
+            if (!match) return null;
+            const rate = Number(String(match[1]).trim().replace(",", "."));
+            return Number.isFinite(rate) && rate > 0 ? rate : null;
+          }).catch(() => null);
+          const [usageResponse, historyResponse, usdTryRate] = await Promise.all([
+            cloudflareGet("/billable-usage"),
+            cloudflareGet("/billing/history"),
+            usdTryRatePromise
+          ]);
+          const extractArray = (body) => {
+            const candidates = [
+              body?.result?.data,
+              body?.result?.usage,
+              body?.result?.items,
+              body?.result,
+              body?.data,
+              body
+            ];
+            return candidates.find(Array.isArray) || [];
+          };
+          const usageItems = extractArray(usageResponse.body);
+          const historyItems = extractArray(historyResponse.body);
+          const normalizedUsage = usageItems.map((item) => {
+            const centsValue = Number(item?.cost_cents ?? item?.amount_cents);
+            const directValue = Number(item?.BilledCost ?? item?.billed_cost ?? item?.EffectiveCost ?? item?.effective_cost ?? item?.ContractedCost ?? item?.contracted_cost ?? item?.cost ?? item?.amount);
+            const currency = item?.BillingCurrency || item?.billing_currency || item?.currency || null;
+            const hasCents = Number.isFinite(centsValue);
+            const hasDirectValue = Number.isFinite(directValue) && Boolean(currency);
+            if (!hasCents && !hasDirectValue) return null;
+            return {
+              product: item?.ServiceName || item?.service_name || item?.product || item?.product_name || item?.service || item?.sku || "Cloudflare",
+              amount: hasCents ? centsValue / 100 : directValue,
+              currency: currency || "USD",
+              quantity: item?.ConsumedQuantity ?? item?.consumed_quantity ?? item?.PricingQuantity ?? item?.pricing_quantity ?? null,
+              unit: item?.ConsumedUnit || item?.consumed_unit || item?.PricingUnit || item?.pricing_unit || null,
+              periodStart: item?.BillingPeriodStart || item?.billing_period_start || item?.ChargePeriodStart || item?.start || item?.period_start || null,
+              periodEnd: item?.BillingPeriodEnd || item?.billing_period_end || item?.ChargePeriodEnd || item?.end || item?.period_end || null
+            };
+          }).filter(Boolean);
+          const usageCurrency = normalizedUsage[0]?.currency || null;
+          const hasSingleCurrency = normalizedUsage.length > 0 && normalizedUsage.every((item) => item.currency === usageCurrency);
+          const exactCost = hasSingleCurrency ? {
+            amount: normalizedUsage.reduce((total, item) => total + item.amount, 0),
+            currency: usageCurrency,
+            source: "Cloudflare billable usage"
+          } : null;
+          return new Response(JSON.stringify({
+            success: true,
+            configured: true,
+            exactCost,
+            usdTryRate,
+            fetchedAt: new Date().toISOString(),
+            usage: {
+              available: usageResponse.ok,
+              status: usageResponse.status,
+              entries: normalizedUsage
+            },
+            history: {
+              available: historyResponse.ok,
+              status: historyResponse.status,
+              entries: historyItems.slice(0, 30).map((item) => ({
+                invoiceId: item?.invoice_id || item?.external_invoice_id || null,
+                amount: item?.amount ?? null,
+                amountToPay: item?.amount_to_pay ?? null,
+                currency: item?.currency || null,
+                description: item?.description || null,
+                occurredAt: item?.occurred_at || null,
+                status: item?.status || null
+              }))
+            }
+          }), { headers: billingHeaders });
+        } catch (error) {
+          console.error("Cloudflare Billing API hatası:", error);
+          return new Response(JSON.stringify({
+            success: false,
+            configured: true,
+            exactCost: null,
+            error: "Cloudflare faturalama verisi okunamadı."
+          }), { status: 502, headers: billingHeaders });
+        }
+      }
       if (url.pathname === "/masterboss-data" && method === "GET") {
         if (!await verifyMasterboss(request))
           return new Response(JSON.stringify({ error: "Yetkisiz i\u015Flem!" }), { status: 403, headers: corsHeaders });
@@ -2197,15 +2314,18 @@ Otomatik olarak size atand\u0131!`,
             globalPricing.asset = Number(s.value);
         });
         const companies = await safeAll(env.DB.prepare(`
-          SELECT c.id, c.slug, c.company_name, c.owner_name, c.subscription_status,
-                 c.created_at, c.trial_ends_at, c.billing_cycle_anchor, c.referral_code,
-                 c.custom_base_price, c.custom_per_asset_price, c.free_months_balance,
-                 c.has_masterboss_gift,
+          SELECT c.*,
                  COALESCE(staff_counts.total_staff, 0) as total_staff,
-                 COALESCE(asset_counts.total_assets, 0) as total_assets
+                 COALESCE(asset_counts.total_assets, 0) as total_assets,
+                 COALESCE(customer_counts.total_customers, 0) as total_customers,
+                 COALESCE(job_counts.total_jobs, 0) as total_jobs,
+                 COALESCE(stock_counts.total_stock, 0) as total_stock
           FROM companies c
           LEFT JOIN (SELECT company_slug, COUNT(*) as total_staff FROM staff GROUP BY company_slug) staff_counts ON staff_counts.company_slug = c.slug
           LEFT JOIN (SELECT company_slug, COUNT(*) as total_assets FROM assets GROUP BY company_slug) asset_counts ON asset_counts.company_slug = c.slug
+          LEFT JOIN (SELECT company_slug, COUNT(*) as total_customers FROM customers GROUP BY company_slug) customer_counts ON customer_counts.company_slug = c.slug
+          LEFT JOIN (SELECT company_slug, COUNT(*) as total_jobs FROM jobs GROUP BY company_slug) job_counts ON job_counts.company_slug = c.slug
+          LEFT JOIN (SELECT company_slug, COUNT(*) as total_stock FROM stock GROUP BY company_slug) stock_counts ON stock_counts.company_slug = c.slug
           ORDER BY c.created_at DESC
         `));
         const companiesWithRewards = companies.map((c) => ({
@@ -2318,6 +2438,8 @@ Otomatik olarak size atand\u0131!`,
         const currentYearStart = `${new Date().getUTCFullYear()}-01-01`;
         const nextYearStart = new Date(Date.UTC(new Date().getUTCFullYear() + 1, 0, 1)).toISOString().slice(0, 10);
         const [
+          companyRecord,
+          systemSettings,
           staffCount,
           assetCount,
           stockCount,
@@ -2332,6 +2454,8 @@ Otomatik olarak size atand\u0131!`,
           activeFaults,
           photoStats
         ] = await Promise.all([
+          safeFirst(env.DB.prepare("SELECT * FROM companies WHERE slug = ?").bind(targetSlug)),
+          safeAll(env.DB.prepare("SELECT key, value FROM system_settings WHERE key IN ('global_base_price', 'global_asset_price')")),
           safeFirst(env.DB.prepare("SELECT COUNT(*) as total FROM staff WHERE company_slug = ?").bind(targetSlug)),
           safeFirst(env.DB.prepare("SELECT COUNT(*) as total FROM assets WHERE company_slug = ?").bind(targetSlug)),
           safeFirst(env.DB.prepare("SELECT COUNT(*) as total FROM stock WHERE company_slug = ?").bind(targetSlug)),
@@ -2346,37 +2470,89 @@ Otomatik olarak size atand\u0131!`,
           safeFirst(env.DB.prepare("SELECT COUNT(*) as total FROM fault_reports WHERE company_slug = ? AND status = 'Aktif'").bind(targetSlug)),
           safeFirst(env.DB.prepare("SELECT SUM(CASE WHEN json_valid(photo_urls) THEN json_array_length(photo_urls) ELSE 0 END) as total, SUM(CASE WHEN created_at >= ? AND created_at < ? AND json_valid(photo_urls) THEN json_array_length(photo_urls) ELSE 0 END) as monthly FROM jobs WHERE company_slug = ? AND photo_urls IS NOT NULL AND photo_urls != '[]' AND photo_urls != ''").bind(currentMonthStart, nextMonthStart, targetSlug))
         ]);
+        if (!companyRecord) {
+          return new Response(JSON.stringify({ error: "Firma bulunamadı." }), { status: 404, headers: corsHeaders });
+        }
+
+        const details = {
+          staff: Number(staffCount?.total || 0),
+          assets: Number(assetCount?.total || 0),
+          stock: Number(stockCount?.total || 0),
+          customers: Number(customerCount?.total || 0),
+          suppliers: Number(supplierCount?.total || 0),
+          jobs: {
+            total: Number(jobStats?.total || 0),
+            monthly: Number(jobStats?.monthly || 0),
+            yearly: Number(jobStats?.yearly || 0)
+          },
+          emergencies: {
+            total: Number(totalEmergencies?.total || 0),
+            active: Number(activeEmergencies?.total || 0)
+          },
+          faults: {
+            total: Number(totalFaults?.total || 0),
+            active: Number(activeFaults?.total || 0)
+          },
+          photos: {
+            total: Number(photoStats?.total || 0),
+            monthly: Number(photoStats?.monthly || 0)
+          },
+          finances: {
+            income: Number(income?.total || 0),
+            expense: Number(expense?.total || 0),
+            net: Number(income?.total || 0) - Number(expense?.total || 0)
+          },
+          costs: {
+            recordedCompanyExpense: Number(expense?.total || 0),
+            source: "finances",
+            platformInfrastructureCost: null,
+            platformInfrastructureStatus: "account_level_only",
+            note: "Firma gideri finances kayıtlarından kesin olarak okunur. Cloudflare altyapı faturası hesap geneli olduğu için firma bazında dağıtılmaz."
+          }
+        };
+        const globalPricingForCompany = systemSettings.reduce((pricing, setting) => {
+          if (setting.key === "global_base_price") pricing.base = Number(setting.value) || 0;
+          if (setting.key === "global_asset_price") pricing.asset = Number(setting.value) || 0;
+          return pricing;
+        }, { base: 3e3, asset: 50 });
+        const basePrice = companyRecord.custom_base_price !== null && companyRecord.custom_base_price !== undefined
+          ? Number(companyRecord.custom_base_price) || 0
+          : globalPricingForCompany.base;
+        const assetPrice = companyRecord.custom_per_asset_price !== null && companyRecord.custom_per_asset_price !== undefined
+          ? Number(companyRecord.custom_per_asset_price) || 0
+          : globalPricingForCompany.asset;
+        const freeMonths = Number(companyRecord.free_months_balance || 0);
+        const hasGift = Number(companyRecord.has_masterboss_gift || 0) === 1;
+        const subscriptionStatus = String(companyRecord.subscription_status || "").toLowerCase();
+        const billable = subscriptionStatus === "active" && !hasGift && freeMonths <= 0;
+        const grossMonthlyCharge = basePrice + details.assets * assetPrice;
+        const exclusionReason = hasGift
+          ? "VIP muafiyet"
+          : freeMonths > 0
+            ? `${freeMonths} ücretsiz ay bakiyesi`
+            : subscriptionStatus !== "active"
+              ? `Abonelik durumu: ${companyRecord.subscription_status || "belirsiz"}`
+              : null;
+        const economics = {
+          currency: "TRY",
+          pricingSource: companyRecord.custom_base_price !== null || companyRecord.custom_per_asset_price !== null ? "company_override" : "global_pricing",
+          basePrice,
+          assetPrice,
+          assetCount: details.assets,
+          assetTotal: details.assets * assetPrice,
+          grossMonthlyCharge,
+          monthlyCharge: billable ? grossMonthlyCharge : 0,
+          billable,
+          exclusionReason,
+          paymentProof: false,
+          note: "Bu tutar ödeme sağlayıcısından tahsil edilmiş tutar değil, abonelik kurallarına göre hesaplanan aylık gelirdir."
+        };
         return new Response(JSON.stringify({
           success: true,
-          stats: {
-            staff: staffCount?.total || 0,
-            assets: assetCount?.total || 0,
-            stock: stockCount?.total || 0,
-            customers: customerCount?.total || 0,
-            suppliers: supplierCount?.total || 0,
-            jobs: {
-              total: jobStats?.total || 0,
-              monthly: jobStats?.monthly || 0,
-              yearly: jobStats?.yearly || 0
-            },
-            emergencies: {
-              total: totalEmergencies?.total || 0,
-              active: activeEmergencies?.total || 0
-            },
-            faults: {
-              total: totalFaults?.total || 0,
-              active: activeFaults?.total || 0
-            },
-            photos: {
-              total: photoStats?.total || 0,
-              monthly: photoStats?.monthly || 0
-            },
-            finances: {
-              income: income?.total || 0,
-              expense: expense?.total || 0,
-              net: (income?.total || 0) - (expense?.total || 0)
-            }
-          }
+          company: companyRecord,
+          globalPricing: globalPricingForCompany,
+          stats: details,
+          economics
         }), { headers: corsHeaders });
       }
       if (url.pathname === "/masterboss-update-subscription" && request.method === "POST") {
