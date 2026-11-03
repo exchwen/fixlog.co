@@ -495,7 +495,7 @@ useEffect(() => {
     return '';
   };
 
-  const handleSharePDF = async (jobData: any) => {
+  const handleSharePDF = async (jobData: any, forceWhatsApp = false) => {
         setIsGeneratingPdf(true);
         try {
             const receiptElement = document.getElementById('pdf-printable-area');
@@ -571,7 +571,7 @@ useEffect(() => {
             const assetName = asset?.name || 'Cihazınız';
             const shareText = `Merhaba ${jobData.customer_name},\n\n${rawAssetName} işleminiz tamamlanmıştır. Servis raporunuzu bu mesaja eklenmiş dosyada bulabilirsiniz.`;
     
-        const canSharePdfFile = typeof navigator.share === 'function' && (
+        const canSharePdfFile = !forceWhatsApp && typeof navigator.share === 'function' && (
             typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] })
         );
 
@@ -1067,7 +1067,7 @@ useEffect(() => {
                                <button disabled={isGeneratingPdf} onClick={() => handleSharePDF(previewPdfJob)} className="flex-1 bg-blue-600 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-md active:scale-95 disabled:opacity-50">
                                   {isGeneratingPdf ? <Loader2 size={18} className="animate-spin" /> : <Share2 size={18} />} PDF İle Paylaş
                                </button>
-                               <button onClick={() => sendCustomerWhatsApp(previewPdfJob)} className="flex-1 bg-emerald-500 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all shadow-md active:scale-95">
+                                <button disabled={isGeneratingPdf} onClick={() => handleSharePDF(previewPdfJob, true)} className="flex-1 bg-emerald-500 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all shadow-md active:scale-95 disabled:opacity-50">
                                   <MessageSquareText size={18} /> Mesaj Gönder
                                </button>
                                {userRole === 'Patron' && data?.smsConfigured && <button disabled={isSendingSms} onClick={() => sendCustomerSms(previewPdfJob)} className="flex-1 bg-sky-600 text-white py-3 sm:py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-sky-700 transition-all shadow-md active:scale-95 disabled:opacity-50">
