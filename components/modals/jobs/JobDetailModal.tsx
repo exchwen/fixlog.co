@@ -544,9 +544,26 @@ useEffect(() => {
         );
 
         if (canSharePdfFile) {
-                await navigator.share({
+            let pdfUrl = '';
+            try {
+                const token = localStorage.getItem('patron_authToken') || localStorage.getItem('staff_authToken');
+                const companySlug = localStorage.getItem('patron_userSlug') || localStorage.getItem('staff_userSlug') || window.location.pathname.split('/')[1];
+                const uploadRes = await fetch(`${API_URL}/upload-share-pdf`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ slug: companySlug, jobId: jobData.id, pdfData: pdf.output('datauristring') })
+                });
+                if (uploadRes.ok) {
+                    const uploadData = await uploadRes.json();
+                    pdfUrl = uploadData?.url || '';
+                }
+            } catch (uploadError) {
+                console.warn('PDF paylaşım bağlantısı oluşturulamadı:', uploadError);
+            }
+            const shareTextWithPdf = pdfUrl ? `${shareText}\n\n📎 Servis raporu PDF: ${pdfUrl}` : shareText;
+                        await navigator.share({
                     title: `Servis Raporu #${jobData.id}`,
-                    text: shareText,
+                        text: shareTextWithPdf,
                     files: [file]
                 });
             } else {
